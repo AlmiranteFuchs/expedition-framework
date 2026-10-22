@@ -23,7 +23,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 ## Architecture boundaries
 
 - `com.expeditions.core` — **pure Java domain** (status, run, definition, route,
-  ledger). No Minecraft imports allowed; unit-testable without the game.
+  ledger, `SafeColumnSearch`). No Minecraft imports allowed; unit-testable
+  without the game.
+- `com.expeditions.server.dimension` — `ExpeditionDimensionAdapter` interface +
+  Overworld/Nether implementations + `ExpeditionAdapters` registry. This is the
+  dimension extension point: adapters own "can a route resolve here and where";
+  lifecycle code must never assume terrain. No adapter → unsupported dimension.
 - `com.expeditions.server` — server-authoritative coordination
   (`ExpeditionManager`), persistence (`ExpeditionSavedData`, overworld
   `DimensionDataStorage`), game-bus hooks (`ExpeditionEventHandler`).
@@ -31,31 +36,48 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - `com.expeditions.block` — blocks; interactions delegate to the server layer.
 - Lifecycle is explicit and validated in the domain: `ACTIVE → COMPLETED | FAILED`,
   checkpoints activate strictly in order by resolved position, `complete()`
-  requires all checkpoints, reward marked exactly once. Don't weaken this.
+  requires all checkpoints, `markRewarded(tokens)` records the award exactly
+  once. Don't weaken this.
 - Runs are per-player, keyed by UUID in `ExpeditionLedger`. Token balances are a
-  separate map in the same ledger, persisted with it.
+  separate map in the same ledger, persisted with it. Runs record
+  `startedGameTime` (`UNKNOWN_START` = legacy/no bonus) and `tokensAwarded`.
 - Run state is world-scoped (`SavedData`), not static/global. Mutations must
   `setDirty()`.
 
-## Gameplay shape (milestone 2)
+## Gameplay shape (milestone 3)
 
-- Route lives in `ExpeditionDefinition`, sourced from `expeditions-server.toml`:
-  ordered `"x,z"` checkpoint anchors + exit anchor + token reward. Heights are
-  resolved to the surface when a run starts — do not introduce fixed Y coords.
-- Marker blocks (`expedition_checkpoint`, `expedition_exit`) are placed by the
-  server at run start and removed at run end unless another active run shares
-  the positions. They are indestructible by design.
+- One expedition per dimension, configured in `expeditions-server.toml`
+  sections `[expeditions.overworld]` / `[expeditions.nether]` (checkpoints,
+  exit, tokens, bonusTokens, bonusTimeSeconds; nether has `enabled`).
+  `ExpeditionsConfig.definitionFor(dimension)` → `Optional<ExpeditionDefinition>`.
+- The terminal picks the expedition for the player's current dimension; no
+  definition or no adapter → refusal message, no world changes.
+- Routes are `"x,z"` anchors resolved at run start by the dimension's adapter
+  (Overworld: heightmap; Nether: `SafeColumnSearch` over real block states).
+  The whole route resolves BEFORE any marker is placed.
+- Rewards: guaranteed `tokens` + `bonusTokens` when finished within
+  `bonusTimeTicks`; computed by `ExpeditionDefinition.totalReward(elapsedTicks)`.
+- Marker blocks are placed at run start and removed at run end in the run's
+  own dimension unless another active run in that dimension shares them.
+  Indestructible by design.
 - Death fails the run (`LivingDeathEvent`). Disconnect keeps the run resumable.
-- Terminal starts a run when none is active; otherwise reports progress.
 
 ## Testing conventions
 
 - Unit-test domain rules in `src/test` — no Minecraft imports needed there.
+  `SafeColumnSearch` is tested with synthetic column predicates; when modeling
+  "blocks space but can't be stood on" remember solid blocks ARE floors for
+  whatever stands above them.
 - In-game behavior goes in `ExpeditionGameTests` (`@GameTest` methods, distinct
   `batch` names since tests share configured marker positions). Interactions are
   simulated through `ServerPlayerGameMode.useItemOn` after teleporting the mock
   player next to the target — don't use `helper.useBlock` for blocks outside the
   test structure bounds (`relativePos` is not a clean inverse there).
+- Cross-dimension tests: get the level via
+  `server.getLevel(Level.NETHER|END)`, teleport the mock player with
+  `player.teleportTo(level, x, y, z, Set.of(), yaw, pitch)`, and pass that level
+  to `useItemOn`. Mock players leaked by retries can leave foreign active runs —
+  fail them before asserting marker cleanup.
 - `ExpeditionGameTests` uses `makeMockServerPlayerInLevel()` (deprecated in
   1.21.1 but functional) — revisit if a better mock player API exists.
 
@@ -74,6 +96,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Milestone 2 verified: `build` + 23 unit tests + 4/4 GameTest in-game tests pass
-(full loop, death fail, order/dup rejection, unfinished exit). Human client
+Milestone 3 verified: `build` + 39 unit tests + 6/6 GameTest in-game tests pass
+(full loop w/ bonus, death fail, order/dup rejection, unfinished exit, nether
+route resolution + cleanup, unsupported-dimension refusal). Human client
 click-through not performed.

@@ -34,16 +34,23 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_DEFINITION_ID = "DefinitionId";
     private static final String TAG_DEFINITION_NAME = "DefinitionName";
     private static final String TAG_DIFFICULTY = "Difficulty";
+    private static final String TAG_DIMENSION = "Dimension";
     private static final String TAG_TOKEN_REWARD = "TokenReward";
+    private static final String TAG_BONUS_TOKENS = "BonusTokens";
+    private static final String TAG_BONUS_TICKS = "BonusTicks";
     private static final String TAG_STATUS = "Status";
     private static final String TAG_DONE = "Done";
     private static final String TAG_REWARDED = "Rewarded";
+    private static final String TAG_TOKENS_AWARDED = "TokensAwarded";
+    private static final String TAG_STARTED = "StartedGameTime";
     private static final String TAG_CHECKPOINTS = "Checkpoints";
     private static final String TAG_EXIT = "Exit";
     private static final String TAG_BALANCE = "Balance";
     private static final String TAG_X = "x";
     private static final String TAG_Y = "y";
     private static final String TAG_Z = "z";
+
+    private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
     private final ExpeditionLedger ledger = new ExpeditionLedger();
 
@@ -59,24 +66,33 @@ public class ExpeditionSavedData extends SavedData {
                     .stream().map(e -> readWaypoint((CompoundTag) e)).toList();
             Waypoint exit = readWaypoint(runTag.getCompound(TAG_EXIT));
             // Rebuild the definition's anchor route from the persisted resolved
-            // positions so a restored run stays self-consistent.
+            // positions so a restored run stays self-consistent. Fields absent
+            // in saves from earlier versions fall back to pre-milestone-3
+            // defaults: overworld, no bonus, unknown start time.
             List<RouteAnchor> anchors = checkpoints.stream()
                     .map(w -> new RouteAnchor(w.x(), w.z())).toList();
+            String dimension = runTag.getString(TAG_DIMENSION);
             ExpeditionDefinition definition = new ExpeditionDefinition(
                     runTag.getString(TAG_DEFINITION_ID),
                     runTag.getString(TAG_DEFINITION_NAME),
                     runTag.getInt(TAG_DIFFICULTY),
+                    dimension.isBlank() ? DEFAULT_DIMENSION : dimension,
                     new ExpeditionRoute(anchors, new RouteAnchor(exit.x(), exit.z())),
-                    runTag.getInt(TAG_TOKEN_REWARD));
+                    runTag.getInt(TAG_TOKEN_REWARD),
+                    runTag.getInt(TAG_BONUS_TOKENS),
+                    runTag.getInt(TAG_BONUS_TICKS));
             data.ledger.restoreRun(ExpeditionRun.restore(
                     runTag.getUUID(TAG_RUN_ID),
                     runTag.getUUID(TAG_PLAYER),
                     definition,
                     checkpoints,
                     exit,
+                    runTag.contains(TAG_STARTED) ? runTag.getLong(TAG_STARTED)
+                            : ExpeditionRun.UNKNOWN_START,
                     ExpeditionStatus.valueOf(runTag.getString(TAG_STATUS)),
                     runTag.getInt(TAG_DONE),
-                    runTag.getBoolean(TAG_REWARDED)));
+                    runTag.getBoolean(TAG_REWARDED),
+                    runTag.getInt(TAG_TOKENS_AWARDED)));
         }
         for (Tag t : tag.getList(TAG_TOKENS, Tag.TAG_COMPOUND)) {
             CompoundTag tokenTag = (CompoundTag) t;
@@ -95,10 +111,15 @@ public class ExpeditionSavedData extends SavedData {
             runTag.putString(TAG_DEFINITION_ID, run.definition().id());
             runTag.putString(TAG_DEFINITION_NAME, run.definition().displayName());
             runTag.putInt(TAG_DIFFICULTY, run.definition().difficulty());
+            runTag.putString(TAG_DIMENSION, run.definition().dimension());
             runTag.putInt(TAG_TOKEN_REWARD, run.definition().tokenReward());
+            runTag.putInt(TAG_BONUS_TOKENS, run.definition().bonusTokens());
+            runTag.putInt(TAG_BONUS_TICKS, run.definition().bonusTimeTicks());
             runTag.putString(TAG_STATUS, run.status().name());
             runTag.putInt(TAG_DONE, run.completedCheckpoints());
             runTag.putBoolean(TAG_REWARDED, run.isRewarded());
+            runTag.putInt(TAG_TOKENS_AWARDED, run.tokensAwarded());
+            runTag.putLong(TAG_STARTED, run.startedGameTime());
             ListTag checkpoints = new ListTag();
             run.checkpoints().forEach(w -> checkpoints.add(writeWaypoint(w)));
             runTag.put(TAG_CHECKPOINTS, checkpoints);

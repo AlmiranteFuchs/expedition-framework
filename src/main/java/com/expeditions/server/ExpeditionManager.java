@@ -7,24 +7,31 @@ import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.server.dimension.ExpeditionAdapters;
+import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Server-authoritative coordinator for expedition runs.
  *
  * <p>State lives in an {@link ExpeditionLedger} persisted by
  * {@link ExpeditionSavedData}; the manager is stateless. It additionally owns
- * the Minecraft-side work: resolving configured route anchors to surface
- * positions and materializing/removing the marker blocks players interact with.
+ * the Minecraft-side work: picking the expedition configured for the player's
+ * dimension, resolving its route anchors through the dimension's adapter, and
+ * materializing/removing the marker blocks players interact with.
  */
 public final class ExpeditionManager {
     private final MinecraftServer server;
@@ -55,33 +62,49 @@ public final class ExpeditionManager {
     }
 
     /** All tracked runs (any state), for diagnostics and commands. */
-    public java.util.Collection<ExpeditionRun> runs() {
+    public Collection<ExpeditionRun> runs() {
         return ledger.runs();
     }
 
     /**
-     * Resolves the configured route, places marker blocks and starts a run.
+     * Resolves the route of the expedition configured for the player's current
+     * dimension, places marker blocks and starts a run.
      *
-     * @throws IllegalStateException if the player already has an active run
+     * @throws IllegalStateException if the player already has an active run, no
+     *         expedition exists for the dimension, or no safe route resolves
      */
     public ExpeditionRun startRun(ServerPlayer player) {
         if (ledger.activeRun(player.getUUID()).isPresent()) {
             throw new IllegalStateException("You already have an active expedition");
         }
-        ExpeditionDefinition definition = ExpeditionsConfig.overworldDefinition();
-        ServerLevel overworld = server.overworld();
+        ServerLevel level = player.serverLevel();
+        ExpeditionDefinition definition = ExpeditionsConfig.definitionFor(level.dimension())
+                .orElseThrow(() -> new IllegalStateException(
+                        "No expedition is available in this dimension"));
+        ExpeditionDimensionAdapter adapter = ExpeditionAdapters.forLevel(level)
+                .orElseThrow(() -> new IllegalStateException(
+                        "This dimension cannot host expeditions"));
 
-        List<Waypoint> checkpoints = new ArrayList<>();
+        // Resolve the whole route before touching the world so a partially
+        // unsafe route never leaves stray markers behind.
+        List<BlockPos> checkpointPositions = new ArrayList<>();
         for (RouteAnchor anchor : definition.route().checkpoints()) {
-            BlockPos pos = resolveSurface(overworld, anchor);
-            overworld.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
-            checkpoints.add(toWaypoint(pos));
+            checkpointPositions.add(adapter.resolveAnchor(level, anchor)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "No safe expedition route could be resolved in this dimension")));
         }
-        BlockPos exitPos = resolveSurface(overworld, definition.route().exit());
-        overworld.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
+        BlockPos exitPos = adapter.resolveAnchor(level, definition.route().exit())
+                .orElseThrow(() -> new IllegalStateException(
+                        "No safe expedition route could be resolved in this dimension"));
+
+        for (BlockPos pos : checkpointPositions) {
+            level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
+        }
+        level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
 
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(), definition,
-                checkpoints, toWaypoint(exitPos));
+                checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
+                toWaypoint(exitPos), level.getGameTime());
         ledger.startRun(run);
         data.setDirty();
         return run;
@@ -101,8 +124,9 @@ public final class ExpeditionManager {
     }
 
     /**
-     * Completes the player's active run and grants the guaranteed token reward
-     * exactly once, then removes marker blocks if no other run needs them.
+     * Completes the player's active run and grants the token reward — the
+     * guaranteed amount plus a time bonus when earned — exactly once, then
+     * removes marker blocks if no other run in the dimension needs them.
      *
      * @throws IllegalStateException if the run is missing, finished or incomplete
      */
@@ -110,8 +134,10 @@ public final class ExpeditionManager {
         ExpeditionRun run = requireActive(player.getUUID());
         run.complete();
         if (!run.isRewarded()) {
-            ledger.addTokens(player.getUUID(), run.definition().tokenReward());
-            run.markRewarded();
+            long elapsed = run.elapsedTicks(player.serverLevel().getGameTime());
+            int tokens = run.definition().totalReward(elapsed);
+            ledger.addTokens(player.getUUID(), tokens);
+            run.markRewarded(tokens);
         }
         data.setDirty();
         cleanupMarkers(run);
@@ -129,37 +155,29 @@ public final class ExpeditionManager {
         return run;
     }
 
-    /**
-     * Resolves a configured X/Z anchor to a position resting on the terrain
-     * surface: loads the column, asks the heightmap for the ground, then nudges
-     * upward until a replaceable spot is found so markers never bury inside
-     * obstacles.
-     */
-    private static BlockPos resolveSurface(ServerLevel level, RouteAnchor anchor) {
-        level.getChunk(anchor.x() >> 4, anchor.z() >> 4);
-        int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, anchor.x(), anchor.z());
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(anchor.x(), y, anchor.z());
-        for (int i = 0; i < 16 && pos.getY() < level.getMaxBuildHeight() - 1; i++) {
-            BlockState state = level.getBlockState(pos);
-            if (state.isAir() || state.canBeReplaced()) {
-                break;
-            }
-            pos.move(0, 1, 0);
-        }
-        return pos.immutable();
-    }
-
     private void cleanupMarkers(ExpeditionRun run) {
-        // Marker positions are shared by concurrent runs; only remove them once
-        // no other active run still needs them.
-        if (ledger.anyOtherActiveRun(run.playerId())) {
+        // Markers are shared per dimension; only remove them once no other
+        // active run in that dimension still needs them.
+        String dimension = run.definition().dimension();
+        if (ledger.anyOtherActiveRunInDimension(run.playerId(), dimension)) {
             return;
         }
-        ServerLevel overworld = server.overworld();
-        for (Waypoint w : run.checkpoints()) {
-            removeMarker(overworld, w, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
+        ServerLevel level = levelFor(dimension);
+        if (level == null) {
+            return;
         }
-        removeMarker(overworld, run.exit(), ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+        for (Waypoint w : run.checkpoints()) {
+            removeMarker(level, w, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
+        }
+        removeMarker(level, run.exit(), ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+    }
+
+    private ServerLevel levelFor(String dimensionId) {
+        ResourceLocation location = ResourceLocation.tryParse(dimensionId);
+        if (location == null) {
+            return null;
+        }
+        return server.getLevel(ResourceKey.create(Registries.DIMENSION, location));
     }
 
     private static void removeMarker(ServerLevel level, Waypoint w, BlockState expected) {

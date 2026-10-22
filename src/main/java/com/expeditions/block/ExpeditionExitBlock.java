@@ -31,7 +31,7 @@ public class ExpeditionExitBlock extends Block {
                 ExpeditionRun run = manager.completeRun(serverPlayer);
                 player.sendSystemMessage(Component.translatable(
                         "message.expeditions.expedition_completed",
-                        run.definition().tokenReward(),
+                        run.tokensAwarded(),
                         manager.tokenBalance(serverPlayer.getUUID())));
             } catch (IllegalStateException e) {
                 player.sendSystemMessage(Component.translatable(

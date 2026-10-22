@@ -5,14 +5,20 @@ import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.ExpeditionManager;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -61,7 +67,11 @@ public final class ExpeditionGameTests {
         helper.assertTrue(run.status() == ExpeditionStatus.COMPLETED,
                 "run must be COMPLETED, was " + run.status());
         helper.assertTrue(run.isRewarded(), "run must be rewarded");
-        int expectedTokens = run.definition().tokenReward();
+        // The test completes well inside the bonus window, so the award is
+        // the guaranteed reward plus the time bonus.
+        int expectedTokens = run.definition().tokenReward() + run.definition().bonusTokens();
+        helper.assertTrue(run.tokensAwarded() == expectedTokens,
+                "awarded tokens must be " + expectedTokens + ", was " + run.tokensAwarded());
         helper.assertTrue(manager.tokenBalance(playerId) == expectedTokens,
                 "token balance must be " + expectedTokens + ", was " + manager.tokenBalance(playerId));
 
@@ -150,6 +160,88 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
+    /**
+     * Starting in the Nether resolves the configured columns through the Nether
+     * adapter: waypoints land inside its safe scan window and the marker blocks
+     * are actually placed there.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_e")
+    public static void netherExpeditionResolvesRoute(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel nether = server.getLevel(Level.NETHER);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        BlockPos terminalPos = new BlockPos(0, 80, 0);
+        clearAndFloor(nether, terminalPos);
+        nether.setBlock(terminalPos, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState(), 3);
+        player.teleportTo(nether, 1.5, 80.0, 0.5, Set.of(), 0f, 0f);
+        useBlockAt(nether, player, terminalPos);
+
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        UUID playerId = player.getUUID();
+        ExpeditionRun run = manager.activeRun(playerId).orElseThrow(
+                () -> new IllegalStateException("terminal interaction must start a nether run"));
+        helper.assertTrue("minecraft:the_nether".equals(run.definition().dimension()),
+                "run must target the nether, was " + run.definition().dimension());
+
+        for (Waypoint w : run.checkpoints()) {
+            helper.assertTrue(w.y() >= 33 && w.y() <= 122,
+                    "nether checkpoint must resolve inside the safe scan window, was " + w.y());
+            helper.assertTrue(nether.getBlockState(ExpeditionManager.toPos(w))
+                            .is(ModBlocks.EXPEDITION_CHECKPOINT.get()),
+                    "nether checkpoint marker must be placed at " + w);
+        }
+        helper.assertTrue(nether.getBlockState(ExpeditionManager.toPos(run.exit()))
+                        .is(ModBlocks.EXPEDITION_EXIT.get()),
+                "nether exit marker must be placed");
+
+        // End any foreign active runs (test retries leak mock players) so
+        // marker removal is verifiable deterministically.
+        for (ExpeditionRun other : manager.runs()) {
+            if (other.isActive() && !other.playerId().equals(playerId)) {
+                other.fail();
+            }
+        }
+        manager.failRun(player);
+        for (Waypoint w : run.checkpoints()) {
+            helper.assertTrue(nether.getBlockState(ExpeditionManager.toPos(w)).isAir(),
+                    "nether markers must be removed when the run ends");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Dimensions without a configured expedition and adapter — here the End —
+     * refuse to start a run: the terminal click leaves no active expedition.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_f")
+    public static void unsupportedDimensionRejected(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel end = server.getLevel(Level.END);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        BlockPos terminalPos = new BlockPos(0, 60, 0);
+        clearAndFloor(end, terminalPos);
+        end.setBlock(terminalPos, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState(), 3);
+        player.teleportTo(end, 1.5, 60.0, 0.5, Set.of(), 0f, 0f);
+        useBlockAt(end, player, terminalPos);
+
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
+                "no run may start in an unsupported dimension");
+        helper.succeed();
+    }
+
+    /** Makes {@code terminalPos} clickable: sturdy floor below, air above and beside. */
+    private static void clearAndFloor(ServerLevel level, BlockPos terminalPos) {
+        for (int dx = 0; dx <= 1; dx++) {
+            BlockPos base = terminalPos.east(dx);
+            level.setBlock(base.below(), Blocks.NETHERRACK.defaultBlockState(), 3);
+            level.setBlock(base, Blocks.AIR.defaultBlockState(), 3);
+            level.setBlock(base.above(), Blocks.AIR.defaultBlockState(), 3);
+        }
+    }
+
     private static ExpeditionRun startExpedition(GameTestHelper helper, ExpeditionManager manager,
             ServerPlayer player) {
         // Interact with a real terminal block via the same useWithoutItem path a
@@ -168,10 +260,14 @@ public final class ExpeditionGameTests {
      * handles genuine player input, including reach checks.
      */
     private static void useBlockAt(GameTestHelper helper, ServerPlayer player, BlockPos absolute) {
+        useBlockAt(helper.getLevel(), player, absolute);
+    }
+
+    private static void useBlockAt(ServerLevel level, ServerPlayer player, BlockPos absolute) {
         player.setPos(absolute.getX() + 0.5, absolute.getY() + 1.0, absolute.getZ() + 0.5);
         BlockHitResult hit = new BlockHitResult(
                 Vec3.atCenterOf(absolute), Direction.UP, absolute, false);
-        player.gameMode.useItemOn(player, helper.getLevel(),
+        player.gameMode.useItemOn(player, level,
                 player.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND, hit);
     }
 }

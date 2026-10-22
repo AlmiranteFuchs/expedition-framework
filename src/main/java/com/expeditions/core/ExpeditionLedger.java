@@ -56,6 +56,16 @@ public final class ExpeditionLedger {
                 .anyMatch(r -> r.isActive() && !r.playerId().equals(excludePlayerId));
     }
 
+    /**
+     * Whether another player has an active run in {@code dimension}. Marker
+     * blocks are shared per dimension, so this scopes the cleanup check.
+     */
+    public boolean anyOtherActiveRunInDimension(UUID excludePlayerId, String dimension) {
+        return runs.values().stream()
+                .anyMatch(r -> r.isActive() && !r.playerId().equals(excludePlayerId)
+                        && r.definition().dimension().equals(dimension));
+    }
+
     public int tokenBalance(UUID playerId) {
         return tokens.getOrDefault(playerId, 0);
     }

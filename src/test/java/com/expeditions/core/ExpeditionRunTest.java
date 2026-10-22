@@ -123,27 +123,45 @@ class ExpeditionRunTest {
     @Test
     void rewardCanBeMarkedExactlyOnceAfterCompletion() {
         ExpeditionRun run = fullyActivatedRun();
-        assertThrows(IllegalStateException.class, run::markRewarded);
+        assertThrows(IllegalStateException.class, () -> run.markRewarded(8));
         run.complete();
-        run.markRewarded();
+        run.markRewarded(8);
         assertTrue(run.isRewarded());
-        assertThrows(IllegalStateException.class, run::markRewarded);
+        assertEquals(8, run.tokensAwarded());
+        assertThrows(IllegalStateException.class, () -> run.markRewarded(8));
     }
 
     @Test
     void failedRunCannotBeRewarded() {
         ExpeditionRun run = fullyActivatedRun();
         run.fail();
-        assertThrows(IllegalStateException.class, run::markRewarded);
+        assertThrows(IllegalStateException.class, () -> run.markRewarded(8));
         assertFalse(run.isRewarded());
+    }
+
+    @Test
+    void elapsedTicksCountsFromStartTime() {
+        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), UUID.randomUUID(),
+                definition(), List.of(CP1, CP2, CP3), EXIT, 1000L);
+        assertEquals(1000L, run.startedGameTime());
+        assertEquals(0L, run.elapsedTicks(1000L));
+        assertEquals(250L, run.elapsedTicks(1250L));
+    }
+
+    @Test
+    void unknownStartTimeNeverElapses() {
+        ExpeditionRun run = newRun(); // 5-arg start leaves timing unknown
+        assertEquals(ExpeditionRun.UNKNOWN_START, run.startedGameTime());
+        assertEquals(ExpeditionRun.UNKNOWN_START, run.elapsedTicks(99999L));
     }
 
     @Test
     void restoredRunPreservesState() {
         ExpeditionRun run = ExpeditionRun.restore(UUID.randomUUID(), UUID.randomUUID(),
-                definition(), List.of(CP1, CP2, CP3), EXIT,
-                ExpeditionStatus.ACTIVE, 2, false);
+                definition(), List.of(CP1, CP2, CP3), EXIT, 500L,
+                ExpeditionStatus.ACTIVE, 2, false, 0);
         assertEquals(2, run.completedCheckpoints());
+        assertEquals(500L, run.startedGameTime());
         assertEquals(CP3, run.nextCheckpoint().orElseThrow());
     }
 }
