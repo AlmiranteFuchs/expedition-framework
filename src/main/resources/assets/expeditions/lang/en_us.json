@@ -1,0 +1,6 @@
+{
+  "block.expeditions.expedition_terminal": "Expedition Terminal",
+  "itemGroup.expeditions": "Expedition Framework",
+  "message.expeditions.no_active_expedition": "Expedition framework initialized. No expedition is currently active.",
+  "message.expeditions.expedition_active": "An expedition is currently active."
+}
