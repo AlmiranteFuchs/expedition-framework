@@ -13,6 +13,7 @@
   "message.expeditions.expedition_failed": "Your expedition has failed.",
   "message.expeditions.expedition_abandoned": "Expedition abandoned.",
   "message.expeditions.expedition_resumed": "Your expedition is still active. Use /expeditions status for your next objective.",
+  "message.expeditions.expedition_not_restored": "Your expedition could not be restored and has failed.",
   "message.expeditions.balance": "Expedition tokens: %1$s",
   "message.expeditions.status_none": "No active expedition."
 }

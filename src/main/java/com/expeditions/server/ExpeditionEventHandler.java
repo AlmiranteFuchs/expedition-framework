@@ -33,16 +33,33 @@ public final class ExpeditionEventHandler {
     }
 
     /**
-     * On login, remind returning players of an expedition left in progress.
-     * Disconnects never complete or reward a run; an active run simply resumes.
+     * On login, apply the recovery policy: a valid active run resumes (the
+     * player is told where to go next), an unrecoverable one is failed
+     * closed. Disconnects never complete or reward a run.
      */
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             ExpeditionManager manager = ExpeditionManager.get(player.server);
-            manager.activeRun(player.getUUID()).ifPresent(run ->
-                    player.sendSystemMessage(Component.translatable(
-                            "message.expeditions.expedition_resumed")));
+            boolean hadRun = manager.activeRun(player.getUUID()).isPresent();
+            manager.resumeOrFail(player).ifPresentOrElse(
+                    run -> player.sendSystemMessage(Component.translatable(
+                            "message.expeditions.expedition_resumed")),
+                    () -> {
+                        if (hadRun) {
+                            player.sendSystemMessage(Component.translatable(
+                                    "message.expeditions.expedition_not_restored"));
+                        }
+                    });
         }
+    }
+
+    /**
+     * After the server finishes starting, remove marker blocks that no active
+     * run references (e.g. left behind by a crash between chunk save and the
+     * expedition data save).
+     */
+    public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        ExpeditionManager.pruneOrphanMarkers(event.getServer());
     }
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {

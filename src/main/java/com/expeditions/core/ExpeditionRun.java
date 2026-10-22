@@ -70,11 +70,23 @@ public final class ExpeditionRun {
 
     /**
      * Restores a run from persisted state. Only used by saved-data loading.
+     *
+     * @throws IllegalArgumentException if the persisted shape is structurally
+     *         invalid (callers treat it as a corrupt record and skip it)
      */
     public static ExpeditionRun restore(UUID runId, UUID playerId, ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, long startedGameTime,
             ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
             int tokensAwarded) {
+        if (checkpoints.isEmpty()) {
+            throw new IllegalArgumentException("Restored run must contain at least one checkpoint");
+        }
+        if (completedCheckpoints < 0 || completedCheckpoints > checkpoints.size()) {
+            throw new IllegalArgumentException("Restored checkpoint progress out of range");
+        }
+        if (rewarded && status != ExpeditionStatus.COMPLETED) {
+            throw new IllegalArgumentException("Only completed runs may be marked rewarded");
+        }
         return new ExpeditionRun(runId, playerId, definition, checkpoints, exit, startedGameTime,
                 status, completedCheckpoints, rewarded, tokensAwarded);
     }

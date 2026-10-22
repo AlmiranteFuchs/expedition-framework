@@ -71,7 +71,9 @@ public final class ExpeditionLedger {
     }
 
     /**
-     * Adds tokens to a player's balance.
+     * Adds tokens to a player's balance. Saturates at
+     * {@link Integer#MAX_VALUE} rather than overflowing into a negative
+     * balance.
      *
      * @throws IllegalArgumentException if {@code amount} is negative
      */
@@ -79,7 +81,8 @@ public final class ExpeditionLedger {
         if (amount < 0) {
             throw new IllegalArgumentException("Token amount must be >= 0");
         }
-        tokens.merge(playerId, amount, Integer::sum);
+        tokens.merge(playerId, amount,
+                (balance, add) -> (int) Math.min(Integer.MAX_VALUE, (long) balance + add));
     }
 
     /** All token balances, for persistence. */
@@ -92,8 +95,16 @@ public final class ExpeditionLedger {
         runs.put(run.playerId(), run);
     }
 
-    /** Restores a token balance loaded from persistence. */
+    /**
+     * Restores a token balance loaded from persistence.
+     *
+     * @throws IllegalArgumentException if {@code balance} is negative — a
+     *         corrupt record; callers skip it rather than trusting the value
+     */
     public void restoreTokens(UUID playerId, int balance) {
+        if (balance < 0) {
+            throw new IllegalArgumentException("Token balance must be >= 0");
+        }
         tokens.put(playerId, balance);
     }
 }

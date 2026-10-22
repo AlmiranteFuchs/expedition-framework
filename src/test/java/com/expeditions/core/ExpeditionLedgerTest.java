@@ -65,6 +65,41 @@ class ExpeditionLedgerTest {
     }
 
     @Test
+    void tokenBalancesSaturateAtMaxValue() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        ledger.addTokens(player, Integer.MAX_VALUE - 5);
+        ledger.addTokens(player, 100);
+        assertEquals(Integer.MAX_VALUE, ledger.tokenBalance(player));
+    }
+
+    @Test
+    void restoreRejectsNegativeBalance() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        assertThrows(IllegalArgumentException.class,
+                () -> ledger.restoreTokens(player, -12));
+        assertEquals(0, ledger.tokenBalance(player));
+    }
+
+    @Test
+    void dimensionScopedActiveRunCheck() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID a = UUID.randomUUID();
+        UUID b = UUID.randomUUID();
+        ExpeditionDefinition nether = new ExpeditionDefinition("expeditions:nether",
+                "Nether", 0, "minecraft:the_nether",
+                new ExpeditionRoute(List.of(new RouteAnchor(1, 1)), new RouteAnchor(2, 2)),
+                16, 0, 0);
+        ledger.startRun(runFor(a));
+        ledger.startRun(ExpeditionRun.start(UUID.randomUUID(), b, nether,
+                List.of(new Waypoint(1, 60, 1)), new Waypoint(2, 60, 2)));
+        assertTrue(ledger.anyOtherActiveRunInDimension(a, "minecraft:overworld") == false);
+        assertTrue(ledger.anyOtherActiveRunInDimension(a, "minecraft:the_nether"));
+        assertTrue(ledger.anyOtherActiveRunInDimension(b, "minecraft:overworld"));
+    }
+
+    @Test
     void restoredStateRoundTrips() {
         ExpeditionLedger ledger = new ExpeditionLedger();
         UUID player = UUID.randomUUID();

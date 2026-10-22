@@ -107,19 +107,32 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
   real block reach.
 - **Death failure** — `LivingDeathEvent` fails active runs, no reward.
 - **Token rewards** — guaranteed tokens plus an optional time bonus, granted
-  exactly once on completion and persisted per player. Legacy runs restored
-  from older saves have unknown start times and never earn a bonus.
-- **Persistence** — runs (incl. resolved route, progress, timing and award) and
-  token balances in the overworld `DimensionDataStorage`; survives restart and
-  disconnect.
+  exactly once on completion and persisted per player. Balances saturate at
+  `Integer.MAX_VALUE` rather than overflowing.
+- **Persistence** — runs (incl. resolved route, progress, timing and award),
+  token balances and live marker positions in the overworld
+  `DimensionDataStorage`. Runs and balances live in **one file**, so a crash
+  can only roll both back together — a reward and its `rewarded` flag can
+  never disagree.
+- **Recovery policy (fail-closed)** — on login and on terminal use, an active
+  run is validated against the world: its dimension must exist and every
+  marker block must still be present. Valid runs resume; anything else is
+  terminated FAILED (no reward) and its surviving markers are cleaned up, so a
+  stale run can never strand a player.
+- **Malformed-data handling** — each persisted record is validated on load;
+  corrupt runs or balances are skipped and logged instead of losing every
+  player's state.
+- **Orphan markers** — every placed marker is tracked; on server start,
+  tracked markers no active run references (e.g. orphaned by a crash) are
+  removed.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 39 unit tests + 6 GameTest in-game tests.
+- **Tests** — 43 unit tests + 12 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 39 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **6/6 game tests pass** on a real dedicated
+- `./gradlew test` — 43 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **12/12 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -127,14 +140,29 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
   - the exit refuses unfinished runs,
   - the Nether expedition resolves inside the safe scan window and its markers
     are placed and removed in the Nether,
-  - the End refuses to start a run (unsupported dimension).
+  - the End refuses to start a run (unsupported dimension),
+  - save→load preserves active runs, progress, terminal states, reward flags
+    and balances,
+  - malformed run/balance records are skipped without corrupting the rest,
+  - a run whose markers vanished fails closed on resume (no reward, cleanup),
+  - a valid run resumes on reconnect with progress intact and blocks a second
+    concurrent run,
+  - a rewarded run cannot be re-completed or re-rewarded after reload,
+  - orphaned tracked markers are pruned on startup while live runs keep theirs.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
 ## Known limitations
 
 - Not yet verified by a **human client session** — game tests drive the real
-  server interaction path, but no GUI click-through was performed.
+  server interaction path, but no GUI click-through was performed. Real
+  disconnect/reconnect was not simulated either; reconnect behavior is tested
+  through `resumeOrFail`, the same path the login handler uses.
+- **Crash consistency:** rewards and run state live in one saved-data file, so
+  a crash can only roll both back consistently (worst case: a completion paid
+  but forgotten — the run is still active or failed on reload, never
+  double-paid). Durability beyond Minecraft's own save intervals is not
+  guaranteed.
 - Concurrent players share the configured marker positions per dimension
   (markers are shared world blocks); each run still validates its own progress
   independently.
@@ -142,14 +170,11 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
   datapack-driven, and each dimension needs an adapter to be supported.
 - The Nether adapter guarantees a safe marker spot but not a safe *path*
   between markers — routes still need coordinates chosen by hand.
-- A player who abandons mid-run can clean up via `/expeditions abandon`; runs
-  left active by a permanently-offline player keep their markers until another
-  run in that dimension ends.
+- A permanently-offline player's active run keeps its markers until they next
+  log in (recovery policy applies on login) or another run in that dimension
+  ends.
 - Marker blocks are indestructible by design; the terminal is not protected.
 - Placeholder textures.
-- Persistence guarantee: a server crash between the completion reward and the
-  next world save could, in principle, lose the `rewarded` flag — the run record
-  is written by the standard saved-data dirty mechanism.
 
 ## Architecture
 
@@ -163,9 +188,11 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
   Overworld/Nether implementations + `ExpeditionAdapters` registry. This is the
   extension point for dimension support; the lifecycle never assumes terrain.
 - `com.expeditions.server` — `ExpeditionManager` (server facade: start/complete/
-  fail, per-dimension route resolution, marker placement/removal, reward award),
-  `ExpeditionSavedData` (ledger ↔ NBT in overworld `DimensionDataStorage`),
-  `ExpeditionEventHandler` (death + commands).
+  fail, per-dimension route resolution, marker placement/removal/tracking,
+  `resumeOrFail` recovery, `pruneOrphanMarkers` on start, reward award),
+  `ExpeditionSavedData` (ledger + live markers ↔ NBT in overworld
+  `DimensionDataStorage`, per-record fault isolation on load),
+  `ExpeditionEventHandler` (death + login recovery + startup pruning + commands).
 - `com.expeditions.block` — terminal/checkpoint/exit blocks delegating to the
   manager. `com.expeditions.registry` — `DeferredRegister` wiring.
 - `com.expeditions.gametest` — `ExpeditionGameTests` (6 tests, batches a–f).

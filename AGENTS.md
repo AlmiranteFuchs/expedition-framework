@@ -41,8 +41,26 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Runs are per-player, keyed by UUID in `ExpeditionLedger`. Token balances are a
   separate map in the same ledger, persisted with it. Runs record
   `startedGameTime` (`UNKNOWN_START` = legacy/no bonus) and `tokensAwarded`.
+  Balances saturate at `Integer.MAX_VALUE`; `restoreTokens` rejects negatives.
 - Run state is world-scoped (`SavedData`), not static/global. Mutations must
-  `setDirty()`.
+  `setDirty()`. Runs + balances + live markers live in ONE file — a crash rolls
+  all back together, so reward state can never split (this is the duplicate-
+  reward guarantee; keep it that way).
+- `ExpeditionRun.restore` validates persisted shape (non-empty checkpoints,
+  in-range progress, reward only on COMPLETED); `ExpeditionSavedData.load`
+  skips+logs malformed records per entry — never let one corrupt record kill
+  the whole file.
+
+## Recovery policy (fail-closed)
+
+- `ExpeditionManager.resumeOrFail(player)` — run on login and on terminal use.
+  A run resumes only if its dimension exists AND every marker block is still
+  present; otherwise it's failed (no reward) and surviving markers are removed.
+- Every placed marker is tracked in `ExpeditionSavedData.liveMarkers`; on
+  server start `pruneOrphanMarkers` removes tracked markers no active run
+  references (crash rolled back the run but not the chunk).
+- Disconnect = no reward, no completion; the run stays ACTIVE and is validated
+  on next login. One active run per player is enforced by the ledger.
 
 ## Gameplay shape (milestone 3)
 
@@ -77,7 +95,11 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   `server.getLevel(Level.NETHER|END)`, teleport the mock player with
   `player.teleportTo(level, x, y, z, Set.of(), yaw, pitch)`, and pass that level
   to `useItemOn`. Mock players leaked by retries can leave foreign active runs —
-  fail them before asserting marker cleanup.
+  fail them before asserting marker cleanup, and remember the shared ledger
+  holds their runs when asserting on save/load contents.
+- Persistence tests: `ExpeditionSavedData.save(tag, registryAccess)` →
+  `ExpeditionSavedData.load(tag, ...)` round-trips in game tests; corrupt the
+  tag in between to test malformed-data handling.
 - `ExpeditionGameTests` uses `makeMockServerPlayerInLevel()` (deprecated in
   1.21.1 but functional) — revisit if a better mock player API exists.
 
@@ -96,7 +118,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Milestone 3 verified: `build` + 39 unit tests + 6/6 GameTest in-game tests pass
-(full loop w/ bonus, death fail, order/dup rejection, unfinished exit, nether
-route resolution + cleanup, unsupported-dimension refusal). Human client
-click-through not performed.
+Persistence milestone verified: `build` + 43 unit tests + 12/12 GameTest
+in-game tests pass (full loop w/ bonus, death fail, order/dup rejection,
+unfinished exit, nether resolution + cleanup, unsupported-dimension refusal,
+save/load round-trip, malformed-record skipping, fail-closed resume, second-run
+rejection, reward duplication prevention after reload, orphan-marker pruning).
+Human client click-through and real disconnect not simulated.

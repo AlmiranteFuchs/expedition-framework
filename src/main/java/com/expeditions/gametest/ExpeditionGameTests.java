@@ -1,16 +1,21 @@
 package com.expeditions.gametest;
 
+import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.ExpeditionManager;
+import com.expeditions.server.ExpeditionSavedData;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -230,6 +235,264 @@ public final class ExpeditionGameTests {
         helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
                 "no run may start in an unsupported dimension");
         helper.succeed();
+    }
+
+    /**
+     * Save→load round trip: an active mid-run player and a completed, rewarded
+     * player both come back with identical state — status, progress, resolved
+     * route, reward flags and token balances.
+     */
+    @GameTest(template = "arena", timeoutTicks = 600, batch = "expedition_g")
+    public static void persistenceRoundTrips(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+
+        ServerPlayer active = helper.makeMockServerPlayerInLevel();
+        ExpeditionRun activeRun = startExpedition(helper, manager, active);
+        manager.activateCheckpoint(active, ExpeditionManager.toPos(activeRun.checkpoints().get(0)));
+
+        ServerPlayer done = helper.makeMockServerPlayerInLevel();
+        ExpeditionRun doneRun = startExpedition(helper, manager, done);
+        for (Waypoint w : doneRun.checkpoints()) {
+            manager.activateCheckpoint(done, ExpeditionManager.toPos(w));
+        }
+        manager.completeRun(done);
+        int expectedBalance = manager.tokenBalance(done.getUUID());
+
+        ExpeditionSavedData loaded = roundTrip(helper, server);
+        ExpeditionLedger ledger = loaded.ledger();
+
+        ExpeditionRun restoredActive = ledger.activeRun(active.getUUID()).orElseThrow(
+                () -> new IllegalStateException("active run must survive a save/load"));
+        helper.assertTrue(restoredActive.status() == ExpeditionStatus.ACTIVE,
+                "restored run must be ACTIVE");
+        helper.assertTrue(restoredActive.completedCheckpoints() == 1,
+                "checkpoint progress must survive, was " + restoredActive.completedCheckpoints());
+        helper.assertTrue(restoredActive.checkpoints().equals(activeRun.checkpoints()),
+                "resolved route must be preserved");
+        helper.assertTrue(restoredActive.startedGameTime() == activeRun.startedGameTime(),
+                "start time must be preserved");
+
+        ExpeditionRun restoredDone = ledger.run(done.getUUID()).orElseThrow(
+                () -> new IllegalStateException("completed run must survive a save/load"));
+        helper.assertTrue(restoredDone.status() == ExpeditionStatus.COMPLETED,
+                "terminal state must survive");
+        helper.assertTrue(restoredDone.isRewarded(),
+                "reward flag must survive");
+        helper.assertTrue(restoredDone.tokensAwarded() == doneRun.tokensAwarded(),
+                "awarded amount must survive");
+        helper.assertTrue(ledger.tokenBalance(done.getUUID()) == expectedBalance,
+                "token balance must survive");
+
+        manager.failRun(active); // leave no active run behind for later tests
+        helper.succeed();
+    }
+
+    /**
+     * Malformed persisted records are skipped without corrupting the rest:
+     * an unknown status and a structurally invalid run are dropped while a
+     * valid balance still loads; a negative balance entry is dropped.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_h")
+    public static void malformedSaveDataSkipped(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        startExpedition(helper, manager, player);
+        manager.failRun(player);
+
+        ExpeditionSavedData data = savedData(server);
+        CompoundTag tag = data.save(new CompoundTag(), helper.getLevel().registryAccess());
+        // Corrupt every run record (the shared ledger may hold runs from other
+        // tests' mock players): an unknown status and stripped checkpoints.
+        for (Tag t : tag.getList("Runs", Tag.TAG_COMPOUND)) {
+            CompoundTag runTag = (CompoundTag) t;
+            runTag.putString("Status", "BOGUS");
+            runTag.put("Checkpoints", new ListTag());
+        }
+
+        CompoundTag goodBalance = new CompoundTag();
+        goodBalance.putUUID("Player", player.getUUID());
+        goodBalance.putInt("Balance", 42);
+        CompoundTag badBalance = new CompoundTag();
+        badBalance.putUUID("Player", UUID.randomUUID());
+        badBalance.putInt("Balance", -99);
+        ListTag tokens = new ListTag();
+        tokens.add(goodBalance);
+        tokens.add(badBalance);
+        tag.put("Tokens", tokens);
+
+        ExpeditionSavedData loaded =
+                ExpeditionSavedData.load(tag, helper.getLevel().registryAccess());
+        helper.assertTrue(loaded.ledger().runs().isEmpty(),
+                "corrupt run records must be skipped");
+        helper.assertTrue(loaded.ledger().tokenBalance(player.getUUID()) == 42,
+                "valid balance must still load");
+        helper.assertTrue(loaded.ledger().tokenBalances().size() == 1,
+                "negative balance must be skipped");
+        helper.succeed();
+    }
+
+    /**
+     * Recovery policy — invalid world state: a run whose marker blocks vanished
+     * (crash, rollback, admin removal) fails closed on resume: FAILED, no
+     * reward, remaining markers cleaned up.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_i")
+    public static void resumeFailsWhenMarkersVanish(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        UUID playerId = player.getUUID();
+
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        // Simulate losing a marker (e.g. rolled-back chunk): remove the block
+        // directly, bypassing the manager's tracking.
+        level.removeBlock(ExpeditionManager.toPos(run.checkpoints().get(0)), false);
+
+        // End foreign active runs (test retries leak mock players) so marker
+        // cleanup is not held back by runs sharing the configured positions.
+        for (ExpeditionRun other : manager.runs()) {
+            if (other.isActive() && !other.playerId().equals(playerId)) {
+                other.fail();
+            }
+        }
+        helper.assertTrue(manager.resumeOrFail(player).isEmpty(),
+                "unrecoverable run must not resume");
+        helper.assertTrue(run.status() == ExpeditionStatus.FAILED,
+                "unrecoverable run must fail closed, was " + run.status());
+        helper.assertTrue(manager.tokenBalance(playerId) == 0,
+                "no tokens may be granted");
+        for (Waypoint w : run.checkpoints()) {
+            helper.assertTrue(level.getBlockState(ExpeditionManager.toPos(w)).isAir(),
+                    "surviving markers must be cleaned up");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Recovery policy — valid state: a reconnect-style resume keeps the run
+     * with its progress, and starting a second concurrent run stays impossible.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_j")
+    public static void resumeKeepsValidRunAndBlocksSecondStart(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+
+        ExpeditionRun resumed = manager.resumeOrFail(player).orElseThrow(
+                () -> new IllegalStateException("valid run must resume"));
+        helper.assertTrue(resumed == run, "the same run instance must resume");
+        helper.assertTrue(resumed.completedCheckpoints() == 1,
+                "progress must be intact after resume");
+
+        boolean secondRunRejected = false;
+        try {
+            manager.startRun(player);
+        } catch (IllegalStateException e) {
+            secondRunRejected = true;
+        }
+        helper.assertTrue(secondRunRejected,
+                "a second active run must not start while one is valid");
+
+        manager.failRun(player); // leave no active run behind for later tests
+        helper.succeed();
+    }
+
+    /**
+     * Reward integrity across reload: a completed, rewarded run restores as
+     * terminal — it cannot be completed, rewarded or interacted with again.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_k")
+    public static void rewardNotDuplicatedByReloadOrRepeat(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        UUID playerId = player.getUUID();
+
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        for (Waypoint w : run.checkpoints()) {
+            manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+        }
+        manager.completeRun(player);
+        int balance = manager.tokenBalance(playerId);
+
+        // Repeat completion attempt: no active run exists, so nothing happens.
+        boolean repeatRejected = false;
+        try {
+            manager.completeRun(player);
+        } catch (IllegalStateException e) {
+            repeatRejected = true;
+        }
+        helper.assertTrue(repeatRejected, "a terminal run must not complete again");
+        helper.assertTrue(manager.tokenBalance(playerId) == balance,
+                "repeat completion must not pay out again");
+
+        // Reload: the restored run is terminal and already rewarded.
+        ExpeditionSavedData loaded = roundTrip(helper, helper.getLevel().getServer());
+        ExpeditionRun restored = loaded.ledger().run(playerId).orElseThrow(
+                () -> new IllegalStateException("run must survive the save/load"));
+        boolean secondRewardRejected = false;
+        try {
+            restored.markRewarded(8);
+        } catch (IllegalStateException e) {
+            secondRewardRejected = true;
+        }
+        helper.assertTrue(secondRewardRejected,
+                "a restored rewarded run must reject another reward");
+        helper.assertTrue(loaded.ledger().tokenBalance(playerId) == balance,
+                "balance must be unchanged after reload");
+        helper.succeed();
+    }
+
+    /**
+     * Startup cleanup: tracked marker blocks no active run references (e.g.
+     * orphaned by a crash) are removed, while markers of a live run survive.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_l")
+    public static void orphanMarkersPrunedOnStart(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        MinecraftServer server = level.getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ExpeditionSavedData data = savedData(server);
+
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionRun run = startExpedition(helper, manager, player);
+
+        // Simulate a crash-orphaned marker: block placed + tracked, but no
+        // run references it.
+        BlockPos orphanPos = ExpeditionManager.toPos(run.exit()).offset(3, 0, 0);
+        level.setBlock(orphanPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
+        data.trackMarker("minecraft:overworld", orphanPos);
+
+        ExpeditionManager.pruneOrphanMarkers(server);
+
+        helper.assertTrue(level.getBlockState(orphanPos).isAir(),
+                "orphaned marker must be pruned");
+        helper.assertTrue(!savedData(server).liveMarkers().values().stream()
+                        .anyMatch(set -> set.contains(orphanPos)),
+                "orphaned marker must be untracked");
+        for (Waypoint w : run.checkpoints()) {
+            helper.assertTrue(level.getBlockState(ExpeditionManager.toPos(w))
+                            .is(ModBlocks.EXPEDITION_CHECKPOINT.get()),
+                    "live run's markers must survive pruning");
+        }
+
+        manager.failRun(player); // leave no active run behind for later tests
+        helper.succeed();
+    }
+
+    private static ExpeditionSavedData savedData(MinecraftServer server) {
+        return server.overworld().getDataStorage().computeIfAbsent(
+                ExpeditionSavedData.FACTORY, ExpeditionSavedData.DATA_NAME);
+    }
+
+    /** Serializes the live saved data and loads it into a fresh instance. */
+    private static ExpeditionSavedData roundTrip(GameTestHelper helper, MinecraftServer server) {
+        CompoundTag tag = savedData(server)
+                .save(new CompoundTag(), helper.getLevel().registryAccess());
+        return ExpeditionSavedData.load(tag, helper.getLevel().registryAccess());
     }
 
     /** Makes {@code terminalPos} clickable: sturdy floor below, air above and beside. */

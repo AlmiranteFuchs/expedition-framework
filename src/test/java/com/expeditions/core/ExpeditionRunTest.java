@@ -164,4 +164,28 @@ class ExpeditionRunTest {
         assertEquals(500L, run.startedGameTime());
         assertEquals(CP3, run.nextCheckpoint().orElseThrow());
     }
+
+    @Test
+    void restoreRejectsCorruptShapes() {
+        UUID runId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        // No checkpoints at all: the run could never progress.
+        assertThrows(IllegalArgumentException.class,
+                () -> ExpeditionRun.restore(runId, playerId, definition(),
+                        List.of(), EXIT, 0L, ExpeditionStatus.ACTIVE, 0, false, 0));
+        // Progress beyond the checkpoint list.
+        assertThrows(IllegalArgumentException.class,
+                () -> ExpeditionRun.restore(runId, playerId, definition(),
+                        List.of(CP1, CP2, CP3), EXIT, 0L,
+                        ExpeditionStatus.ACTIVE, 4, false, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> ExpeditionRun.restore(runId, playerId, definition(),
+                        List.of(CP1, CP2, CP3), EXIT, 0L,
+                        ExpeditionStatus.ACTIVE, -1, false, 0));
+        // A failed run must not persist a granted reward.
+        assertThrows(IllegalArgumentException.class,
+                () -> ExpeditionRun.restore(runId, playerId, definition(),
+                        List.of(CP1, CP2, CP3), EXIT, 0L,
+                        ExpeditionStatus.FAILED, 3, true, 8));
+    }
 }

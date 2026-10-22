@@ -12,7 +12,9 @@ import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -97,10 +99,13 @@ public final class ExpeditionManager {
                 .orElseThrow(() -> new IllegalStateException(
                         "No safe expedition route could be resolved in this dimension"));
 
+        String dimension = definition.dimension();
         for (BlockPos pos : checkpointPositions) {
             level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
+            data.trackMarker(dimension, pos);
         }
         level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
+        data.trackMarker(dimension, exitPos);
 
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(), definition,
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
@@ -155,6 +160,69 @@ public final class ExpeditionManager {
         return run;
     }
 
+    /**
+     * Recovery policy for a returning or interacting player: resume their
+     * active run when its world state is still valid — the dimension exists
+     * and every marker the run depends on is present. Otherwise the run is
+     * terminated as failed (no reward) and its remaining markers are cleaned
+     * up, so a stale run can never strand a player.
+     */
+    public Optional<ExpeditionRun> resumeOrFail(ServerPlayer player) {
+        Optional<ExpeditionRun> active = ledger.activeRun(player.getUUID());
+        if (active.isEmpty() || isRunRecoverable(active.get())) {
+            return active;
+        }
+        ExpeditionRun run = active.get();
+        run.fail();
+        data.setDirty();
+        cleanupMarkers(run);
+        return Optional.empty();
+    }
+
+    /**
+     * Removes tracked marker blocks no active run still references. Called on
+     * server start: a crash can roll back the run record while the marker
+     * blocks were already flushed with their chunk, which would otherwise
+     * leave indestructible blocks behind forever.
+     */
+    public static void pruneOrphanMarkers(MinecraftServer server) {
+        ExpeditionManager manager = get(server);
+        for (Map.Entry<String, Set<BlockPos>> entry : manager.data.liveMarkers().entrySet()) {
+            ServerLevel level = manager.levelFor(entry.getKey());
+            if (level == null) {
+                continue; // unknown dimension: leave the tracking record alone
+            }
+            for (BlockPos pos : Set.copyOf(entry.getValue())) {
+                if (!manager.isReferencedByActiveRun(entry.getKey(), pos)) {
+                    removeMarkerAt(level, pos);
+                    manager.data.untrackMarker(entry.getKey(), pos);
+                }
+            }
+        }
+        manager.data.setDirty();
+    }
+
+    private boolean isReferencedByActiveRun(String dimension, BlockPos pos) {
+        Waypoint waypoint = toWaypoint(pos);
+        return ledger.runs().stream()
+                .filter(ExpeditionRun::isActive)
+                .filter(r -> r.definition().dimension().equals(dimension))
+                .anyMatch(r -> r.checkpoints().contains(waypoint) || r.exit().equals(waypoint));
+    }
+
+    private boolean isRunRecoverable(ExpeditionRun run) {
+        ServerLevel level = levelFor(run.definition().dimension());
+        if (level == null) {
+            return false;
+        }
+        for (Waypoint w : run.checkpoints()) {
+            if (!level.getBlockState(toPos(w)).is(ModBlocks.EXPEDITION_CHECKPOINT.get())) {
+                return false;
+            }
+        }
+        return level.getBlockState(toPos(run.exit())).is(ModBlocks.EXPEDITION_EXIT.get());
+    }
+
     private void cleanupMarkers(ExpeditionRun run) {
         // Markers are shared per dimension; only remove them once no other
         // active run in that dimension still needs them.
@@ -180,9 +248,16 @@ public final class ExpeditionManager {
         return server.getLevel(ResourceKey.create(Registries.DIMENSION, location));
     }
 
-    private static void removeMarker(ServerLevel level, Waypoint w, BlockState expected) {
-        BlockPos pos = toPos(w);
-        if (level.getBlockState(pos).is(expected.getBlock())) {
+    private void removeMarker(ServerLevel level, Waypoint w, BlockState expected) {
+        removeMarkerAt(level, toPos(w));
+        data.untrackMarker(level.dimension().location().toString(), toPos(w));
+    }
+
+    /** Removes the block at {@code pos} if it is one of our marker blocks. */
+    private static void removeMarkerAt(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.is(ModBlocks.EXPEDITION_CHECKPOINT.get())
+                || state.is(ModBlocks.EXPEDITION_EXIT.get())) {
             level.removeBlock(pos, false);
         }
     }
