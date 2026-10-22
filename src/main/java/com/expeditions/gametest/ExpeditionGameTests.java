@@ -1,5 +1,6 @@
 package com.expeditions.gametest;
 
+import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
@@ -7,6 +8,10 @@ import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionSavedData;
+import com.expeditions.server.data.ExpeditionDefinitions;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -16,6 +21,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -480,6 +486,112 @@ public final class ExpeditionGameTests {
         }
 
         manager.failRun(player); // leave no active run behind for later tests
+        helper.succeed();
+    }
+
+    /**
+     * A datapack expedition definition is parsed into the domain shape: id
+     * from the file path, route anchors, rewards and bonus time converted to
+     * ticks.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_m")
+    public static void datapackDefinitionParses(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Custom Trial",
+                  "dimension": "minecraft:overworld",
+                  "difficulty": 3,
+                  "checkpoints": [[10, 10], [20, 20]],
+                  "exit": [30, 30],
+                  "tokens": 25,
+                  "bonus_tokens": 5,
+                  "bonus_time_seconds": 60
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "custom_trial"),
+                JsonParser.parseString(json));
+        try {
+            ExpeditionDefinitions.reload(entries);
+
+            ExpeditionDefinition def = ExpeditionDefinitions
+                    .forDimension("minecraft:overworld").orElseThrow(
+                            () -> new IllegalStateException("datapack definition must load"));
+            helper.assertTrue(def.id().equals("test:custom_trial"),
+                    "id must come from the file path, was " + def.id());
+            helper.assertTrue(def.displayName().equals("Custom Trial"), "display name must parse");
+            helper.assertTrue(def.route().checkpoints().size() == 2, "route must parse");
+            helper.assertTrue(def.tokenReward() == 25, "tokens must parse");
+            helper.assertTrue(def.bonusTimeTicks() == 1200,
+                    "bonus time must convert seconds to ticks, was " + def.bonusTimeTicks());
+            helper.assertTrue(def.totalReward(600) == 30,
+                    "bonus must apply inside the window");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A datapack definition for the same dimension takes precedence over the
+     * config-defined expedition: the terminal starts the datapack one.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_n")
+    public static void datapackDefinitionShadowsConfig(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Datapack Expedition",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8], [24, 8]],
+                  "exit": [32, 8],
+                  "tokens": 42
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "shadowing"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            helper.assertTrue(run.definition().id().equals("test:shadowing"),
+                    "datapack definition must be used, was " + run.definition().id());
+            helper.assertTrue(run.definition().tokenReward() == 42,
+                    "datapack reward must be used");
+            manager.failRun(player); // leave no active run behind for later tests
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Malformed datapack entries are skipped, not fatal: a bad file never
+     * prevents valid siblings from loading.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_o")
+    public static void malformedDatapackSkipped(GameTestHelper helper) {
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "broken"),
+                JsonParser.parseString("{\"dimension\": \"minecraft:overworld\"}"),
+                ResourceLocation.fromNamespaceAndPath("test", "valid"),
+                JsonParser.parseString("""
+                        {
+                          "dimension": "minecraft:overworld",
+                          "checkpoints": [[1, 1]],
+                          "exit": [2, 2]
+                        }
+                        """));
+        try {
+            ExpeditionDefinitions.reload(entries);
+            helper.assertTrue(ExpeditionDefinitions.all().size() == 1,
+                    "only the valid definition must load, got " + ExpeditionDefinitions.all().size());
+            helper.assertTrue(ExpeditionDefinitions.all().containsKey("test:valid"),
+                    "the valid definition must be present");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
         helper.succeed();
     }
 

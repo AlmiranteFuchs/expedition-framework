@@ -88,6 +88,37 @@ run starts:
 
 Choose columns walkable on foot and within a few hundred blocks of spawn.
 
+## Datapack expeditions
+
+Modpacks can define expeditions in datapacks at
+`data/<namespace>/expeditions/<name>.json` (reloadable with `/reload`):
+
+```json
+{
+  "display_name": "Frozen Waste Trial",
+  "dimension": "minecraft:overworld",
+  "difficulty": 3,
+  "checkpoints": [[48, 16], [96, -24], [144, 48]],
+  "exit": [192, 0],
+  "tokens": 25,
+  "bonus_tokens": 5,
+  "bonus_time_seconds": 60
+}
+```
+
+Required: `dimension`, `checkpoints` (non-empty `[x,z]` pairs), `exit`.
+Optional: `display_name` (defaults to the file path), `difficulty`, `tokens`,
+`bonus_tokens`, `bonus_time_seconds` (all default 0).
+
+Precedence and rules:
+
+- A datapack definition for a dimension **overrides** the config expedition.
+- With multiple datapack definitions for one dimension, the lowest
+  `<namespace>:<name>` id wins.
+- Expeditions still require a dimension **adapter** — a datapack entry cannot
+  enable expeditions in an unsupported dimension.
+- Malformed files are skipped and logged; they never break other definitions.
+
 ## Implemented features (milestone 3)
 
 - **Full playable loop** — terminal → ordered checkpoints → exit → token reward,
@@ -125,14 +156,17 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
 - **Orphan markers** — every placed marker is tracked; on server start,
   tracked markers no active run references (e.g. orphaned by a crash) are
   removed.
+- **Datapack definitions** — expeditions loadable from
+  `data/*/expeditions/*.json`, hot-reloadable via `/reload`, taking precedence
+  over config per dimension.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 43 unit tests + 12 GameTest in-game tests.
+- **Tests** — 43 unit tests + 15 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
 - `./gradlew test` — 43 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **12/12 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **15/15 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -148,7 +182,10 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
   - a valid run resumes on reconnect with progress intact and blocks a second
     concurrent run,
   - a rewarded run cannot be re-completed or re-rewarded after reload,
-  - orphaned tracked markers are pruned on startup while live runs keep theirs.
+  - orphaned tracked markers are pruned on startup while live runs keep theirs,
+  - datapack expedition JSON parses into the domain (rewards, bonus ticks),
+    shadows the config expedition at the terminal, and malformed files are
+    skipped without breaking valid ones.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -166,8 +203,8 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
 - Concurrent players share the configured marker positions per dimension
   (markers are shared world blocks); each run still validates its own progress
   independently.
-- One expedition per dimension; expeditions are config sections, not yet
-  datapack-driven, and each dimension needs an adapter to be supported.
+- One expedition per dimension wins (lowest datapack id or the config
+  section); each dimension still needs an adapter to be supported.
 - The Nether adapter guarantees a safe marker spot but not a safe *path*
   between markers — routes still need coordinates chosen by hand.
 - A permanently-offline player's active run keeps its markers until they next
@@ -195,9 +232,12 @@ Choose columns walkable on foot and within a few hundred blocks of spawn.
   `ExpeditionEventHandler` (death + login recovery + startup pruning + commands).
 - `com.expeditions.block` — terminal/checkpoint/exit blocks delegating to the
   manager. `com.expeditions.registry` — `DeferredRegister` wiring.
-- `com.expeditions.gametest` — `ExpeditionGameTests` (6 tests, batches a–f).
-- `ExpeditionsConfig` — NeoForge server config → `ExpeditionDefinition` per
-  dimension.
+- `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
+  (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
+  snapshot, datapack-over-config precedence).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (15 tests, batches a–o).
+- `ExpeditionsConfig` — NeoForge server config → built-in `ExpeditionDefinition`
+  per dimension, used when no datapack definition covers the dimension.
 
 ## Next milestones
 

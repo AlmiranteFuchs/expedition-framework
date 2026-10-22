@@ -7,6 +7,7 @@ import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.server.data.ExpeditionDefinitions;
 import com.expeditions.server.dimension.ExpeditionAdapters;
 import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import java.util.ArrayList;
@@ -80,7 +81,10 @@ public final class ExpeditionManager {
             throw new IllegalStateException("You already have an active expedition");
         }
         ServerLevel level = player.serverLevel();
-        ExpeditionDefinition definition = ExpeditionsConfig.definitionFor(level.dimension())
+        // Datapack definitions take precedence over the built-in config ones.
+        ExpeditionDefinition definition = ExpeditionDefinitions
+                .forDimension(level.dimension().location().toString())
+                .or(() -> ExpeditionsConfig.definitionFor(level.dimension()))
                 .orElseThrow(() -> new IllegalStateException(
                         "No expedition is available in this dimension"));
         ExpeditionDimensionAdapter adapter = ExpeditionAdapters.forLevel(level)

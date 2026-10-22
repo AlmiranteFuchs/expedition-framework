@@ -62,6 +62,12 @@ public final class ExpeditionEventHandler {
         ExpeditionManager.pruneOrphanMarkers(event.getServer());
     }
 
+    /** Registers the datapack expedition-definition loader. */
+    public static void onAddReloadListener(
+            net.neoforged.neoforge.event.AddReloadListenerEvent event) {
+        event.addListener(new com.expeditions.server.data.ExpeditionDefinitionLoader());
+    }
+
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("expeditions")
                 .then(Commands.literal("balance").executes(ExpeditionEventHandler::balance))

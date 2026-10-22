@@ -62,12 +62,15 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Disconnect = no reward, no completion; the run stays ACTIVE and is validated
   on next login. One active run per player is enforced by the ledger.
 
-## Gameplay shape (milestone 3)
+## Gameplay shape (milestone 4)
 
-- One expedition per dimension, configured in `expeditions-server.toml`
-  sections `[expeditions.overworld]` / `[expeditions.nether]` (checkpoints,
-  exit, tokens, bonusTokens, bonusTimeSeconds; nether has `enabled`).
-  `ExpeditionsConfig.definitionFor(dimension)` → `Optional<ExpeditionDefinition>`.
+- Expedition sources: datapack JSON (`data/*/expeditions/*.json` via
+  `ExpeditionDefinitionLoader` → `ExpeditionDefinitions` immutable snapshot)
+  takes precedence; `expeditions-server.toml` sections
+  `[expeditions.overworld]` / `[expeditions.nether]` are the built-in defaults.
+  Manager lookup: `ExpeditionDefinitions.forDimension(dimId)`
+  `.or(ExpeditionsConfig.definitionFor(dim))`. Multiple datapack defs per
+  dimension → lowest id wins.
 - The terminal picks the expedition for the player's current dimension; no
   definition or no adapter → refusal message, no world changes.
 - Routes are `"x,z"` anchors resolved at run start by the dimension's adapter
@@ -100,6 +103,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Persistence tests: `ExpeditionSavedData.save(tag, registryAccess)` →
   `ExpeditionSavedData.load(tag, ...)` round-trips in game tests; corrupt the
   tag in between to test malformed-data handling.
+- Datapack tests: simulate reloads via `ExpeditionDefinitions.reload(map)` and
+  ALWAYS reset with `reload(Map.of())` in a finally block — the snapshot is a
+  shared static and leaks between tests otherwise.
 - `ExpeditionGameTests` uses `makeMockServerPlayerInLevel()` (deprecated in
   1.21.1 but functional) — revisit if a better mock player API exists.
 
@@ -118,9 +124,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Persistence milestone verified: `build` + 43 unit tests + 12/12 GameTest
-in-game tests pass (full loop w/ bonus, death fail, order/dup rejection,
-unfinished exit, nether resolution + cleanup, unsupported-dimension refusal,
-save/load round-trip, malformed-record skipping, fail-closed resume, second-run
-rejection, reward duplication prevention after reload, orphan-marker pruning).
-Human client click-through and real disconnect not simulated.
+Datapack milestone verified: `build` + 43 unit tests + 15/15 GameTest in-game
+tests pass (all prior coverage plus datapack parsing, config-shadowing
+precedence, malformed-file skipping). Human client click-through and real
+disconnect not simulated.
