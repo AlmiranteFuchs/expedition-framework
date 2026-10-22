@@ -14,6 +14,12 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> EXPEDITION_TERMINAL_ITEM = ITEMS.registerSimpleBlockItem(
             "expedition_terminal", ModBlocks.EXPEDITION_TERMINAL);
 
+    public static final DeferredItem<BlockItem> EXPEDITION_CHECKPOINT_ITEM = ITEMS.registerSimpleBlockItem(
+            "expedition_checkpoint", ModBlocks.EXPEDITION_CHECKPOINT);
+
+    public static final DeferredItem<BlockItem> EXPEDITION_EXIT_ITEM = ITEMS.registerSimpleBlockItem(
+            "expedition_exit", ModBlocks.EXPEDITION_EXIT);
+
     private ModItems() {
     }
 }

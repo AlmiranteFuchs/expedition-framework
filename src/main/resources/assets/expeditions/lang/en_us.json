@@ -1,6 +1,18 @@
 {
   "block.expeditions.expedition_terminal": "Expedition Terminal",
+  "block.expeditions.expedition_checkpoint": "Expedition Checkpoint",
+  "block.expeditions.expedition_exit": "Expedition Exit",
   "itemGroup.expeditions": "Expedition Framework",
-  "message.expeditions.no_active_expedition": "Expedition framework initialized. No expedition is currently active.",
-  "message.expeditions.expedition_active": "An expedition is currently active."
+  "message.expeditions.expedition_started": "Expedition started: %1$s. Follow the markers!",
+  "message.expeditions.next_checkpoint": "Next checkpoint %1$s/%2$s at %3$s.",
+  "message.expeditions.checkpoint_reached": "Checkpoint %1$s/%2$s reached.",
+  "message.expeditions.all_checkpoints": "All checkpoints reached! Head to the exit at %1$s.",
+  "message.expeditions.wrong_checkpoint": "That is not your next checkpoint.",
+  "message.expeditions.not_finished": "Your expedition is not finished yet.",
+  "message.expeditions.expedition_completed": "Expedition complete! +%1$s expedition tokens (balance: %2$s).",
+  "message.expeditions.expedition_failed": "Your expedition has failed.",
+  "message.expeditions.expedition_abandoned": "Expedition abandoned.",
+  "message.expeditions.expedition_resumed": "Your expedition is still active. Use /expeditions status for your next objective.",
+  "message.expeditions.balance": "Expedition tokens: %1$s",
+  "message.expeditions.status_none": "No active expedition."
 }

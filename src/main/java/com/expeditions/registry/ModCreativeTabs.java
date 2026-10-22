@@ -21,7 +21,11 @@ public final class ModCreativeTabs {
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.expeditions"))
                     .icon(() -> new ItemStack(ModItems.EXPEDITION_TERMINAL_ITEM.get()))
-                    .displayItems((parameters, output) -> output.accept(ModItems.EXPEDITION_TERMINAL_ITEM.get()))
+                    .displayItems((parameters, output) -> {
+                        output.accept(ModItems.EXPEDITION_TERMINAL_ITEM.get());
+                        output.accept(ModItems.EXPEDITION_CHECKPOINT_ITEM.get());
+                        output.accept(ModItems.EXPEDITION_EXIT_ITEM.get());
+                    })
                     .build());
 
     private ModCreativeTabs() {
