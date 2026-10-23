@@ -110,7 +110,7 @@ class ExpeditionObjectiveTest {
                         null, 4, 5),
                 ExpeditionObjective.timeLimit("t", "d", false, 6000, 7));
         assertEquals(3, run.objectiveStates().size());
-        assertEquals(new ObjectiveState(0, false), run.objectiveState("v").orElseThrow());
+        assertEquals(ObjectiveState.UNSTARTED, run.objectiveState("v").orElseThrow());
         assertTrue(run.completedObjectiveIds().isEmpty());
     }
 
@@ -121,7 +121,7 @@ class ExpeditionObjectiveTest {
                 ExpeditionObjective.visitCheckpoint("last", "d", false, 3, 5));
         assertTrue(run.activateCheckpoint(CP1).stream().anyMatch(o -> o.id().equals("first")));
         assertEquals(new ObjectiveState(1, true), run.objectiveState("first").orElseThrow());
-        assertEquals(new ObjectiveState(0, false), run.objectiveState("last").orElseThrow());
+        assertEquals(ObjectiveState.UNSTARTED, run.objectiveState("last").orElseThrow());
         run.activateCheckpoint(CP2);
         assertTrue(run.activateCheckpoint(CP3).stream().anyMatch(o -> o.id().equals("last")));
     }
@@ -158,6 +158,14 @@ class ExpeditionObjectiveTest {
         assertTrue(run.evaluateTimedObjectives(50).stream()
                 .anyMatch(o -> o.id().equals("fast")));
         assertEquals(new ObjectiveState(50, true), run.objectiveState("fast").orElseThrow());
+        // Re-evaluating while still within the limit is not re-reported.
+        assertTrue(run.evaluateTimedObjectives(80).isEmpty());
+        assertEquals(new ObjectiveState(80, true), run.objectiveState("fast").orElseThrow());
+        // A refused first completion retried after the limit must NOT pay:
+        // the state tracks the latest evaluation, not the best.
+        assertTrue(run.evaluateTimedObjectives(150).isEmpty());
+        assertEquals(new ObjectiveState(150, false), run.objectiveState("fast").orElseThrow());
+        assertTrue(run.completedObjectiveIds().isEmpty());
 
         ExpeditionRun slow = newRun(ExpeditionObjective.timeLimit("fast", "d",
                 false, 100, 5));

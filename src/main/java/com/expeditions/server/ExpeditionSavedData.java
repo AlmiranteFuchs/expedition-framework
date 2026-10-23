@@ -274,7 +274,7 @@ public class ExpeditionSavedData extends SavedData {
                 objectiveTag.putLong(TAG_OBJ_LIMIT_TICKS, objective.timeLimitTicks());
                 objectiveTag.putInt(TAG_OBJ_BONUS, objective.bonusTokens());
                 ObjectiveState state = run.objectiveState(objective.id())
-                        .orElse(new ObjectiveState(0, false));
+                        .orElse(ObjectiveState.UNSTARTED);
                 objectiveTag.putInt(TAG_OBJ_PROGRESS, state.progress());
                 objectiveTag.putBoolean(TAG_OBJ_DONE, state.completed());
                 objectives.add(objectiveTag);

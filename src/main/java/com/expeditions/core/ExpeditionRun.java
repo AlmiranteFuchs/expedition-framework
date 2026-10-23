@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * State of one expedition run shared by a party of players. Lifecycle rules
@@ -77,7 +78,7 @@ public final class ExpeditionRun {
         // reload can re-attach them.
         this.objectiveStates = new LinkedHashMap<>(objectiveStates);
         for (ExpeditionObjective objective : definition.objectives()) {
-            this.objectiveStates.putIfAbsent(objective.id(), new ObjectiveState(0, false));
+            this.objectiveStates.putIfAbsent(objective.id(), ObjectiveState.UNSTARTED);
         }
     }
 
@@ -464,27 +465,31 @@ public final class ExpeditionRun {
 
     /**
      * Evaluates {@link ObjectiveKind#TIME_LIMIT} objectives against
-     * {@code elapsedTicks}: each uncompleted timed objective records the
-     * elapsed time as progress and completes iff it is within its limit.
-     * Completion latches, so re-evaluating later never un-completes one.
+     * {@code elapsedTicks}: every timed objective's state is replaced by the
+     * latest evaluation — the elapsed time as progress, completed iff within
+     * the limit. Unlike collect/visit objectives this does NOT latch: a
+     * refused completion (e.g. an unfinished required objective) may be
+     * retried much later, and the bonus must reflect the elapsed time at the
+     * completion that actually succeeds.
      *
-     * @return the objectives completed by this evaluation
+     * @return the objectives this evaluation newly completed (false→true
+     *         transitions, for player feedback)
      * @throws IllegalStateException if the run is not active
      */
     public List<ExpeditionObjective> evaluateTimedObjectives(long elapsedTicks) {
         ensureActive();
         List<ExpeditionObjective> done = new ArrayList<>();
         for (ExpeditionObjective objective : definition.objectives()) {
-            if (objective.kind() != ObjectiveKind.TIME_LIMIT
-                    || state(objective.id()).completed()) {
+            if (objective.kind() != ObjectiveKind.TIME_LIMIT) {
                 continue;
             }
+            boolean was = state(objective.id()).completed();
             int progress = elapsedTicks > 0
                     ? (int) Math.min(elapsedTicks, Integer.MAX_VALUE)
                     : 0;
             boolean completed = elapsedTicks >= 0 && elapsedTicks <= objective.timeLimitTicks();
             objectiveStates.put(objective.id(), new ObjectiveState(progress, completed));
-            if (completed) {
+            if (completed && !was) {
                 done.add(objective);
             }
         }
@@ -516,7 +521,7 @@ public final class ExpeditionRun {
     }
 
     private ObjectiveState state(String objectiveId) {
-        return objectiveStates.getOrDefault(objectiveId, new ObjectiveState(0, false));
+        return objectiveStates.getOrDefault(objectiveId, ObjectiveState.UNSTARTED);
     }
 
     /**
@@ -534,15 +539,10 @@ public final class ExpeditionRun {
         }
         List<ExpeditionObjective> missing = missingRequiredObjectives();
         if (!missing.isEmpty()) {
-            StringBuilder names = new StringBuilder();
-            for (ExpeditionObjective objective : missing) {
-                if (names.length() > 0) {
-                    names.append(", ");
-                }
-                names.append(objective.id());
-            }
             throw new IllegalStateException(
-                    "Run " + runId + " has unfinished required objectives: " + names);
+                    "Run " + runId + " has unfinished required objectives: "
+                            + missing.stream().map(ExpeditionObjective::id)
+                                    .collect(Collectors.joining(", ")));
         }
         status = ExpeditionStatus.COMPLETED;
     }

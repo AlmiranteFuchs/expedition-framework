@@ -3,7 +3,9 @@ package com.expeditions.block;
 import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.server.ExpeditionManager;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,17 +41,14 @@ public class ExpeditionExitBlock extends Block {
                 // A refused completion is either unfinished checkpoints or
                 // unfinished required objectives — tell the player which.
                 Optional<ExpeditionRun> active = manager.activeRun(serverPlayer.getUUID());
-                if (active.isPresent()
-                        && !active.get().missingRequiredObjectives().isEmpty()) {
-                    StringBuilder names = new StringBuilder();
-                    for (ExpeditionObjective objective : active.get().missingRequiredObjectives()) {
-                        if (names.length() > 0) {
-                            names.append(", ");
-                        }
-                        names.append(objective.description());
-                    }
+                List<ExpeditionObjective> missing = active
+                        .map(ExpeditionRun::missingRequiredObjectives)
+                        .orElse(List.of());
+                if (!missing.isEmpty()) {
                     player.sendSystemMessage(Component.translatable(
-                            "message.expeditions.objectives_missing", names.toString()));
+                            "message.expeditions.objectives_missing",
+                            missing.stream().map(ExpeditionObjective::description)
+                                    .collect(Collectors.joining(", "))));
                 } else {
                     player.sendSystemMessage(Component.translatable(
                             "message.expeditions.not_finished"));
