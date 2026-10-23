@@ -62,15 +62,28 @@ Commands: `/expeditions status`, `/expeditions balance`, `/expeditions abandon`.
 ## Route configuration
 
 Each dimension has an expedition section in the server config
-`run/world/serverconfig/expeditions-server.toml` (per world):
+`run/world/serverconfig/expeditions-server.toml` (per world). The Overworld
+expedition **generates its route by default** — a fresh meandering walk is
+rolled per run, anchored to the player's position at the terminal:
 
 ```toml
 [expeditions.overworld]
-checkpoints = ["48,16", "96,-24", "144,48"]  # ordered "x,z" columns
-exit        = "192,0"
+generate = true   # set false to use the authored anchors below instead
 tokens          = 8     # guaranteed tokens on completion
 bonusTokens     = 4     # extra for finishing within bonusTimeSeconds (0 = off)
 bonusTimeSeconds = 300
+
+[expeditions.overworld.generation]
+checkpoints = 3      # 1-16 ordered checkpoints per route
+minSpacing  = 48     # each leg is 48-96 blocks with up to ±45° turns
+maxSpacing  = 96
+exitMin     = 96     # exit is another 96-160 blocks past the last checkpoint
+exitMax     = 160
+maxAttempts = 4      # extra candidate columns retried when an anchor is unsafe (0-8)
+
+# fallback authored route — only used when generate = false
+checkpoints = ["48,16", "96,-24", "144,48"]
+exit        = "192,0"
 
 [expeditions.nether]
 enabled  = true         # false hides the expedition without clearing the route
@@ -81,16 +94,28 @@ bonusTokens     = 8
 bonusTimeSeconds = 240
 ```
 
-Positions are X/Z columns; the dimension's **adapter** resolves heights when a
-run starts:
+Positions are X/Z columns; the dimension's **adapter** resolves them to safe
+destinations against real block state when a run starts — never on heightmap
+values alone:
 
-- **Overworld** — heightmap surface + upward nudge over obstructions.
+- **Overworld** — heightmap bounds the search, then the column is validated:
+  free marker position and headroom, a sturdy non-hazardous floor (lava,
+  magma, cactus, fire and fluids are rejected), inside the world border.
 - **Nether** — downward column scan (y 121→33) for two free blocks above a
   sturdy, hazard-free floor; unsafe columns refuse the run rather than
   guessing.
 - **Any other dimension** — no adapter → expeditions refuse to start.
 
-Choose columns walkable on foot and within a few hundred blocks of spawn.
+Generated anchors may retry up to `maxAttempts` nearby candidate columns
+(±16-block ring); authored anchors are strict. Resolution is bounded — at
+most `1 + maxAttempts` columns per anchor, one chunk load each — and the
+whole route resolves **before** any marker is placed, so a route that cannot
+resolve cleanly refuses the start with a message and leaves nothing behind.
+
+Choose authored columns walkable on foot and within a few hundred blocks of
+spawn. Larger `minSpacing`/`maxSpacing` values make longer routes but cost
+more travel time; `maxAttempts` trades resilience against unsafe terrain for
+a few extra chunk lookups per run start.
 
 ## Datapack expeditions
 
@@ -125,7 +150,8 @@ a fresh route rolled per run, anchored to the terminal the player activated:
     "min_spacing": 32,
     "max_spacing": 64,
     "exit_min": 48,
-    "exit_max": 96
+    "exit_max": 96,
+    "max_attempts": 4
   },
   "tokens": 30,
   "bonus_tokens": 10,
@@ -134,9 +160,11 @@ a fresh route rolled per run, anchored to the terminal the player activated:
 ```
 
 Each leg is 32–64 blocks with up to ±45° turns (a meandering outward path);
-the exit is another 48–96 blocks past the last checkpoint. Generated anchors
-are resolved by the dimension adapter like authored ones, with a small
-jitter fallback when the exact column is unsafe.
+the exit is another 48–96 blocks past the last checkpoint. `max_attempts`
+(0–8, default 4) bounds how many nearby candidate columns the adapter retries
+when a generated anchor fails safety validation. Generated anchors are
+resolved by the dimension adapter like authored ones — same safety checks,
+plus the jitter fallback.
 
 Precedence and rules:
 
@@ -187,10 +215,17 @@ Precedence and rules:
 - **Datapack definitions** — expeditions loadable from
   `data/*/expeditions/*.json`, hot-reloadable via `/reload`, taking precedence
   over config per dimension.
-- **Generated routes** — datapack `"generate"` specs roll a seeded random
-  walk per run from the player's position; `RouteSpec` sealed type keeps
-  authored and generated routes distinct; restored runs always persist the
-  resolved static form.
+- **Generated routes** — the built-in Overworld expedition generates a fresh
+  route per run by default (config-tunable, authored fallback via
+  `generate = false`); datapack `"generate"` specs do the same for any
+  adapter-supported dimension. `RoutePlanner` rolls a seeded random walk from
+  the player's position; `RouteSpec` keeps authored and generated routes
+  distinct; restored runs always persist the resolved static form.
+- **Destination safety** — adapters validate candidates on real block state:
+  free position + headroom, sturdy non-hazardous floor (lava/magma/cactus/
+  fire/fluids rejected), inside the world border. Generated anchors retry a
+  bounded `maxAttempts` ring of nearby columns; failure refuses the start
+  cleanly before any marker or run exists.
 - **Expedition compass** — granted on run start; the server sets its
   `LODESTONE_TRACKER` target so the needle follows the next checkpoint, then
   the exit, and it is removed when the run ends (complete, fail or abandon).
@@ -199,13 +234,13 @@ Precedence and rules:
   lookups are membership-aware (`isMember`, shared-run queries) so a future
   multiplayer-party feature needs no schema change.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 49 unit tests + 18 GameTest in-game tests.
+- **Tests** — 49 unit tests + 20 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
 - `./gradlew test` — 49 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **18/18 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **20/20 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -228,7 +263,10 @@ Precedence and rules:
   - a `"generate"` datapack expedition produces a real route with placed
     markers that clean up on run end,
   - the expedition compass is granted on start, retargets to the next
-    checkpoint and finally the exit, and is removed on completion or failure.
+    checkpoint and finally the exit, and is removed on completion or failure,
+  - the built-in Overworld expedition generates its route by default with
+    safety-validated destinations, and a hazardous destination refuses the
+    run start entirely.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 

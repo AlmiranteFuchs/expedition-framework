@@ -5,14 +5,9 @@ import com.expeditions.core.SafeColumnSearch;
 import java.util.Optional;
 import java.util.OptionalInt;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.MagmaBlock;
-import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Adapted resolution for the Nether: no surface heightmap exists below the
@@ -35,32 +30,12 @@ public final class NetherAdapter implements ExpeditionDimensionAdapter {
         level.getChunk(anchor.x() >> 4, anchor.z() >> 4);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(anchor.x(), 0, anchor.z());
         OptionalInt y = SafeColumnSearch.findStandingY(
-                yy -> isFree(level, pos.setY(yy)),
-                yy -> isSturdyFloor(level, pos.setY(yy)),
-                yy -> isHazard(level, pos.setY(yy)),
+                yy -> DestinationChecks.isFree(level, pos.setY(yy)),
+                yy -> DestinationChecks.isSturdyFloor(level, pos.setY(yy)),
+                yy -> DestinationChecks.isHazard(level, pos.setY(yy)),
                 SCAN_TOP, SCAN_BOTTOM);
         return y.isPresent()
                 ? Optional.of(new BlockPos(anchor.x(), y.getAsInt(), anchor.z()))
                 : Optional.empty();
-    }
-
-    private static boolean isFree(ServerLevel level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        return state.isAir() || state.canBeReplaced();
-    }
-
-    private static boolean isSturdyFloor(ServerLevel level, BlockPos pos) {
-        return level.getBlockState(pos).isFaceSturdy(level, pos, Direction.UP);
-    }
-
-    private static boolean isHazard(ServerLevel level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        return !state.getFluidState().isEmpty()
-                || state.is(BlockTags.FIRE)
-                || state.getBlock() instanceof MagmaBlock
-                || state.is(Blocks.CACTUS)
-                || state.is(Blocks.SWEET_BERRY_BUSH)
-                || state.is(Blocks.WITHER_ROSE)
-                || state.is(Blocks.POWDER_SNOW);
     }
 }

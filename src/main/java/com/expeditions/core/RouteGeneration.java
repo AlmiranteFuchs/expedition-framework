@@ -6,12 +6,17 @@ package com.expeditions.core;
  * position, with successive legs of {@code minSpacing}–{@code maxSpacing}
  * blocks and a final exit leg of {@code exitMin}–{@code exitMax} blocks.
  * The route is generated fresh for every run.
+ *
+ * <p>{@code maxAttempts} bounds how many nearby candidate columns the
+ * dimension adapter may retry when a generated anchor fails safety
+ * validation (0 = strict, the anchor must be safe as-is).
  */
 public record RouteGeneration(int checkpoints, int minSpacing, int maxSpacing,
-        int exitMin, int exitMax) implements RouteSpec {
+        int exitMin, int exitMax, int maxAttempts) implements RouteSpec {
 
     private static final int MAX_CHECKPOINTS = 16;
     private static final int MAX_DISTANCE = 4096;
+    private static final int MAX_ATTEMPTS = 8;
 
     public RouteGeneration {
         if (checkpoints < 1 || checkpoints > MAX_CHECKPOINTS) {
@@ -27,6 +32,10 @@ public record RouteGeneration(int checkpoints, int minSpacing, int maxSpacing,
                 || exitMax < exitMin || exitMax > MAX_DISTANCE) {
             throw new IllegalArgumentException(
                     "Exit distance must satisfy 1 <= min <= max <= " + MAX_DISTANCE);
+        }
+        if (maxAttempts < 0 || maxAttempts > MAX_ATTEMPTS) {
+            throw new IllegalArgumentException(
+                    "Attempt limit must be 0-" + MAX_ATTEMPTS);
         }
     }
 }

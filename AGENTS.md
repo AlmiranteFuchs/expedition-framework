@@ -74,10 +74,17 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - The terminal picks the expedition for the player's current dimension; no
   definition or no adapter → refusal message, no world changes.
 - `RouteSpec` sealed type: `ExpeditionRoute` (authored anchors) or
-  `RouteGeneration` (datapack `"generate"` block). `RoutePlanner.generate`
-  turns generation params into a seeded random walk anchored at the player's
-  position. Generated anchors resolve through the same adapter but get a
-  ±16-block jitter fallback; authored anchors are strict.
+  `RouteGeneration` (datapack `"generate"` block / config
+  `expeditions.overworld.generation.*`). The built-in Overworld expedition
+  GENERATES by default (`generate = true`); `generate = false` falls back to
+  the authored config anchors. `RoutePlanner.generate` rolls a seeded random
+  walk from the player's position (48-96 legs, ±45° turns by default).
+- Destination safety is checked on real block state via shared
+  `DestinationChecks` (free pos + headroom, sturdy non-hazard floor: lava/
+  magma/cactus/fire/fluids rejected, world border). Generated anchors retry
+  up to `RouteGeneration.maxAttempts` (0-8) columns on a fixed ±16 jitter
+  ring; authored anchors are strict. One chunk load per candidate — bounded
+  and synchronous by design.
 - Routes resolve BEFORE any marker is placed.
 - Rewards: guaranteed `tokens` + `bonusTokens` when finished within
   `bonusTimeTicks`; computed by `ExpeditionDefinition.totalReward(elapsedTicks)`.
@@ -135,7 +142,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Compass milestone verified: `build` + 49 unit tests + 18/18 GameTest in-game
-tests pass (all prior coverage plus compass grant/retarget/removal). Human
-client click-through and real disconnect not simulated — the needle angle
-itself is client rendering, untested.
+Route-safety/config-generation milestone verified: `build` + 49 unit tests +
+20/20 GameTest in-game tests pass (all prior overworld tests now exercise
+generated routes implicitly, plus config-default generation, destination
+safety contract, and hazard rejection). Human client click-through and real
+disconnect not simulated — the compass needle angle itself is client
+rendering, untested.

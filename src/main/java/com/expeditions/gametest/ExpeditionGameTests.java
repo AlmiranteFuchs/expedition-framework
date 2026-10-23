@@ -5,6 +5,8 @@ import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
+import com.expeditions.core.RouteGeneration;
+import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
@@ -37,6 +39,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -704,6 +707,88 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
+    /**
+     * The built-in Overworld expedition generates its route by default: the
+     * config definition carries a RouteGeneration spec, a terminal run gets
+     * three generated checkpoints, and every resolved destination satisfies
+     * the safety contract (sturdy, hazard-free floor; free headroom).
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_r")
+    public static void configOverworldGeneratesRoute(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        ExpeditionDefinition def = ExpeditionsConfig.definitionFor(Level.OVERWORLD)
+                .orElseThrow(() -> new IllegalStateException("overworld expedition must exist"));
+        helper.assertTrue(def.route() instanceof RouteGeneration,
+                "config overworld expedition must generate routes, was " + def.route());
+
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        helper.assertTrue(run.checkpoints().size() == 3,
+                "default generated route must have 3 checkpoints");
+        for (Waypoint w : run.checkpoints()) {
+            assertSafeDestination(helper, level, ExpeditionManager.toPos(w));
+        }
+        assertSafeDestination(helper, level, ExpeditionManager.toPos(run.exit()));
+
+        for (ExpeditionRun other : manager.runs()) {
+            if (other.isActive() && !other.playerId().equals(player.getUUID())) {
+                other.fail();
+            }
+        }
+        manager.failRun(player);
+        helper.succeed();
+    }
+
+    /**
+     * An authored anchor resolving to a hazardous floor (magma) refuses the
+     * run start entirely: no active run, no markers, no partial state.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_r")
+    public static void hazardDestinationRejected(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        // Put a hazardous floor where the authored checkpoint anchor resolves:
+        // force-load the column's chunk (like the adapter does), then scan down
+        // to the top sturdy block and replace it with magma.
+        level.getChunk(200 >> 4, 200 >> 4);
+        BlockPos.MutableBlockPos surface = new BlockPos.MutableBlockPos(
+                200, level.getMaxBuildHeight() - 2, 200);
+        while (!level.getBlockState(surface).isFaceSturdy(level, surface, Direction.UP)
+                && surface.getY() > level.getMinBuildHeight()) {
+            surface.move(Direction.DOWN);
+        }
+        BlockState original = level.getBlockState(surface);
+        level.setBlock(surface, Blocks.MAGMA_BLOCK.defaultBlockState(), 3);
+
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[%d, %d]],
+                  "exit": [400, 400],
+                  "tokens": 5
+                }
+                """.formatted(200, 200);
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "hazardous"),
+                    JsonParser.parseString(json)));
+            helper.setBlock(new BlockPos(1, 1, 1),
+                    ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
+            helper.useBlock(new BlockPos(1, 1, 1), player);
+
+            helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
+                    "a run must not start when a destination is hazardous");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+            level.setBlock(surface, original, 3);
+        }
+        helper.succeed();
+    }
+
     private static ExpeditionSavedData savedData(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
                 ExpeditionSavedData.FACTORY, ExpeditionSavedData.DATA_NAME);
@@ -764,6 +849,22 @@ public final class ExpeditionGameTests {
             }
         }
         return Optional.empty();
+    }
+
+    /** Asserts a resolved destination satisfies the adapter safety contract. */
+    private static void assertSafeDestination(GameTestHelper helper, ServerLevel level, BlockPos pos) {
+        BlockState at = level.getBlockState(pos);
+        helper.assertTrue(at.is(ModBlocks.EXPEDITION_CHECKPOINT.get())
+                        || at.is(ModBlocks.EXPEDITION_EXIT.get()),
+                "marker must be placed at " + pos);
+        BlockState above = level.getBlockState(pos.above());
+        helper.assertTrue(above.isAir() || above.canBeReplaced(),
+                "destination must have free headroom at " + pos);
+        BlockState floor = level.getBlockState(pos.below());
+        helper.assertTrue(floor.isFaceSturdy(level, pos.below(), Direction.UP),
+                "destination floor must be sturdy at " + pos);
+        helper.assertTrue(floor.getFluidState().isEmpty(),
+                "destination floor must not be fluid at " + pos);
     }
 
     /** Asserts the player's compass has a lodestone target equal to {@code pos}. */

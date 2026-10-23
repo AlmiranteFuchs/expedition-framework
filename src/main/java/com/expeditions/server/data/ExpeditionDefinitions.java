@@ -135,7 +135,8 @@ public final class ExpeditionDefinitions {
                 minSpacing,
                 optionalInt(json, "max_spacing", Math.max(minSpacing, 64)),
                 exitMin,
-                optionalInt(json, "exit_max", Math.max(exitMin, 96)));
+                optionalInt(json, "exit_max", Math.max(exitMin, 96)),
+                optionalInt(json, "max_attempts", 4));
     }
 
     private static String requiredString(JsonObject json, String key) {

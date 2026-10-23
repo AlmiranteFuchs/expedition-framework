@@ -8,6 +8,7 @@ import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.core.RoutePlanner;
+import com.expeditions.core.RouteSpec;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
@@ -45,6 +46,11 @@ import net.minecraft.core.component.DataComponents;
  * materializing/removing the marker blocks players interact with.
  */
 public final class ExpeditionManager {
+    /** Candidate columns retried when a generated anchor fails validation. */
+    private static final int[][] JITTER = {
+            {16, 0}, {-16, 0}, {0, 16}, {0, -16},
+            {16, 16}, {-16, -16}, {16, -16}, {-16, 16}};
+
     private final MinecraftServer server;
     private final ExpeditionLedger ledger;
     private final ExpeditionSavedData data;
@@ -101,22 +107,24 @@ public final class ExpeditionManager {
 
         // A generated route is rolled fresh per run, anchored to the player's
         // position at the terminal; authored routes stay exact.
-        boolean generated = definition.route() instanceof RouteGeneration;
-        ExpeditionRoute route = switch (definition.route()) {
+        RouteSpec spec = definition.route();
+        ExpeditionRoute route = switch (spec) {
             case ExpeditionRoute r -> r;
             case RouteGeneration g -> RoutePlanner.generate(g,
                     player.blockPosition().getX(), player.blockPosition().getZ(),
                     player.getRandom().nextLong());
         };
+        // Generated anchors are not authored, so they may retry a bounded
+        // number of nearby candidate columns; authored anchors are strict.
+        int maxAttempts = spec instanceof RouteGeneration g ? g.maxAttempts() : 0;
 
         // Resolve the whole route before touching the world so a partially
-        // unsafe route never leaves stray markers behind. Generated anchors
-        // get a small jitter fallback since their positions are not authored.
+        // unsafe route never leaves stray markers behind.
         List<BlockPos> checkpointPositions = new ArrayList<>();
         for (RouteAnchor anchor : route.checkpoints()) {
-            checkpointPositions.add(resolveAnchor(adapter, level, anchor, generated));
+            checkpointPositions.add(resolveAnchor(adapter, level, anchor, maxAttempts));
         }
-        BlockPos exitPos = resolveAnchor(adapter, level, route.exit(), generated);
+        BlockPos exitPos = resolveAnchor(adapter, level, route.exit(), maxAttempts);
 
         String dimension = definition.dimension();
         for (BlockPos pos : checkpointPositions) {
@@ -350,26 +358,18 @@ public final class ExpeditionManager {
     }
 
     /**
-     * Resolves one route anchor. Generated anchors are retried on a small ring
-     * of offsets before giving up; authored anchors are strict.
+     * Resolves one route anchor. On failure up to {@code maxAttempts} nearby
+     * candidate columns (a fixed ±16 offset ring) are tried before giving up.
+     * Sampling is bounded: at most 1 + maxAttempts columns and one chunk load
+     * each; an anchor that still finds nothing safe fails the run start
+     * cleanly.
      */
     private static BlockPos resolveAnchor(ExpeditionDimensionAdapter adapter, ServerLevel level,
-            RouteAnchor anchor, boolean allowJitter) {
+            RouteAnchor anchor, int maxAttempts) {
         Optional<BlockPos> resolved = adapter.resolveAnchor(level, anchor);
-        if (resolved.isEmpty() && allowJitter) {
-            int[] ring = {16, -16};
-            for (int dx : ring) {
-                for (int dz : ring) {
-                    resolved = adapter.resolveAnchor(level,
-                            new RouteAnchor(anchor.x() + dx, anchor.z() + dz));
-                    if (resolved.isPresent()) {
-                        break;
-                    }
-                }
-                if (resolved.isPresent()) {
-                    break;
-                }
-            }
+        for (int i = 0; resolved.isEmpty() && i < maxAttempts && i < JITTER.length; i++) {
+            resolved = adapter.resolveAnchor(level,
+                    new RouteAnchor(anchor.x() + JITTER[i][0], anchor.z() + JITTER[i][1]));
         }
         return resolved.orElseThrow(() -> new IllegalStateException(
                 "No safe expedition route could be resolved in this dimension"));
