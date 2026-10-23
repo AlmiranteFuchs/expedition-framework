@@ -5,6 +5,7 @@ import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
+import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.ExpeditionsConfig;
@@ -45,6 +46,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.entity.EntitySection;
 import net.minecraft.world.level.entity.EntitySectionStorage;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -1114,6 +1116,301 @@ public final class ExpeditionGameTests {
                 "an unrecoverable run must be failed, was " + run.status());
         helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
                 "no reward may be paid for an unrecoverable run");
+        helper.succeed();
+    }
+
+    /**
+     * All three objective kinds progress and pay: a checkpoint visit
+     * completes on activation, item pickups count toward collection (exact
+     * item and tag match), and a generous time limit completes at
+     * completion. The payout is the deterministic base plus each completed
+     * objective's bonus — awarded exactly once.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    public static void objectivesProgressAndPayOut(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Bounty Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8], [24, 8]],
+                  "exit": [32, 8],
+                  "tokens": 20,
+                  "objectives": [
+                    {"id": "midpoint", "description": "Reach checkpoint 2",
+                     "type": "visit_checkpoint", "checkpoint": 2, "bonus_tokens": 3},
+                    {"id": "bones", "description": "Collect 4 bones",
+                     "type": "collect_items", "item": "minecraft:bone",
+                     "count": 4, "bonus_tokens": 5},
+                    {"id": "logs", "description": "Collect 2 logs",
+                     "type": "collect_items", "tag": "minecraft:logs",
+                     "count": 2, "bonus_tokens": 2},
+                    {"id": "speedy", "description": "Finish within a minute",
+                     "type": "time_limit", "seconds": 60, "bonus_tokens": 7}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "bounty_trial"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            helper.assertTrue(run.definition().objectives().size() == 4,
+                    "all four objectives must be defined");
+            helper.assertTrue(run.objectiveStates().size() == 4,
+                    "every defined objective must be tracked from run start");
+
+            manager.activateCheckpoint(player,
+                    ExpeditionManager.toPos(run.checkpoints().get(0)));
+            helper.assertTrue(!run.objectiveState("midpoint").orElseThrow().completed(),
+                    "checkpoint 1 must not satisfy the checkpoint-2 objective");
+
+            manager.activateCheckpoint(player,
+                    ExpeditionManager.toPos(run.checkpoints().get(1)));
+            helper.assertTrue(run.objectiveState("midpoint").orElseThrow().completed(),
+                    "reaching checkpoint 2 must complete the visit objective");
+
+            // Wrong item does not count; partial stacks accumulate.
+            manager.onItemPickup(player, new ItemStack(Items.ROTTEN_FLESH, 9));
+            helper.assertTrue(run.objectiveState("bones").orElseThrow().progress() == 0,
+                    "non-matching items must not count");
+            manager.onItemPickup(player, new ItemStack(Items.BONE, 3));
+            helper.assertTrue(run.objectiveState("bones").orElseThrow().progress() == 3,
+                    "pickups must accumulate, was "
+                            + run.objectiveState("bones").orElseThrow().progress());
+            manager.onItemPickup(player, new ItemStack(Items.BONE, 5));
+            helper.assertTrue(run.objectiveState("bones").orElseThrow().completed(),
+                    "overshooting the count must complete the objective");
+            helper.assertTrue(run.objectiveState("bones").orElseThrow().progress() == 4,
+                    "progress must clamp at the target");
+
+            // A pickup on a completed objective must not double-complete
+            // (no second reward is possible by construction).
+            manager.onItemPickup(player, new ItemStack(Items.BONE, 8));
+            helper.assertTrue(run.objectiveState("bones").orElseThrow().progress() == 4,
+                    "completed objectives must latch");
+
+            manager.onItemPickup(player, new ItemStack(Items.OAK_LOG, 2));
+            helper.assertTrue(run.objectiveState("logs").orElseThrow().completed(),
+                    "tag-matched items must count");
+
+            manager.activateCheckpoint(player,
+                    ExpeditionManager.toPos(run.checkpoints().get(2)));
+            ExpeditionRun done = manager.completeRun(player);
+            helper.assertTrue(done.objectiveState("speedy").orElseThrow().completed(),
+                    "a fast finish must satisfy the time limit");
+            helper.assertTrue(done.tokensAwarded() == 37,
+                    "expected 20 base + 3 visit + 5 item + 2 tag + 7 timed, was "
+                            + done.tokensAwarded());
+            helper.assertTrue(manager.tokenBalance(player.getUUID()) == 37,
+                    "balance must equal the paid reward");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Optional objectives missed entirely do not block completion: the run
+     * pays only the deterministic base reward.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    public static void optionalObjectivesDoNotBlockCompletion(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Casual Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8]],
+                  "exit": [24, 8],
+                  "tokens": 12,
+                  "objectives": [
+                    {"id": "bones", "description": "Collect 4 bones",
+                     "type": "collect_items", "item": "minecraft:bone",
+                     "count": 4, "bonus_tokens": 5}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "casual_trial"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            for (Waypoint w : run.checkpoints()) {
+                manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+            }
+            ExpeditionRun done = manager.completeRun(player);
+            helper.assertTrue(done.status() == ExpeditionStatus.COMPLETED,
+                    "optional objectives must never block completion");
+            helper.assertTrue(done.tokensAwarded() == 12,
+                    "only the base reward may be paid, was " + done.tokensAwarded());
+            helper.assertTrue(done.completedObjectiveIds().isEmpty(),
+                    "an untouched collect objective must not complete");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A required objective gates the exit: clicking it with the objective
+     * unfinished refuses completion and pays nothing; finishing the
+     * objective afterwards lets the run complete and pays its bonus.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    public static void requiredObjectivesGateCompletion(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Tribute Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8]],
+                  "exit": [24, 8],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "tribute", "description": "Deliver 2 diamonds",
+                     "type": "collect_items", "item": "minecraft:diamond",
+                     "count": 2, "bonus_tokens": 6, "required": true}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "tribute_trial"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            for (Waypoint w : run.checkpoints()) {
+                manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+            }
+            try {
+                manager.completeRun(player);
+                throw new IllegalStateException(
+                        "exit must refuse while a required objective is unfinished");
+            } catch (IllegalStateException expected) {
+                helper.assertTrue(run.status() == ExpeditionStatus.ACTIVE,
+                        "a refused run must stay active");
+                helper.assertTrue(!run.isRewarded(), "a refused run must not be rewarded");
+                helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
+                        "a refused run must pay nothing");
+            }
+            // Simulate the real click path for the refusal message too.
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.exit()));
+            helper.assertTrue(run.status() == ExpeditionStatus.ACTIVE,
+                    "the exit block must also refuse");
+
+            manager.onItemPickup(player, new ItemStack(Items.DIAMOND, 2));
+            ExpeditionRun done = manager.completeRun(player);
+            helper.assertTrue(done.tokensAwarded() == 16,
+                    "required objective bonus must pay on completion, was "
+                            + done.tokensAwarded());
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Objective progress survives a save/load: collection progress and the
+     * completed visit latch round-trip through NBT.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    public static void objectiveProgressPersists(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Durable Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8]],
+                  "exit": [24, 8],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "first", "description": "Reach checkpoint 1",
+                     "type": "visit_checkpoint", "checkpoint": 1, "bonus_tokens": 3},
+                    {"id": "bones", "description": "Collect 4 bones",
+                     "type": "collect_items", "item": "minecraft:bone",
+                     "count": 4, "bonus_tokens": 5}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "durable_trial"),
+                JsonParser.parseString(json));
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            manager.activateCheckpoint(player,
+                    ExpeditionManager.toPos(run.checkpoints().get(0)));
+            manager.onItemPickup(player, new ItemStack(Items.BONE, 3));
+
+            ExpeditionRun restored = roundTrip(helper, server).ledger()
+                    .activeRun(player.getUUID()).orElseThrow(
+                            () -> new IllegalStateException("run must survive a save/load"));
+            helper.assertTrue(restored.definition().objectives().size() == 2,
+                    "objective definitions must round-trip");
+            helper.assertTrue(new ObjectiveState(1, true)
+                            .equals(restored.objectiveState("first").orElseThrow()),
+                    "completed visit must persist, was "
+                            + restored.objectiveState("first").orElseThrow());
+            helper.assertTrue(new ObjectiveState(3, false)
+                            .equals(restored.objectiveState("bones").orElseThrow()),
+                    "collection progress must persist, was "
+                            + restored.objectiveState("bones").orElseThrow());
+
+            manager.failRun(player); // leave no active run behind for later tests
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Broken objective definitions are rejected at load like any malformed
+     * datapack entry — skipped and logged, never silently accepted.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    public static void invalidObjectivesAreRejected(GameTestHelper helper) {
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "bad_type"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "slay_dragons"}]}"""),
+                ResourceLocation.fromNamespaceAndPath("test", "unknown_item"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "collect_items",
+                          "item": "test:not_a_real_item", "count": 1}]}"""),
+                ResourceLocation.fromNamespaceAndPath("test", "bad_index"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "visit_checkpoint",
+                          "checkpoint": 9}]}"""),
+                ResourceLocation.fromNamespaceAndPath("test", "valid"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "visit_checkpoint",
+                          "checkpoint": 1}]}"""));
+        try {
+            ExpeditionDefinitions.reload(entries);
+            helper.assertTrue(ExpeditionDefinitions.all().size() == 1,
+                    "only the valid definition must load, got "
+                            + ExpeditionDefinitions.all().size());
+            helper.assertTrue(ExpeditionDefinitions.all().containsKey("test:valid"),
+                    "the valid definition must be present");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
         helper.succeed();
     }
 

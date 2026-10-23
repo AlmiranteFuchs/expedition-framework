@@ -179,7 +179,37 @@ Modpacks can define expeditions in datapacks at
 
 Required: `dimension`, `checkpoints` (non-empty `[x,z]` pairs), `exit`.
 Optional: `display_name` (defaults to the file path), `difficulty`, `tokens`,
-`bonus_tokens`, `bonus_time_seconds` (all default 0).
+`bonus_tokens`, `bonus_time_seconds` (all default 0), `objectives`.
+
+**Objectives** — an optional `objectives` array adds goals that pay their own
+`bonus_tokens` on successful completion (each at most once per run; a
+`"required": true` objective must be finished before the exit accepts the
+run):
+
+```json
+"objectives": [
+  {"id": "midpoint", "description": "Reach the middle checkpoint",
+   "type": "visit_checkpoint", "checkpoint": 2, "bonus_tokens": 3},
+  {"id": "tribute", "description": "Bring 4 bones",
+   "type": "collect_items", "item": "minecraft:bone", "count": 4,
+   "bonus_tokens": 5, "required": true},
+  {"id": "firewood", "description": "Gather 2 logs",
+   "type": "collect_items", "tag": "minecraft:logs", "count": 2,
+   "bonus_tokens": 2},
+  {"id": "speedy", "description": "Finish within a minute",
+   "type": "time_limit", "seconds": 60, "bonus_tokens": 7}
+]
+```
+
+Every objective needs a unique `id` and a `type`; `description` (defaults to
+the id), `required` (default false) and `bonus_tokens` (default 0) are
+optional. `visit_checkpoint` takes `checkpoint` (1-based route index),
+`collect_items` takes exactly one of `item` or `tag` plus `count`, and
+`time_limit` takes `seconds`. Progress is server-side only: pickups feed
+`collect_items` (any party member's counts), checkpoints feed
+`visit_checkpoint`, and `time_limit` is evaluated at completion. Configured
+built-in expeditions carry no objectives; datapacks are the configuration
+surface.
 
 **Generated routes** — replace `checkpoints`/`exit` with a `generate` block for
 a fresh route rolled per run, anchored to the terminal the player activated:
@@ -277,6 +307,10 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Token rewards** — guaranteed tokens plus an optional time bonus, granted
   exactly once on completion and persisted per player. Balances saturate at
   `Integer.MAX_VALUE` rather than overflowing.
+- **Objectives** — optional or required goals (visit a checkpoint, collect
+  items by id or tag, finish within a time limit) declared per expedition.
+  Progress is tracked per run, survives save/load, and each objective's bonus
+  pays at most once — only on successful completion.
 - **Persistence** — runs (incl. resolved route, progress, timing and award),
   token balances and live marker positions in the overworld
   `DimensionDataStorage`. Runs and balances live in **one file**, so a crash
@@ -338,13 +372,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   sweep only mops up ENDED runs; an active run's tracked entities are its
   live horde and are never swept.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 62 unit tests + 27 GameTest in-game tests.
+- **Tests** — 77 unit tests + 32 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 62 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **27/27 game tests pass** on a real dedicated
+- `./gradlew test` — 77 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **32/32 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -381,7 +415,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   - a same-coordinates checkpoint in the wrong dimension cannot advance a
     run, while the genuine Nether checkpoint still activates — and the
     Nether expedition generates its route by default,
-  - a persisted run whose dimension no longer exists fails closed on resume.
+  - a persisted run whose dimension no longer exists fails closed on resume,
+  - objectives progress and pay: checkpoint visits, exact-item and tag
+    collection (accumulating, clamped, latched), and a completed time limit —
+    the payout is base + each bonus exactly once,
+  - untouched optional objectives never block or pay, a required objective
+    gates the exit until done, objective progress survives save→load, and
+    malformed objective definitions are skipped at reload.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -440,7 +480,7 @@ chunk, and validate on real block state — not heightmap assumptions.
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (25 tests, batches a–t).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (32 tests, batches a–w).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
   `CompassItem` and never competes with block interactions).

@@ -1,6 +1,7 @@
 package com.expeditions.server.data;
 
 import com.expeditions.core.ExpeditionDefinition;
+import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
@@ -121,7 +123,70 @@ public final class ExpeditionDefinitions {
                 route,
                 optionalInt(json, "tokens", 0),
                 optionalInt(json, "bonus_tokens", 0),
-                optionalInt(json, "bonus_time_seconds", 0) * TICKS_PER_SECOND);
+                optionalInt(json, "bonus_time_seconds", 0) * TICKS_PER_SECOND,
+                parseObjectives(json.get("objectives")));
+    }
+
+    /**
+     * Parses the optional {@code "objectives"} array. Each entry names a
+     * stable {@code id} and a {@code type}; shared optional keys are
+     * {@code description}, {@code required} and {@code bonus_tokens}.
+     * Per type: {@code visit_checkpoint} takes {@code checkpoint} (1-based
+     * index), {@code collect_items} takes exactly one of {@code item} or
+     * {@code tag} plus {@code count}, and {@code time_limit} takes
+     * {@code seconds}.
+     */
+    private static List<ExpeditionObjective> parseObjectives(JsonElement element) {
+        if (element == null) {
+            return List.of();
+        }
+        if (!element.isJsonArray()) {
+            throw new IllegalArgumentException("\"objectives\" must be an array");
+        }
+        List<ExpeditionObjective> objectives = new ArrayList<>();
+        for (JsonElement e : element.getAsJsonArray()) {
+            if (!e.isJsonObject()) {
+                throw new IllegalArgumentException("objectives must be JSON objects");
+            }
+            JsonObject json = e.getAsJsonObject();
+            String id = requiredString(json, "id");
+            String description = optionalString(json, "description", id);
+            boolean required = optionalBool(json, "required", false);
+            int bonus = optionalInt(json, "bonus_tokens", 0);
+            switch (requiredString(json, "type")) {
+                case "visit_checkpoint" -> objectives.add(ExpeditionObjective.visitCheckpoint(
+                        id, description, required, requiredInt(json, "checkpoint"), bonus));
+                case "collect_items" -> {
+                    String item = optionalString(json, "item", null);
+                    String tag = optionalString(json, "tag", null);
+                    if ((item != null) == (tag != null)) {
+                        throw new IllegalArgumentException(
+                                "collect_items objective \"" + id
+                                        + "\" needs exactly one of \"item\" or \"tag\"");
+                    }
+                    ResourceLocation itemId = ResourceLocation.tryParse(
+                            item != null ? item : tag);
+                    if (itemId == null) {
+                        throw new IllegalArgumentException(
+                                "collect_items objective \"" + id + "\" has invalid id \""
+                                        + (item != null ? item : tag) + "\"");
+                    }
+                    if (item != null && BuiltInRegistries.ITEM.getOptional(itemId).isEmpty()) {
+                        throw new IllegalArgumentException(
+                                "collect_items objective \"" + id
+                                        + "\" references unknown item \"" + item + "\"");
+                    }
+                    objectives.add(ExpeditionObjective.collectItems(id, description, required,
+                            item, tag, requiredInt(json, "count"), bonus));
+                }
+                case "time_limit" -> objectives.add(ExpeditionObjective.timeLimit(
+                        id, description, required,
+                        (long) requiredInt(json, "seconds") * TICKS_PER_SECOND, bonus));
+                default -> throw new IllegalArgumentException(
+                        "unknown objective type \"" + json.get("type").getAsString() + "\"");
+            }
+        }
+        return objectives;
     }
 
     private static RouteGeneration parseGeneration(JsonObject json) {
@@ -157,6 +222,18 @@ public final class ExpeditionDefinitions {
     private static int optionalInt(JsonObject json, String key, int fallback) {
         return json.has(key) && json.get(key).isJsonPrimitive()
                 ? json.get(key).getAsInt() : fallback;
+    }
+
+    private static int requiredInt(JsonObject json, String key) {
+        if (!json.has(key) || !json.get(key).isJsonPrimitive()) {
+            throw new IllegalArgumentException("missing required \"" + key + "\"");
+        }
+        return json.get(key).getAsInt();
+    }
+
+    private static boolean optionalBool(JsonObject json, String key, boolean fallback) {
+        return json.has(key) && json.get(key).isJsonPrimitive()
+                ? json.get(key).getAsBoolean() : fallback;
     }
 
     private static List<RouteAnchor> parseAnchors(JsonArray array) {

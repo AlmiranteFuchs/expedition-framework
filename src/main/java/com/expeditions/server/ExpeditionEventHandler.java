@@ -6,8 +6,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -74,6 +76,24 @@ public final class ExpeditionEventHandler {
     public static void onServerTick(ServerTickEvent.Post event) {
         if (event.getServer().getTickCount() % 20 == 0) {
             ExpeditionManager.get(event.getServer()).sweepChallengeEntities();
+        }
+    }
+
+    /**
+     * Feeds item pickups into collect_items objectives. The event fires after
+     * the stack entered the inventory; the picked amount is the item entity's
+     * stack minus its remainder. Only server-side players in an active run
+     * progress objectives.
+     */
+    public static void onItemPickup(ItemEntityPickupEvent.Post event) {
+        if (event.getPlayer() instanceof ServerPlayer player) {
+            int count = event.getOriginalStack().getCount()
+                    - event.getCurrentStack().getCount();
+            if (count > 0) {
+                ItemStack picked = event.getOriginalStack();
+                picked.setCount(count);
+                ExpeditionManager.get(player.server).onItemPickup(player, picked);
+            }
         }
     }
 

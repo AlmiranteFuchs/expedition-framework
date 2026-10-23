@@ -135,6 +135,23 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   its live horde; discarding them is the challenge-killing bug this fixed.
 - Generated routes get up to `GENERATED_ROUTE_REROLLS` (3) fresh seeds in
   `startRun` — one bad random walk shouldn't refuse when a re-roll resolves.
+- Objectives (milestone 6): `ExpeditionObjective` (stable id, description,
+  `required`, kind-specific params, `bonusTokens`) + `ObjectiveKind`
+  (`VISIT_CHECKPOINT`, `COLLECT_ITEMS`, `TIME_LIMIT`) on the definition;
+  per-run `ObjectiveState` (progress + latched completed) lives on
+  `ExpeditionRun` and is persisted with the run record. Visits complete inside
+  `activateCheckpoint` (returns the newly-completed list for messages);
+  `ItemEntityPickupEvent.Post` → `manager.onItemPickup` feeds collection
+  (server-authoritative, any member counts toward the shared run objective);
+  timed objectives are evaluated once in `completeRun` before `complete()`.
+  `complete()` refuses while `missingRequiredObjectives()` is non-empty; the
+  exit block surfaces those as a distinct message. Reward =
+  `definition.totalReward(elapsed, completedObjectiveIds)` — base unchanged,
+  each objective bonus at most once, failed runs pay nothing.
+- Objective caveat: `visit_checkpoint` objectives always complete on a
+  successful run (every checkpoint must be activated anyway) — they're for
+  bonus flavor, not optional paths. Only `collect_items` and `time_limit`
+  can go unfinished.
 
 ## Testing conventions
 
@@ -177,9 +194,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Dimension-parity milestone verified: `build` + 62 unit tests + 26/26
-GameTest in-game tests pass (Nether generates routes by default through
-`SafeColumnSearch`, cross-dimension checkpoint clicks are rejected, horde
-lifecycle, plus all prior coverage). Human client click-through and real
-disconnect not simulated — the compass needle angle itself is client
+Objectives milestone verified: `build` + 77 unit tests + 32/32
+GameTest in-game tests pass (objective progression/payout for all three
+kinds, required gating, persistence, malformed-definition skipping, plus all
+prior coverage). Human client click-through and real disconnect not
+simulated — the compass needle angle itself is client
 rendering, untested.

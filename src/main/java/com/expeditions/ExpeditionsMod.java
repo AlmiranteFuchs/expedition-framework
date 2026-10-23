@@ -32,6 +32,7 @@ public class ExpeditionsMod {
 
         IEventBus gameBus = NeoForge.EVENT_BUS;
         gameBus.addListener(ExpeditionEventHandler::onLivingDeath);
+        gameBus.addListener(ExpeditionEventHandler::onItemPickup);
         gameBus.addListener(ExpeditionEventHandler::onPlayerLogin);
         gameBus.addListener(ExpeditionEventHandler::onServerStarted);
         gameBus.addListener(ExpeditionEventHandler::onServerTick);

@@ -1,6 +1,10 @@
 package com.expeditions.core;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Immutable description of an expedition: which dimension it lives in, its
@@ -18,10 +22,20 @@ import java.util.Objects;
  * @param bonusTokens    extra tokens for finishing within {@code bonusTimeTicks};
  *                       0 disables the time bonus
  * @param bonusTimeTicks elapsed-tick budget for the bonus; 0 disables it
+ * @param objectives     optional/required objectives paid as per-objective
+ *                       bonuses on successful completion
  */
 public record ExpeditionDefinition(String id, String displayName, int difficulty,
         String dimension, RouteSpec route, int tokenReward,
-        int bonusTokens, int bonusTimeTicks) {
+        int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives) {
+
+    /** Definition without objectives (config defaults, saves from before objectives existed). */
+    public ExpeditionDefinition(String id, String displayName, int difficulty,
+            String dimension, RouteSpec route, int tokenReward,
+            int bonusTokens, int bonusTimeTicks) {
+        this(id, displayName, difficulty, dimension, route, tokenReward,
+                bonusTokens, bonusTimeTicks, List.of());
+    }
 
     /** Definition without a time bonus, in the Overworld. */
     public ExpeditionDefinition(String id, String displayName, int difficulty,
@@ -49,6 +63,31 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
         if (bonusTimeTicks < 0) {
             throw new IllegalArgumentException("Bonus time must be >= 0");
         }
+        objectives = List.copyOf(objectives);
+        Set<String> seen = new HashSet<>();
+        int checkpoints = routeCheckpointCount(route);
+        for (ExpeditionObjective objective : objectives) {
+            Objects.requireNonNull(objective, "objective");
+            if (!seen.add(objective.id())) {
+                throw new IllegalArgumentException(
+                        "Duplicate objective id \"" + objective.id()
+                                + "\" in expedition \"" + id + "\"");
+            }
+            if (objective.kind() == ObjectiveKind.VISIT_CHECKPOINT
+                    && objective.checkpoint() > checkpoints) {
+                throw new IllegalArgumentException(
+                        "visit_checkpoint objective \"" + objective.id()
+                                + "\" targets checkpoint " + objective.checkpoint()
+                                + " but the route has only " + checkpoints);
+            }
+        }
+    }
+
+    private static int routeCheckpointCount(RouteSpec route) {
+        return switch (route) {
+            case ExpeditionRoute r -> r.checkpoints().size();
+            case RouteGeneration g -> g.checkpoints();
+        };
     }
 
     /**
@@ -60,5 +99,22 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
         boolean bonusEarned = bonusTokens > 0 && bonusTimeTicks > 0
                 && elapsedTicks >= 0 && elapsedTicks <= bonusTimeTicks;
         return tokenReward + (bonusEarned ? bonusTokens : 0);
+    }
+
+    /**
+     * Total tokens for a run that completed {@code completedObjectiveIds}:
+     * {@link #totalReward(long)} plus each completed objective's bonus. Each
+     * objective counts at most once and unknown ids are ignored, so the
+     * result stays deterministic for any set the caller supplies.
+     */
+    public int totalReward(long elapsedTicks, Collection<String> completedObjectiveIds) {
+        int total = totalReward(elapsedTicks);
+        Set<String> completed = Set.copyOf(completedObjectiveIds);
+        for (ExpeditionObjective objective : objectives) {
+            if (completed.contains(objective.id())) {
+                total += objective.bonusTokens();
+            }
+        }
+        return total;
     }
 }

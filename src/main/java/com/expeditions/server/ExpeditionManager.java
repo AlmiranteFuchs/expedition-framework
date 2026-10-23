@@ -4,8 +4,11 @@ import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.CheckpointChallenge;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
+import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
+import com.expeditions.core.ObjectiveKind;
+import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.PartyScaling;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
@@ -35,6 +38,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -271,7 +275,10 @@ public final class ExpeditionManager {
     public ExpeditionRun activateCheckpoint(ServerPlayer player, BlockPos pos) {
         ExpeditionRun run = requireActive(player.getUUID());
         requireRunDimension(run, player.serverLevel());
-        run.activateCheckpoint(toWaypoint(pos));
+        for (ExpeditionObjective objective : run.activateCheckpoint(toWaypoint(pos))) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.objective_completed", objective.description()));
+        }
         if (run.completedCheckpoints() == 1) {
             closePortal(run);
         }
@@ -289,19 +296,26 @@ public final class ExpeditionManager {
 
     /**
      * Completes the interacting player's run and grants the scaled reward to
-     * every member present — the base amount times the configured party
-     * bonus, then split evenly or paid in full per config — exactly once.
-     * Members are teleported back to the run's terminal.
+     * every member present — base tokens plus each completed objective's
+     * bonus, times the configured party bonus, then split evenly or paid in
+     * full per config — exactly once. Timed objectives are evaluated first;
+     * unfinished required objectives refuse the completion entirely. Members
+     * are teleported back to the run's terminal.
      *
-     * @throws IllegalStateException if the run is missing, finished or incomplete
+     * @throws IllegalStateException if the run is missing, finished, has
+     *         checkpoints left or unfinished required objectives
      */
     public ExpeditionRun completeRun(ServerPlayer player) {
         ExpeditionRun run = requireActive(player.getUUID());
         requireRunDimension(run, player.serverLevel());
+        long elapsed = run.elapsedTicks(player.serverLevel().getGameTime());
+        for (ExpeditionObjective objective : run.evaluateTimedObjectives(elapsed)) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.objective_completed", objective.description()));
+        }
         run.complete();
         if (!run.isRewarded()) {
-            long elapsed = run.elapsedTicks(player.serverLevel().getGameTime());
-            int base = run.definition().totalReward(elapsed);
+            int base = run.definition().totalReward(elapsed, run.completedObjectiveIds());
             int scaled = PartyScaling.scaledTotal(base, run.party().size(),
                     ExpeditionsConfig.partyRewardBonusPerExtraMember());
             int share = PartyScaling.memberShare(scaled, run.party().size(),
@@ -361,6 +375,47 @@ public final class ExpeditionManager {
         if (ledger.activeRun(player.getUUID()).isEmpty()) {
             removeCompasses(player);
         }
+    }
+
+    /**
+     * Counts {@code picked} (the stack a player just took from the ground)
+     * toward the run's {@link ObjectiveKind#COLLECT_ITEMS} objectives. Any
+     * party member's pickup counts toward the shared run objective; pickups
+     * by players outside the run affect nothing. Completing an objective is
+     * reported to the picking player.
+     */
+    public void onItemPickup(ServerPlayer player, ItemStack picked) {
+        Optional<ExpeditionRun> active = ledger.activeRun(player.getUUID());
+        if (active.isEmpty() || picked.isEmpty()) {
+            return;
+        }
+        ExpeditionRun run = active.get();
+        boolean dirty = false;
+        for (ExpeditionObjective objective : run.definition().objectives()) {
+            if (objective.kind() != ObjectiveKind.COLLECT_ITEMS
+                    || run.objectiveState(objective.id())
+                            .map(ObjectiveState::completed).orElse(true)
+                    || !matchesObjective(picked, objective)) {
+                continue;
+            }
+            if (run.addObjectiveProgress(objective.id(), picked.getCount())) {
+                player.sendSystemMessage(Component.translatable(
+                        "message.expeditions.objective_completed", objective.description()));
+            }
+            dirty = true;
+        }
+        if (dirty) {
+            data.setDirty();
+        }
+    }
+
+    private static boolean matchesObjective(ItemStack stack, ExpeditionObjective objective) {
+        if (objective.item() != null) {
+            return BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(objective.item()))
+                    .map(stack::is).orElse(false);
+        }
+        return stack.is(TagKey.create(Registries.ITEM,
+                ResourceLocation.parse(objective.tag())));
     }
 
     /**

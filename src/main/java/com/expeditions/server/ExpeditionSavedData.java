@@ -2,9 +2,12 @@ package com.expeditions.server;
 
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
+import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
+import com.expeditions.core.ObjectiveKind;
+import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.Waypoint;
 import com.mojang.logging.LogUtils;
@@ -69,6 +72,19 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_ENTRY = "Entry";
     private static final String TAG_CHALLENGE_ENTITIES = "ChallengeEntities";
     private static final String TAG_ENTITY_ID = "EntityId";
+    private static final String TAG_OBJECTIVES = "Objectives";
+    private static final String TAG_OBJ_ID = "Id";
+    private static final String TAG_OBJ_DESCRIPTION = "Description";
+    private static final String TAG_OBJ_KIND = "Kind";
+    private static final String TAG_OBJ_REQUIRED = "Required";
+    private static final String TAG_OBJ_CHECKPOINT = "Checkpoint";
+    private static final String TAG_OBJ_ITEM = "Item";
+    private static final String TAG_OBJ_TAG = "Tag";
+    private static final String TAG_OBJ_COUNT = "Count";
+    private static final String TAG_OBJ_LIMIT_TICKS = "LimitTicks";
+    private static final String TAG_OBJ_BONUS = "BonusTokens";
+    private static final String TAG_OBJ_PROGRESS = "Progress";
+    private static final String TAG_OBJ_DONE = "Done";
     private static final String TAG_BALANCE = "Balance";
     private static final String TAG_X = "x";
     private static final String TAG_Y = "y";
@@ -124,15 +140,6 @@ public class ExpeditionSavedData extends SavedData {
         List<RouteAnchor> anchors = checkpoints.stream()
                 .map(w -> new RouteAnchor(w.x(), w.z())).toList();
         String dimension = runTag.getString(TAG_DIMENSION);
-        ExpeditionDefinition definition = new ExpeditionDefinition(
-                runTag.getString(TAG_DEFINITION_ID),
-                runTag.getString(TAG_DEFINITION_NAME),
-                runTag.getInt(TAG_DIFFICULTY),
-                dimension.isBlank() ? DEFAULT_DIMENSION : dimension,
-                new ExpeditionRoute(anchors, new RouteAnchor(exit.x(), exit.z())),
-                runTag.getInt(TAG_TOKEN_REWARD),
-                runTag.getInt(TAG_BONUS_TOKENS),
-                runTag.getInt(TAG_BONUS_TICKS));
         UUID playerId = runTag.getUUID(TAG_PLAYER);
         // Party is optional in saves from before the field existed.
         java.util.Set<UUID> party = new java.util.HashSet<>();
@@ -156,6 +163,39 @@ public class ExpeditionSavedData extends SavedData {
         for (Tag et : runTag.getList(TAG_CHALLENGE_ENTITIES, Tag.TAG_COMPOUND)) {
             challengeEntities.add(((CompoundTag) et).getUUID(TAG_ENTITY_ID));
         }
+        // Objectives are absent in saves from before objectives existed.
+        List<ExpeditionObjective> objectives = new java.util.ArrayList<>();
+        java.util.Map<String, ObjectiveState> objectiveStates = new java.util.LinkedHashMap<>();
+        for (Tag ot : runTag.getList(TAG_OBJECTIVES, Tag.TAG_COMPOUND)) {
+            CompoundTag objectiveTag = (CompoundTag) ot;
+            ExpeditionObjective objective = new ExpeditionObjective(
+                    objectiveTag.getString(TAG_OBJ_ID),
+                    objectiveTag.getString(TAG_OBJ_DESCRIPTION),
+                    objectiveTag.getBoolean(TAG_OBJ_REQUIRED),
+                    ObjectiveKind.valueOf(objectiveTag.getString(TAG_OBJ_KIND)),
+                    objectiveTag.getInt(TAG_OBJ_CHECKPOINT),
+                    objectiveTag.contains(TAG_OBJ_ITEM)
+                            ? objectiveTag.getString(TAG_OBJ_ITEM) : null,
+                    objectiveTag.contains(TAG_OBJ_TAG)
+                            ? objectiveTag.getString(TAG_OBJ_TAG) : null,
+                    objectiveTag.getInt(TAG_OBJ_COUNT),
+                    objectiveTag.getLong(TAG_OBJ_LIMIT_TICKS),
+                    objectiveTag.getInt(TAG_OBJ_BONUS));
+            objectives.add(objective);
+            objectiveStates.put(objective.id(), new ObjectiveState(
+                    objectiveTag.getInt(TAG_OBJ_PROGRESS),
+                    objectiveTag.getBoolean(TAG_OBJ_DONE)));
+        }
+        ExpeditionDefinition definition = new ExpeditionDefinition(
+                runTag.getString(TAG_DEFINITION_ID),
+                runTag.getString(TAG_DEFINITION_NAME),
+                runTag.getInt(TAG_DIFFICULTY),
+                dimension.isBlank() ? DEFAULT_DIMENSION : dimension,
+                new ExpeditionRoute(anchors, new RouteAnchor(exit.x(), exit.z())),
+                runTag.getInt(TAG_TOKEN_REWARD),
+                runTag.getInt(TAG_BONUS_TOKENS),
+                runTag.getInt(TAG_BONUS_TICKS),
+                objectives);
         return ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
@@ -172,7 +212,8 @@ public class ExpeditionSavedData extends SavedData {
                 runTag.getInt(TAG_DONE),
                 runTag.getBoolean(TAG_REWARDED),
                 runTag.getInt(TAG_TOKENS_AWARDED),
-                challengeEntities);
+                challengeEntities,
+                objectiveStates);
     }
 
     @Override
@@ -215,6 +256,30 @@ public class ExpeditionSavedData extends SavedData {
                 entities.add(entityTag);
             }
             runTag.put(TAG_CHALLENGE_ENTITIES, entities);
+            ListTag objectives = new ListTag();
+            for (ExpeditionObjective objective : run.definition().objectives()) {
+                CompoundTag objectiveTag = new CompoundTag();
+                objectiveTag.putString(TAG_OBJ_ID, objective.id());
+                objectiveTag.putString(TAG_OBJ_DESCRIPTION, objective.description());
+                objectiveTag.putString(TAG_OBJ_KIND, objective.kind().name());
+                objectiveTag.putBoolean(TAG_OBJ_REQUIRED, objective.required());
+                objectiveTag.putInt(TAG_OBJ_CHECKPOINT, objective.checkpoint());
+                if (objective.item() != null) {
+                    objectiveTag.putString(TAG_OBJ_ITEM, objective.item());
+                }
+                if (objective.tag() != null) {
+                    objectiveTag.putString(TAG_OBJ_TAG, objective.tag());
+                }
+                objectiveTag.putInt(TAG_OBJ_COUNT, objective.count());
+                objectiveTag.putLong(TAG_OBJ_LIMIT_TICKS, objective.timeLimitTicks());
+                objectiveTag.putInt(TAG_OBJ_BONUS, objective.bonusTokens());
+                ObjectiveState state = run.objectiveState(objective.id())
+                        .orElse(new ObjectiveState(0, false));
+                objectiveTag.putInt(TAG_OBJ_PROGRESS, state.progress());
+                objectiveTag.putBoolean(TAG_OBJ_DONE, state.completed());
+                objectives.add(objectiveTag);
+            }
+            runTag.put(TAG_OBJECTIVES, objectives);
             runs.add(runTag);
         }
         tag.put(TAG_RUNS, runs);

@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -45,11 +47,13 @@ public final class ExpeditionRun {
     private int completedCheckpoints;
     private boolean rewarded;
     private int tokensAwarded;
+    private final Map<String, ObjectiveState> objectiveStates;
 
     private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
             Waypoint entry, long startedGameTime, ExpeditionStatus status, int completedCheckpoints,
-            boolean rewarded, int tokensAwarded, List<UUID> challengeEntities) {
+            boolean rewarded, int tokensAwarded, List<UUID> challengeEntities,
+            Map<String, ObjectiveState> objectiveStates) {
         this.runId = Objects.requireNonNull(runId, "runId");
         this.playerId = Objects.requireNonNull(playerId, "playerId");
         this.party = new HashSet<>(party);
@@ -68,6 +72,13 @@ public final class ExpeditionRun {
         this.rewarded = rewarded;
         this.tokensAwarded = tokensAwarded;
         this.challengeEntities = new ArrayList<>(challengeEntities);
+        // Every defined objective gets a tracked state; states persisted for
+        // ids the definition no longer knows are kept (harmless) so a later
+        // reload can re-attach them.
+        this.objectiveStates = new LinkedHashMap<>(objectiveStates);
+        for (ExpeditionObjective objective : definition.objectives()) {
+            this.objectiveStates.putIfAbsent(objective.id(), new ObjectiveState(0, false));
+        }
     }
 
     /**
@@ -94,7 +105,7 @@ public final class ExpeditionRun {
         }
         return new ExpeditionRun(runId, playerId, party, definition, resolvedCheckpoints,
                 resolvedExit, terminal, portal, entry,
-                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, List.of());
+                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, List.of(), Map.of());
     }
 
     /**
@@ -126,7 +137,8 @@ public final class ExpeditionRun {
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
             Waypoint entry, long startedGameTime,
             ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
-            int tokensAwarded, List<UUID> challengeEntities) {
+            int tokensAwarded, List<UUID> challengeEntities,
+            Map<String, ObjectiveState> objectiveStates) {
         if (checkpoints.isEmpty()) {
             throw new IllegalArgumentException("Restored run must contain at least one checkpoint");
         }
@@ -139,7 +151,19 @@ public final class ExpeditionRun {
         return new ExpeditionRun(runId, playerId, party, definition, checkpoints, exit,
                 terminal, portal, entry,
                 startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded,
-                challengeEntities);
+                challengeEntities, objectiveStates);
+    }
+
+    /** Convenience restore for saves written before objective tracking existed. */
+    public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime,
+            ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
+            int tokensAwarded, List<UUID> challengeEntities) {
+        return restore(runId, playerId, party, definition, checkpoints, exit, terminal,
+                portal, entry, startedGameTime, status, completedCheckpoints, rewarded,
+                tokensAwarded, challengeEntities, Map.of());
     }
 
     /** Convenience restore for saves written before portals existed. */
@@ -351,10 +375,11 @@ public final class ExpeditionRun {
      * checkpoint may advance the run: out-of-order, duplicate or foreign
      * positions are rejected. The first activation seals the party.
      *
+     * @return objectives completed by reaching this checkpoint
      * @throws IllegalStateException if the run is not active or the position is
      *         not the expected next checkpoint
      */
-    public void activateCheckpoint(Waypoint position) {
+    public List<ExpeditionObjective> activateCheckpoint(Waypoint position) {
         ensureActive();
         Waypoint expected = nextCheckpoint().orElseThrow(
                 () -> new IllegalStateException("Run " + runId + " has no checkpoints left"));
@@ -363,10 +388,141 @@ public final class ExpeditionRun {
                     "Run " + runId + " expected checkpoint at " + expected + " but got " + position);
         }
         completedCheckpoints++;
+        return completeVisitObjectives(completedCheckpoints);
     }
 
     /**
-     * Marks the run completed. Requires an active run with all checkpoints done.
+     * Objective states keyed by objective id (unmodifiable, definition
+     * order). Every objective declared by the definition has an entry even
+     * if it has never progressed.
+     */
+    public Map<String, ObjectiveState> objectiveStates() {
+        return Collections.unmodifiableMap(objectiveStates);
+    }
+
+    /** The tracked state of objective {@code id}, if the definition knows it. */
+    public Optional<ObjectiveState> objectiveState(String objectiveId) {
+        return Optional.ofNullable(objectiveStates.get(objectiveId));
+    }
+
+    /** Ids of objectives already completed (latches; never shrinks). */
+    public Set<String> completedObjectiveIds() {
+        Set<String> completed = new HashSet<>();
+        objectiveStates.forEach((id, state) -> {
+            if (state.completed()) {
+                completed.add(id);
+            }
+        });
+        return completed;
+    }
+
+    /**
+     * Required objectives that are not completed yet. A non-empty result
+     * keeps {@link #complete()} from succeeding.
+     */
+    public List<ExpeditionObjective> missingRequiredObjectives() {
+        List<ExpeditionObjective> missing = new ArrayList<>();
+        for (ExpeditionObjective objective : definition.objectives()) {
+            if (objective.required() && !state(objective.id()).completed()) {
+                missing.add(objective);
+            }
+        }
+        return missing;
+    }
+
+    /**
+     * Adds collected progress to a {@link ObjectiveKind#COLLECT_ITEMS}
+     * objective (server-side pickup events pass the stack size). Progress
+     * clamps at the target and completion latches — calls on an already
+     * completed objective are no-ops.
+     *
+     * @return whether this call completed the objective
+     * @throws IllegalStateException    if the run is not active
+     * @throws IllegalArgumentException if the objective is unknown, not a
+     *         collect objective, or {@code amount} is negative
+     */
+    public boolean addObjectiveProgress(String objectiveId, int amount) {
+        ensureActive();
+        if (amount < 0) {
+            throw new IllegalArgumentException("Objective progress must be >= 0");
+        }
+        ExpeditionObjective objective = objective(objectiveId);
+        if (objective.kind() != ObjectiveKind.COLLECT_ITEMS) {
+            throw new IllegalArgumentException(
+                    "Objective \"" + objectiveId + "\" is not a collect_items objective");
+        }
+        ObjectiveState state = state(objectiveId);
+        if (state.completed()) {
+            return false;
+        }
+        int next = state.progress() + amount;
+        boolean done = next >= objective.progressTarget();
+        objectiveStates.put(objectiveId,
+                new ObjectiveState(Math.min(next, objective.progressTarget()), done));
+        return done;
+    }
+
+    /**
+     * Evaluates {@link ObjectiveKind#TIME_LIMIT} objectives against
+     * {@code elapsedTicks}: each uncompleted timed objective records the
+     * elapsed time as progress and completes iff it is within its limit.
+     * Completion latches, so re-evaluating later never un-completes one.
+     *
+     * @return the objectives completed by this evaluation
+     * @throws IllegalStateException if the run is not active
+     */
+    public List<ExpeditionObjective> evaluateTimedObjectives(long elapsedTicks) {
+        ensureActive();
+        List<ExpeditionObjective> done = new ArrayList<>();
+        for (ExpeditionObjective objective : definition.objectives()) {
+            if (objective.kind() != ObjectiveKind.TIME_LIMIT
+                    || state(objective.id()).completed()) {
+                continue;
+            }
+            int progress = elapsedTicks > 0
+                    ? (int) Math.min(elapsedTicks, Integer.MAX_VALUE)
+                    : 0;
+            boolean completed = elapsedTicks >= 0 && elapsedTicks <= objective.timeLimitTicks();
+            objectiveStates.put(objective.id(), new ObjectiveState(progress, completed));
+            if (completed) {
+                done.add(objective);
+            }
+        }
+        return done;
+    }
+
+    /** Completes {@link ObjectiveKind#VISIT_CHECKPOINT} objectives targeting {@code index}. */
+    private List<ExpeditionObjective> completeVisitObjectives(int index) {
+        List<ExpeditionObjective> done = new ArrayList<>();
+        for (ExpeditionObjective objective : definition.objectives()) {
+            if (objective.kind() == ObjectiveKind.VISIT_CHECKPOINT
+                    && objective.checkpoint() == index
+                    && !state(objective.id()).completed()) {
+                objectiveStates.put(objective.id(), new ObjectiveState(1, true));
+                done.add(objective);
+            }
+        }
+        return done;
+    }
+
+    private ExpeditionObjective objective(String objectiveId) {
+        for (ExpeditionObjective objective : definition.objectives()) {
+            if (objective.id().equals(objectiveId)) {
+                return objective;
+            }
+        }
+        throw new IllegalArgumentException(
+                "Run " + runId + " has no objective \"" + objectiveId + "\"");
+    }
+
+    private ObjectiveState state(String objectiveId) {
+        return objectiveStates.getOrDefault(objectiveId, new ObjectiveState(0, false));
+    }
+
+    /**
+     * Marks the run completed. Requires an active run with all checkpoints
+     * done and every required objective completed (timed objectives are
+     * evaluated by the caller first via {@link #evaluateTimedObjectives}).
      *
      * @throws IllegalStateException otherwise
      */
@@ -375,6 +531,18 @@ public final class ExpeditionRun {
         if (!allCheckpointsDone()) {
             throw new IllegalStateException("Run " + runId + " still has "
                     + (checkpoints.size() - completedCheckpoints) + " checkpoints remaining");
+        }
+        List<ExpeditionObjective> missing = missingRequiredObjectives();
+        if (!missing.isEmpty()) {
+            StringBuilder names = new StringBuilder();
+            for (ExpeditionObjective objective : missing) {
+                if (names.length() > 0) {
+                    names.append(", ");
+                }
+                names.append(objective.id());
+            }
+            throw new IllegalStateException(
+                    "Run " + runId + " has unfinished required objectives: " + names);
         }
         status = ExpeditionStatus.COMPLETED;
     }
