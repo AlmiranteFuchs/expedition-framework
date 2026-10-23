@@ -10,6 +10,7 @@ import com.expeditions.core.RouteGeneration;
 import com.expeditions.core.RoutePlanner;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.registry.ModItems;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.expeditions.server.dimension.ExpeditionAdapters;
 import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
@@ -27,8 +28,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.component.DataComponents;
 
 /**
  * Server-authoritative coordinator for expedition runs.
@@ -125,6 +130,7 @@ public final class ExpeditionManager {
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
                 toWaypoint(exitPos), level.getGameTime());
         ledger.startRun(run);
+        grantCompass(player, run, level.dimension());
         data.setDirty();
         return run;
     }
@@ -138,6 +144,7 @@ public final class ExpeditionManager {
     public ExpeditionRun activateCheckpoint(ServerPlayer player, BlockPos pos) {
         ExpeditionRun run = requireActive(player.getUUID());
         run.activateCheckpoint(toWaypoint(pos));
+        retargetCompasses(player, run, player.serverLevel().dimension());
         data.setDirty();
         return run;
     }
@@ -159,6 +166,7 @@ public final class ExpeditionManager {
             run.markRewarded(tokens);
         }
         data.setDirty();
+        removeCompasses(player);
         cleanupMarkers(run);
         return run;
     }
@@ -170,6 +178,7 @@ public final class ExpeditionManager {
         ExpeditionRun run = requireActive(player.getUUID());
         run.fail();
         data.setDirty();
+        removeCompasses(player);
         cleanupMarkers(run);
         return run;
     }
@@ -189,6 +198,7 @@ public final class ExpeditionManager {
         ExpeditionRun run = active.get();
         run.fail();
         data.setDirty();
+        removeCompasses(player);
         cleanupMarkers(run);
         return Optional.empty();
     }
@@ -252,6 +262,69 @@ public final class ExpeditionManager {
             removeMarker(level, w, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
         }
         removeMarker(level, run.exit(), ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+    }
+
+    /**
+     * Gives the player an expedition compass pointed at the run's current
+     * target, dropping it at their feet if the inventory is full.
+     */
+    private static void grantCompass(ServerPlayer player, ExpeditionRun run,
+            ResourceKey<Level> dimension) {
+        ItemStack stack = new ItemStack(ModItems.EXPEDITION_COMPASS.get());
+        retarget(stack, dimension, nextTarget(run));
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+    }
+
+    /** Points every expedition compass in the inventory at the run's next target. */
+    private static void retargetCompasses(ServerPlayer player, ExpeditionRun run,
+            ResourceKey<Level> dimension) {
+        Waypoint target = nextTarget(run);
+        forEachCompass(player, stack -> retarget(stack, dimension, target));
+    }
+
+    /** Removes every expedition compass the player is carrying. */
+    private static void removeCompasses(ServerPlayer player) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            if (isCompass(inventory.getItem(i))) {
+                inventory.setItem(i, ItemStack.EMPTY);
+            }
+        }
+        ItemStack carried = player.containerMenu.getCarried();
+        if (isCompass(carried)) {
+            player.containerMenu.setCarried(ItemStack.EMPTY);
+        }
+    }
+
+    private static void forEachCompass(ServerPlayer player,
+            java.util.function.Consumer<ItemStack> action) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (isCompass(stack)) {
+                action.accept(stack);
+            }
+        }
+        ItemStack carried = player.containerMenu.getCarried();
+        if (isCompass(carried)) {
+            action.accept(carried);
+        }
+    }
+
+    private static boolean isCompass(ItemStack stack) {
+        return !stack.isEmpty() && stack.is(ModItems.EXPEDITION_COMPASS.get());
+    }
+
+    /** The position the compass should point at: next checkpoint, else the exit. */
+    private static Waypoint nextTarget(ExpeditionRun run) {
+        return run.nextCheckpoint().orElse(run.exit());
+    }
+
+    private static void retarget(ItemStack stack, ResourceKey<Level> dimension, Waypoint target) {
+        stack.set(DataComponents.LODESTONE_TRACKER, new LodestoneTracker(
+                Optional.of(GlobalPos.of(dimension, toPos(target))), false));
     }
 
     private ServerLevel levelFor(String dimensionId) {

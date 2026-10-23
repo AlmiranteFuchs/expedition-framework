@@ -46,12 +46,16 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
    and marker blocks appear there: three **Expedition Checkpoints** and one
    **Expedition Exit**. In unsupported dimensions the terminal reports that no
    expedition is available.
-3. The chat tells you the next checkpoint's coordinates. Right-click each
-   checkpoint **in order** — out-of-order and duplicate activations are rejected.
+3. You receive an **Expedition Compass** that always points at your next
+   target — the next checkpoint, then the exit once all are done. The chat
+   also tells you the next checkpoint's coordinates. Right-click each
+   checkpoint **in order** — out-of-order and duplicate activations are
+   rejected.
 4. After all checkpoints, right-click the **Exit** to complete the run and
    receive the guaranteed tokens plus a time bonus when earned.
 5. Dying fails the run (no reward). `/expeditions abandon` forfeits manually.
-   Disconnecting does not end a run — it resumes on rejoin.
+   Disconnecting does not end a run — it resumes on rejoin. The compass is
+   removed when the run ends, whatever the outcome.
 
 Commands: `/expeditions status`, `/expeditions balance`, `/expeditions abandon`.
 
@@ -187,14 +191,21 @@ Precedence and rules:
   walk per run from the player's position; `RouteSpec` sealed type keeps
   authored and generated routes distinct; restored runs always persist the
   resolved static form.
+- **Expedition compass** — granted on run start; the server sets its
+  `LODESTONE_TRACKER` target so the needle follows the next checkpoint, then
+  the exit, and it is removed when the run ends (complete, fail or abandon).
+- **Party groundwork** — `ExpeditionRun` carries an immutable member set
+  (today always the singleton owner) persisted with the run, and ledger
+  lookups are membership-aware (`isMember`, shared-run queries) so a future
+  multiplayer-party feature needs no schema change.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 49 unit tests + 16 GameTest in-game tests.
+- **Tests** — 49 unit tests + 18 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
 - `./gradlew test` — 49 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **16/16 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **18/18 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -215,7 +226,9 @@ Precedence and rules:
     shadows the config expedition at the terminal, and malformed files are
     skipped without breaking valid ones,
   - a `"generate"` datapack expedition produces a real route with placed
-    markers that clean up on run end.
+    markers that clean up on run end,
+  - the expedition compass is granted on start, retargets to the next
+    checkpoint and finally the exit, and is removed on completion or failure.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -266,7 +279,12 @@ Precedence and rules:
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (15 tests, batches a–o).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (18 tests, batches a–q).
+- `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
+  is driven server-side via `LODESTONE_TRACKER`, so it does not extend
+  `CompassItem` and never competes with block interactions).
+- `com.expeditions.client` — `ExpeditionsClient` (client-only `@Mod` with
+  `dist = CLIENT`) registers the `angle` item property over the tracker target.
 - `ExpeditionsConfig` — NeoForge server config → built-in `ExpeditionDefinition`
   per dimension, used when no datapack definition covers the dimension.
 
@@ -274,6 +292,6 @@ Precedence and rules:
 
 1. Optional objectives and performance scoring beyond the time bonus.
 2. Token sink (shop or item claim) and additional reward variety.
-3. Multiplayer parties / shared runs.
-4. Waypoint guidance (beacons/particles or HUD) so generated routes are easier
-   to follow than chat coordinates.
+3. Multiplayer parties / shared runs — the run already persists a member set
+   and ledger lookups are membership-aware; what remains is party formation
+   UX and shared progression semantics.

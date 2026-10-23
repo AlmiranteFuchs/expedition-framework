@@ -26,15 +26,23 @@ public final class ExpeditionLedger {
         return Optional.ofNullable(runs.get(playerId));
     }
 
-    /** The player's run if it exists and has not reached a terminal state. */
+    /**
+     * The player's run if it exists and has not reached a terminal state.
+     * Membership-aware: a player participates in a run when it
+     * {@link ExpeditionRun#isMember includes them}, so shared party runs are
+     * found the same way once parties land.
+     */
     public Optional<ExpeditionRun> activeRun(UUID playerId) {
-        return run(playerId).filter(ExpeditionRun::isActive);
+        return runs.values().stream()
+                .filter(ExpeditionRun::isActive)
+                .filter(r -> r.isMember(playerId))
+                .findFirst();
     }
 
     /**
-     * Registers {@code run} for its player.
+     * Registers {@code run} for its owner.
      *
-     * @throws IllegalStateException if the player already has an active run
+     * @throws IllegalStateException if the owner already has an active run
      */
     public void startRun(ExpeditionRun run) {
         Objects.requireNonNull(run, "run");
@@ -50,19 +58,20 @@ public final class ExpeditionLedger {
         return Collections.unmodifiableCollection(runs.values());
     }
 
-    /** Whether any player other than {@code excludePlayerId} has an active run. */
+    /** Whether any run the player is not a member of is still active. */
     public boolean anyOtherActiveRun(UUID excludePlayerId) {
         return runs.values().stream()
-                .anyMatch(r -> r.isActive() && !r.playerId().equals(excludePlayerId));
+                .anyMatch(r -> r.isActive() && !r.isMember(excludePlayerId));
     }
 
     /**
-     * Whether another player has an active run in {@code dimension}. Marker
-     * blocks are shared per dimension, so this scopes the cleanup check.
+     * Whether a run the player is not a member of is active in
+     * {@code dimension}. Marker blocks are shared per dimension, so this
+     * scopes the cleanup check.
      */
     public boolean anyOtherActiveRunInDimension(UUID excludePlayerId, String dimension) {
         return runs.values().stream()
-                .anyMatch(r -> r.isActive() && !r.playerId().equals(excludePlayerId)
+                .anyMatch(r -> r.isActive() && !r.isMember(excludePlayerId)
                         && r.definition().dimension().equals(dimension));
     }
 

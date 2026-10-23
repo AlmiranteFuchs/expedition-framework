@@ -49,6 +49,7 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_MARKERS = "Markers";
     private static final String TAG_PLAYER = "Player";
     private static final String TAG_RUN_ID = "RunId";
+    private static final String TAG_PARTY = "Party";
     private static final String TAG_DEFINITION_ID = "DefinitionId";
     private static final String TAG_DEFINITION_NAME = "DefinitionName";
     private static final String TAG_DIFFICULTY = "Difficulty";
@@ -127,9 +128,17 @@ public class ExpeditionSavedData extends SavedData {
                 runTag.getInt(TAG_TOKEN_REWARD),
                 runTag.getInt(TAG_BONUS_TOKENS),
                 runTag.getInt(TAG_BONUS_TICKS));
+        UUID playerId = runTag.getUUID(TAG_PLAYER);
+        // Party is optional in saves from before the field existed.
+        java.util.Set<UUID> party = new java.util.HashSet<>();
+        for (Tag pt : runTag.getList(TAG_PARTY, Tag.TAG_COMPOUND)) {
+            party.add(((CompoundTag) pt).getUUID(TAG_PLAYER));
+        }
+        party.add(playerId);
         return ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
-                runTag.getUUID(TAG_PLAYER),
+                playerId,
+                party,
                 definition,
                 checkpoints,
                 exit,
@@ -160,6 +169,13 @@ public class ExpeditionSavedData extends SavedData {
             runTag.putBoolean(TAG_REWARDED, run.isRewarded());
             runTag.putInt(TAG_TOKENS_AWARDED, run.tokensAwarded());
             runTag.putLong(TAG_STARTED, run.startedGameTime());
+            ListTag party = new ListTag();
+            for (UUID member : run.party()) {
+                CompoundTag memberTag = new CompoundTag();
+                memberTag.putUUID(TAG_PLAYER, member);
+                party.add(memberTag);
+            }
+            runTag.put(TAG_PARTY, party);
             ListTag checkpoints = new ListTag();
             run.checkpoints().forEach(w -> checkpoints.add(writeWaypoint(w)));
             runTag.put(TAG_CHECKPOINTS, checkpoints);

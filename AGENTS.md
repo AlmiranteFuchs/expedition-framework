@@ -84,6 +84,14 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Marker blocks are placed at run start and removed at run end in the run's
   own dimension unless another active run in that dimension shares them.
   Indestructible by design.
+- Expedition compass: `ExpeditionCompassItem` (plain `Item`, NOT `CompassItem`
+  so it never competes with block `useItemOn`) granted on start and removed on
+  any run end; the server sets `DataComponents.LODESTONE_TRACKER` to the next
+  target and `ExpeditionsClient` (`@Mod dist = CLIENT`) registers the `angle`
+  property that reads `tracker.target()`.
+- `ExpeditionRun` has an immutable `party` member set (singleton owner today)
+  persisted in the run tag; ledger lookups (`isMember`) are membership-aware —
+  party groundwork, no multiplayer semantics yet.
 - Death fails the run (`LivingDeathEvent`). Disconnect keeps the run resumable.
 
 ## Testing conventions
@@ -127,7 +135,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Route-generation milestone verified: `build` + 49 unit tests + 16/16 GameTest
-in-game tests pass (all prior coverage plus deterministic seeded generation,
-spacing bounds, and a live generated-route run). Human client click-through
-and real disconnect not simulated.
+Compass milestone verified: `build` + 49 unit tests + 18/18 GameTest in-game
+tests pass (all prior coverage plus compass grant/retarget/removal). Human
+client click-through and real disconnect not simulated — the needle angle
+itself is client rendering, untested.

@@ -7,15 +7,19 @@ import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -30,6 +34,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -652,6 +658,52 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
+    /**
+     * The expedition compass is granted on start, retargets to the next
+     * checkpoint after each activation, points at the exit once all are done,
+     * and is removed on completion.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_q")
+    public static void compassTracksRouteAndIsRemoved(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        assertCompassTarget(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+
+        manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+        assertCompassTarget(helper, player, ExpeditionManager.toPos(run.checkpoints().get(1)));
+
+        for (Waypoint w : run.checkpoints().subList(1, run.checkpoints().size())) {
+            manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+        }
+        assertCompassTarget(helper, player, ExpeditionManager.toPos(run.exit()));
+
+        manager.completeRun(player);
+        helper.assertTrue(compassOf(player).isEmpty(),
+                "completed run must remove the compass");
+        helper.succeed();
+    }
+
+    /**
+     * A failed run (death or abandon) also removes the compass — it can never
+     * outlive its run.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_q")
+    public static void compassRemovedOnFail(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        startExpedition(helper, manager, player);
+        helper.assertTrue(compassOf(player).isPresent(),
+                "run start must grant an expedition compass");
+
+        manager.failRun(player);
+        helper.assertTrue(compassOf(player).isEmpty(),
+                "failed run must remove the compass");
+        helper.succeed();
+    }
+
     private static ExpeditionSavedData savedData(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
                 ExpeditionSavedData.FACTORY, ExpeditionSavedData.DATA_NAME);
@@ -701,5 +753,28 @@ public final class ExpeditionGameTests {
                 Vec3.atCenterOf(absolute), Direction.UP, absolute, false);
         player.gameMode.useItemOn(player, level,
                 player.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND, hit);
+    }
+
+    private static Optional<ItemStack> compassOf(ServerPlayer player) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (stack.is(ModItems.EXPEDITION_COMPASS.get())) {
+                return Optional.of(stack);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Asserts the player's compass has a lodestone target equal to {@code pos}. */
+    private static void assertCompassTarget(GameTestHelper helper, ServerPlayer player, BlockPos pos) {
+        ItemStack compass = compassOf(player).orElseThrow(
+                () -> new IllegalStateException("player must carry an expedition compass"));
+        LodestoneTracker tracker = compass.get(DataComponents.LODESTONE_TRACKER);
+        helper.assertTrue(tracker != null, "compass must have a lodestone tracker");
+        GlobalPos target = tracker.target().orElseThrow(
+                () -> new IllegalStateException("compass tracker must have a target"));
+        helper.assertTrue(target.pos().equals(pos),
+                "compass must point at " + pos + ", was " + target.pos());
     }
 }

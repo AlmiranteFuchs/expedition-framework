@@ -3,6 +3,7 @@ package com.expeditions.core;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -23,6 +24,7 @@ public final class ExpeditionRun {
 
     private final UUID runId;
     private final UUID playerId;
+    private final Set<UUID> party;
     private final ExpeditionDefinition definition;
     private final List<Waypoint> checkpoints;
     private final Waypoint exit;
@@ -32,12 +34,16 @@ public final class ExpeditionRun {
     private boolean rewarded;
     private int tokensAwarded;
 
-    private ExpeditionRun(UUID runId, UUID playerId, ExpeditionDefinition definition,
+    private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, long startedGameTime,
             ExpeditionStatus status, int completedCheckpoints,
             boolean rewarded, int tokensAwarded) {
         this.runId = Objects.requireNonNull(runId, "runId");
         this.playerId = Objects.requireNonNull(playerId, "playerId");
+        this.party = Set.copyOf(party);
+        if (this.party.isEmpty() || !this.party.contains(playerId)) {
+            throw new IllegalArgumentException("Party must contain the owning player");
+        }
         this.definition = Objects.requireNonNull(definition, "definition");
         this.checkpoints = List.copyOf(checkpoints);
         this.exit = Objects.requireNonNull(exit, "exit");
@@ -58,8 +64,20 @@ public final class ExpeditionRun {
         if (resolvedCheckpoints.isEmpty()) {
             throw new IllegalArgumentException("Run must contain at least one checkpoint");
         }
-        return new ExpeditionRun(runId, playerId, definition, resolvedCheckpoints, resolvedExit,
+        return new ExpeditionRun(runId, playerId, Set.of(playerId), definition,
+                resolvedCheckpoints, resolvedExit,
                 startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0);
+    }
+
+    /** Starts a run shared by a party (party must contain the owning player). */
+    public static ExpeditionRun start(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition, List<Waypoint> resolvedCheckpoints,
+            Waypoint resolvedExit, long startedGameTime) {
+        if (resolvedCheckpoints.isEmpty()) {
+            throw new IllegalArgumentException("Run must contain at least one checkpoint");
+        }
+        return new ExpeditionRun(runId, playerId, party, definition, resolvedCheckpoints,
+                resolvedExit, startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0);
     }
 
     /** Starts a run with unknown timing: never earns a time bonus. */
@@ -74,7 +92,8 @@ public final class ExpeditionRun {
      * @throws IllegalArgumentException if the persisted shape is structurally
      *         invalid (callers treat it as a corrupt record and skip it)
      */
-    public static ExpeditionRun restore(UUID runId, UUID playerId, ExpeditionDefinition definition,
+    public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, long startedGameTime,
             ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
             int tokensAwarded) {
@@ -87,8 +106,17 @@ public final class ExpeditionRun {
         if (rewarded && status != ExpeditionStatus.COMPLETED) {
             throw new IllegalArgumentException("Only completed runs may be marked rewarded");
         }
-        return new ExpeditionRun(runId, playerId, definition, checkpoints, exit, startedGameTime,
-                status, completedCheckpoints, rewarded, tokensAwarded);
+        return new ExpeditionRun(runId, playerId, party, definition, checkpoints, exit,
+                startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded);
+    }
+
+    /** Convenience restore for saves written before parties existed. */
+    public static ExpeditionRun restore(UUID runId, UUID playerId, ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, long startedGameTime,
+            ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
+            int tokensAwarded) {
+        return restore(runId, playerId, Set.of(playerId), definition, checkpoints, exit,
+                startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded);
     }
 
     public UUID runId() {
@@ -97,6 +125,20 @@ public final class ExpeditionRun {
 
     public UUID playerId() {
         return playerId;
+    }
+
+    /**
+     * Players participating in this run. Today every run is a singleton
+     * ({@link #playerId()} only); the field exists so shared-run parties can
+     * join later without changing persistence or lifecycle semantics.
+     */
+    public Set<UUID> party() {
+        return party;
+    }
+
+    /** Whether {@code playerId} participates in this run. */
+    public boolean isMember(UUID playerId) {
+        return party.contains(playerId);
     }
 
     public ExpeditionDefinition definition() {

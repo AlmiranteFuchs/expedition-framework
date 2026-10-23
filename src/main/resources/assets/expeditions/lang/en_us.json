@@ -2,6 +2,7 @@
   "block.expeditions.expedition_terminal": "Expedition Terminal",
   "block.expeditions.expedition_checkpoint": "Expedition Checkpoint",
   "block.expeditions.expedition_exit": "Expedition Exit",
+  "item.expeditions.expedition_compass": "Expedition Compass",
   "itemGroup.expeditions": "Expedition Framework",
   "message.expeditions.expedition_started": "Expedition started: %1$s. Follow the markers!",
   "message.expeditions.next_checkpoint": "Next checkpoint %1$s/%2$s at %3$s.",
