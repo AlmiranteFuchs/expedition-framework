@@ -208,6 +208,22 @@ public final class ExpeditionsConfig {
             .comment("Bonus time budget in seconds.")
             .defineInRange("expeditions.nether.bonusTimeSeconds", 240, 0, 86_400);
 
+    private static final ModConfigSpec.BooleanValue BONUS_DROPS = BUILDER
+            .comment("Grant item drops alongside tokens on expedition completion.")
+            .define("expeditions.rewards.bonusDrops", true);
+
+    private static final ModConfigSpec.DoubleValue DROP_VALUE_PER_TOKEN = BUILDER
+            .comment("Item-value budget granted per awarded token (ItemValuator score units).")
+            .defineInRange("expeditions.rewards.dropValuePerToken", 1.0, 0.0, 100.0);
+
+    private static final ModConfigSpec.IntValue MAX_BONUS_DROPS = BUILDER
+            .comment("Maximum stacks a single bonus-drop draw may grant.")
+            .defineInRange("expeditions.rewards.maxBonusDrops", 8, 0, 64);
+
+    private static final ModConfigSpec.IntValue REDEEM_COST = BUILDER
+            .comment("Token cost of /expeditions redeem (one supply draw).")
+            .defineInRange("expeditions.rewards.redeemCost", 10, 1, 1_000_000);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     private static final int TICKS_PER_SECOND = 20;
@@ -311,6 +327,26 @@ public final class ExpeditionsConfig {
     /** Entity registry id horde mobs spawn as. */
     public static String challengeHordeMob() {
         return HORDE_MOB.get();
+    }
+
+    /** Whether completion grants bonus item drops alongside tokens. */
+    public static boolean bonusDropsEnabled() {
+        return BONUS_DROPS.get();
+    }
+
+    /** Item-value budget granted per awarded token. */
+    public static double bonusDropValuePerToken() {
+        return DROP_VALUE_PER_TOKEN.get();
+    }
+
+    /** Maximum stacks a single draw may grant. */
+    public static int maxBonusDrops() {
+        return MAX_BONUS_DROPS.get();
+    }
+
+    /** Token cost of one redeemed supply draw. */
+    public static int redeemTokenCost() {
+        return REDEEM_COST.get();
     }
 
     private static Optional<ExpeditionDefinition> definition(String id, String name,

@@ -14,6 +14,8 @@ import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionSavedData;
+import com.expeditions.server.ItemRewards;
+import com.expeditions.server.ItemValuator;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -45,6 +47,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.entity.EntitySection;
 import net.minecraft.world.level.entity.EntitySectionStorage;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.LodestoneTracker;
@@ -1411,6 +1414,153 @@ public final class ExpeditionGameTests {
         } finally {
             ExpeditionDefinitions.reload(Map.of());
         }
+        helper.succeed();
+    }
+
+    /**
+     * Completion grants bonus item drops drawn from the run dimension's
+     * reward tag pool on top of the unchanged token award: every granted
+     * stack must come from `expeditions:reward_items/overworld`, and the
+     * draw must produce at least one stack.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_x")
+    public static void bonusDropsComeFromDimensionPool(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        for (Waypoint w : run.checkpoints()) {
+            manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+        }
+        ExpeditionRun done = manager.completeRun(player);
+        List<Item> pool = ItemRewards.pool(run.definition().dimension());
+        helper.assertTrue(!pool.isEmpty(), "overworld reward pool must be configured");
+        int drops = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())) {
+                continue;
+            }
+            helper.assertTrue(pool.contains(stack.getItem()),
+                    "drop " + stack.getItem() + " must come from the overworld reward pool");
+            drops++;
+        }
+        helper.assertTrue(drops > 0,
+                "completion must grant at least one bonus drop, found " + drops);
+        helper.assertTrue(manager.tokenBalance(player.getUUID()) == done.tokensAwarded(),
+                "token reward must still be paid in full alongside drops");
+        helper.succeed();
+    }
+
+    /**
+     * Reward pools are dimension-sensitive: a Nether completion draws only
+     * from `reward_items/the_nether`, never the Overworld or default pools.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_x")
+    public static void netherBonusDropsUseNetherPool(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel nether = server.getLevel(Level.NETHER);
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE); // hordes must not kill the runner mid-test
+
+        BlockPos terminalPos = new BlockPos(0, 80, 0);
+        clearAndFloor(nether, terminalPos);
+        nether.setBlock(terminalPos, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState(), 3);
+        player.teleportTo(nether, 1.5, 80.0, 0.5, Set.of(), 0f, 0f);
+        for (int attempt = 0;
+                attempt < 5 && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
+            useBlockAt(nether, player, terminalPos);
+        }
+        ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
+                () -> new IllegalStateException("terminal interaction must start a nether run"));
+
+        for (Waypoint w : run.checkpoints()) {
+            manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+        }
+        ExpeditionRun done = manager.completeRun(player);
+        List<Item> pool = ItemRewards.pool("minecraft:the_nether");
+        helper.assertTrue(!pool.isEmpty(), "nether reward pool must be configured");
+        int drops = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())) {
+                continue;
+            }
+            helper.assertTrue(pool.contains(stack.getItem()),
+                    "drop " + stack.getItem() + " must come from the nether reward pool");
+            drops++;
+        }
+        helper.assertTrue(drops > 0, "nether completion must grant bonus drops");
+        helper.assertTrue(done.isRewarded(), "token reward must still be recorded");
+        helper.succeed();
+    }
+
+    /**
+     * `/expeditions redeem` is the token sink: it deducts the configured cost
+     * exactly once and grants items from the player's current-dimension pool;
+     * with an insufficient balance it refuses without touching the balance.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_x")
+    public static void redeemConvertsTokensToSupplies(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        int cost = ExpeditionsConfig.redeemTokenCost();
+
+        helper.assertTrue(!manager.redeemTokens(player),
+                "redeem with a zero balance must refuse");
+        helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
+                "a refused redeem must not touch the balance");
+
+        savedData(server).ledger().addTokens(player.getUUID(), cost * 2);
+        helper.assertTrue(manager.redeemTokens(player), "first redeem must succeed");
+        helper.assertTrue(manager.tokenBalance(player.getUUID()) == cost,
+                "balance must drop by the redeem cost, was "
+                        + manager.tokenBalance(player.getUUID()));
+
+        List<Item> pool = ItemRewards.pool("minecraft:overworld");
+        int drops = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            helper.assertTrue(pool.contains(stack.getItem()),
+                    "redeemed item " + stack.getItem() + " must come from the dimension pool");
+            drops++;
+        }
+        helper.assertTrue(drops > 0, "redeem must grant at least one item");
+
+        helper.assertTrue(manager.redeemTokens(player), "second redeem must also succeed");
+        helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
+                "balance must reach exactly zero, was " + manager.tokenBalance(player.getUUID()));
+        helper.assertTrue(!manager.redeemTokens(player),
+                "a third redeem must refuse on the drained balance");
+        helper.succeed();
+    }
+
+    /**
+     * ItemValuator ranks by real item stats: equipment outranks raw
+     * materials, which outrank food and junk — for vanilla and any modded
+     * items that carry the same components.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_x")
+    public static void itemValuationRanksTiers(GameTestHelper helper) {
+        int stick = ItemValuator.score(new ItemStack(Items.STICK));
+        int bread = ItemValuator.score(new ItemStack(Items.BREAD));
+        int diamond = ItemValuator.score(new ItemStack(Items.DIAMOND));
+        int chestplate = ItemValuator.score(new ItemStack(Items.DIAMOND_CHESTPLATE));
+        int netherite = ItemValuator.score(new ItemStack(Items.NETHERITE_SWORD));
+        helper.assertTrue(bread > stick,
+                "food must outrank junk: stick=" + stick + " bread=" + bread);
+        helper.assertTrue(diamond > bread,
+                "a gem must outrank food: bread=" + bread + " diamond=" + diamond);
+        helper.assertTrue(chestplate > diamond,
+                "equipment must outrank the raw gem: diamond=" + diamond
+                        + " chestplate=" + chestplate);
+        helper.assertTrue(netherite > chestplate,
+                "higher-tier equipment must outrank lower: chestplate=" + chestplate
+                        + " netherite=" + netherite);
         helper.succeed();
     }
 

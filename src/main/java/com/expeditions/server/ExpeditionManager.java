@@ -44,6 +44,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.Level;
@@ -324,9 +325,75 @@ public final class ExpeditionManager {
                 ledger.addTokens(member, share);
             }
             run.markRewarded(share);
+            grantBonusDrops(run);
         }
         endRun(run);
         return run;
+    }
+
+    /**
+     * Token sink: converts the configured redeem cost into a supply draw from
+     * the reward pool of the dimension the player stands in — so supplies
+     * redeemed in the Nether look Netherish. The spend lands in the same
+     * atomic ledger save as balances always have.
+     *
+     * @return whether the cost was available and items were granted
+     */
+    public boolean redeemTokens(ServerPlayer player) {
+        int cost = ExpeditionsConfig.redeemTokenCost();
+        List<Item> pool = ItemRewards.pool(
+                player.serverLevel().dimension().location().toString());
+        if (pool.isEmpty()) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.redeem_no_pool"));
+            return false;
+        }
+        if (!ledger.spendTokens(player.getUUID(), cost)) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.redeem_no_tokens", cost));
+            return false;
+        }
+        int budget = (int) (cost * ExpeditionsConfig.bonusDropValuePerToken());
+        for (ItemStack drop : ItemRewards.draw(pool, budget, player.getRandom(),
+                ExpeditionsConfig.maxBonusDrops())) {
+            if (!player.getInventory().add(drop)) {
+                player.drop(drop, false);
+            }
+        }
+        data.setDirty();
+        player.sendSystemMessage(Component.translatable(
+                "message.expeditions.redeemed", cost));
+        return true;
+    }
+
+    /**
+     * Grants bonus item drops to every online member: each member's token
+     * share converts to an item-value budget drawn from the run's own
+     * dimension's reward pool, so Nether completions pay Nether supplies.
+     * Stacks merge into the inventory; leftovers drop at the member's feet.
+     * Offline members keep their tokens — item drops don't persist.
+     */
+    private void grantBonusDrops(ExpeditionRun run) {
+        if (!ExpeditionsConfig.bonusDropsEnabled()) {
+            return;
+        }
+        int budget = (int) (run.tokensAwarded() * ExpeditionsConfig.bonusDropValuePerToken());
+        if (budget <= 0) {
+            return;
+        }
+        List<Item> pool = ItemRewards.pool(run.definition().dimension());
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = this.server.getPlayerList().getPlayer(member);
+            if (memberPlayer == null) {
+                continue;
+            }
+            for (ItemStack drop : ItemRewards.draw(pool, budget,
+                    memberPlayer.getRandom(), ExpeditionsConfig.maxBonusDrops())) {
+                if (!memberPlayer.getInventory().add(drop)) {
+                    memberPlayer.drop(drop, false);
+                }
+            }
+        }
     }
 
     /**

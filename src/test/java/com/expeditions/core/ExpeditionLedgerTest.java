@@ -1,6 +1,7 @@
 package com.expeditions.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -71,6 +72,20 @@ class ExpeditionLedgerTest {
         ledger.addTokens(player, Integer.MAX_VALUE - 5);
         ledger.addTokens(player, 100);
         assertEquals(Integer.MAX_VALUE, ledger.tokenBalance(player));
+    }
+
+    @Test
+    void spendTokensDeductsOnlyWhenAffordable() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        assertTrue(ledger.spendTokens(player, 0)); // zero-cost spend always succeeds
+        ledger.addTokens(player, 20);
+        assertFalse(ledger.spendTokens(player, 21));
+        assertEquals(20, ledger.tokenBalance(player)); // failed spend is atomic
+        assertTrue(ledger.spendTokens(player, 7));
+        assertTrue(ledger.spendTokens(player, 13));
+        assertEquals(0, ledger.tokenBalance(player));
+        assertThrows(IllegalArgumentException.class, () -> ledger.spendTokens(player, -1));
     }
 
     @Test

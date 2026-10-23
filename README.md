@@ -102,6 +102,12 @@ checkpointsPerExtraMember = 1    # legs appended per member joining (0-4)
 rewardBonusPerExtraMember = 0.5  # pool bonus per extra member (0.0-4.0)
 splitRewards = true              # false = every member gets the full pool
 
+[expeditions.rewards]
+bonusDrops         = true  # item drops alongside tokens on completion
+dropValuePerToken  = 1.0   # item-value budget granted per awarded token
+maxBonusDrops      = 8     # max stacks a single draw may grant
+redeemCost         = 10    # token cost of /expeditions redeem
+
 [expeditions.challenges]
 enabled = true                   # roll a challenge on each checkpoint
 hordeChance = 1.0                # chance a checkpoint spawns a horde (0.0-1.0)
@@ -247,6 +253,25 @@ Precedence and rules:
   enable expeditions in an unsupported dimension.
 - Malformed files are skipped and logged; they never break other definitions.
 
+### Reward pools
+
+Completion bonus drops and `/expeditions redeem` draw from the item tag
+`expeditions:reward_items/<dimension path>` — e.g. `reward_items/overworld`,
+`reward_items/the_nether` — falling back to `reward_items/default` for
+dimensions without a pool. They are plain tags, so any datapack or mod can
+extend them (`"replace": false` merge) or add pools for adapter-supported
+modded dimensions:
+
+```json
+{
+  "replace": false,
+  "values": ["mymod:some_supply", "#c:gems"]
+}
+```
+
+Draw weights come from `ItemValuator`'s stat score, so pool items rank by
+their own components — no per-item rarity table to maintain.
+
 ## Supporting a modded dimension
 
 The expedition lifecycle (markers, checkpoints, portal, challenges, rewards,
@@ -371,14 +396,26 @@ chunk, and validate on real block state — not heightmap assumptions.
   so a periodic sweep (once a second) retries when it materializes. The
   sweep only mops up ENDED runs; an active run's tracked entities are its
   live horde and are never swept.
-- **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 77 unit tests + 32 GameTest in-game tests.
+- **Bonus drops** — completed expeditions also grant item supplies: each
+  member's token share converts to an item-value budget drawn from the run's
+  own dimension's reward pool, so Nether completions pay Netherish loot.
+- **Token redeem** — `/expeditions redeem` spends the configured token cost
+  for one supply draw from the pool of the dimension the player stands in.
+- **Tier-weighted pools** — drop chances weight by `ItemValuator`, which
+  scores items from their own data components (rarity, food, durability,
+  attribute modifiers) plus the NeoForge `c:` convention tags (gems, ingots,
+  raw materials) — modded items rank on the same scale with no per-item
+  table. Pool contents live in `expeditions:reward_items/<dimension>` item
+  tags (`default` fallback), so modpacks and adapters extend them as plain
+  datapack tags.
+- **Commands** — `/expeditions balance|status|abandon|redeem`.
+- **Tests** — 78 unit tests + 36 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 77 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **32/32 game tests pass** on a real dedicated
+- `./gradlew test` — 78 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **36/36 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -422,6 +459,9 @@ chunk, and validate on real block state — not heightmap assumptions.
   - untouched optional objectives never block or pay, a required objective
     gates the exit until done, objective progress survives save→load, and
     malformed objective definitions are skipped at reload.
+  - item valuation ranks tiers correctly (junk < food < gem < equipment),
+    completion grants bonus drops from the run's dimension pool, redeem
+    refuses without enough tokens and pays a Nether draw in the Nether.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -450,6 +490,9 @@ chunk, and validate on real block state — not heightmap assumptions.
   log in (recovery policy applies on login) or another run in that dimension
   ends.
 - Marker blocks are indestructible by design; the terminal is not protected.
+- Bonus-drop and redeem draws are score-weighted random — budget size sets
+  the tier band, not the exact items. A member offline at completion keeps
+  only their tokens; item drops are granted to online members only.
 - Challenge entities whose chunk was unloaded at cleanup time keep their
   tracking entry until the once-a-second sweep can reach them — worst case
   a horde survives until its chunk reloads.
@@ -474,13 +517,15 @@ chunk, and validate on real block state — not heightmap assumptions.
   challenges + tracked-entity cleanup, reward award),
   `ExpeditionSavedData` (ledger + live markers ↔ NBT in overworld
   `DimensionDataStorage`, per-record fault isolation on load),
-  `ExpeditionEventHandler` (death + login recovery + startup pruning + commands).
+  `ExpeditionEventHandler` (death + login recovery + startup pruning + commands),
+`ItemValuator` (stat-driven item score for reward weighting), `ItemRewards`
+(dimension-aware pools from `reward_items/<dim>` tags + score-weighted draws).
 - `com.expeditions.block` — terminal/checkpoint/exit blocks delegating to the
   manager. `com.expeditions.registry` — `DeferredRegister` wiring.
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (32 tests, batches a–w).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (36 tests, batches a–x).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
   `CompassItem` and never competes with block interactions).

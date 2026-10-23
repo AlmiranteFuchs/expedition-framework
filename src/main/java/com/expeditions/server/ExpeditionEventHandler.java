@@ -107,7 +107,8 @@ public final class ExpeditionEventHandler {
         event.getDispatcher().register(Commands.literal("expeditions")
                 .then(Commands.literal("balance").executes(ExpeditionEventHandler::balance))
                 .then(Commands.literal("status").executes(ExpeditionEventHandler::status))
-                .then(Commands.literal("abandon").executes(ExpeditionEventHandler::abandon)));
+                .then(Commands.literal("abandon").executes(ExpeditionEventHandler::abandon))
+                .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem)));
     }
 
     private static int balance(CommandContext<CommandSourceStack> ctx) {
@@ -137,6 +138,18 @@ public final class ExpeditionEventHandler {
                 () -> player.sendSystemMessage(Component.translatable(
                         "message.expeditions.status_none")));
         return 1;
+    }
+
+    /**
+     * `/expeditions redeem` — the token sink: spends the configured cost on a
+     * supply draw from the current dimension's reward item pool.
+     */
+    private static int redeem(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player == null) {
+            return 0;
+        }
+        return ExpeditionManager.get(player.server).redeemTokens(player) ? 1 : 0;
     }
 
     private static int abandon(CommandContext<CommandSourceStack> ctx) {

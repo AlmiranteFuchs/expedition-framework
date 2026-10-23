@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:torch",
+    "minecraft:bread",
+    "minecraft:cooked_beef",
+    "minecraft:golden_carrot",
+    "minecraft:oak_log",
+    "minecraft:coal",
+    "minecraft:arrow",
+    "minecraft:shield",
+    "minecraft:iron_ingot",
+    "minecraft:gold_ingot",
+    "minecraft:leather_chestplate",
+    "minecraft:iron_pickaxe",
+    "minecraft:iron_sword",
+    "minecraft:emerald",
+    "minecraft:diamond",
+    "minecraft:diamond_chestplate"
+  ]
+}

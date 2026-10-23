@@ -105,6 +105,26 @@ public final class ExpeditionLedger {
                 (balance, add) -> (int) Math.min(Integer.MAX_VALUE, (long) balance + add));
     }
 
+    /**
+     * Deducts tokens from a player's balance — the economy sink. Atomic with
+     * the rest of the ledger: either the full amount was available and is
+     * removed, or nothing changes.
+     *
+     * @return whether the spend succeeded
+     * @throws IllegalArgumentException if {@code amount} is negative
+     */
+    public boolean spendTokens(UUID playerId, int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Token amount must be >= 0");
+        }
+        int balance = tokenBalance(playerId);
+        if (balance < amount) {
+            return false;
+        }
+        tokens.put(playerId, balance - amount);
+        return true;
+    }
+
     /** All token balances, for persistence. */
     public Map<UUID, Integer> tokenBalances() {
         return Collections.unmodifiableMap(tokens);

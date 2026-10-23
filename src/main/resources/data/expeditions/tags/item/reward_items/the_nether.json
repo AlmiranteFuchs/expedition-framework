@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:glowstone_dust",
+    "minecraft:nether_wart",
+    "minecraft:magma_cream",
+    "minecraft:gold_ingot",
+    "minecraft:quartz",
+    "minecraft:obsidian",
+    "minecraft:blaze_rod",
+    "minecraft:ghast_tear",
+    "minecraft:crying_obsidian",
+    "minecraft:netherite_scrap"
+  ]
+}

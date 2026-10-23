@@ -23,5 +23,8 @@
   "message.expeditions.member_left": "A member left your expedition party.",
   "message.expeditions.challenge_horde": "The checkpoint awakens the locals — a horde hunts your party!",
   "message.expeditions.objective_completed": "Objective complete: %1$s",
-  "message.expeditions.objectives_missing": "Required objectives unfinished: %1$s"
+  "message.expeditions.objectives_missing": "Required objectives unfinished: %1$s",
+  "message.expeditions.redeem_no_tokens": "Not enough expedition tokens (need %1$s).",
+  "message.expeditions.redeem_no_pool": "No rewards are configured for this dimension.",
+  "message.expeditions.redeemed": "Redeemed %1$s tokens for supplies."
 }

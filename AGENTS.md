@@ -143,7 +143,8 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   `activateCheckpoint` (returns the newly-completed list for messages);
   `ItemEntityPickupEvent.Post` → `manager.onItemPickup` feeds collection
   (server-authoritative, any member counts toward the shared run objective);
-  timed objectives are evaluated once in `completeRun` before `complete()`.
+  timed objectives re-evaluate on each `completeRun` attempt before
+  `complete()` — a refused first click must not latch a stale bonus.
   `complete()` refuses while `missingRequiredObjectives()` is non-empty; the
   exit block surfaces those as a distinct message. Reward =
   `definition.totalReward(elapsed, completedObjectiveIds)` — base unchanged,
@@ -152,6 +153,19 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   successful run (every checkpoint must be activated anyway) — they're for
   bonus flavor, not optional paths. Only `collect_items` and `time_limit`
   can go unfinished.
+- Token economy (milestone 7): `ExpeditionLedger.spendTokens` is the atomic
+  sink (deducts only when the balance covers the full cost; callers
+  `setDirty()`; negative rejected, zero succeeds). Two consumers: completion
+  `grantBonusDrops` (online members only, run's dimension pool) and
+  `/expeditions redeem` (`redeemTokens` — pool of the dimension the player
+  stands in; checks the pool is non-empty BEFORE spending). Pools are the
+  `expeditions:reward_items/<dimension path>` item tags + `default`
+  fallback — datapack surface; don't add per-item tables.
+- `ItemValuator` scores a stack from data components + NeoForge `c:` tags —
+  modded items rank on the same scale automatically. `ItemRewards.draw`
+  turns a value budget (tokens × `dropValuePerToken`) into weighted stacks
+  that fully consume it (cheapest item once as floor, `maxBonusDrops` cap).
+  Draw weights are random by design; the budget is the deterministic part.
 
 ## Testing conventions
 
@@ -194,9 +208,8 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Objectives milestone verified: `build` + 77 unit tests + 32/32
-GameTest in-game tests pass (objective progression/payout for all three
-kinds, required gating, persistence, malformed-definition skipping, plus all
-prior coverage). Human client click-through and real disconnect not
-simulated — the compass needle angle itself is client
-rendering, untested.
+Economy milestone verified: `build` + 78 unit tests + 36/36
+GameTest in-game tests pass (all prior coverage plus valuation tiers, bonus
+drops from the run's dimension pool, redeem success/refusal/pool).
+Human client click-through and real disconnect not simulated — the compass
+needle angle itself is client rendering, untested.
