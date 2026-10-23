@@ -110,6 +110,30 @@ Required: `dimension`, `checkpoints` (non-empty `[x,z]` pairs), `exit`.
 Optional: `display_name` (defaults to the file path), `difficulty`, `tokens`,
 `bonus_tokens`, `bonus_time_seconds` (all default 0).
 
+**Generated routes** — replace `checkpoints`/`exit` with a `generate` block for
+a fresh route rolled per run, anchored to the terminal the player activated:
+
+```json
+{
+  "dimension": "minecraft:overworld",
+  "generate": {
+    "checkpoints": 3,
+    "min_spacing": 32,
+    "max_spacing": 64,
+    "exit_min": 48,
+    "exit_max": 96
+  },
+  "tokens": 30,
+  "bonus_tokens": 10,
+  "bonus_time_seconds": 300
+}
+```
+
+Each leg is 32–64 blocks with up to ±45° turns (a meandering outward path);
+the exit is another 48–96 blocks past the last checkpoint. Generated anchors
+are resolved by the dimension adapter like authored ones, with a small
+jitter fallback when the exact column is unsafe.
+
 Precedence and rules:
 
 - A datapack definition for a dimension **overrides** the config expedition.
@@ -159,14 +183,18 @@ Precedence and rules:
 - **Datapack definitions** — expeditions loadable from
   `data/*/expeditions/*.json`, hot-reloadable via `/reload`, taking precedence
   over config per dimension.
+- **Generated routes** — datapack `"generate"` specs roll a seeded random
+  walk per run from the player's position; `RouteSpec` sealed type keeps
+  authored and generated routes distinct; restored runs always persist the
+  resolved static form.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 43 unit tests + 15 GameTest in-game tests.
+- **Tests** — 49 unit tests + 16 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 43 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **15/15 game tests pass** on a real dedicated
+- `./gradlew test` — 49 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **16/16 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -185,7 +213,9 @@ Precedence and rules:
   - orphaned tracked markers are pruned on startup while live runs keep theirs,
   - datapack expedition JSON parses into the domain (rewards, bonus ticks),
     shadows the config expedition at the terminal, and malformed files are
-    skipped without breaking valid ones.
+    skipped without breaking valid ones,
+  - a `"generate"` datapack expedition produces a real route with placed
+    markers that clean up on run end.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -217,7 +247,8 @@ Precedence and rules:
 
 - `com.expeditions.core` — **pure Java** (no Minecraft imports): `ExpeditionStatus`,
   `ExpeditionDefinition` (dimension, route, rewards incl. time bonus),
-  `ExpeditionRoute`/`RouteAnchor`/`Waypoint`, `ExpeditionRun` (lifecycle +
+  `RouteSpec`/`ExpeditionRoute`/`RouteGeneration`/`RoutePlanner`,
+  `RouteAnchor`/`Waypoint`, `ExpeditionRun` (lifecycle +
   ordered checkpoint activation + timing + awarded amount), `ExpeditionLedger`
   (per-player runs + token balances), `SafeColumnSearch` (standable-position
   scan used by adapters).
@@ -241,9 +272,8 @@ Precedence and rules:
 
 ## Next milestones
 
-1. Datapack-driven expedition definitions (route + rewards per JSON) so
-   modpacks can add expeditions and dimensions without code.
-2. Optional objectives and performance scoring beyond the time bonus.
-3. `ExpeditionRouteGenerator` for procedurally anchored routes.
-4. Token sink (shop or item claim) and additional reward variety.
-5. Multiplayer parties / shared runs.
+1. Optional objectives and performance scoring beyond the time bonus.
+2. Token sink (shop or item claim) and additional reward variety.
+3. Multiplayer parties / shared runs.
+4. Waypoint guidance (beacons/particles or HUD) so generated routes are easier
+   to follow than chat coordinates.

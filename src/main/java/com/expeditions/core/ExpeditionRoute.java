@@ -6,9 +6,11 @@ import java.util.Objects;
 /**
  * The ordered route of an expedition: a sequence of checkpoints that must be
  * activated in order, followed by an exit that completes the run. Anchors are
- * configured X/Z columns resolved to world positions when a run starts.
+ * X/Z columns — either configured or produced by {@link RoutePlanner} — that
+ * the server resolves to world positions when a run starts.
  */
-public record ExpeditionRoute(List<RouteAnchor> checkpoints, RouteAnchor exit) {
+public record ExpeditionRoute(List<RouteAnchor> checkpoints, RouteAnchor exit)
+        implements RouteSpec {
     public ExpeditionRoute {
         Objects.requireNonNull(checkpoints, "checkpoints");
         Objects.requireNonNull(exit, "exit");

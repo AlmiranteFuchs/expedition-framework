@@ -62,7 +62,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Disconnect = no reward, no completion; the run stays ACTIVE and is validated
   on next login. One active run per player is enforced by the ledger.
 
-## Gameplay shape (milestone 4)
+## Gameplay shape (milestone 5)
 
 - Expedition sources: datapack JSON (`data/*/expeditions/*.json` via
   `ExpeditionDefinitionLoader` → `ExpeditionDefinitions` immutable snapshot)
@@ -73,9 +73,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   dimension → lowest id wins.
 - The terminal picks the expedition for the player's current dimension; no
   definition or no adapter → refusal message, no world changes.
-- Routes are `"x,z"` anchors resolved at run start by the dimension's adapter
-  (Overworld: heightmap; Nether: `SafeColumnSearch` over real block states).
-  The whole route resolves BEFORE any marker is placed.
+- `RouteSpec` sealed type: `ExpeditionRoute` (authored anchors) or
+  `RouteGeneration` (datapack `"generate"` block). `RoutePlanner.generate`
+  turns generation params into a seeded random walk anchored at the player's
+  position. Generated anchors resolve through the same adapter but get a
+  ±16-block jitter fallback; authored anchors are strict.
+- Routes resolve BEFORE any marker is placed.
 - Rewards: guaranteed `tokens` + `bonusTokens` when finished within
   `bonusTimeTicks`; computed by `ExpeditionDefinition.totalReward(elapsedTicks)`.
 - Marker blocks are placed at run start and removed at run end in the run's
@@ -124,7 +127,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Datapack milestone verified: `build` + 43 unit tests + 15/15 GameTest in-game
-tests pass (all prior coverage plus datapack parsing, config-shadowing
-precedence, malformed-file skipping). Human client click-through and real
-disconnect not simulated.
+Route-generation milestone verified: `build` + 49 unit tests + 16/16 GameTest
+in-game tests pass (all prior coverage plus deterministic seeded generation,
+spacing bounds, and a live generated-route run). Human client click-through
+and real disconnect not simulated.

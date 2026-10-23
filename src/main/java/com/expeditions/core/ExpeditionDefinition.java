@@ -12,14 +12,15 @@ import java.util.Objects;
  * @param difficulty     non-negative difficulty rating used by future reward scaling
  * @param dimension      dimension id the route resolves in, e.g.
  *                       {@code "minecraft:overworld"}
- * @param route          ordered checkpoints plus the exit
+ * @param route          the route spec: an explicit {@link ExpeditionRoute} or
+ *                       {@link RouteGeneration} parameters
  * @param tokenReward    tokens granted exactly once on successful completion
  * @param bonusTokens    extra tokens for finishing within {@code bonusTimeTicks};
  *                       0 disables the time bonus
  * @param bonusTimeTicks elapsed-tick budget for the bonus; 0 disables it
  */
 public record ExpeditionDefinition(String id, String displayName, int difficulty,
-        String dimension, ExpeditionRoute route, int tokenReward,
+        String dimension, RouteSpec route, int tokenReward,
         int bonusTokens, int bonusTimeTicks) {
 
     /** Definition without a time bonus, in the Overworld. */

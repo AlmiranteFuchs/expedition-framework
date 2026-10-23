@@ -2,6 +2,7 @@ package com.expeditions.gametest;
 
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
+import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.Waypoint;
@@ -520,7 +521,8 @@ public final class ExpeditionGameTests {
             helper.assertTrue(def.id().equals("test:custom_trial"),
                     "id must come from the file path, was " + def.id());
             helper.assertTrue(def.displayName().equals("Custom Trial"), "display name must parse");
-            helper.assertTrue(def.route().checkpoints().size() == 2, "route must parse");
+            helper.assertTrue(def.route() instanceof ExpeditionRoute route
+                            && route.checkpoints().size() == 2, "route must parse");
             helper.assertTrue(def.tokenReward() == 25, "tokens must parse");
             helper.assertTrue(def.bonusTimeTicks() == 1200,
                     "bonus time must convert seconds to ticks, was " + def.bonusTimeTicks());
@@ -589,6 +591,61 @@ public final class ExpeditionGameTests {
                     "only the valid definition must load, got " + ExpeditionDefinitions.all().size());
             helper.assertTrue(ExpeditionDefinitions.all().containsKey("test:valid"),
                     "the valid definition must be present");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A datapack expedition with a "generate" block produces a fresh route per
+     * run anchored to the player's position at the terminal — resolved and
+     * materialized like an authored route.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_p")
+    public static void generatedRouteRuns(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Wildlands",
+                  "dimension": "minecraft:overworld",
+                  "generate": { "checkpoints": 2, "min_spacing": 16,
+                                "max_spacing": 24, "exit_min": 24, "exit_max": 32 },
+                  "tokens": 30
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "generated"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            helper.assertTrue(run.definition().id().equals("test:generated"),
+                    "generated definition must be used");
+            helper.assertTrue(run.checkpoints().size() == 2,
+                    "generated route must have 2 checkpoints");
+            for (Waypoint w : run.checkpoints()) {
+                helper.assertTrue(helper.getLevel().getBlockState(ExpeditionManager.toPos(w))
+                                .is(ModBlocks.EXPEDITION_CHECKPOINT.get()),
+                        "generated checkpoint marker must be placed at " + w);
+            }
+            helper.assertTrue(helper.getLevel().getBlockState(ExpeditionManager.toPos(run.exit()))
+                            .is(ModBlocks.EXPEDITION_EXIT.get()),
+                    "generated exit marker must be placed");
+
+            // End foreign runs so marker cleanup is not held back, then end
+            // this run and confirm its generated markers are removed.
+            for (ExpeditionRun other : manager.runs()) {
+                if (other.isActive() && !other.playerId().equals(player.getUUID())) {
+                    other.fail();
+                }
+            }
+            manager.failRun(player);
+            for (Waypoint w : run.checkpoints()) {
+                helper.assertTrue(helper.getLevel().getBlockState(ExpeditionManager.toPos(w))
+                                .isAir(), "generated markers must be cleaned up");
+            }
         } finally {
             ExpeditionDefinitions.reload(Map.of());
         }

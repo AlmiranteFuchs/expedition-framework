@@ -3,6 +3,8 @@ package com.expeditions.server.data;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.RouteAnchor;
+import com.expeditions.core.RouteGeneration;
+import com.expeditions.core.RouteSpec;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -94,21 +96,46 @@ public final class ExpeditionDefinitions {
         if (ResourceLocation.tryParse(dimension) == null) {
             throw new IllegalArgumentException("invalid dimension id \"" + dimension + "\"");
         }
-        List<RouteAnchor> checkpoints = parseAnchors(json.getAsJsonArray("checkpoints"));
-        if (checkpoints.isEmpty()) {
-            throw new IllegalArgumentException("checkpoints must be a non-empty array of [x,z]");
+
+        RouteSpec route;
+        if (json.has("generate")) {
+            if (json.has("checkpoints") || json.has("exit")) {
+                throw new IllegalArgumentException(
+                        "\"generate\" cannot be combined with \"checkpoints\"/\"exit\"");
+            }
+            route = parseGeneration(json.getAsJsonObject("generate"));
+        } else {
+            List<RouteAnchor> checkpoints = parseAnchors(json.getAsJsonArray("checkpoints"));
+            if (checkpoints.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "checkpoints must be a non-empty array of [x,z]");
+            }
+            route = new ExpeditionRoute(checkpoints, parseAnchor(json.get("exit")));
         }
-        RouteAnchor exit = parseAnchor(json.get("exit"));
 
         return new ExpeditionDefinition(
                 id.toString(),
                 optionalString(json, "display_name", id.getPath()),
                 optionalInt(json, "difficulty", 0),
                 dimension,
-                new ExpeditionRoute(checkpoints, exit),
+                route,
                 optionalInt(json, "tokens", 0),
                 optionalInt(json, "bonus_tokens", 0),
                 optionalInt(json, "bonus_time_seconds", 0) * TICKS_PER_SECOND);
+    }
+
+    private static RouteGeneration parseGeneration(JsonObject json) {
+        if (json == null) {
+            throw new IllegalArgumentException("\"generate\" must be an object");
+        }
+        int minSpacing = optionalInt(json, "min_spacing", 32);
+        int exitMin = optionalInt(json, "exit_min", 48);
+        return new RouteGeneration(
+                optionalInt(json, "checkpoints", 3),
+                minSpacing,
+                optionalInt(json, "max_spacing", Math.max(minSpacing, 64)),
+                exitMin,
+                optionalInt(json, "exit_max", Math.max(exitMin, 96)));
     }
 
     private static String requiredString(JsonObject json, String key) {

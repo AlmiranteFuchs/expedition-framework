@@ -3,8 +3,11 @@ package com.expeditions.server;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
+import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.RouteAnchor;
+import com.expeditions.core.RouteGeneration;
+import com.expeditions.core.RoutePlanner;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.data.ExpeditionDefinitions;
@@ -91,17 +94,24 @@ public final class ExpeditionManager {
                 .orElseThrow(() -> new IllegalStateException(
                         "This dimension cannot host expeditions"));
 
+        // A generated route is rolled fresh per run, anchored to the player's
+        // position at the terminal; authored routes stay exact.
+        boolean generated = definition.route() instanceof RouteGeneration;
+        ExpeditionRoute route = switch (definition.route()) {
+            case ExpeditionRoute r -> r;
+            case RouteGeneration g -> RoutePlanner.generate(g,
+                    player.blockPosition().getX(), player.blockPosition().getZ(),
+                    player.getRandom().nextLong());
+        };
+
         // Resolve the whole route before touching the world so a partially
-        // unsafe route never leaves stray markers behind.
+        // unsafe route never leaves stray markers behind. Generated anchors
+        // get a small jitter fallback since their positions are not authored.
         List<BlockPos> checkpointPositions = new ArrayList<>();
-        for (RouteAnchor anchor : definition.route().checkpoints()) {
-            checkpointPositions.add(adapter.resolveAnchor(level, anchor)
-                    .orElseThrow(() -> new IllegalStateException(
-                            "No safe expedition route could be resolved in this dimension")));
+        for (RouteAnchor anchor : route.checkpoints()) {
+            checkpointPositions.add(resolveAnchor(adapter, level, anchor, generated));
         }
-        BlockPos exitPos = adapter.resolveAnchor(level, definition.route().exit())
-                .orElseThrow(() -> new IllegalStateException(
-                        "No safe expedition route could be resolved in this dimension"));
+        BlockPos exitPos = resolveAnchor(adapter, level, route.exit(), generated);
 
         String dimension = definition.dimension();
         for (BlockPos pos : checkpointPositions) {
@@ -264,6 +274,32 @@ public final class ExpeditionManager {
                 || state.is(ModBlocks.EXPEDITION_EXIT.get())) {
             level.removeBlock(pos, false);
         }
+    }
+
+    /**
+     * Resolves one route anchor. Generated anchors are retried on a small ring
+     * of offsets before giving up; authored anchors are strict.
+     */
+    private static BlockPos resolveAnchor(ExpeditionDimensionAdapter adapter, ServerLevel level,
+            RouteAnchor anchor, boolean allowJitter) {
+        Optional<BlockPos> resolved = adapter.resolveAnchor(level, anchor);
+        if (resolved.isEmpty() && allowJitter) {
+            int[] ring = {16, -16};
+            for (int dx : ring) {
+                for (int dz : ring) {
+                    resolved = adapter.resolveAnchor(level,
+                            new RouteAnchor(anchor.x() + dx, anchor.z() + dz));
+                    if (resolved.isPresent()) {
+                        break;
+                    }
+                }
+                if (resolved.isPresent()) {
+                    break;
+                }
+            }
+        }
+        return resolved.orElseThrow(() -> new IllegalStateException(
+                "No safe expedition route could be resolved in this dimension"));
     }
 
     private ExpeditionRun requireActive(UUID playerId) {
