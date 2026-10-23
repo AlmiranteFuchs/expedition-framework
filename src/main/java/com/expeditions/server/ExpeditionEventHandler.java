@@ -1,9 +1,17 @@
 package com.expeditions.server;
 
+import com.expeditions.core.Difficulty;
+import com.expeditions.core.ExpeditionOptions;
+import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.Waypoint;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -108,8 +116,33 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("balance").executes(ExpeditionEventHandler::balance))
                 .then(Commands.literal("status").executes(ExpeditionEventHandler::status))
                 .then(Commands.literal("abandon").executes(ExpeditionEventHandler::abandon))
-                .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem)));
+                .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem))
+                .then(Commands.literal("start")
+                        .then(Commands.argument("expedition", ResourceLocationArgument.id())
+                                .suggests(EXPEDITION_SUGGESTIONS)
+                                .executes(ExpeditionEventHandler::start)
+                                .then(Commands.argument("difficulty", StringArgumentType.word())
+                                        .suggests(DIFFICULTY_SUGGESTIONS)
+                                        .executes(ExpeditionEventHandler::start)
+                                        .then(Commands.argument("checkpoints",
+                                                        IntegerArgumentType.integer(0, 16))
+                                                .executes(ExpeditionEventHandler::start)
+                                                .then(Commands.argument("time",
+                                                                IntegerArgumentType.integer(0, 400))
+                                                        .executes(ExpeditionEventHandler::start)))))));
     }
+
+    private static final SuggestionProvider<CommandSourceStack> EXPEDITION_SUGGESTIONS =
+            (ctx, builder) -> SharedSuggestionProvider.suggest(
+                    ExpeditionManager.get(ctx.getSource().getServer()).listStartable()
+                            .stream().map(d -> d.id()).toList(),
+                    builder);
+
+    private static final SuggestionProvider<CommandSourceStack> DIFFICULTY_SUGGESTIONS =
+            (ctx, builder) -> SharedSuggestionProvider.suggest(
+                    java.util.Arrays.stream(Difficulty.values())
+                            .map(d -> d.name().toLowerCase(java.util.Locale.ROOT)).toList(),
+                    builder);
 
     private static int balance(CommandContext<CommandSourceStack> ctx) {
         ServerPlayer player = player(ctx);
@@ -150,6 +183,51 @@ public final class ExpeditionEventHandler {
             return 0;
         }
         return ExpeditionManager.get(player.server).redeemTokens(player) ? 1 : 0;
+    }
+
+    /**
+     * `/expeditions start <expedition> [difficulty] [checkpoints] [time]` —
+     * the no-GUI twin of the terminal menu: starts the named expedition with
+     * optional per-run modifiers, with the portal above the player (there is
+     * no terminal block in command context — the player's feet anchor it).
+     */
+    private static int start(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player == null) {
+            return 0;
+        }
+        String expeditionId = ResourceLocationArgument.getId(ctx, "expedition").toString();
+        Difficulty difficulty = Difficulty.byName(
+                argOr(ctx, "difficulty", String.class, "standard"));
+        if (difficulty == null) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.unknown_difficulty"));
+            return 0;
+        }
+        ExpeditionOptions options = new ExpeditionOptions(expeditionId, difficulty,
+                argOr(ctx, "checkpoints", Integer.class, 0),
+                argOr(ctx, "time", Integer.class, 0));
+        try {
+            ExpeditionRun run = ExpeditionManager.get(player.server)
+                    .startRun(player, player.blockPosition(), options);
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.expedition_started",
+                    run.definition().displayName()));
+            return 1;
+        } catch (IllegalStateException e) {
+            player.sendSystemMessage(Component.literal(e.getMessage()));
+            return 0;
+        }
+    }
+
+    /** Reads an optional command argument, falling back when it was not given. */
+    private static <T> T argOr(CommandContext<CommandSourceStack> ctx, String name,
+            Class<T> type, T fallback) {
+        try {
+            return ctx.getArgument(name, type);
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
     }
 
     private static int abandon(CommandContext<CommandSourceStack> ctx) {

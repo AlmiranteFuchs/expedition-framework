@@ -1,7 +1,9 @@
 package com.expeditions.gametest;
 
+import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
+import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
@@ -13,6 +15,7 @@ import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
+import com.expeditions.server.ExpeditionMenu;
 import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.ItemRewards;
 import com.expeditions.server.ItemValuator;
@@ -50,6 +53,7 @@ import net.minecraft.world.level.entity.EntitySectionStorage;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -1561,6 +1565,185 @@ public final class ExpeditionGameTests {
         helper.assertTrue(netherite > chestplate,
                 "higher-tier equipment must outrank lower: chestplate=" + chestplate
                         + " netherite=" + netherite);
+        helper.succeed();
+    }
+
+    /**
+     * Explicit expedition selection can cross dimensions: picking the Nether
+     * trial from an Overworld terminal resolves the route in the Nether
+     * while the portal stays at home — and run end removes it via the
+     * portal's own dimension, not the run's.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_y")
+    public static void remoteExpeditionRunsInNether(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel nether = server.getLevel(Level.NETHER);
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+
+        // Nether routes resolve over real terrain — retry like a player
+        // re-rolling when the walk lands somewhere unresolvable.
+        ExpeditionRun run = null;
+        for (int attempt = 0; attempt < 4 && run == null; attempt++) {
+            try {
+                run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                        new ExpeditionOptions("expeditions:nether_trial",
+                                Difficulty.STANDARD, 0, 0));
+            } catch (IllegalStateException unresolvable) {
+                // Try the next roll.
+            }
+        }
+        helper.assertTrue(run != null, "a nether route must resolve within retries");
+        helper.assertTrue("minecraft:the_nether".equals(run.definition().dimension()),
+                "run dimension must be the nether, was " + run.definition().dimension());
+        helper.assertTrue("minecraft:overworld".equals(run.portalDimension()),
+                "portal must stay in the overworld, was " + run.portalDimension());
+
+        for (Waypoint w : run.checkpoints()) {
+            helper.assertTrue(nether.getBlockState(ExpeditionManager.toPos(w))
+                            .is(ModBlocks.EXPEDITION_CHECKPOINT.get()),
+                    "nether marker must be placed in the nether level");
+        }
+        helper.assertTrue(helper.getLevel().getBlockState(ExpeditionManager.toPos(run.portal()))
+                        .is(ModBlocks.EXPEDITION_PORTAL.get()),
+                "join portal must be placed in the overworld");
+
+        manager.failRun(player);
+        helper.assertTrue(!helper.getLevel().getBlockState(ExpeditionManager.toPos(run.portal()))
+                        .is(ModBlocks.EXPEDITION_PORTAL.get()),
+                "run end must remove the portal from its home dimension");
+        for (Waypoint w : run.checkpoints()) {
+            helper.assertTrue(!nether.getBlockState(ExpeditionManager.toPos(w))
+                            .is(ModBlocks.EXPEDITION_CHECKPOINT.get()),
+                    "run end must remove nether markers");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Per-run options survive save/load so a restarted server resumes the
+     * run with the same modifiers — the menu choices are part of the run.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    public static void optionsPersistAcrossReload(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionRun run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                new ExpeditionOptions("", Difficulty.HARD, 2, 150));
+
+        ExpeditionSavedData restored = roundTrip(helper, server);
+        ExpeditionRun reloaded = restored.ledger().run(player.getUUID()).orElseThrow(
+                () -> new IllegalStateException("run must survive the round trip"));
+        helper.assertTrue(reloaded.options().difficulty() == Difficulty.HARD,
+                "difficulty must persist, was " + reloaded.options().difficulty());
+        helper.assertTrue(reloaded.options().checkpoints() == 2,
+                "checkpoint override must persist, was " + reloaded.options().checkpoints());
+        helper.assertTrue(reloaded.options().bonusTimePercent() == 150,
+                "time percent must persist, was " + reloaded.options().bonusTimePercent());
+        helper.assertTrue(reloaded.portalDimension().equals(run.portalDimension()),
+                "portal dimension must persist");
+        manager.failRun(player);
+        helper.succeed();
+    }
+
+    /**
+     * The checkpoints option resizes generated routes while authored routes
+     * stay untouched (the option only applies to generation).
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    public static void checkpointsOptionResizesRoute(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionRun run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                new ExpeditionOptions("", Difficulty.STANDARD, 1, 0));
+        helper.assertTrue(run.checkpoints().size() == 1,
+                "checkpoints=1 must produce a one-checkpoint route, got "
+                        + run.checkpoints().size());
+        manager.failRun(player);
+        helper.succeed();
+    }
+
+    /**
+     * Difficulty scales the payout: BRUTAL doubles the scaled reward pool
+     * (8 base + 4 time bonus = 12, x200% = 24) with a solo party.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    public static void brutalDifficultyDoublesReward(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        ExpeditionRun run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                new ExpeditionOptions("", Difficulty.BRUTAL, 0, 0));
+        for (Waypoint w : run.checkpoints()) {
+            manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+        }
+        ExpeditionRun done = manager.completeRun(player);
+        helper.assertTrue(done.tokensAwarded() == 24,
+                "brutal must double the 12-token pool, awarded " + done.tokensAwarded());
+        helper.succeed();
+    }
+
+    /**
+     * The terminal's sneak-click menu is a real selection path: opening it
+     * and clicking the start button launches a run with the chosen options.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    public static void menuStartLaunchesRun(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        BlockPos terminalRel = new BlockPos(1, 1, 1);
+        helper.setBlock(terminalRel, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
+        try {
+            player.setShiftKeyDown(true);
+            useBlockAt(helper, player, helper.absolutePos(terminalRel));
+        } finally {
+            player.setShiftKeyDown(false);
+        }
+        helper.assertTrue(player.containerMenu instanceof ExpeditionMenu,
+                "sneak-click must open the expedition menu, got " + player.containerMenu);
+        // Slot 31 is the menu's start button.
+        player.containerMenu.clicked(31, 0, ClickType.PICKUP, player);
+        ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
+                () -> new IllegalStateException("the start button must launch a run"));
+        helper.assertTrue(run.options().difficulty() == Difficulty.STANDARD,
+                "default menu selection must be standard difficulty");
+        manager.failRun(player);
+        helper.succeed();
+    }
+
+    /**
+     * `/expeditions start` accepts the same modifiers without a terminal:
+     * the command anchors its portal at the player's feet.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    public static void startCommandAppliesModifiers(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        int result;
+        try {
+            result = server.getCommands().getDispatcher().execute(
+                    "expeditions start expeditions:overworld_trial hard 2 100",
+                    player.createCommandSourceStack());
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            throw new IllegalStateException("start command must parse", e);
+        }
+        helper.assertTrue(result > 0, "start command must succeed, returned " + result);
+        ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
+                () -> new IllegalStateException("the start command must launch a run"));
+        helper.assertTrue("expeditions:overworld_trial".equals(run.options().expeditionId()),
+                "command must record the picked expedition, was "
+                        + run.options().expeditionId());
+        helper.assertTrue(run.options().difficulty() == Difficulty.HARD,
+                "command must apply the difficulty, was " + run.options().difficulty());
+        helper.assertTrue(run.checkpoints().size() == 2,
+                "command must apply the checkpoint override, got "
+                        + run.checkpoints().size());
+        manager.failRun(player);
         helper.succeed();
     }
 

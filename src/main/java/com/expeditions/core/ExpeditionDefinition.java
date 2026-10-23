@@ -108,7 +108,22 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
      * result stays deterministic for any set the caller supplies.
      */
     public int totalReward(long elapsedTicks, Collection<String> completedObjectiveIds) {
-        int total = totalReward(elapsedTicks);
+        return totalReward(elapsedTicks, completedObjectiveIds, 0);
+    }
+
+    /**
+     * {@link #totalReward(long, Collection)} with the bonus time window
+     * scaled by {@code bonusTimePercent} (a per-run option; 0 uses the
+     * definition's window unchanged). Objective bonuses are unaffected —
+     * only the time-bonus window stretches or shrinks.
+     */
+    public int totalReward(long elapsedTicks, Collection<String> completedObjectiveIds,
+            int bonusTimePercent) {
+        long window = bonusTimePercent > 0
+                ? bonusTimeTicks * (long) bonusTimePercent / 100 : bonusTimeTicks;
+        boolean bonusEarned = bonusTokens > 0 && window > 0
+                && elapsedTicks >= 0 && elapsedTicks <= window;
+        int total = tokenReward + (bonusEarned ? bonusTokens : 0);
         Set<String> completed = Set.copyOf(completedObjectiveIds);
         for (ExpeditionObjective objective : objectives) {
             if (completed.contains(objective.id())) {

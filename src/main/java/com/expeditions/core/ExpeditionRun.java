@@ -44,6 +44,8 @@ public final class ExpeditionRun {
     private final Waypoint entry;
     private final long startedGameTime;
     private final List<UUID> challengeEntities;
+    private final ExpeditionOptions options;
+    private final String portalDimension;
     private ExpeditionStatus status;
     private int completedCheckpoints;
     private boolean rewarded;
@@ -54,7 +56,8 @@ public final class ExpeditionRun {
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
             Waypoint entry, long startedGameTime, ExpeditionStatus status, int completedCheckpoints,
             boolean rewarded, int tokensAwarded, List<UUID> challengeEntities,
-            Map<String, ObjectiveState> objectiveStates) {
+            Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
+            String portalDimension) {
         this.runId = Objects.requireNonNull(runId, "runId");
         this.playerId = Objects.requireNonNull(playerId, "playerId");
         this.party = new HashSet<>(party);
@@ -73,6 +76,11 @@ public final class ExpeditionRun {
         this.rewarded = rewarded;
         this.tokensAwarded = tokensAwarded;
         this.challengeEntities = new ArrayList<>(challengeEntities);
+        this.options = Objects.requireNonNull(options, "options");
+        if (portalDimension == null || portalDimension.isBlank()) {
+            throw new IllegalArgumentException("Portal dimension must not be blank");
+        }
+        this.portalDimension = portalDimension;
         // Every defined objective gets a tracked state; states persisted for
         // ids the definition no longer knows are kept (harmless) so a later
         // reload can re-attach them.
@@ -101,12 +109,27 @@ public final class ExpeditionRun {
             ExpeditionDefinition definition, List<Waypoint> resolvedCheckpoints,
             Waypoint resolvedExit, Waypoint terminal, Waypoint portal, Waypoint entry,
             long startedGameTime) {
+        return start(runId, playerId, party, definition, resolvedCheckpoints, resolvedExit,
+                terminal, portal, entry, startedGameTime, ExpeditionOptions.DEFAULT,
+                definition.dimension());
+    }
+
+    /**
+     * Starts a run with explicit per-run options and the dimension its
+     * launch portal lives in (the terminal's dimension — which may differ
+     * from the run's dimension when the player picked a remote expedition).
+     */
+    public static ExpeditionRun start(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition, List<Waypoint> resolvedCheckpoints,
+            Waypoint resolvedExit, Waypoint terminal, Waypoint portal, Waypoint entry,
+            long startedGameTime, ExpeditionOptions options, String portalDimension) {
         if (resolvedCheckpoints.isEmpty()) {
             throw new IllegalArgumentException("Run must contain at least one checkpoint");
         }
         return new ExpeditionRun(runId, playerId, party, definition, resolvedCheckpoints,
                 resolvedExit, terminal, portal, entry,
-                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, List.of(), Map.of());
+                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, List.of(), Map.of(),
+                options, portalDimension);
     }
 
     /**
@@ -140,6 +163,25 @@ public final class ExpeditionRun {
             ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
             int tokensAwarded, List<UUID> challengeEntities,
             Map<String, ObjectiveState> objectiveStates) {
+        return restore(runId, playerId, party, definition, checkpoints, exit, terminal,
+                portal, entry, startedGameTime, status, completedCheckpoints, rewarded,
+                tokensAwarded, challengeEntities, objectiveStates,
+                ExpeditionOptions.DEFAULT, definition.dimension());
+    }
+
+    /**
+     * Restores a run with its per-run options and portal dimension (saves
+     * written before either existed default to {@link ExpeditionOptions#DEFAULT}
+     * and the run's own dimension).
+     */
+    public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime,
+            ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
+            int tokensAwarded, List<UUID> challengeEntities,
+            Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
+            String portalDimension) {
         if (checkpoints.isEmpty()) {
             throw new IllegalArgumentException("Restored run must contain at least one checkpoint");
         }
@@ -152,7 +194,7 @@ public final class ExpeditionRun {
         return new ExpeditionRun(runId, playerId, party, definition, checkpoints, exit,
                 terminal, portal, entry,
                 startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded,
-                challengeEntities, objectiveStates);
+                challengeEntities, objectiveStates, options, portalDimension);
     }
 
     /** Convenience restore for saves written before objective tracking existed. */
@@ -345,6 +387,20 @@ public final class ExpeditionRun {
     /** The portal block position members enter through. */
     public Waypoint portal() {
         return portal;
+    }
+
+    /** Per-run modifiers chosen at the terminal (default = none). */
+    public ExpeditionOptions options() {
+        return options;
+    }
+
+    /**
+     * Dimension id of the launch terminal and portal — the run's home
+     * dimension. Equals {@code definition().dimension()} except for
+     * expeditions started for a remote dimension.
+     */
+    public String portalDimension() {
+        return portalDimension;
     }
 
     /** The position the portal teleports members to. */

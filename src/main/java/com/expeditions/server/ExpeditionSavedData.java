@@ -1,6 +1,8 @@
 package com.expeditions.server;
 
+import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionDefinition;
+import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
@@ -86,6 +88,12 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_OBJ_PROGRESS = "Progress";
     private static final String TAG_OBJ_DONE = "Done";
     private static final String TAG_BALANCE = "Balance";
+    private static final String TAG_PORTAL_DIMENSION = "PortalDimension";
+    private static final String TAG_OPTIONS = "Options";
+    private static final String TAG_OPT_EXPEDITION = "ExpeditionId";
+    private static final String TAG_OPT_DIFFICULTY = "Difficulty";
+    private static final String TAG_OPT_CHECKPOINTS = "Checkpoints";
+    private static final String TAG_OPT_TIME_PERCENT = "TimePercent";
     private static final String TAG_X = "x";
     private static final String TAG_Y = "y";
     private static final String TAG_Z = "z";
@@ -213,7 +221,35 @@ public class ExpeditionSavedData extends SavedData {
                 runTag.getBoolean(TAG_REWARDED),
                 runTag.getInt(TAG_TOKENS_AWARDED),
                 challengeEntities,
-                objectiveStates);
+                objectiveStates,
+                readOptions(runTag),
+                readPortalDimension(runTag, dimension));
+    }
+
+    /**
+     * Per-run options, absent in saves from before terminal selection
+     * existed — those runs behaved like {@link ExpeditionOptions#DEFAULT}.
+     */
+    private static ExpeditionOptions readOptions(CompoundTag runTag) {
+        if (!runTag.contains(TAG_OPTIONS)) {
+            return ExpeditionOptions.DEFAULT;
+        }
+        CompoundTag opt = runTag.getCompound(TAG_OPTIONS);
+        Difficulty tier = Difficulty.byName(opt.getString(TAG_OPT_DIFFICULTY));
+        return new ExpeditionOptions(opt.getString(TAG_OPT_EXPEDITION),
+                tier != null ? tier : Difficulty.STANDARD,
+                opt.getInt(TAG_OPT_CHECKPOINTS), opt.getInt(TAG_OPT_TIME_PERCENT));
+    }
+
+    /**
+     * The portal's home dimension, absent in saves from before remote
+     * expeditions existed — then the portal always sat in the run's own
+     * dimension.
+     */
+    private static String readPortalDimension(CompoundTag runTag, String runDimension) {
+        String stored = runTag.getString(TAG_PORTAL_DIMENSION);
+        return stored.isBlank()
+                ? (runDimension.isBlank() ? DEFAULT_DIMENSION : runDimension) : stored;
     }
 
     @Override
@@ -249,6 +285,13 @@ public class ExpeditionSavedData extends SavedData {
             runTag.put(TAG_TERMINAL, writeWaypoint(run.terminal()));
             runTag.put(TAG_PORTAL, writeWaypoint(run.portal()));
             runTag.put(TAG_ENTRY, writeWaypoint(run.entry()));
+            runTag.putString(TAG_PORTAL_DIMENSION, run.portalDimension());
+            CompoundTag optionsTag = new CompoundTag();
+            optionsTag.putString(TAG_OPT_EXPEDITION, run.options().expeditionId());
+            optionsTag.putString(TAG_OPT_DIFFICULTY, run.options().difficulty().name());
+            optionsTag.putInt(TAG_OPT_CHECKPOINTS, run.options().checkpoints());
+            optionsTag.putInt(TAG_OPT_TIME_PERCENT, run.options().bonusTimePercent());
+            runTag.put(TAG_OPTIONS, optionsTag);
             ListTag entities = new ListTag();
             for (UUID entityId : run.challengeEntities()) {
                 CompoundTag entityTag = new CompoundTag();

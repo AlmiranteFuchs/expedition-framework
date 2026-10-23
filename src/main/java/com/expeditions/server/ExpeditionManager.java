@@ -3,6 +3,7 @@ package com.expeditions.server;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.CheckpointChallenge;
 import com.expeditions.core.ExpeditionDefinition;
+import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
@@ -22,10 +23,12 @@ import com.expeditions.server.dimension.ExpeditionAdapters;
 import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -123,27 +126,53 @@ public final class ExpeditionManager {
      *         a portal, or no safe route resolves
      */
     public ExpeditionRun startRun(ServerPlayer player, BlockPos terminalPos) {
+        return startRun(player, terminalPos, ExpeditionOptions.DEFAULT);
+    }
+
+    /**
+     * Starts a run with explicit per-run options: an empty expedition id
+     * resolves the player's own dimension like before, a non-empty id picks
+     * any startable expedition — possibly in another dimension, with the
+     * portal staying at the terminal and the route resolving remotely.
+     * Checkpoints and time options reshape the run's definition defaults.
+     */
+    public ExpeditionRun startRun(ServerPlayer player, BlockPos terminalPos,
+            ExpeditionOptions options) {
         if (ledger.activeRun(player.getUUID()).isPresent()) {
             throw new IllegalStateException("You already have an active expedition");
         }
-        ServerLevel level = player.serverLevel();
-        // Datapack definitions take precedence over the built-in config ones.
-        ExpeditionDefinition definition = ExpeditionDefinitions
-                .forDimension(level.dimension().location().toString())
-                .or(() -> ExpeditionsConfig.definitionFor(level.dimension()))
-                .orElseThrow(() -> new IllegalStateException(
-                        "No expedition is available in this dimension"));
+        ServerLevel portalLevel = player.serverLevel();
+        ExpeditionDefinition definition = options.expeditionId().isBlank()
+                ? ExpeditionDefinitions
+                        .forDimension(portalLevel.dimension().location().toString())
+                        .or(() -> ExpeditionsConfig.definitionFor(portalLevel.dimension()))
+                        .orElseThrow(() -> new IllegalStateException(
+                                "No expedition is available in this dimension"))
+                : listStartable().stream()
+                        .filter(d -> d.id().equals(options.expeditionId()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Unknown or unavailable expedition: " + options.expeditionId()));
+        ServerLevel level = levelFor(definition.dimension());
+        if (level == null) {
+            throw new IllegalStateException(
+                    "The expedition's dimension is not loaded");
+        }
         ExpeditionDimensionAdapter adapter = ExpeditionAdapters.forLevel(level)
                 .orElseThrow(() -> new IllegalStateException(
                         "This dimension cannot host expeditions"));
 
         // Everything below is validated before a single block is placed so a
-        // failed start leaves the world untouched.
-        BlockPos portalPos = findPortalSpot(level, terminalPos).orElseThrow(
+        // failed start leaves the world untouched. The portal stays in the
+        // terminal's dimension even when the expedition runs elsewhere.
+        BlockPos portalPos = findPortalSpot(portalLevel, terminalPos).orElseThrow(
                 () -> new IllegalStateException(
                         "The expedition terminal needs clear space above it"));
 
         RouteSpec spec = definition.route();
+        if (options.checkpoints() > 0 && spec instanceof RouteGeneration g) {
+            spec = g.withCheckpoints(options.checkpoints());
+        }
         RandomSource rng = player.getRandom();
         ExpeditionRoute route = null;
         BlockPos entryPos = null;
@@ -202,22 +231,55 @@ public final class ExpeditionManager {
         }
 
         String dimension = definition.dimension();
+        String portalDimension = portalLevel.dimension().location().toString();
         for (BlockPos pos : checkpointPositions) {
             level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
             data.trackMarker(dimension, pos);
         }
         level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
         data.trackMarker(dimension, exitPos);
-        level.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState(), 3);
-        data.trackMarker(dimension, portalPos);
+        portalLevel.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState(), 3);
+        data.trackMarker(portalDimension, portalPos);
 
-        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(), definition,
+        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(),
+                Set.of(player.getUUID()), definition,
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
                 toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
-                toWaypoint(entryPos), level.getGameTime());
+                toWaypoint(entryPos), level.getGameTime(), options, portalDimension);
         ledger.startRun(run);
         data.setDirty();
         return run;
+    }
+
+    /**
+     * Every expedition that could start right now: datapack definitions plus
+     * the built-in config ones they don't shadow, filtered to dimensions that
+     * are loaded and have an adapter — the same "can a run actually resolve
+     * here" test the start path applies.
+     */
+    public List<ExpeditionDefinition> listStartable() {
+        Map<String, ExpeditionDefinition> startable = new TreeMap<>();
+        Set<String> coveredDimensions = new HashSet<>();
+        for (ExpeditionDefinition definition : ExpeditionDefinitions.all().values()) {
+            if (isStartable(definition)) {
+                startable.put(definition.id(), definition);
+                coveredDimensions.add(definition.dimension());
+            }
+        }
+        for (ResourceKey<Level> builtin : List.of(Level.OVERWORLD, Level.NETHER)) {
+            if (coveredDimensions.contains(builtin.location().toString())) {
+                continue;
+            }
+            ExpeditionsConfig.definitionFor(builtin)
+                    .filter(this::isStartable)
+                    .ifPresent(d -> startable.put(d.id(), d));
+        }
+        return List.copyOf(startable.values());
+    }
+
+    private boolean isStartable(ExpeditionDefinition definition) {
+        ServerLevel level = levelFor(definition.dimension());
+        return level != null && ExpeditionAdapters.forLevel(level).isPresent();
     }
 
     /**
@@ -233,7 +295,7 @@ public final class ExpeditionManager {
         Waypoint portalWaypoint = toWaypoint(portalPos);
         Optional<ExpeditionRun> match = ledger.runs().stream()
                 .filter(r -> r.portal().equals(portalWaypoint)
-                        && r.definition().dimension().equals(dimension))
+                        && r.portalDimension().equals(dimension))
                 .findFirst();
         if (match.isEmpty() || !match.get().portalOpen()) {
             // Orphaned or sealed portal: self-heal.
@@ -250,7 +312,10 @@ public final class ExpeditionManager {
                 return;
             }
             run.joinParty(player.getUUID());
-            extendRouteForMember(run, level);
+            ServerLevel runLevel = levelFor(run.definition().dimension());
+            if (runLevel != null) {
+                extendRouteForMember(run, runLevel);
+            }
             player.sendSystemMessage(Component.translatable(
                     "message.expeditions.party_joined"));
             data.setDirty();
@@ -258,9 +323,14 @@ public final class ExpeditionManager {
         if (!hasCompass(player)) {
             grantCompass(player, run, level.dimension());
         }
+        // The portal may sit in a different dimension than the expedition;
+        // teleport into the run's own level.
+        ServerLevel destination = levelFor(run.definition().dimension());
         Waypoint entry = run.entry();
-        player.teleportTo(level, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
-                Set.of(), player.getYRot(), player.getXRot());
+        if (destination != null) {
+            player.teleportTo(destination, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
+                    Set.of(), player.getYRot(), player.getXRot());
+        }
     }
 
     /**
@@ -316,9 +386,11 @@ public final class ExpeditionManager {
         }
         run.complete();
         if (!run.isRewarded()) {
-            int base = run.definition().totalReward(elapsed, run.completedObjectiveIds());
+            int base = run.definition().totalReward(elapsed,
+                    run.completedObjectiveIds(), run.options().bonusTimePercent());
             int scaled = PartyScaling.scaledTotal(base, run.party().size(),
-                    ExpeditionsConfig.partyRewardBonusPerExtraMember());
+                    ExpeditionsConfig.partyRewardBonusPerExtraMember())
+                    * run.options().difficulty().rewardPercent() / 100;
             int share = PartyScaling.memberShare(scaled, run.party().size(),
                     ExpeditionsConfig.partySplitRewards());
             for (UUID member : run.party()) {
@@ -539,10 +611,11 @@ public final class ExpeditionManager {
     private void endRun(ExpeditionRun run) {
         String dimension = run.definition().dimension();
         ServerLevel level = levelFor(dimension);
-        if (level != null) {
+        ServerLevel portalLevel = levelFor(run.portalDimension());
+        if (portalLevel != null) {
             BlockPos portalPos = toPos(run.portal());
-            removeMarkerAt(level, portalPos);
-            data.untrackMarker(dimension, portalPos);
+            removeMarkerAt(portalLevel, portalPos);
+            data.untrackMarker(run.portalDimension(), portalPos);
         }
         if (level != null && run.completedCheckpoints() > 0) {
             clearChallengeEntities(run, level,
@@ -598,9 +671,10 @@ public final class ExpeditionManager {
     private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center) {
         EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(
                 ResourceLocation.parse(ExpeditionsConfig.challengeHordeMob()));
-        int size = ExpeditionsConfig.challengeHordeSize()
+        int size = (ExpeditionsConfig.challengeHordeSize()
                 + ExpeditionsConfig.challengeHordeSizePerExtraMember()
-                        * (run.party().size() - 1);
+                        * (run.party().size() - 1))
+                * run.options().difficulty().hordePercent() / 100;
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -787,7 +861,9 @@ public final class ExpeditionManager {
         if (!player.isAlive()) {
             return;
         }
-        ServerLevel level = levelFor(run.definition().dimension());
+        // The terminal lives in the portal's home dimension — which differs
+        // from the run's dimension for remote expeditions.
+        ServerLevel level = levelFor(run.portalDimension());
         if (level == null) {
             return;
         }

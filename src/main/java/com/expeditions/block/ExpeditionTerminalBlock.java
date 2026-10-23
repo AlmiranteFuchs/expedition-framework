@@ -3,10 +3,12 @@ package com.expeditions.block;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.Waypoint;
 import com.expeditions.server.ExpeditionManager;
+import com.expeditions.server.ExpeditionMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -34,7 +36,18 @@ public class ExpeditionTerminalBlock extends Block {
             // state vanished is failed closed instead of trapping the player.
             manager.resumeOrFail(serverPlayer).ifPresentOrElse(
                     run -> reportProgress(serverPlayer, run),
-                    () -> startExpedition(serverPlayer, manager, pos));
+                    () -> {
+                        // Plain click quick-starts the dimension's expedition;
+                        // sneak-click opens the expedition selection menu.
+                        if (serverPlayer.isShiftKeyDown()) {
+                            serverPlayer.openMenu(new SimpleMenuProvider(
+                                    (id, inventory, p) -> new ExpeditionMenu(
+                                            id, inventory, manager, pos),
+                                    Component.translatable("gui.expeditions.terminal")));
+                        } else {
+                            startExpedition(serverPlayer, manager, pos);
+                        }
+                    });
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

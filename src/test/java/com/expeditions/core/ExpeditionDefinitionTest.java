@@ -68,4 +68,19 @@ class ExpeditionDefinitionTest {
                 "minecraft:overworld", route(), 8, 4, 6000);
         assertEquals(8, def.totalReward(-1));
     }
+
+    @Test
+    void bonusTimePercentScalesWindow() {
+        ExpeditionDefinition def = new ExpeditionDefinition("id", "x", 0,
+                "minecraft:overworld", route(), 8, 4, 6000);
+        // 200% doubles the window: 12000 now earns the bonus.
+        assertEquals(12, def.totalReward(12000, List.of(), 200));
+        assertEquals(8, def.totalReward(12001, List.of(), 200));
+        // 50% halves it: 3001 now misses.
+        assertEquals(8, def.totalReward(3001, List.of(), 50));
+        assertEquals(12, def.totalReward(3000, List.of(), 50));
+        // 0 keeps the definition window unchanged.
+        assertEquals(12, def.totalReward(6000, List.of(), 0));
+        assertEquals(8, def.totalReward(6001, List.of(), 0));
+    }
 }

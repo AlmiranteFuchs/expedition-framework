@@ -408,14 +408,21 @@ chunk, and validate on real block state — not heightmap assumptions.
   table. Pool contents live in `expeditions:reward_items/<dimension>` item
   tags (`default` fallback), so modpacks and adapters extend them as plain
   datapack tags.
-- **Commands** — `/expeditions balance|status|abandon|redeem`.
-- **Tests** — 78 unit tests + 36 GameTest in-game tests.
+- **Per-run options** — sneak-click a terminal to open the expedition menu:
+  pick any startable expedition (including other dimensions — the portal
+  stays at home while the route resolves remotely), a difficulty tier
+  (relaxed→brutal, scaling horde size and rewards), route length and a
+  bonus-time window. `/expeditions start <id> [difficulty] [checkpoints]
+  [time%]` does the same without a GUI. Plain-click still quick-starts the
+  local dimension's expedition. Options persist with the run.
+- **Commands** — `/expeditions balance|status|abandon|redeem|start`.
+- **Tests** — 83 unit tests + 42 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 78 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **36/36 game tests pass** on a real dedicated
+- `./gradlew test` — 83 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **42/42 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -461,7 +468,12 @@ chunk, and validate on real block state — not heightmap assumptions.
     malformed objective definitions are skipped at reload.
   - item valuation ranks tiers correctly (junk < food < gem < equipment),
     completion grants bonus drops from the run's dimension pool, redeem
-    refuses without enough tokens and pays a Nether draw in the Nether.
+    refuses without enough tokens and pays a Nether draw in the Nether,
+  - per-run options apply end-to-end: a Nether expedition started from an
+    Overworld terminal resolves its route remotely with the portal left at
+    home, checkpoint-count and difficulty modifiers reshape the route and
+    payout, options survive save/load, the terminal menu's start button
+    launches the run, and `/expeditions start` takes the same modifiers.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -519,13 +531,15 @@ chunk, and validate on real block state — not heightmap assumptions.
   `DimensionDataStorage`, per-record fault isolation on load),
   `ExpeditionEventHandler` (death + login recovery + startup pruning + commands),
 `ItemValuator` (stat-driven item score for reward weighting), `ItemRewards`
-(dimension-aware pools from `reward_items/<dim>` tags + score-weighted draws).
+(dimension-aware pools from `reward_items/<dim>` tags + score-weighted
+draws), `ExpeditionMenu` (vanilla chest-GUI terminal screen — server-only,
+no custom menu type).
 - `com.expeditions.block` — terminal/checkpoint/exit blocks delegating to the
   manager. `com.expeditions.registry` — `DeferredRegister` wiring.
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (36 tests, batches a–x).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (42 tests, batches a–y).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
   `CompassItem` and never competes with block interactions).
@@ -536,8 +550,5 @@ chunk, and validate on real block state — not heightmap assumptions.
 
 ## Next milestones
 
-1. Optional objectives and performance scoring beyond the time bonus.
-2. Token sink (shop or item claim) and additional reward variety.
-3. Per-run options chosen at the terminal (party size, difficulty, reward
-   mode) — the scaling inputs already exist as config; what's missing is the
-   in-game selection UI and plumbing to override config per run.
+1. Party-size options at the terminal and per-member objective variants.
+2. Challenge variety beyond the horde (the `CheckpointChallenge` seam).

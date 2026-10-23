@@ -166,6 +166,18 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   turns a value budget (tokens × `dropValuePerToken`) into weighted stacks
   that fully consume it (cheapest item once as floor, `maxBonusDrops` cap).
   Draw weights are random by design; the budget is the deterministic part.
+- Per-run options (milestone 8): `ExpeditionOptions` (expedition id,
+  `Difficulty` tier, checkpoints override, bonus-time percent) is stored on
+  the run and persisted. `portalDimension` records the terminal's home
+  dimension — it differs from the run's dimension for remote picks, and all
+  portal/terminal cleanup+teleport paths must use it (not the run dim).
+  `listStartable()` = datapack + unshadowed config defs filtered by
+  loaded-dimension + adapter — the menu and `/expeditions start` share it.
+  Plain terminal click = `DEFAULT` options; sneak-click opens `ExpeditionMenu`
+  (vanilla `ChestMenu` subclass — server-only, container is display-only;
+  `clicked` consumes option-row slots, `quickMoveStack` blocks insertion).
+  `StringArgumentType.word()` cannot parse `ns:id` strings (stops at ':') —
+  use `ResourceLocationArgument.id()` for id parameters.
 
 ## Testing conventions
 
@@ -208,8 +220,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Economy milestone verified: `build` + 78 unit tests + 36/36
-GameTest in-game tests pass (all prior coverage plus valuation tiers, bonus
-drops from the run's dimension pool, redeem success/refusal/pool).
-Human client click-through and real disconnect not simulated — the compass
-needle angle itself is client rendering, untested.
+Options milestone verified: `build` + 83 unit tests + 42/42
+GameTest in-game tests pass (all prior coverage plus remote-dimension
+starts, menu start button, command modifiers, option persistence,
+difficulty-scaled payout). Human client click-through and real disconnect
+not simulated — the menu opens through the vanilla container path but has
+never been seen in a real client.

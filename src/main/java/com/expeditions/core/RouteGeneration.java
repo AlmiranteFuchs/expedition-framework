@@ -18,7 +18,8 @@ public record RouteGeneration(int checkpoints, int minSpacing, int maxSpacing,
         int exitMin, int exitMax, int maxAttempts, int entryMin, int entryMax)
         implements RouteSpec {
 
-    private static final int MAX_CHECKPOINTS = 16;
+    /** Upper bound on checkpoints in a generated route. */
+    public static final int MAX_CHECKPOINTS = 16;
     private static final int MAX_DISTANCE = 4096;
     private static final int MAX_ATTEMPTS = 8;
 
@@ -46,5 +47,11 @@ public record RouteGeneration(int checkpoints, int minSpacing, int maxSpacing,
             throw new IllegalArgumentException(
                     "Entry distance must satisfy 1 <= min <= max <= " + MAX_DISTANCE);
         }
+    }
+
+    /** Same generation parameters with a different checkpoint count. */
+    public RouteGeneration withCheckpoints(int count) {
+        return new RouteGeneration(count, minSpacing, maxSpacing, exitMin,
+                exitMax, maxAttempts, entryMin, entryMax);
     }
 }

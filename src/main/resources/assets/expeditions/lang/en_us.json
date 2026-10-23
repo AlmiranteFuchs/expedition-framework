@@ -26,5 +26,17 @@
   "message.expeditions.objectives_missing": "Required objectives unfinished: %1$s",
   "message.expeditions.redeem_no_tokens": "Not enough expedition tokens (need %1$s).",
   "message.expeditions.redeem_no_pool": "No rewards are configured for this dimension.",
-  "message.expeditions.redeemed": "Redeemed %1$s tokens for supplies."
+  "message.expeditions.redeemed": "Redeemed %1$s tokens for supplies.",
+  "message.expeditions.no_expeditions": "No expeditions are available right now.",
+  "message.expeditions.unknown_difficulty": "Unknown difficulty — use relaxed, standard, hard or brutal.",
+  "gui.expeditions.terminal": "Expedition Terminal",
+  "gui.expeditions.no_expeditions": "No expeditions available",
+  "gui.expeditions.expedition": "Expedition",
+  "gui.expeditions.difficulty": "Difficulty",
+  "gui.expeditions.difficulty_hint": "Horde %1$s%%, rewards %2$s%%",
+  "gui.expeditions.length": "Route length",
+  "gui.expeditions.time": "Bonus time window",
+  "gui.expeditions.default": "Expedition default",
+  "gui.expeditions.start": "Start Expedition",
+  "gui.expeditions.click_cycle": "Click to change"
 }
