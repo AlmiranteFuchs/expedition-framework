@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "expeditions:block/expedition_portal"
+    }
+  }
+}

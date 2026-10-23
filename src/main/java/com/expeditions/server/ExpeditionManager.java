@@ -5,6 +5,7 @@ import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
+import com.expeditions.core.PartyScaling;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.core.RoutePlanner;
@@ -23,27 +24,38 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.core.GlobalPos;
-import net.minecraft.core.component.DataComponents;
 
 /**
  * Server-authoritative coordinator for expedition runs.
  *
  * <p>State lives in an {@link ExpeditionLedger} persisted by
- * {@link ExpeditionSavedData}; the manager is stateless. It additionally owns
- * the Minecraft-side work: picking the expedition configured for the player's
- * dimension, resolving its route anchors through the dimension's adapter, and
- * materializing/removing the marker blocks players interact with.
+ * {@link ExpeditionSavedData}; the manager is stateless. It owns the
+ * Minecraft-side work: picking the expedition for the player's dimension,
+ * resolving the route through the dimension's adapter, materializing marker
+ * blocks and the join portal, moving members between the terminal and the
+ * route, and enforcing party membership rules.
+ *
+ * <p>Run lifecycle with portals: a terminal click resolves the full route at
+ * a remote landing spot and spawns a portal above the terminal. Players
+ * entering the portal are teleported to the run's entry and join its party
+ * (the route may be extended per member, per config). The first checkpoint
+ * activation seals the party and removes the portal. Completion or failure
+ * removes all markers, strips compasses and teleports members back to the
+ * terminal.
  */
 public final class ExpeditionManager {
     /** Candidate columns retried when a generated anchor fails validation. */
@@ -84,13 +96,16 @@ public final class ExpeditionManager {
     }
 
     /**
-     * Resolves the route of the expedition configured for the player's current
-     * dimension, places marker blocks and starts a run.
+     * Starts a run at the terminal the player clicked: resolves the full
+     * route at a remote landing spot, places markers, and spawns the join
+     * portal above the terminal. Members actually reach the route — and
+     * receive their compasses — by stepping into the portal.
      *
      * @throws IllegalStateException if the player already has an active run, no
-     *         expedition exists for the dimension, or no safe route resolves
+     *         expedition exists for the dimension, the terminal has no room for
+     *         a portal, or no safe route resolves
      */
-    public ExpeditionRun startRun(ServerPlayer player) {
+    public ExpeditionRun startRun(ServerPlayer player, BlockPos terminalPos) {
         if (ledger.activeRun(player.getUUID()).isPresent()) {
             throw new IllegalStateException("You already have an active expedition");
         }
@@ -105,26 +120,47 @@ public final class ExpeditionManager {
                 .orElseThrow(() -> new IllegalStateException(
                         "This dimension cannot host expeditions"));
 
-        // A generated route is rolled fresh per run, anchored to the player's
-        // position at the terminal; authored routes stay exact.
-        RouteSpec spec = definition.route();
-        ExpeditionRoute route = switch (spec) {
-            case ExpeditionRoute r -> r;
-            case RouteGeneration g -> RoutePlanner.generate(g,
-                    player.blockPosition().getX(), player.blockPosition().getZ(),
-                    player.getRandom().nextLong());
-        };
-        // Generated anchors are not authored, so they may retry a bounded
-        // number of nearby candidate columns; authored anchors are strict.
-        int maxAttempts = spec instanceof RouteGeneration g ? g.maxAttempts() : 0;
+        // Everything below is validated before a single block is placed so a
+        // failed start leaves the world untouched.
+        BlockPos portalPos = findPortalSpot(level, terminalPos).orElseThrow(
+                () -> new IllegalStateException(
+                        "The expedition terminal needs clear space above it"));
 
-        // Resolve the whole route before touching the world so a partially
-        // unsafe route never leaves stray markers behind.
+        RouteSpec spec = definition.route();
+        RandomSource rng = player.getRandom();
+        ExpeditionRoute route;
+        int maxAttempts;
+        BlockPos entryPos;
+        switch (spec) {
+            case RouteGeneration g -> {
+                // The portal travels a random distance from the terminal; the
+                // route is generated around that landing spot.
+                double angle = rng.nextDouble() * Math.PI * 2;
+                int distance = g.entryMin()
+                        + rng.nextInt(g.entryMax() - g.entryMin() + 1);
+                int baseX = terminalPos.getX() + (int) Math.round(Math.cos(angle) * distance);
+                int baseZ = terminalPos.getZ() + (int) Math.round(Math.sin(angle) * distance);
+                route = RoutePlanner.generate(g, baseX, baseZ, rng.nextLong());
+                maxAttempts = g.maxAttempts();
+                entryPos = resolveAnchor(adapter, level, new RouteAnchor(baseX, baseZ), maxAttempts);
+            }
+            case ExpeditionRoute r -> {
+                // Authored routes keep their exact anchors; the portal lands
+                // members on top of the first checkpoint.
+                route = r;
+                maxAttempts = 0;
+                entryPos = null;
+            }
+        }
+
         List<BlockPos> checkpointPositions = new ArrayList<>();
         for (RouteAnchor anchor : route.checkpoints()) {
             checkpointPositions.add(resolveAnchor(adapter, level, anchor, maxAttempts));
         }
         BlockPos exitPos = resolveAnchor(adapter, level, route.exit(), maxAttempts);
+        if (entryPos == null) {
+            entryPos = checkpointPositions.get(0).above();
+        }
 
         String dimension = definition.dimension();
         for (BlockPos pos : checkpointPositions) {
@@ -133,18 +169,65 @@ public final class ExpeditionManager {
         }
         level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
         data.trackMarker(dimension, exitPos);
+        level.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState(), 3);
+        data.trackMarker(dimension, portalPos);
 
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(), definition,
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
-                toWaypoint(exitPos), level.getGameTime());
+                toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
+                toWaypoint(entryPos), level.getGameTime());
         ledger.startRun(run);
-        grantCompass(player, run, level.dimension());
         data.setDirty();
         return run;
     }
 
     /**
-     * Advances the player's active run if {@code pos} is its next checkpoint.
+     * Handles a player colliding with a portal block: joins them to the run's
+     * party when the portal is still open (extending a generated route per
+     * the party config) and teleports them to the run's entry. Portals whose
+     * run has sealed or ended remove themselves — the portal is always
+     * authoritative-clean.
+     */
+    public void enterPortal(ServerPlayer player, BlockPos portalPos) {
+        ServerLevel level = player.serverLevel();
+        String dimension = level.dimension().location().toString();
+        Waypoint portalWaypoint = toWaypoint(portalPos);
+        Optional<ExpeditionRun> match = ledger.runs().stream()
+                .filter(r -> r.portal().equals(portalWaypoint)
+                        && r.definition().dimension().equals(dimension))
+                .findFirst();
+        if (match.isEmpty() || !match.get().portalOpen()) {
+            // Orphaned or sealed portal: self-heal.
+            removeMarkerAt(level, portalPos);
+            data.untrackMarker(dimension, portalPos);
+            data.setDirty();
+            return;
+        }
+        ExpeditionRun run = match.get();
+        if (!run.isMember(player.getUUID())) {
+            if (ledger.activeRun(player.getUUID()).isPresent()) {
+                player.sendSystemMessage(Component.translatable(
+                        "message.expeditions.already_in_run"));
+                return;
+            }
+            run.joinParty(player.getUUID());
+            extendRouteForMember(run, level);
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.party_joined"));
+            data.setDirty();
+        }
+        if (!hasCompass(player)) {
+            grantCompass(player, run, level.dimension());
+        }
+        Waypoint entry = run.entry();
+        player.teleportTo(level, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
+                Set.of(), player.getYRot(), player.getXRot());
+    }
+
+    /**
+     * Advances the run of the interacting player if {@code pos} is its next
+     * checkpoint. The first activation seals the party and removes the
+     * portal.
      *
      * @return the updated run
      * @throws IllegalStateException if the activation is invalid
@@ -152,15 +235,19 @@ public final class ExpeditionManager {
     public ExpeditionRun activateCheckpoint(ServerPlayer player, BlockPos pos) {
         ExpeditionRun run = requireActive(player.getUUID());
         run.activateCheckpoint(toWaypoint(pos));
-        retargetCompasses(player, run, player.serverLevel().dimension());
+        if (run.completedCheckpoints() == 1) {
+            closePortal(run);
+        }
+        retargetPartyCompasses(run);
         data.setDirty();
         return run;
     }
 
     /**
-     * Completes the player's active run and grants the token reward — the
-     * guaranteed amount plus a time bonus when earned — exactly once, then
-     * removes marker blocks if no other run in the dimension needs them.
+     * Completes the interacting player's run and grants the scaled reward to
+     * every member present — the base amount times the configured party
+     * bonus, then split evenly or paid in full per config — exactly once.
+     * Members are teleported back to the run's terminal.
      *
      * @throws IllegalStateException if the run is missing, finished or incomplete
      */
@@ -169,25 +256,36 @@ public final class ExpeditionManager {
         run.complete();
         if (!run.isRewarded()) {
             long elapsed = run.elapsedTicks(player.serverLevel().getGameTime());
-            int tokens = run.definition().totalReward(elapsed);
-            ledger.addTokens(player.getUUID(), tokens);
-            run.markRewarded(tokens);
+            int base = run.definition().totalReward(elapsed);
+            int scaled = PartyScaling.scaledTotal(base, run.party().size(),
+                    ExpeditionsConfig.partyRewardBonusPerExtraMember());
+            int share = PartyScaling.memberShare(scaled, run.party().size(),
+                    ExpeditionsConfig.partySplitRewards());
+            for (UUID member : run.party()) {
+                ledger.addTokens(member, share);
+            }
+            run.markRewarded(share);
         }
-        data.setDirty();
-        removeCompasses(player);
-        cleanupMarkers(run);
+        endRun(run);
         return run;
     }
 
     /**
-     * Fails the player's active run (death or abandon). No reward is granted.
+     * Removes the interacting player from their run (death or abandon).
+     * Remaining members continue; when the last member leaves, the run fails
+     * and the party is teleported back.
      */
     public ExpeditionRun failRun(ServerPlayer player) {
         ExpeditionRun run = requireActive(player.getUUID());
+        if (run.party().size() > 1) {
+            run.leaveParty(player.getUUID());
+            removeCompasses(player);
+            teleportToTerminal(player, run);
+            data.setDirty();
+            return run;
+        }
         run.fail();
-        data.setDirty();
-        removeCompasses(player);
-        cleanupMarkers(run);
+        endRun(run);
         return run;
     }
 
@@ -205,10 +303,19 @@ public final class ExpeditionManager {
         }
         ExpeditionRun run = active.get();
         run.fail();
-        data.setDirty();
-        removeCompasses(player);
-        cleanupMarkers(run);
+        endRun(run);
         return Optional.empty();
+    }
+
+    /**
+     * Strips expedition compasses from a player who has no active run —
+     * covers compasses left over from runs that ended while the member was
+     * offline. Called on login.
+     */
+    public void sweepCompasses(ServerPlayer player) {
+        if (ledger.activeRun(player.getUUID()).isEmpty()) {
+            removeCompasses(player);
+        }
     }
 
     /**
@@ -239,7 +346,9 @@ public final class ExpeditionManager {
         return ledger.runs().stream()
                 .filter(ExpeditionRun::isActive)
                 .filter(r -> r.definition().dimension().equals(dimension))
-                .anyMatch(r -> r.checkpoints().contains(waypoint) || r.exit().equals(waypoint));
+                .anyMatch(r -> r.checkpoints().contains(waypoint)
+                        || r.exit().equals(waypoint)
+                        || r.portal().equals(waypoint));
     }
 
     private boolean isRunRecoverable(ExpeditionRun run) {
@@ -253,6 +362,92 @@ public final class ExpeditionManager {
             }
         }
         return level.getBlockState(toPos(run.exit())).is(ModBlocks.EXPEDITION_EXIT.get());
+    }
+
+    /**
+     * Shared run-end cleanup: remove the portal if it somehow remains, strip
+     * compasses and teleport online members back to the terminal, then remove
+     * route markers no other active run needs.
+     */
+    private void endRun(ExpeditionRun run) {
+        String dimension = run.definition().dimension();
+        ServerLevel level = levelFor(dimension);
+        if (level != null) {
+            BlockPos portalPos = toPos(run.portal());
+            removeMarkerAt(level, portalPos);
+            data.untrackMarker(dimension, portalPos);
+        }
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer != null) {
+                removeCompasses(memberPlayer);
+                teleportToTerminal(memberPlayer, run);
+            }
+        }
+        cleanupMarkers(run);
+        data.setDirty();
+    }
+
+    /** Removes the portal block when the first checkpoint seals the party. */
+    private void closePortal(ExpeditionRun run) {
+        String dimension = run.definition().dimension();
+        ServerLevel level = levelFor(dimension);
+        if (level != null) {
+            BlockPos portalPos = toPos(run.portal());
+            removeMarkerAt(level, portalPos);
+            data.untrackMarker(dimension, portalPos);
+        }
+    }
+
+    /**
+     * Party difficulty scaling: each member beyond the first extends a
+     * generated route by the configured number of checkpoint legs, continued
+     * from the last checkpoint and placed through the adapter like the base
+     * route. Legs that cannot resolve are skipped — a member never fails to
+     * join over terrain.
+     */
+    private void extendRouteForMember(ExpeditionRun run, ServerLevel level) {
+        if (!(run.definition().route() instanceof RouteGeneration spec)) {
+            return;
+        }
+        int extra = ExpeditionsConfig.partyCheckpointsPerExtraMember();
+        if (extra <= 0) {
+            return;
+        }
+        ExpeditionDimensionAdapter adapter = ExpeditionAdapters.forLevel(level).orElse(null);
+        if (adapter == null) {
+            return;
+        }
+        Waypoint last = run.checkpoints().get(run.checkpoints().size() - 1);
+        List<RouteAnchor> anchors = RoutePlanner.generateLegs(spec,
+                last.x(), last.z(), extra, level.getRandom().nextLong());
+        List<Waypoint> added = new ArrayList<>();
+        for (RouteAnchor anchor : anchors) {
+            try {
+                BlockPos pos = resolveAnchor(adapter, level, anchor, spec.maxAttempts());
+                level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
+                data.trackMarker(run.definition().dimension(), pos);
+                added.add(toWaypoint(pos));
+            } catch (IllegalStateException e) {
+                break; // keep the party and whatever legs resolved
+            }
+        }
+        if (!added.isEmpty()) {
+            run.extendRoute(added);
+        }
+    }
+
+    private void teleportToTerminal(ServerPlayer player, ExpeditionRun run) {
+        if (!player.isAlive()) {
+            return;
+        }
+        ServerLevel level = levelFor(run.definition().dimension());
+        if (level == null) {
+            return;
+        }
+        Waypoint terminal = run.terminal();
+        player.teleportTo(level, terminal.x() + 0.5, terminal.y() + 1.0, terminal.z() + 0.5,
+                Set.of(), player.getYRot(), player.getXRot());
     }
 
     private void cleanupMarkers(ExpeditionRun run) {
@@ -285,11 +480,17 @@ public final class ExpeditionManager {
         }
     }
 
-    /** Points every expedition compass in the inventory at the run's next target. */
-    private static void retargetCompasses(ServerPlayer player, ExpeditionRun run,
-            ResourceKey<Level> dimension) {
+    /** Points every expedition compass of every online member at the next target. */
+    private void retargetPartyCompasses(ExpeditionRun run) {
         Waypoint target = nextTarget(run);
-        forEachCompass(player, stack -> retarget(stack, dimension, target));
+        ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION,
+                ResourceLocation.parse(run.definition().dimension()));
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer != null) {
+                forEachCompass(memberPlayer, stack -> retarget(stack, dimension, target));
+            }
+        }
     }
 
     /** Removes every expedition compass the player is carrying. */
@@ -304,6 +505,16 @@ public final class ExpeditionManager {
         if (isCompass(carried)) {
             player.containerMenu.setCarried(ItemStack.EMPTY);
         }
+    }
+
+    private static boolean hasCompass(ServerPlayer player) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            if (isCompass(inventory.getItem(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void forEachCompass(ServerPlayer player,
@@ -335,6 +546,20 @@ public final class ExpeditionManager {
                 Optional.of(GlobalPos.of(dimension, toPos(target))), false));
     }
 
+    /**
+     * Finds a free spot for the portal above the terminal: the block directly
+     * above, or one higher when that space is occupied.
+     */
+    private static Optional<BlockPos> findPortalSpot(ServerLevel level, BlockPos terminalPos) {
+        for (BlockPos pos : List.of(terminalPos.above(), terminalPos.above(2))) {
+            BlockState state = level.getBlockState(pos);
+            if (state.isAir() || state.canBeReplaced()) {
+                return Optional.of(pos);
+            }
+        }
+        return Optional.empty();
+    }
+
     private ServerLevel levelFor(String dimensionId) {
         ResourceLocation location = ResourceLocation.tryParse(dimensionId);
         if (location == null) {
@@ -352,7 +577,8 @@ public final class ExpeditionManager {
     private static void removeMarkerAt(ServerLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         if (state.is(ModBlocks.EXPEDITION_CHECKPOINT.get())
-                || state.is(ModBlocks.EXPEDITION_EXIT.get())) {
+                || state.is(ModBlocks.EXPEDITION_EXIT.get())
+                || state.is(ModBlocks.EXPEDITION_PORTAL.get())) {
             level.removeBlock(pos, false);
         }
     }

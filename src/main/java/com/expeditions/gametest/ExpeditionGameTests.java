@@ -406,7 +406,7 @@ public final class ExpeditionGameTests {
 
         boolean secondRunRejected = false;
         try {
-            manager.startRun(player);
+            manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)));
         } catch (IllegalStateException e) {
             secondRunRejected = true;
         }
@@ -672,6 +672,7 @@ public final class ExpeditionGameTests {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
 
         ExpeditionRun run = startExpedition(helper, manager, player);
+        manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
         assertCompassTarget(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
 
         manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().get(0)));
@@ -697,13 +698,154 @@ public final class ExpeditionGameTests {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
 
-        startExpedition(helper, manager, player);
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
         helper.assertTrue(compassOf(player).isPresent(),
-                "run start must grant an expedition compass");
+                "entering the portal must grant an expedition compass");
 
         manager.failRun(player);
         helper.assertTrue(compassOf(player).isEmpty(),
                 "failed run must remove the compass");
+        helper.succeed();
+    }
+
+    /**
+     * The terminal spawns a portal above itself; stepping into it teleports
+     * the player to the run's remote entry and grants the compass.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    public static void portalTeleportsToEntry(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        BlockPos portalPos = ExpeditionManager.toPos(run.portal());
+        helper.assertTrue(level.getBlockState(portalPos)
+                        .is(ModBlocks.EXPEDITION_PORTAL.get()),
+                "portal must spawn above the terminal");
+        helper.assertTrue(compassOf(player).isEmpty(),
+                "no compass before entering the portal");
+
+        manager.enterPortal(player, portalPos);
+        Waypoint entry = run.entry();
+        helper.assertTrue(player.blockPosition().distSqr(
+                        new BlockPos(entry.x(), entry.y(), entry.z())) <= 4,
+                "portal must teleport the player to the run entry, was "
+                        + player.blockPosition());
+        helper.assertTrue(compassOf(player).isPresent(),
+                "portal entry must grant the compass");
+
+        manager.failRun(player); // leave no active run behind for later tests
+        helper.succeed();
+    }
+
+    /**
+     * A second player entering the portal joins the party: the generated
+     * route extends, progress is shared, and the first checkpoint activation
+     * seals the party by removing the portal.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    public static void partyJoinExtendsRouteAndSealsPortal(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer owner = helper.makeMockServerPlayerInLevel();
+        ServerPlayer member = helper.makeMockServerPlayerInLevel();
+
+        ExpeditionRun run = startExpedition(helper, manager, owner);
+        int baseCheckpoints = run.totalCheckpoints();
+        BlockPos portalPos = ExpeditionManager.toPos(run.portal());
+
+        manager.enterPortal(member, portalPos);
+        helper.assertTrue(run.isMember(member.getUUID()),
+                "portal entry must add the player to the party");
+        helper.assertTrue(run.totalCheckpoints() > baseCheckpoints,
+                "joining member must extend the generated route");
+        helper.assertTrue(manager.activeRun(member.getUUID()).isPresent(),
+                "member must see the shared run as their active run");
+
+        // The member advances the shared run; the portal seals.
+        manager.activateCheckpoint(member, ExpeditionManager.toPos(run.checkpoints().get(0)));
+        helper.assertTrue(run.completedCheckpoints() == 1,
+                "member activation must advance the shared run");
+        helper.assertTrue(!level.getBlockState(portalPos)
+                        .is(ModBlocks.EXPEDITION_PORTAL.get()),
+                "first checkpoint must remove the portal");
+        helper.assertTrue(!run.portalOpen(), "party must be sealed");
+
+        manager.failRun(owner); // owner leaves; member still has the run
+        helper.assertTrue(run.isActive(), "run must continue while a member remains");
+        manager.failRun(member); // last member leaving fails the run
+        helper.assertTrue(!run.isActive(), "run must fail when the party empties");
+        helper.succeed();
+    }
+
+    /**
+     * Party completion: the scaled pool is split among members (default
+     * config) and everyone is teleported back to the terminal.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    public static void partyCompletionSplitsRewardAndReturnsMembers(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer owner = helper.makeMockServerPlayerInLevel();
+        ServerPlayer member = helper.makeMockServerPlayerInLevel();
+
+        ExpeditionRun run = startExpedition(helper, manager, owner);
+        manager.enterPortal(owner, ExpeditionManager.toPos(run.portal()));
+        manager.enterPortal(member, ExpeditionManager.toPos(run.portal()));
+
+        for (Waypoint w : run.checkpoints()) {
+            manager.activateCheckpoint(owner, ExpeditionManager.toPos(w));
+        }
+        manager.completeRun(owner);
+
+        // Reward pool scales with party size (base incl. time bonus, scaled up
+        // per extra member) then splits evenly: both members get the same share.
+        int share = run.tokensAwarded();
+        helper.assertTrue(manager.tokenBalance(owner.getUUID()) == share,
+                "owner must receive the member share");
+        helper.assertTrue(manager.tokenBalance(member.getUUID()) == share,
+                "member must receive the member share");
+        helper.assertTrue(share > 0, "reward must be positive");
+
+        Waypoint terminal = run.terminal();
+        for (ServerPlayer p : new ServerPlayer[]{owner, member}) {
+            helper.assertTrue(p.blockPosition().distSqr(
+                            new BlockPos(terminal.x(), terminal.y() + 1, terminal.z())) <= 4,
+                    "members must be teleported back to the terminal, was "
+                            + p.blockPosition());
+            helper.assertTrue(compassOf(p).isEmpty(), "member compass must be removed");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A member dying leaves the party without failing the run; the survivors
+     * continue. Their own run participation ends.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    public static void memberDeathDropsOutOfParty(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer owner = helper.makeMockServerPlayerInLevel();
+        ServerPlayer member = helper.makeMockServerPlayerInLevel();
+        member.setGameMode(GameType.SURVIVAL);
+
+        ExpeditionRun run = startExpedition(helper, manager, owner);
+        manager.enterPortal(member, ExpeditionManager.toPos(run.portal()));
+
+        member.hurt(member.damageSources().genericKill(), Float.MAX_VALUE);
+
+        helper.assertTrue(!run.isMember(member.getUUID()),
+                "dead member must leave the party");
+        helper.assertTrue(run.isActive(),
+                "run must continue for surviving members");
+        helper.assertTrue(manager.activeRun(member.getUUID()).isEmpty(),
+                "dead member must have no active run");
+        helper.assertTrue(manager.activeRun(owner.getUUID()).isPresent(),
+                "owner keeps the shared run");
+
+        manager.failRun(owner); // leave no active run behind for later tests
         helper.succeed();
     }
 

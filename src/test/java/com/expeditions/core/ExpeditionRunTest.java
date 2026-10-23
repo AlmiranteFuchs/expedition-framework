@@ -188,4 +188,54 @@ class ExpeditionRunTest {
                         List.of(CP1, CP2, CP3), EXIT, 0L,
                         ExpeditionStatus.FAILED, 3, true, 8));
     }
+
+    @Test
+    void partyJoinsWhilePortalOpenAndSealsOnFirstCheckpoint() {
+        ExpeditionRun run = newRun();
+        assertTrue(run.portalOpen());
+        UUID member = UUID.randomUUID();
+        run.joinParty(member);
+        assertTrue(run.isMember(member));
+        run.joinParty(member); // idempotent
+        assertEquals(2, run.party().size());
+
+        run.activateCheckpoint(CP1);
+        assertFalse(run.portalOpen());
+        assertThrows(IllegalStateException.class, () -> run.joinParty(UUID.randomUUID()));
+    }
+
+    @Test
+    void partyLeaveRemovesMemberButLastMemberCannotLeave() {
+        UUID owner = UUID.randomUUID();
+        UUID member = UUID.randomUUID();
+        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), owner,
+                java.util.Set.of(owner, member), definition(),
+                List.of(CP1, CP2, CP3), EXIT, new Waypoint(0, 64, 0),
+                new Waypoint(0, 65, 0), new Waypoint(5, 64, 0), 0L);
+
+        run.leaveParty(member);
+        assertFalse(run.isMember(member));
+        assertThrows(IllegalStateException.class, () -> run.leaveParty(member));
+        assertThrows(IllegalStateException.class, () -> run.leaveParty(owner));
+        assertTrue(run.isActive());
+    }
+
+    @Test
+    void routeExtendsOnlyWhilePortalOpen() {
+        ExpeditionRun run = newRun();
+        run.extendRoute(List.of(new Waypoint(35, 64, 10)));
+        assertEquals(4, run.totalCheckpoints());
+        assertEquals(new Waypoint(35, 64, 10), run.checkpoints().get(3));
+
+        run.activateCheckpoint(CP1);
+        assertThrows(IllegalStateException.class,
+                () -> run.extendRoute(List.of(new Waypoint(36, 64, 10))));
+    }
+
+    @Test
+    void joinRejectedOnTerminalRun() {
+        ExpeditionRun run = fullyActivatedRun();
+        run.complete();
+        assertThrows(IllegalStateException.class, () -> run.joinParty(UUID.randomUUID()));
+    }
 }

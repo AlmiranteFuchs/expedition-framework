@@ -3,6 +3,7 @@ package com.expeditions.registry;
 import com.expeditions.ExpeditionsMod;
 import com.expeditions.block.ExpeditionCheckpointBlock;
 import com.expeditions.block.ExpeditionExitBlock;
+import com.expeditions.block.ExpeditionPortalBlock;
 import com.expeditions.block.ExpeditionTerminalBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -44,6 +45,19 @@ public final class ModBlocks {
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
                     .lightLevel(state -> 13)));
+
+    /**
+     * Temporary teleport marker spawned above a terminal while a run is open
+     * for members. Indestructible, non-solid, never an item.
+     */
+    public static final DeferredHolder<Block, ExpeditionPortalBlock> EXPEDITION_PORTAL = BLOCKS.register(
+            "expedition_portal",
+            () -> new ExpeditionPortalBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .noCollission()
+                    .strength(-1.0f, 3_600_000.0f)
+                    .noLootTable()
+                    .lightLevel(state -> 11)));
 
     private ModBlocks() {
     }

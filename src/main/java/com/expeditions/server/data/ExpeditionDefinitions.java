@@ -130,13 +130,16 @@ public final class ExpeditionDefinitions {
         }
         int minSpacing = optionalInt(json, "min_spacing", 32);
         int exitMin = optionalInt(json, "exit_min", 48);
+        int entryMin = optionalInt(json, "entry_min", 128);
         return new RouteGeneration(
                 optionalInt(json, "checkpoints", 3),
                 minSpacing,
                 optionalInt(json, "max_spacing", Math.max(minSpacing, 64)),
                 exitMin,
                 optionalInt(json, "exit_max", Math.max(exitMin, 96)),
-                optionalInt(json, "max_attempts", 4));
+                optionalInt(json, "max_attempts", 4),
+                entryMin,
+                optionalInt(json, "entry_max", Math.max(entryMin, 256)));
     }
 
     private static String requiredString(JsonObject json, String key) {

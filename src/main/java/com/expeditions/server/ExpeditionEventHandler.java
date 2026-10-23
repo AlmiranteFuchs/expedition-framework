@@ -40,6 +40,9 @@ public final class ExpeditionEventHandler {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             ExpeditionManager manager = ExpeditionManager.get(player.server);
+            // Runs that ended while the member was offline can leave a compass
+            // behind in their inventory.
+            manager.sweepCompasses(player);
             boolean hadRun = manager.activeRun(player.getUUID()).isPresent();
             manager.resumeOrFail(player).ifPresentOrElse(
                     run -> player.sendSystemMessage(Component.translatable(

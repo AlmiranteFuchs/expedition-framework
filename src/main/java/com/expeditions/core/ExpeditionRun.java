@@ -1,5 +1,8 @@
 package com.expeditions.core;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -7,12 +10,16 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * State of one player's expedition attempt. Lifecycle rules live here rather
- * than in Minecraft code so they can be validated by plain unit tests:
+ * State of one expedition run shared by a party of players. Lifecycle rules
+ * live here rather than in Minecraft code so they can be validated by plain
+ * unit tests:
  *
  * <ul>
  *   <li>A new run is {@link ExpeditionStatus#ACTIVE} with zero checkpoints done.</li>
  *   <li>Checkpoints activate strictly in order, matched by resolved position.</li>
+ *   <li>While no checkpoint is done the portal is open: players may join the
+ *   party and the route may be extended for extra members. The first
+ *   checkpoint activation seals both.</li>
  *   <li>An active run may complete only once every checkpoint is done, or fail
  *   at any time. Terminal runs reject every further transition.</li>
  *   <li>The completion reward may be recorded at most once.</li>
@@ -28,6 +35,9 @@ public final class ExpeditionRun {
     private final ExpeditionDefinition definition;
     private final List<Waypoint> checkpoints;
     private final Waypoint exit;
+    private final Waypoint terminal;
+    private final Waypoint portal;
+    private final Waypoint entry;
     private final long startedGameTime;
     private ExpeditionStatus status;
     private int completedCheckpoints;
@@ -35,18 +45,21 @@ public final class ExpeditionRun {
     private int tokensAwarded;
 
     private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
-            List<Waypoint> checkpoints, Waypoint exit, long startedGameTime,
-            ExpeditionStatus status, int completedCheckpoints,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime, ExpeditionStatus status, int completedCheckpoints,
             boolean rewarded, int tokensAwarded) {
         this.runId = Objects.requireNonNull(runId, "runId");
         this.playerId = Objects.requireNonNull(playerId, "playerId");
-        this.party = Set.copyOf(party);
+        this.party = new HashSet<>(party);
         if (this.party.isEmpty() || !this.party.contains(playerId)) {
             throw new IllegalArgumentException("Party must contain the owning player");
         }
         this.definition = Objects.requireNonNull(definition, "definition");
-        this.checkpoints = List.copyOf(checkpoints);
+        this.checkpoints = new ArrayList<>(checkpoints);
         this.exit = Objects.requireNonNull(exit, "exit");
+        this.terminal = Objects.requireNonNull(terminal, "terminal");
+        this.portal = Objects.requireNonNull(portal, "portal");
+        this.entry = Objects.requireNonNull(entry, "entry");
         this.startedGameTime = startedGameTime;
         this.status = Objects.requireNonNull(status, "status");
         this.completedCheckpoints = completedCheckpoints;
@@ -56,28 +69,41 @@ public final class ExpeditionRun {
 
     /**
      * Starts a fresh run for {@code playerId} over a route already resolved to
-     * world positions. {@code startedGameTime} is the level's game time at
-     * start, used for the optional time bonus.
+     * world positions. {@code terminal}/{@code portal}/{@code entry} record
+     * where the run was launched, where its join portal sits, and where the
+     * portal delivers members. {@code startedGameTime} is the level's game
+     * time at start, used for the optional time bonus.
      */
     public static ExpeditionRun start(UUID runId, UUID playerId, ExpeditionDefinition definition,
-            List<Waypoint> resolvedCheckpoints, Waypoint resolvedExit, long startedGameTime) {
-        if (resolvedCheckpoints.isEmpty()) {
-            throw new IllegalArgumentException("Run must contain at least one checkpoint");
-        }
-        return new ExpeditionRun(runId, playerId, Set.of(playerId), definition,
-                resolvedCheckpoints, resolvedExit,
-                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0);
+            List<Waypoint> resolvedCheckpoints, Waypoint resolvedExit, Waypoint terminal,
+            Waypoint portal, Waypoint entry, long startedGameTime) {
+        return start(runId, playerId, Set.of(playerId), definition, resolvedCheckpoints,
+                resolvedExit, terminal, portal, entry, startedGameTime);
     }
 
     /** Starts a run shared by a party (party must contain the owning player). */
     public static ExpeditionRun start(UUID runId, UUID playerId, Set<UUID> party,
             ExpeditionDefinition definition, List<Waypoint> resolvedCheckpoints,
-            Waypoint resolvedExit, long startedGameTime) {
+            Waypoint resolvedExit, Waypoint terminal, Waypoint portal, Waypoint entry,
+            long startedGameTime) {
         if (resolvedCheckpoints.isEmpty()) {
             throw new IllegalArgumentException("Run must contain at least one checkpoint");
         }
         return new ExpeditionRun(runId, playerId, party, definition, resolvedCheckpoints,
-                resolvedExit, startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0);
+                resolvedExit, terminal, portal, entry,
+                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0);
+    }
+
+    /**
+     * Starts a fresh run without portal bookkeeping (unit tests and saves from
+     * before portals existed): the exit doubles as terminal/portal and the
+     * first checkpoint as entry.
+     */
+    public static ExpeditionRun start(UUID runId, UUID playerId, ExpeditionDefinition definition,
+            List<Waypoint> resolvedCheckpoints, Waypoint resolvedExit, long startedGameTime) {
+        return start(runId, playerId, Set.of(playerId), definition, resolvedCheckpoints,
+                resolvedExit, resolvedExit, resolvedExit, resolvedCheckpoints.get(0),
+                startedGameTime);
     }
 
     /** Starts a run with unknown timing: never earns a time bonus. */
@@ -94,7 +120,8 @@ public final class ExpeditionRun {
      */
     public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
             ExpeditionDefinition definition,
-            List<Waypoint> checkpoints, Waypoint exit, long startedGameTime,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime,
             ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
             int tokensAwarded) {
         if (checkpoints.isEmpty()) {
@@ -107,6 +134,18 @@ public final class ExpeditionRun {
             throw new IllegalArgumentException("Only completed runs may be marked rewarded");
         }
         return new ExpeditionRun(runId, playerId, party, definition, checkpoints, exit,
+                terminal, portal, entry,
+                startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded);
+    }
+
+    /** Convenience restore for saves written before portals existed. */
+    public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, long startedGameTime,
+            ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
+            int tokensAwarded) {
+        return restore(runId, playerId, party, definition, checkpoints, exit, exit, exit,
+                checkpoints.isEmpty() ? exit : checkpoints.get(0),
                 startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded);
     }
 
@@ -128,17 +167,74 @@ public final class ExpeditionRun {
     }
 
     /**
-     * Players participating in this run. Today every run is a singleton
-     * ({@link #playerId()} only); the field exists so shared-run parties can
-     * join later without changing persistence or lifecycle semantics.
+     * Players participating in this run (unmodifiable). Members join while the
+     * portal is open and may leave on death/abandon; the set never becomes
+     * empty — the last member failing or leaving fails the run instead.
      */
     public Set<UUID> party() {
-        return party;
+        return Collections.unmodifiableSet(party);
     }
 
     /** Whether {@code playerId} participates in this run. */
     public boolean isMember(UUID playerId) {
         return party.contains(playerId);
+    }
+
+    /**
+     * Whether the run's portal is open to teleports and new members: active
+     * with no checkpoint reached yet. The first activation seals the party.
+     */
+    public boolean portalOpen() {
+        return status == ExpeditionStatus.ACTIVE && completedCheckpoints == 0;
+    }
+
+    /**
+     * Adds {@code playerId} to the party. Idempotent for existing members.
+     *
+     * @throws IllegalStateException if the portal has sealed or the run ended
+     */
+    public void joinParty(UUID playerId) {
+        if (party.contains(playerId)) {
+            return;
+        }
+        ensureActive();
+        if (!portalOpen()) {
+            throw new IllegalStateException(
+                    "Run " + runId + " is already underway; the party is sealed");
+        }
+        party.add(playerId);
+    }
+
+    /**
+     * Removes {@code playerId} from the party (death or abandon). The last
+     * member cannot leave — the manager fails the run instead, keeping the
+     * non-empty invariant.
+     *
+     * @throws IllegalStateException if not active, not a member, or the last member
+     */
+    public void leaveParty(UUID playerId) {
+        ensureActive();
+        if (!party.contains(playerId)) {
+            throw new IllegalStateException("Player " + playerId + " is not in run " + runId);
+        }
+        if (party.size() <= 1) {
+            throw new IllegalStateException(
+                    "The last member cannot leave run " + runId + "; fail it instead");
+        }
+        party.remove(playerId);
+    }
+
+    /**
+     * Appends extra checkpoints to the route (party difficulty scaling when a
+     * member joins). Only allowed while the portal is open.
+     */
+    public void extendRoute(List<Waypoint> additionalCheckpoints) {
+        ensureActive();
+        if (!portalOpen()) {
+            throw new IllegalStateException(
+                    "Run " + runId + " route cannot change after the first checkpoint");
+        }
+        checkpoints.addAll(additionalCheckpoints);
     }
 
     public ExpeditionDefinition definition() {
@@ -173,12 +269,27 @@ public final class ExpeditionRun {
 
     /** Resolved checkpoint positions in activation order. */
     public List<Waypoint> checkpoints() {
-        return checkpoints;
+        return Collections.unmodifiableList(checkpoints);
     }
 
     /** Resolved exit position. */
     public Waypoint exit() {
         return exit;
+    }
+
+    /** The terminal block position this run was launched from. */
+    public Waypoint terminal() {
+        return terminal;
+    }
+
+    /** The portal block position members enter through. */
+    public Waypoint portal() {
+        return portal;
+    }
+
+    /** The position the portal teleports members to. */
+    public Waypoint entry() {
+        return entry;
     }
 
     public int completedCheckpoints() {
@@ -203,7 +314,7 @@ public final class ExpeditionRun {
     /**
      * Activates the checkpoint at {@code position}. Only the next expected
      * checkpoint may advance the run: out-of-order, duplicate or foreign
-     * positions are rejected.
+     * positions are rejected. The first activation seals the party.
      *
      * @throws IllegalStateException if the run is not active or the position is
      *         not the expected next checkpoint
@@ -234,7 +345,7 @@ public final class ExpeditionRun {
     }
 
     /**
-     * Marks the run failed (e.g. the player died). Only valid while active.
+     * Marks the run failed. Only valid while active.
      *
      * @throws IllegalStateException if the run is already in a terminal state
      */
@@ -247,14 +358,14 @@ public final class ExpeditionRun {
         return rewarded;
     }
 
-    /** Tokens granted by {@link #markRewarded(int)}, or 0 if not rewarded. */
+    /** Tokens granted per member by {@link #markRewarded(int)}, or 0 if not rewarded. */
     public int tokensAwarded() {
         return tokensAwarded;
     }
 
     /**
-     * Records that the completion reward of {@code tokens} has been granted.
-     * Valid exactly once, and only on a completed run.
+     * Records that the completion reward of {@code tokens} per member has been
+     * granted. Valid exactly once, and only on a completed run.
      *
      * @throws IllegalStateException otherwise
      */

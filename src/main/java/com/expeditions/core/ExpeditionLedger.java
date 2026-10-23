@@ -21,9 +21,20 @@ public final class ExpeditionLedger {
     private final Map<UUID, ExpeditionRun> runs = new LinkedHashMap<>();
     private final Map<UUID, Integer> tokens = new LinkedHashMap<>();
 
-    /** The player's current or most recent run. */
+    /**
+     * The player's current or most recent run. Membership-aware: returns the
+     * most recently registered run that {@link ExpeditionRun#isMember includes
+     * them}, so party members find their shared run even though records are
+     * keyed by owner.
+     */
     public Optional<ExpeditionRun> run(UUID playerId) {
-        return Optional.ofNullable(runs.get(playerId));
+        ExpeditionRun found = null;
+        for (ExpeditionRun candidate : runs.values()) {
+            if (candidate.isMember(playerId)) {
+                found = candidate;
+            }
+        }
+        return Optional.ofNullable(found);
     }
 
     /**

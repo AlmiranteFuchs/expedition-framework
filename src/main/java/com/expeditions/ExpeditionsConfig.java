@@ -57,6 +57,32 @@ public final class ExpeditionsConfig {
                     "chunk lookups spent on one anchor; 0 makes anchors strict.")
             .defineInRange("expeditions.overworld.generation.maxAttempts", 4, 0, 8);
 
+    private static final ModConfigSpec.IntValue OVERWORLD_GENERATION_ENTRY_MIN = BUILDER
+            .comment("Minimum distance the expedition portal travels from the",
+                    "terminal to the remote landing spot the route generates around.")
+            .defineInRange("expeditions.overworld.generation.entryMin", 128, 1, 4096);
+
+    private static final ModConfigSpec.IntValue OVERWORLD_GENERATION_ENTRY_MAX = BUILDER
+            .comment("Maximum distance the expedition portal travels from the terminal.")
+            .defineInRange("expeditions.overworld.generation.entryMax", 256, 1, 4096);
+
+    private static final ModConfigSpec.IntValue PARTY_EXTRA_CHECKPOINTS = BUILDER
+            .comment("Checkpoints appended to a generated route for every member",
+                    "who joins through the portal beyond the first — party",
+                    "difficulty scaling. 0 keeps routes fixed at their base length.")
+            .defineInRange("expeditions.party.checkpointsPerExtraMember", 1, 0, 4);
+
+    private static final ModConfigSpec.DoubleValue PARTY_REWARD_BONUS = BUILDER
+            .comment("Fractional bonus added to the completion reward pool for",
+                    "each member beyond the first (0.5 = +50% per extra member).")
+            .defineInRange("expeditions.party.rewardBonusPerExtraMember", 0.5, 0.0, 4.0);
+
+    private static final ModConfigSpec.BooleanValue PARTY_SPLIT_REWARDS = BUILDER
+            .comment("Whether the scaled reward pool is split evenly among the",
+                    "members present at completion (true) or paid in full to",
+                    "each member (false).")
+            .define("expeditions.party.splitRewards", true);
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> OVERWORLD_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Overworld expedition.",
@@ -138,7 +164,9 @@ public final class ExpeditionsConfig {
                                 OVERWORLD_GENERATION_MAX_SPACING.get(),
                                 OVERWORLD_GENERATION_EXIT_MIN.get(),
                                 OVERWORLD_GENERATION_EXIT_MAX.get(),
-                                OVERWORLD_GENERATION_MAX_ATTEMPTS.get()),
+                                OVERWORLD_GENERATION_MAX_ATTEMPTS.get(),
+                                OVERWORLD_GENERATION_ENTRY_MIN.get(),
+                                OVERWORLD_GENERATION_ENTRY_MAX.get()),
                         OVERWORLD_TOKENS.get(), OVERWORLD_BONUS_TOKENS.get(),
                         OVERWORLD_BONUS_SECONDS.get() * TICKS_PER_SECOND));
             }
@@ -154,6 +182,21 @@ public final class ExpeditionsConfig {
                     NETHER_BONUS_SECONDS.get());
         }
         return Optional.empty();
+    }
+
+    /** Extra checkpoints appended per member joining through the portal. */
+    public static int partyCheckpointsPerExtraMember() {
+        return PARTY_EXTRA_CHECKPOINTS.get();
+    }
+
+    /** Fractional reward bonus per member beyond the first. */
+    public static double partyRewardBonusPerExtraMember() {
+        return PARTY_REWARD_BONUS.get();
+    }
+
+    /** Whether the scaled reward pool is split evenly among members. */
+    public static boolean partySplitRewards() {
+        return PARTY_SPLIT_REWARDS.get();
     }
 
     private static Optional<ExpeditionDefinition> definition(String id, String name,

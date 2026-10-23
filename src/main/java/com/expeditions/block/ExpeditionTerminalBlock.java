@@ -34,14 +34,15 @@ public class ExpeditionTerminalBlock extends Block {
             // state vanished is failed closed instead of trapping the player.
             manager.resumeOrFail(serverPlayer).ifPresentOrElse(
                     run -> reportProgress(serverPlayer, run),
-                    () -> startExpedition(serverPlayer, manager));
+                    () -> startExpedition(serverPlayer, manager, pos));
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    private static void startExpedition(ServerPlayer player, ExpeditionManager manager) {
+    private static void startExpedition(ServerPlayer player, ExpeditionManager manager,
+            BlockPos pos) {
         try {
-            ExpeditionRun run = manager.startRun(player);
+            ExpeditionRun run = manager.startRun(player, pos);
             Waypoint first = run.nextCheckpoint().orElseThrow();
             player.sendSystemMessage(Component.translatable("message.expeditions.expedition_started",
                     run.definition().displayName()));

@@ -42,20 +42,30 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 
 1. Place an **Expedition Terminal** (creative tab "Expedition Framework") — it
    works in the Overworld **and the Nether**.
-2. Right-click it. The expedition configured for your current dimension starts
-   and marker blocks appear there: three **Expedition Checkpoints** and one
-   **Expedition Exit**. In unsupported dimensions the terminal reports that no
-   expedition is available.
-3. You receive an **Expedition Compass** that always points at your next
-   target — the next checkpoint, then the exit once all are done. The chat
-   also tells you the next checkpoint's coordinates. Right-click each
-   checkpoint **in order** — out-of-order and duplicate activations are
-   rejected.
-4. After all checkpoints, right-click the **Exit** to complete the run and
-   receive the guaranteed tokens plus a time bonus when earned.
-5. Dying fails the run (no reward). `/expeditions abandon` forfeits manually.
-   Disconnecting does not end a run — it resumes on rejoin. The compass is
-   removed when the run ends, whatever the outcome.
+2. Right-click it. The expedition configured for your current dimension
+   starts: a route is resolved at a remote landing spot, marker blocks
+   appear there, and an **Expedition Portal** spawns above the terminal. In
+   unsupported dimensions the terminal reports that no expedition is
+   available.
+3. Step into the portal. It teleports you to the run's landing spot and
+   hands you an **Expedition Compass** that always points at your next
+   target — the next checkpoint, then the exit once all are done.
+   **Anyone else who steps in while the portal is open joins your party**:
+   all members share one run and its progress, and each joiner extends a
+   generated route by `expeditions.party.checkpointsPerExtraMember` legs.
+   The portal seals (and disappears) when the first checkpoint is hit.
+4. Right-click each checkpoint **in order** — out-of-order and duplicate
+   activations are rejected. Any member can activate any checkpoint; the
+   progress is shared.
+5. After all checkpoints, right-click the **Exit** to complete the run.
+   The reward pool scales with party size
+   (`expeditions.party.rewardBonusPerExtraMember`) and is distributed per
+   `expeditions.party.splitRewards` (default: split evenly). Every member is
+   teleported back to the terminal and compasses are removed.
+6. Dying drops you out of the party with no reward; the run fails only when
+   the last member dies or leaves. `/expeditions abandon` leaves the run the
+   same way. Disconnecting does not end a run — it resumes on rejoin (use the
+   portal again if you never entered).
 
 Commands: `/expeditions status`, `/expeditions balance`, `/expeditions abandon`.
 
@@ -80,6 +90,13 @@ maxSpacing  = 96
 exitMin     = 96     # exit is another 96-160 blocks past the last checkpoint
 exitMax     = 160
 maxAttempts = 4      # extra candidate columns retried when an anchor is unsafe (0-8)
+entryMin    = 128    # the portal lands 128-256 blocks from the terminal
+entryMax    = 256
+
+[expeditions.party]
+checkpointsPerExtraMember = 1    # legs appended per member joining (0-4)
+rewardBonusPerExtraMember = 0.5  # pool bonus per extra member (0.0-4.0)
+splitRewards = true              # false = every member gets the full pool
 
 # fallback authored route — only used when generate = false
 checkpoints = ["48,16", "96,-24", "144,48"]
@@ -226,21 +243,29 @@ Precedence and rules:
   fire/fluids rejected), inside the world border. Generated anchors retry a
   bounded `maxAttempts` ring of nearby columns; failure refuses the start
   cleanly before any marker or run exists.
-- **Expedition compass** — granted on run start; the server sets its
+- **Expedition compass** — granted on portal entry; the server sets its
   `LODESTONE_TRACKER` target so the needle follows the next checkpoint, then
   the exit, and it is removed when the run ends (complete, fail or abandon).
-- **Party groundwork** — `ExpeditionRun` carries an immutable member set
-  (today always the singleton owner) persisted with the run, and ledger
-  lookups are membership-aware (`isMember`, shared-run queries) so a future
-  multiplayer-party feature needs no schema change.
+- **Portal entry + parties** — a run starts at the terminal and spawns a
+  portal above it; stepping in teleports the player to a remote, validated
+  landing spot the route was generated around. Anyone entering while it's
+  open joins the party — one shared run, shared progress. The first
+  checkpoint seals the party and removes the portal; run end teleports
+  members back to the terminal.
+- **Configurable party scaling** — `[expeditions.party]`: each member beyond
+  the first appends `checkpointsPerExtraMember` legs to a generated route
+  (difficulty), the reward pool gains `rewardBonusPerExtraMember`×base per
+  extra member, and `splitRewards` chooses even split vs. full payout each.
+  Per-run in-game selection at the terminal is future work; the domain
+  (`PartyScaling`, `RouteGeneration`) takes its values from config today.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 49 unit tests + 20 GameTest in-game tests.
+- **Tests** — 56 unit tests + 24 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
 - `./gradlew test` — 49 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **20/20 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **24/24 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -266,7 +291,11 @@ Precedence and rules:
     checkpoint and finally the exit, and is removed on completion or failure,
   - the built-in Overworld expedition generates its route by default with
     safety-validated destinations, and a hazardous destination refuses the
-    run start entirely.
+    run start entirely,
+  - the portal spawns above the terminal, teleports to the remote entry and
+    grants the compass; party members join through it, extend the route,
+    share progress, split the scaled reward, return to the terminal on
+    completion, and drop out individually on death.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -283,7 +312,10 @@ Precedence and rules:
   guaranteed.
 - Concurrent players share the configured marker positions per dimension
   (markers are shared world blocks); each run still validates its own progress
-  independently.
+  independently. Party runs share one progress counter — members race the
+  same checkpoints cooperatively.
+- An offline member when the run ends keeps their compass until next login
+  (it is swept on join) and is not teleported back.
 - One expedition per dimension wins (lowest datapack id or the config
   section); each dimension still needs an adapter to be supported.
 - The Nether adapter guarantees a safe marker spot but not a safe *path*
@@ -330,6 +362,6 @@ Precedence and rules:
 
 1. Optional objectives and performance scoring beyond the time bonus.
 2. Token sink (shop or item claim) and additional reward variety.
-3. Multiplayer parties / shared runs — the run already persists a member set
-   and ledger lookups are membership-aware; what remains is party formation
-   UX and shared progression semantics.
+3. Per-run options chosen at the terminal (party size, difficulty, reward
+   mode) — the scaling inputs already exist as config; what's missing is the
+   in-game selection UI and plumbing to override config per run.

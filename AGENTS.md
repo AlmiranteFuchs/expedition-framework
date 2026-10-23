@@ -92,14 +92,28 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   own dimension unless another active run in that dimension shares them.
   Indestructible by design.
 - Expedition compass: `ExpeditionCompassItem` (plain `Item`, NOT `CompassItem`
-  so it never competes with block `useItemOn`) granted on start and removed on
-  any run end; the server sets `DataComponents.LODESTONE_TRACKER` to the next
-  target and `ExpeditionsClient` (`@Mod dist = CLIENT`) registers the `angle`
-  property that reads `tracker.target()`.
-- `ExpeditionRun` has an immutable `party` member set (singleton owner today)
-  persisted in the run tag; ledger lookups (`isMember`) are membership-aware —
-  party groundwork, no multiplayer semantics yet.
-- Death fails the run (`LivingDeathEvent`). Disconnect keeps the run resumable.
+  so it never competes with block `useItemOn`) granted on portal entry and
+  removed on any run end (also swept on login if a run ended while offline);
+  the server sets `DataComponents.LODESTONE_TRACKER` to the next target and
+  `ExpeditionsClient` (`@Mod dist = CLIENT`) registers the `angle` property
+  that reads `tracker.target()`.
+- Portal + party lifecycle: `startRun(player, terminalPos)` resolves the
+  route at a remote landing spot (`entryMin/Max` travel distance for
+  generated routes; authored routes land on the first checkpoint) and spawns
+  `EXPEDITION_PORTAL` above the terminal (tracked in liveMarkers).
+  `enterPortal` adds non-members to `run.party` (sealed by the first
+  checkpoint: `portalOpen()`), extends generated routes by
+  `party.checkpointsPerExtraMember` legs per join, grants the compass and
+  teleports to `run.entry`. Orphaned/sealed portal blocks self-remove.
+- `ExpeditionRun` has a mutable-but-invariant party (never empty — last
+  member can't `leaveParty`, the run fails instead), plus persisted
+  `terminal`/`portal`/`entry` waypoints. Run end (`endRun`) removes portal +
+  markers, strips compasses and teleports online members back to terminal.
+- Rewards: `PartyScaling.scaledTotal(base, size, bonusPerExtraMember)` then
+  `memberShare(..., split)` from `[expeditions.party]` config — default
+  scaled pool split evenly. `markRewarded` stores the per-member share.
+- Death drops the member out of the party (`leaveParty`, no reward); run
+  fails only when the last member leaves/dies. Disconnect keeps resumable.
 
 ## Testing conventions
 
@@ -142,9 +156,8 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Route-safety/config-generation milestone verified: `build` + 49 unit tests +
-20/20 GameTest in-game tests pass (all prior overworld tests now exercise
-generated routes implicitly, plus config-default generation, destination
-safety contract, and hazard rejection). Human client click-through and real
-disconnect not simulated — the compass needle angle itself is client
-rendering, untested.
+Portal + party milestone verified: `build` + 56 unit tests + 24/24 GameTest
+in-game tests pass (portal spawn/teleport/compass-grant, join→extend→seal,
+split rewards + teleport-back, member-death dropout, plus all prior
+coverage). Human client click-through and real disconnect not simulated —
+the compass needle angle itself is client rendering, untested.

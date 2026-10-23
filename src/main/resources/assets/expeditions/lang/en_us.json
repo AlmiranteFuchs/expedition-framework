@@ -2,6 +2,7 @@
   "block.expeditions.expedition_terminal": "Expedition Terminal",
   "block.expeditions.expedition_checkpoint": "Expedition Checkpoint",
   "block.expeditions.expedition_exit": "Expedition Exit",
+  "block.expeditions.expedition_portal": "Expedition Portal",
   "item.expeditions.expedition_compass": "Expedition Compass",
   "itemGroup.expeditions": "Expedition Framework",
   "message.expeditions.expedition_started": "Expedition started: %1$s. Follow the markers!",
@@ -16,5 +17,8 @@
   "message.expeditions.expedition_resumed": "Your expedition is still active. Use /expeditions status for your next objective.",
   "message.expeditions.expedition_not_restored": "Your expedition could not be restored and has failed.",
   "message.expeditions.balance": "Expedition tokens: %1$s",
-  "message.expeditions.status_none": "No active expedition."
+  "message.expeditions.status_none": "No active expedition.",
+  "message.expeditions.already_in_run": "You are already on an expedition.",
+  "message.expeditions.party_joined": "You joined the expedition party. Good luck!",
+  "message.expeditions.member_left": "A member left your expedition party."
 }

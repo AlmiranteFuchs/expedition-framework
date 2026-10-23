@@ -64,6 +64,9 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_STARTED = "StartedGameTime";
     private static final String TAG_CHECKPOINTS = "Checkpoints";
     private static final String TAG_EXIT = "Exit";
+    private static final String TAG_TERMINAL = "Terminal";
+    private static final String TAG_PORTAL = "Portal";
+    private static final String TAG_ENTRY = "Entry";
     private static final String TAG_BALANCE = "Balance";
     private static final String TAG_X = "x";
     private static final String TAG_Y = "y";
@@ -135,6 +138,16 @@ public class ExpeditionSavedData extends SavedData {
             party.add(((CompoundTag) pt).getUUID(TAG_PLAYER));
         }
         party.add(playerId);
+        // Portal bookkeeping is absent in saves from before portals existed;
+        // fall back to plausible values (only used for diagnostics/teleports).
+        Waypoint entry = checkpoints.isEmpty() ? exit : checkpoints.get(0);
+        Waypoint terminal = runTag.contains(TAG_TERMINAL)
+                ? readWaypoint(runTag.getCompound(TAG_TERMINAL)) : exit;
+        Waypoint portal = runTag.contains(TAG_PORTAL)
+                ? readWaypoint(runTag.getCompound(TAG_PORTAL)) : exit;
+        if (runTag.contains(TAG_ENTRY)) {
+            entry = readWaypoint(runTag.getCompound(TAG_ENTRY));
+        }
         return ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
@@ -142,6 +155,9 @@ public class ExpeditionSavedData extends SavedData {
                 definition,
                 checkpoints,
                 exit,
+                terminal,
+                portal,
+                entry,
                 runTag.contains(TAG_STARTED) ? runTag.getLong(TAG_STARTED)
                         : ExpeditionRun.UNKNOWN_START,
                 ExpeditionStatus.valueOf(runTag.getString(TAG_STATUS)),
@@ -180,6 +196,9 @@ public class ExpeditionSavedData extends SavedData {
             run.checkpoints().forEach(w -> checkpoints.add(writeWaypoint(w)));
             runTag.put(TAG_CHECKPOINTS, checkpoints);
             runTag.put(TAG_EXIT, writeWaypoint(run.exit()));
+            runTag.put(TAG_TERMINAL, writeWaypoint(run.terminal()));
+            runTag.put(TAG_PORTAL, writeWaypoint(run.portal()));
+            runTag.put(TAG_ENTRY, writeWaypoint(run.entry()));
             runs.add(runTag);
         }
         tag.put(TAG_RUNS, runs);

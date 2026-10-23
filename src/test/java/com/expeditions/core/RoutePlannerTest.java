@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
  * Leg distances stay inside the configured spacing bounds.
  */
 class RoutePlannerTest {
-    private static final RouteGeneration SPEC = new RouteGeneration(3, 32, 64, 48, 96, 4);
+    private static final RouteGeneration SPEC = new RouteGeneration(3, 32, 64, 48, 96, 4, 128, 256);
 
     private static double dist(RouteAnchor a, RouteAnchor b) {
         return Math.hypot(b.x() - a.x(), b.z() - a.z());
@@ -54,25 +54,27 @@ class RoutePlannerTest {
     @Test
     void generatesRequestedCheckpointCount() {
         ExpeditionRoute route = RoutePlanner.generate(
-                new RouteGeneration(5, 16, 16, 32, 32, 4), 0, 0, 3L);
+                new RouteGeneration(5, 16, 16, 32, 32, 4, 128, 256), 0, 0, 3L);
         assertEquals(5, route.checkpoints().size());
     }
 
     @Test
     void specRejectsInvalidParameters() {
         assertThrows(IllegalArgumentException.class,
-                () -> new RouteGeneration(0, 32, 64, 48, 96, 4));
+                () -> new RouteGeneration(0, 32, 64, 48, 96, 4, 128, 256));
         assertThrows(IllegalArgumentException.class,
-                () -> new RouteGeneration(17, 32, 64, 48, 96, 4));
+                () -> new RouteGeneration(17, 32, 64, 48, 96, 4, 128, 256));
         assertThrows(IllegalArgumentException.class,
-                () -> new RouteGeneration(3, 64, 32, 48, 96, 4)); // min > max
+                () -> new RouteGeneration(3, 64, 32, 48, 96, 4, 128, 256)); // min > max
         assertThrows(IllegalArgumentException.class,
-                () -> new RouteGeneration(3, 0, 64, 48, 96, 4));
+                () -> new RouteGeneration(3, 0, 64, 48, 96, 4, 128, 256));
         assertThrows(IllegalArgumentException.class,
-                () -> new RouteGeneration(3, 32, 64, 96, 48, 4)); // exitMin > exitMax
+                () -> new RouteGeneration(3, 32, 64, 96, 48, 4, 128, 256)); // exitMin > exitMax
         assertThrows(IllegalArgumentException.class,
-                () -> new RouteGeneration(3, 32, 64, 48, 96, -1));
+                () -> new RouteGeneration(3, 32, 64, 48, 96, -1, 128, 256));
         assertThrows(IllegalArgumentException.class,
-                () -> new RouteGeneration(3, 32, 64, 48, 96, 9));
+                () -> new RouteGeneration(3, 32, 64, 48, 96, 9, 128, 256));
+        assertThrows(IllegalArgumentException.class,
+                () -> new RouteGeneration(3, 32, 64, 48, 96, 4, 256, 128)); // entryMin > entryMax
     }
 }
