@@ -5,6 +5,7 @@ import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
+import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.Waypoint;
@@ -17,6 +18,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -39,6 +41,9 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.entity.EntitySection;
+import net.minecraft.world.level.entity.EntitySectionStorage;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.block.Blocks;
@@ -199,9 +204,14 @@ public final class ExpeditionGameTests {
         clearAndFloor(nether, terminalPos);
         nether.setBlock(terminalPos, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState(), 3);
         player.teleportTo(nether, 1.5, 80.0, 0.5, Set.of(), 0f, 0f);
-        useBlockAt(nether, player, terminalPos);
-
         ExpeditionManager manager = ExpeditionManager.get(server);
+        // A generated route may refuse on a bad roll — a player just clicks
+        // the terminal again, so retry the same way a few times.
+        for (int attempt = 0;
+                attempt < 5 && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
+            useBlockAt(nether, player, terminalPos);
+        }
+
         UUID playerId = player.getUUID();
         ExpeditionRun run = manager.activeRun(playerId).orElseThrow(
                 () -> new IllegalStateException("terminal interaction must start a nether run"));
@@ -940,12 +950,16 @@ public final class ExpeditionGameTests {
      * is tracked on the run. The next checkpoint discards the old horde and
      * rolls a fresh one; run end discards whatever remains.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_t")
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_t")
     public static void checkpointHordeSpawnsAndCleansUp(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         level.setDayTime(18000); // horde mobs must not burn mid-test
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        // The horde is force-targeted at a member and promotion polls can
+        // take a while — creative so the zombies can't kill the player and
+        // cascade-fail the run mid-test.
+        player.setGameMode(GameType.CREATIVE);
 
         ExpeditionRun run = startExpedition(helper, manager, player);
         manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
@@ -959,19 +973,31 @@ public final class ExpeditionGameTests {
         BlockPos firstCheckpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
         int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
 
-        // Mock players provide no chunk tickets: force-load the horde's
-        // chunks so its sections are accessible while we query them — the
-        // same thing the manager's cleanup does before discarding.
+        // Mock players provide no chunk tickets, so freshly spawned mobs sit
+        // in hidden entity sections until real tickets promote them — force
+        // the chunks and wait for promotion so cleanup can reach them.
         List<UUID> firstHorde = List.copyOf(run.challengeEntities());
-        for (UUID id : firstHorde) {
-            Entity entity = findEntity(level, firstCheckpoint, hordeRadius, id);
-            helper.assertTrue(entity instanceof Mob,
-                    "horde member " + id + " must exist as a Mob, was " + entity);
-            helper.assertTrue(((Mob) entity).getTarget() == player,
-                    "horde member must hunt a party member, target was "
-                            + ((Mob) entity).getTarget());
-        }
+        forceLoadArea(level, firstCheckpoint, hordeRadius);
+        pollUntil(helper,
+                () -> firstHorde.stream().allMatch(id -> level.getEntity(id) != null),
+                "the horde's entity sections to become accessible", () -> {
+            for (UUID id : firstHorde) {
+                Entity entity = findEntity(level, firstCheckpoint, hordeRadius, id);
+                helper.assertTrue(entity instanceof Mob,
+                        "horde member " + id + " must exist as a Mob, was " + entity);
+                helper.assertTrue(((Mob) entity).getTarget() == player,
+                        "horde member must hunt a party member, target was "
+                                + ((Mob) entity).getTarget());
+            }
+            finishHordeTest(helper, manager, player, run, level, firstHorde, hordeRadius);
+        }, 400, () -> dumpArea(level, firstCheckpoint, hordeRadius, firstHorde));
+    }
 
+    private static void finishHordeTest(GameTestHelper helper, ExpeditionManager manager,
+            ServerPlayer player, ExpeditionRun run, ServerLevel level,
+            List<UUID> firstHorde, int hordeRadius) {
+        // The forced sections are accessible now, so the previous horde's
+        // cleanup lands deterministically on the second activation.
         useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(1)));
         helper.assertTrue(!run.challengeEntities().containsAll(firstHorde),
                 "the previous horde must be discarded at the next checkpoint");
@@ -986,14 +1012,22 @@ public final class ExpeditionGameTests {
         List<UUID> lastHorde = List.copyOf(run.challengeEntities());
         BlockPos lastCheckpoint = ExpeditionManager.toPos(
                 run.checkpoints().get(run.completedCheckpoints() - 1));
-        manager.failRun(player);
-        helper.assertTrue(run.challengeEntities().isEmpty(),
-                "run end must clear challenge tracking");
-        for (UUID id : lastHorde) {
-            helper.assertTrue(findEntity(level, lastCheckpoint, hordeRadius, id) == null,
-                    "the remaining horde must be discarded when the run ends");
-        }
-        helper.succeed();
+        // Same pattern: promote the sections before run end so cleanup can
+        // actually reach the entities.
+        forceLoadArea(level, lastCheckpoint, hordeRadius);
+        pollUntil(helper,
+                () -> lastHorde.stream().allMatch(id -> level.getEntity(id) != null),
+                "the last horde's sections to become accessible",
+                () -> {
+            manager.failRun(player);
+            helper.assertTrue(run.challengeEntities().isEmpty(),
+                    "run end must clear challenge tracking");
+            for (UUID id : lastHorde) {
+                helper.assertTrue(findEntity(level, lastCheckpoint, hordeRadius, id) == null,
+                        "the remaining horde must be discarded when the run ends");
+            }
+            helper.succeed();
+        }, 400, () -> dumpArea(level, lastCheckpoint, hordeRadius, lastHorde));
     }
 
     /**
@@ -1014,7 +1048,10 @@ public final class ExpeditionGameTests {
         clearAndFloor(nether, terminalPos);
         nether.setBlock(terminalPos, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState(), 3);
         player.teleportTo(nether, 1.5, 80.0, 0.5, Set.of(), 0f, 0f);
-        useBlockAt(nether, player, terminalPos);
+        for (int attempt = 0;
+                attempt < 5 && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
+            useBlockAt(nether, player, terminalPos);
+        }
         ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
                 () -> new IllegalStateException("terminal interaction must start a nether run"));
 
@@ -1047,6 +1084,36 @@ public final class ExpeditionGameTests {
 
         manager.failRun(player);
         overworld.setBlock(foreign, Blocks.AIR.defaultBlockState(), 3);
+        helper.succeed();
+    }
+
+    /**
+     * A persisted run whose dimension no longer exists — e.g. the mod that
+     * provided it was removed — must fail closed on resume: FAILED, no
+     * reward, no crash, nothing partially cleaned up.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_v")
+    public static void missingDimensionRunFailsClosed(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        // Inject the run as though a save restored it after its dimension
+        // vanished — the ledger trusts persisted records; resume validates.
+        ExpeditionDefinition gone = new ExpeditionDefinition(
+                "expeditions:gone_trial", "Gone Trial", 0, "expeditions:missing_dimension",
+                new ExpeditionRoute(List.of(new RouteAnchor(0, 0)), new RouteAnchor(8, 8)),
+                10, 0, 0);
+        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(), gone,
+                List.of(new Waypoint(0, 60, 0)), new Waypoint(8, 60, 8));
+        savedData(server).ledger().restoreRun(run);
+
+        helper.assertTrue(manager.resumeOrFail(player).isEmpty(),
+                "a run in a missing dimension must not resume");
+        helper.assertTrue(run.status() == ExpeditionStatus.FAILED,
+                "an unrecoverable run must be failed, was " + run.status());
+        helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
+                "no reward may be paid for an unrecoverable run");
         helper.succeed();
     }
 
@@ -1101,30 +1168,132 @@ public final class ExpeditionGameTests {
                 player.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND, hit);
     }
 
+    /** Persistent ticket on every chunk covering the area — unlike a
+     * transient {@code getChunk} load, this eventually makes the chunk's
+     * entity sections accessible (same as a real player standing there). */
+    private static void forceLoadArea(ServerLevel level, BlockPos center, int radius) {
+        for (int cx = (center.getX() - radius) >> 4;
+                cx <= (center.getX() + radius) >> 4; cx++) {
+            for (int cz = (center.getZ() - radius) >> 4;
+                    cz <= (center.getZ() + radius) >> 4; cz++) {
+                level.setChunkForced(cx, cz, true);
+            }
+        }
+    }
+
+    /** Retries {@code condition} once per tick (bounded), then runs
+     * {@code then}. Entity-section promotion is asynchronous — tests must
+     * wait for the state, not guess the tick. */
+    private static void pollUntil(GameTestHelper helper, BooleanSupplier condition,
+            String what, Runnable then) {
+        pollUntil(helper, condition, what, then, 400);
+    }
+
+    private static void pollUntil(GameTestHelper helper, BooleanSupplier condition,
+            String what, Runnable then, int triesLeft) {
+        pollUntil(helper, condition, what, then, triesLeft, () -> "");
+    }
+
+    private static void pollUntil(GameTestHelper helper, BooleanSupplier condition,
+            String what, Runnable then, int triesLeft, java.util.function.Supplier<String> dump) {
+        if (condition.getAsBoolean()) {
+            then.run();
+            return;
+        }
+        if (triesLeft <= 0) {
+            helper.fail("timed out waiting for " + what + ". " + dump.get());
+            return;
+        }
+        helper.runAfterDelay(1, () -> pollUntil(helper, condition, what, then, triesLeft - 1, dump));
+    }
+
+    /** Diagnostic: chunk full-statuses, entity-section contents, and the
+     * per-uuid state ({@code knownUuids} includes pending entities) —
+     * explains whether a mob is hidden, serialized-away, or actually gone
+     * when a poll times out. */
+    private static String dumpArea(ServerLevel level, BlockPos center, int radius, List<UUID> ids) {
+        StringBuilder sb = new StringBuilder("area ").append(center).append(" r=").append(radius);
+        EntitySectionStorage<Entity> storage = entitySectionStorage(level);
+        for (int cx = (center.getX() - radius) >> 4; cx <= (center.getX() + radius) >> 4; cx++) {
+            for (int cz = (center.getZ() - radius) >> 4;
+                    cz <= (center.getZ() + radius) >> 4; cz++) {
+                sb.append(" [chunk ").append(cx).append(',').append(cz)
+                        .append(" status=").append(level.getChunk(cx, cz).getFullStatus());
+                storage.getExistingSectionPositionsInChunk(ChunkPos.asLong(cx, cz))
+                        .forEach(sp -> {
+                            EntitySection<Entity> section = storage.getSection(sp);
+                            sb.append(" secY=").append(net.minecraft.core.SectionPos.y(sp))
+                                    .append('/').append(section.getStatus())
+                                    .append('(').append(section.size()).append(')');
+                            section.getEntities().forEach(e -> sb.append(" <")
+                                    .append(e.getType().toShortString())
+                                    .append('/').append(e.getUUID()).append('>'));
+                        });
+                sb.append(']');
+            }
+        }
+        for (UUID id : ids) {
+            sb.append(" id=").append(id).append(": visible=").append(level.getEntity(id) != null)
+                    .append(" known=").append(entityManager(level).isLoaded(id));
+        }
+        return sb.toString();
+    }
+
+    private static net.minecraft.world.level.entity.PersistentEntitySectionManager<Entity>
+            entityManager(ServerLevel level) {
+        try {
+            java.lang.reflect.Field manager =
+                    ServerLevel.class.getDeclaredField("entityManager");
+            manager.setAccessible(true);
+            return (net.minecraft.world.level.entity.PersistentEntitySectionManager<Entity>)
+                    manager.get(level);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("cannot reach the entity manager", e);
+        }
+    }
+
     /**
-     * Finds an entity by UUID through the entity section storage — which,
-     * unlike {@code level.getEntity(uuid)}, also sees entities parked in
-     * sections whose chunk is not entity-ticking (mock players provide no
-     * chunk tickets, so spawned mobs never reach the visible lookup).
-     * Force-loading the covered chunks first makes their sections
-     * accessible for the duration of the call — the same mechanism the
-     * manager's cleanup relies on.
+     * Finds an entity by UUID by reading the entity section storage directly.
+     * {@code level.getEntity(uuid)} and {@code getEntities(AABB)} only see
+     * <em>accessible</em> sections — entities parked in non-entity-ticking
+     * chunks (mock players provide no tickets) stay in section storage but
+     * are invisible to every public query. Loading the chunks first also
+     * restores any entities serialized with them.
      */
     private static Entity findEntity(ServerLevel level, BlockPos center, int radius, UUID id) {
+        EntitySectionStorage<Entity> storage = entitySectionStorage(level);
         for (int cx = (center.getX() - radius) >> 4; cx <= (center.getX() + radius) >> 4; cx++) {
             for (int cz = (center.getZ() - radius) >> 4;
                     cz <= (center.getZ() + radius) >> 4; cz++) {
                 level.getChunk(cx, cz);
+                for (EntitySection<Entity> section
+                        : storage.getExistingSectionsInChunk(ChunkPos.asLong(cx, cz)).toList()) {
+                    for (Entity entity : section.getEntities().toList()) {
+                        if (entity.getUUID().equals(id)) {
+                            return entity;
+                        }
+                    }
+                }
             }
         }
-        List<Entity> found = new java.util.ArrayList<>();
-        level.getEntities().get(new net.minecraft.world.phys.AABB(center).inflate(radius + 1),
-                entity -> {
-                    if (found.isEmpty() && entity.getUUID().equals(id)) {
-                        found.add(entity);
-                    }
-                });
-        return found.isEmpty() ? null : found.get(0);
+        return null;
+    }
+
+    /** Reflective access to {@code ServerLevel.entityManager.sectionStorage}
+     * — the only API surface that sees entities in non-ticking sections. */
+    @SuppressWarnings("unchecked")
+    private static EntitySectionStorage<Entity> entitySectionStorage(ServerLevel level) {
+        try {
+            java.lang.reflect.Field manager =
+                    ServerLevel.class.getDeclaredField("entityManager");
+            manager.setAccessible(true);
+            java.lang.reflect.Field storage =
+                    manager.get(level).getClass().getDeclaredField("sectionStorage");
+            storage.setAccessible(true);
+            return (EntitySectionStorage<Entity>) storage.get(manager.get(level));
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("cannot reach the entity section storage", e);
+        }
     }
 
     private static Optional<ItemStack> compassOf(ServerPlayer player) {

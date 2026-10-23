@@ -124,9 +124,17 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   parked (mock players produce NO tickets). `level.getEntities().get(AABB)`
   queries section storage but still requires the section be accessible —
   force-load the covered chunks first (`level.getChunk`), like cleanup does.
+  In tests: `findEntity` reads `entityManager.sectionStorage` via reflection
+  to see pending entities deterministically; `setChunkForced` + `pollUntil`
+  on `level.getEntity(id)` waits for real promotion; keep horde-test players
+  in CREATIVE or the force-targeted mobs kill them mid-poll.
 - Cleanup/sweep: `untrackChallengeEntity` only removes a UUID once actually
   discarded; entities pending in unloaded chunks keep tracking so the
-  once-a-second `sweepChallengeEntities` (ServerTickEvent) retries.
+  once-a-second `sweepChallengeEntities` (ServerTickEvent) retries. The
+  sweep MUST only process ENDED runs — an active run's tracked entities are
+  its live horde; discarding them is the challenge-killing bug this fixed.
+- Generated routes get up to `GENERATED_ROUTE_REROLLS` (3) fresh seeds in
+  `startRun` — one bad random walk shouldn't refuse when a re-roll resolves.
 
 ## Testing conventions
 

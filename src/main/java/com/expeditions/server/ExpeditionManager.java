@@ -67,6 +67,10 @@ import net.minecraft.world.phys.AABB;
  */
 public final class ExpeditionManager {
     /** Candidate columns retried when a generated anchor fails validation. */
+    /** How many fresh seeds a generated route may roll before the start
+     * refuses — a bad random walk shouldn't doom an otherwise safe site. */
+    private static final int GENERATED_ROUTE_REROLLS = 3;
+
     private static final int[][] JITTER = {
             {16, 0}, {-16, 0}, {0, 16}, {0, -16},
             {16, 16}, {-16, -16}, {16, -16}, {-16, 16}};
@@ -136,38 +140,60 @@ public final class ExpeditionManager {
 
         RouteSpec spec = definition.route();
         RandomSource rng = player.getRandom();
-        ExpeditionRoute route;
-        int maxAttempts;
-        BlockPos entryPos;
-        switch (spec) {
-            case RouteGeneration g -> {
-                // The portal travels a random distance from the terminal; the
-                // route is generated around that landing spot.
-                double angle = rng.nextDouble() * Math.PI * 2;
-                int distance = g.entryMin()
-                        + rng.nextInt(g.entryMax() - g.entryMin() + 1);
-                int baseX = terminalPos.getX() + (int) Math.round(Math.cos(angle) * distance);
-                int baseZ = terminalPos.getZ() + (int) Math.round(Math.sin(angle) * distance);
-                route = RoutePlanner.generate(g, baseX, baseZ, rng.nextLong());
-                maxAttempts = g.maxAttempts();
-                entryPos = resolveAnchor(adapter, level, new RouteAnchor(baseX, baseZ), maxAttempts);
-            }
-            case ExpeditionRoute r -> {
-                // Authored routes keep their exact anchors; the portal lands
-                // members on top of the first checkpoint.
-                route = r;
-                maxAttempts = 0;
-                entryPos = null;
-            }
-        }
+        ExpeditionRoute route = null;
+        BlockPos entryPos = null;
+        List<BlockPos> checkpointPositions = null;
+        BlockPos exitPos = null;
 
-        List<BlockPos> checkpointPositions = new ArrayList<>();
-        for (RouteAnchor anchor : route.checkpoints()) {
-            checkpointPositions.add(resolveAnchor(adapter, level, anchor, maxAttempts));
+        // Generated routes get a few fresh rolls: a random walk can clip
+        // unresolvable terrain where another seed succeeds. Authored routes
+        // are exact — one strict pass, no retries.
+        int rolls = spec instanceof RouteGeneration ? GENERATED_ROUTE_REROLLS : 1;
+        for (int roll = 0; roll < rolls && route == null; roll++) {
+            try {
+                ExpeditionRoute candidate;
+                int maxAttempts;
+                BlockPos candidateEntry;
+                switch (spec) {
+                    case RouteGeneration g -> {
+                        // The portal travels a random distance from the
+                        // terminal; the route generates around that landing.
+                        double angle = rng.nextDouble() * Math.PI * 2;
+                        int distance = g.entryMin()
+                                + rng.nextInt(g.entryMax() - g.entryMin() + 1);
+                        int baseX = terminalPos.getX()
+                                + (int) Math.round(Math.cos(angle) * distance);
+                        int baseZ = terminalPos.getZ()
+                                + (int) Math.round(Math.sin(angle) * distance);
+                        candidate = RoutePlanner.generate(g, baseX, baseZ, rng.nextLong());
+                        maxAttempts = g.maxAttempts();
+                        candidateEntry = resolveAnchor(adapter, level,
+                                new RouteAnchor(baseX, baseZ), maxAttempts);
+                    }
+                    case ExpeditionRoute r -> {
+                        // Authored routes keep exact anchors; the portal lands
+                        // members on top of the first checkpoint.
+                        candidate = r;
+                        maxAttempts = 0;
+                        candidateEntry = null;
+                    }
+                }
+                List<BlockPos> positions = new ArrayList<>();
+                for (RouteAnchor anchor : candidate.checkpoints()) {
+                    positions.add(resolveAnchor(adapter, level, anchor, maxAttempts));
+                }
+                BlockPos exit = resolveAnchor(adapter, level, candidate.exit(), maxAttempts);
+                route = candidate;
+                entryPos = candidateEntry != null
+                        ? candidateEntry : positions.get(0).above();
+                checkpointPositions = positions;
+                exitPos = exit;
+            } catch (IllegalStateException unresolvable) {
+                // Try the next roll.
+            }
         }
-        BlockPos exitPos = resolveAnchor(adapter, level, route.exit(), maxAttempts);
-        if (entryPos == null) {
-            entryPos = checkpointPositions.get(0).above();
+        if (route == null) {
+            throw new IllegalStateException("No safe route could be resolved for this expedition");
         }
 
         String dimension = definition.dimension();
@@ -534,16 +560,18 @@ public final class ExpeditionManager {
     }
 
     /**
-     * Opportunistic retry for tracked challenge entities that were pending
-     * when their cleanup ran (e.g. their chunk had unloaded): discards any
-     * that have since returned to the section storage. Called on a slow
-     * server tick — cheap, and runs keep unresolved ids tracked so no horde
-     * can outlive its expedition unseen.
+     * Opportunistic retry for tracked challenge entities of ENDED runs that
+     * were pending when their cleanup ran (e.g. their chunk had unloaded):
+     * discards any that have since returned to the section storage. Active
+     * runs are skipped — their tracked entities are the live horde, not
+     * stragglers. Called on a slow server tick — cheap, and ended runs keep
+     * unresolved ids tracked so no horde can outlive its expedition unseen.
      */
     public void sweepChallengeEntities() {
         boolean removed = false;
         for (ExpeditionRun run : ledger.runs()) {
-            if (run.challengeEntities().isEmpty() || run.completedCheckpoints() == 0) {
+            if (run.isActive() || run.challengeEntities().isEmpty()
+                    || run.completedCheckpoints() == 0) {
                 continue;
             }
             ServerLevel level = levelFor(run.definition().dimension());

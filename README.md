@@ -334,15 +334,17 @@ chunk, and validate on real block state — not heightmap assumptions.
   challenge is cleaned up when the next checkpoint is reached and whatever
   remains is cleaned up at run end — entities in unloaded chunks are
   force-loaded first, and anything still pending keeps its tracking entry
-  so a periodic sweep (once a second) retries when it materializes.
+  so a periodic sweep (once a second) retries when it materializes. The
+  sweep only mops up ENDED runs; an active run's tracked entities are its
+  live horde and are never swept.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 62 unit tests + 26 GameTest in-game tests.
+- **Tests** — 62 unit tests + 27 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
 - `./gradlew test` — 62 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **26/26 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **27/27 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -378,7 +380,8 @@ chunk, and validate on real block state — not heightmap assumptions.
     end discards whatever remains,
   - a same-coordinates checkpoint in the wrong dimension cannot advance a
     run, while the genuine Nether checkpoint still activates — and the
-    Nether expedition generates its route by default.
+    Nether expedition generates its route by default,
+  - a persisted run whose dimension no longer exists fails closed on resume.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
