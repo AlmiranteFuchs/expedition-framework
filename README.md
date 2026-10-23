@@ -217,6 +217,45 @@ Precedence and rules:
   enable expeditions in an unsupported dimension.
 - Malformed files are skipped and logged; they never break other definitions.
 
+## Supporting a modded dimension
+
+The expedition lifecycle (markers, checkpoints, portal, challenges, rewards,
+persistence) never branches on which dimension a run is in — dimension
+support reduces to one seam: the **adapter**. Three outcomes per dimension:
+
+- **Supported** — an adapter is registered; any datapack definition (or
+  built-in config section) targeting that dimension can start runs.
+- **Requires integration** — a dimension mod needs a small adapter class.
+- **Unsupported** — no adapter; terminals refuse cleanly, nothing is placed.
+  Registry presence alone never implies support.
+
+An addon (or a dimension mod itself) registers an adapter at any point —
+lookup happens when a run starts:
+
+```java
+ExpeditionAdapters.register(new ExpeditionDimensionAdapter() {
+    @Override
+    public ResourceKey<Level> dimension() {
+        return ResourceKey.create(Registries.DIMENSION,
+                ResourceLocation.fromNamespaceAndPath("mymod", "mydim"));
+    }
+
+    @Override
+    public Optional<BlockPos> resolveAnchor(ServerLevel level, RouteAnchor anchor) {
+        // Scan for a safe marker spot on real block state. Reuse the shared
+        // contract — DestinationChecks.isFree / isSturdyFloor / isHazard —
+        // plus the pure-domain SafeColumnSearch for cave-like dimensions.
+        // Return Optional.empty() rather than guessing an unsafe spot.
+    }
+});
+```
+
+Then ship (or let modpacks ship) a datapack expedition whose `"dimension"`
+is `"mymod:mydim"` — authored anchors or a `generate` spec both work, since
+generated anchors resolve through the same adapter. Adapter responsibilities:
+respect the dimension's build limits and world border, load the column's
+chunk, and validate on real block state — not heightmap assumptions.
+
 ## Implemented features (milestone 3)
 
 - **Full playable loop** — terminal → ordered checkpoints → exit → token reward,

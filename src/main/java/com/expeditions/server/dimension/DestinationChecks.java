@@ -14,24 +14,28 @@ import net.minecraft.world.level.block.state.BlockState;
  * is sturdy, and none of the three blocks is hazardous — the same definition
  * of "standable" every adapter applies on real block state, never on
  * heightmap values alone.
+ *
+ * <p>Public so that adapters for modded dimensions — registered through
+ * {@link ExpeditionAdapters#register} — reuse the same standability contract
+ * instead of re-deriving it.
  */
-final class DestinationChecks {
+public final class DestinationChecks {
     private DestinationChecks() {
     }
 
     /** The position itself can host a marker / let a player occupy it. */
-    static boolean isFree(LevelReader level, BlockPos pos) {
+    public static boolean isFree(LevelReader level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         return (state.isAir() || state.canBeReplaced()) && state.getFluidState().isEmpty();
     }
 
     /** The block below can be stood on. */
-    static boolean isSturdyFloor(LevelReader level, BlockPos pos) {
+    public static boolean isSturdyFloor(LevelReader level, BlockPos pos) {
         return level.getBlockState(pos).isFaceSturdy(level, pos, Direction.UP);
     }
 
     /** Standing in or on this block would hurt or trap a player. */
-    static boolean isHazard(LevelReader level, BlockPos pos) {
+    public static boolean isHazard(LevelReader level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         return !state.getFluidState().isEmpty()
                 || state.is(BlockTags.FIRE)
