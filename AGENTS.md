@@ -114,6 +114,19 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   scaled pool split evenly. `markRewarded` stores the per-member share.
 - Death drops the member out of the party (`leaveParty`, no reward); run
   fails only when the last member leaves/dies. Disconnect keeps resumable.
+- Checkpoint challenges: `activateCheckpoint` discards the previous
+  challenge's entities (centered on the checkpoint before this one), then
+  rolls `CheckpointChallenge` — `HORDE` spawns `[expeditions.challenges]`
+  mobs in a ring, `setPersistenceRequired`, targeting the nearest online
+  member; UUIDs are tracked on the run (persisted).
+- Entity visibility caveat: `level.getEntity(uuid)` only covers the visible
+  entity lookup — entities in sections whose chunk isn't entity-ticking are
+  parked (mock players produce NO tickets). `level.getEntities().get(AABB)`
+  queries section storage but still requires the section be accessible —
+  force-load the covered chunks first (`level.getChunk`), like cleanup does.
+- Cleanup/sweep: `untrackChallengeEntity` only removes a UUID once actually
+  discarded; entities pending in unloaded chunks keep tracking so the
+  once-a-second `sweepChallengeEntities` (ServerTickEvent) retries.
 
 ## Testing conventions
 
@@ -156,8 +169,8 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Portal + party milestone verified: `build` + 56 unit tests + 24/24 GameTest
-in-game tests pass (portal spawn/teleport/compass-grant, join→extend→seal,
-split rewards + teleport-back, member-death dropout, plus all prior
-coverage). Human client click-through and real disconnect not simulated —
-the compass needle angle itself is client rendering, untested.
+Checkpoint challenges milestone verified: `build` + 62 unit tests + 25/25
+GameTest in-game tests pass (horde spawns tracked + targets a member,
+cleaned up at the next checkpoint and at run end, plus all prior coverage).
+Human client click-through and real disconnect not simulated — the compass
+needle angle itself is client rendering, untested.

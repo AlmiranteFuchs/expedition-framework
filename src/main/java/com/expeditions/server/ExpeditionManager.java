@@ -1,6 +1,7 @@
 package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
+import com.expeditions.core.CheckpointChallenge;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionRoute;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -34,10 +36,16 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Server-authoritative coordinator for expedition runs.
@@ -227,7 +235,9 @@ public final class ExpeditionManager {
     /**
      * Advances the run of the interacting player if {@code pos} is its next
      * checkpoint. The first activation seals the party and removes the
-     * portal.
+     * portal. Each activation also resolves the checkpoint challenge: the
+     * previous challenge's entities are discarded and a fresh roll may
+     * spawn a replacement (a horde can never outlive the next checkpoint).
      *
      * @return the updated run
      * @throws IllegalStateException if the activation is invalid
@@ -239,6 +249,13 @@ public final class ExpeditionManager {
             closePortal(run);
         }
         retargetPartyCompasses(run);
+        // The previous challenge spawned around the checkpoint before this
+        // one; its chunks may be unloaded now that the party moved on.
+        if (run.completedCheckpoints() >= 2) {
+            clearChallengeEntities(run, player.serverLevel(),
+                    toPos(run.checkpoints().get(run.completedCheckpoints() - 2)));
+        }
+        triggerCheckpointChallenge(run, player);
         data.setDirty();
         return run;
     }
@@ -377,6 +394,10 @@ public final class ExpeditionManager {
             removeMarkerAt(level, portalPos);
             data.untrackMarker(dimension, portalPos);
         }
+        if (level != null && run.completedCheckpoints() > 0) {
+            clearChallengeEntities(run, level,
+                    toPos(run.checkpoints().get(run.completedCheckpoints() - 1)));
+        }
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
@@ -386,6 +407,179 @@ public final class ExpeditionManager {
         }
         cleanupMarkers(run);
         data.setDirty();
+    }
+
+    /**
+     * Rolls the challenge for the checkpoint just activated. The single kind
+     * today — a hunting horde — spawns around the checkpoint with a size that
+     * scales with the sealed party; its entities are tracked on the run so a
+     * later checkpoint or run end can discard them.
+     */
+    private void triggerCheckpointChallenge(ExpeditionRun run, ServerPlayer player) {
+        if (!ExpeditionsConfig.challengesEnabled()) {
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        CheckpointChallenge kind = CheckpointChallenge.roll(
+                ExpeditionsConfig.challengeHordeChance(), level.getRandom().nextFloat());
+        if (kind != CheckpointChallenge.HORDE) {
+            return;
+        }
+        spawnHorde(run, level,
+                toPos(run.checkpoints().get(run.completedCheckpoints() - 1)));
+        if (run.challengeEntities().isEmpty()) {
+            return;
+        }
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer != null) {
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.challenge_horde"));
+            }
+        }
+    }
+
+    /**
+     * Spawns the configured horde mob in a ring around {@code center} and
+     * tracks them on the run. Each mob persists (no despawn) and hunts the
+     * nearest online party member; a configured type that is not a
+     * {@link Mob} contributes nothing.
+     */
+    private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center) {
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(
+                ResourceLocation.parse(ExpeditionsConfig.challengeHordeMob()));
+        int size = ExpeditionsConfig.challengeHordeSize()
+                + ExpeditionsConfig.challengeHordeSizePerExtraMember()
+                        * (run.party().size() - 1);
+        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        List<UUID> spawned = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            double angle = level.getRandom().nextDouble() * Math.PI * 2;
+            int distance = 2 + level.getRandom().nextInt(radius - 1);
+            BlockPos column = center.offset(
+                    (int) Math.round(Math.cos(angle) * distance), 0,
+                    (int) Math.round(Math.sin(angle) * distance));
+            // Force-load the spawn column (bounded by the configured radius)
+            // before reading the heightmap — an ungenerated column reports a
+            // stale height — and so the mob is actually live.
+            level.getChunk(column);
+            BlockPos surface = level.getHeightmapPos(
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
+            if (!(type.create(level) instanceof Mob mob)) {
+                continue;
+            }
+            mob.moveTo(surface.getX() + 0.5, surface.getY(), surface.getZ() + 0.5,
+                    level.getRandom().nextFloat() * 360f, 0f);
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(surface),
+                    MobSpawnType.EVENT, null);
+            mob.setPersistenceRequired();
+            mob.setTarget(nearestMember(run, level, surface));
+            level.addFreshEntity(mob);
+            spawned.add(mob.getUUID());
+        }
+        if (!spawned.isEmpty()) {
+            run.trackChallengeEntities(spawned);
+        }
+    }
+
+    /** The online, living party member nearest to {@code pos}, if any. */
+    private ServerPlayer nearestMember(ExpeditionRun run, ServerLevel level, BlockPos pos) {
+        ServerPlayer nearest = null;
+        double best = Double.MAX_VALUE;
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer == null || !memberPlayer.isAlive()
+                    || memberPlayer.level() != level) {
+                continue;
+            }
+            double distance = memberPlayer.blockPosition().distSqr(pos);
+            if (distance < best) {
+                best = distance;
+                nearest = memberPlayer;
+            }
+        }
+        return nearest;
+    }
+
+    /**
+     * Discards every reachable entity a previous challenge spawned. The
+     * horde may sit in chunks that unloaded while the party walked on — the
+     * area it spawned in is force-loaded first (bounded by the spawn
+     * radius) so entities serialized with their chunk are restored to the
+     * section storage. Entities still unreachable keep their tracking entry
+     * so the periodic sweep can retry — a horde can never leak unseen.
+     */
+    private void clearChallengeEntities(ExpeditionRun run, ServerLevel level, BlockPos center) {
+        if (run.challengeEntities().isEmpty()) {
+            return;
+        }
+        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        for (int cx = (center.getX() - radius) >> 4;
+                cx <= (center.getX() + radius) >> 4; cx++) {
+            for (int cz = (center.getZ() - radius) >> 4;
+                    cz <= (center.getZ() + radius) >> 4; cz++) {
+                level.getChunk(cx, cz);
+            }
+        }
+        AABB box = new AABB(center).inflate(radius + 1);
+        for (UUID entityId : List.copyOf(run.challengeEntities())) {
+            Entity entity = findInSections(level, box, entityId);
+            if (entity != null) {
+                entity.discard();
+                run.untrackChallengeEntity(entityId);
+            }
+        }
+    }
+
+    /**
+     * Opportunistic retry for tracked challenge entities that were pending
+     * when their cleanup ran (e.g. their chunk had unloaded): discards any
+     * that have since returned to the section storage. Called on a slow
+     * server tick — cheap, and runs keep unresolved ids tracked so no horde
+     * can outlive its expedition unseen.
+     */
+    public void sweepChallengeEntities() {
+        boolean removed = false;
+        for (ExpeditionRun run : ledger.runs()) {
+            if (run.challengeEntities().isEmpty() || run.completedCheckpoints() == 0) {
+                continue;
+            }
+            ServerLevel level = levelFor(run.definition().dimension());
+            if (level == null) {
+                continue;
+            }
+            // The current horde spawned around the last activated checkpoint.
+            Waypoint center = run.checkpoints().get(
+                    Math.min(run.completedCheckpoints(), run.totalCheckpoints()) - 1);
+            AABB box = new AABB(toPos(center))
+                    .inflate(ExpeditionsConfig.challengeHordeSpawnRadius() + 1);
+            for (UUID entityId : List.copyOf(run.challengeEntities())) {
+                Entity entity = findInSections(level, box, entityId);
+                if (entity != null) {
+                    entity.discard();
+                    run.untrackChallengeEntity(entityId);
+                    removed = true;
+                }
+            }
+        }
+        if (removed) {
+            data.setDirty();
+        }
+    }
+
+    /**
+     * Finds an entity by UUID through the entity section storage — which,
+     * unlike {@code level.getEntity(uuid)} (the visible entity lookup), also
+     * sees entities parked in sections whose chunk is not entity-ticking.
+     */
+    private static Entity findInSections(ServerLevel level, AABB box, UUID entityId) {
+        List<Entity> found = new ArrayList<>();
+        level.getEntities().get(box, entity -> {
+            if (found.isEmpty() && entity.getUUID().equals(entityId)) {
+                found.add(entity);
+            }
+        });
+        return found.isEmpty() ? null : found.get(0);
     }
 
     /** Removes the portal block when the first checkpoint seals the party. */

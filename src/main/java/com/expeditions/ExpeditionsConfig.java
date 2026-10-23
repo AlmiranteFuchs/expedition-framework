@@ -83,6 +83,33 @@ public final class ExpeditionsConfig {
                     "each member (false).")
             .define("expeditions.party.splitRewards", true);
 
+    private static final ModConfigSpec.BooleanValue CHALLENGES_ENABLED = BUILDER
+            .comment("Whether checkpoint activations roll challenges.")
+            .define("expeditions.challenges.enabled", true);
+
+    private static final ModConfigSpec.DoubleValue HORDE_CHANCE = BUILDER
+            .comment("Chance that an activated checkpoint spawns a hostile",
+                    "horde (1.0 = every checkpoint, 0.0 = never). With a",
+                    "single challenge kind this is the whole probability mass.")
+            .defineInRange("expeditions.challenges.hordeChance", 1.0, 0.0, 1.0);
+
+    private static final ModConfigSpec.IntValue HORDE_SIZE = BUILDER
+            .comment("Base number of hostile mobs a checkpoint horde spawns.")
+            .defineInRange("expeditions.challenges.hordeSize", 4, 1, 32);
+
+    private static final ModConfigSpec.IntValue HORDE_SIZE_PER_MEMBER = BUILDER
+            .comment("Extra horde mobs per party member beyond the first.")
+            .defineInRange("expeditions.challenges.hordeSizePerExtraMember", 2, 0, 16);
+
+    private static final ModConfigSpec.IntValue HORDE_SPAWN_RADIUS = BUILDER
+            .comment("Maximum distance from the activated checkpoint horde",
+                    "mobs may spawn at (they always hunt the nearest member).")
+            .defineInRange("expeditions.challenges.hordeSpawnRadius", 8, 2, 32);
+
+    private static final ModConfigSpec.ConfigValue<String> HORDE_MOB = BUILDER
+            .comment("Entity type horde mobs spawn as (entity registry id).")
+            .define("expeditions.challenges.hordeMob", "minecraft:zombie");
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> OVERWORLD_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Overworld expedition.",
@@ -197,6 +224,36 @@ public final class ExpeditionsConfig {
     /** Whether the scaled reward pool is split evenly among members. */
     public static boolean partySplitRewards() {
         return PARTY_SPLIT_REWARDS.get();
+    }
+
+    /** Whether checkpoint activations roll challenges. */
+    public static boolean challengesEnabled() {
+        return CHALLENGES_ENABLED.get();
+    }
+
+    /** Chance an activated checkpoint spawns a horde. */
+    public static double challengeHordeChance() {
+        return HORDE_CHANCE.get();
+    }
+
+    /** Base horde mob count. */
+    public static int challengeHordeSize() {
+        return HORDE_SIZE.get();
+    }
+
+    /** Extra horde mobs per party member beyond the first. */
+    public static int challengeHordeSizePerExtraMember() {
+        return HORDE_SIZE_PER_MEMBER.get();
+    }
+
+    /** Maximum spawn distance of horde mobs from the checkpoint. */
+    public static int challengeHordeSpawnRadius() {
+        return HORDE_SPAWN_RADIUS.get();
+    }
+
+    /** Entity registry id horde mobs spawn as. */
+    public static String challengeHordeMob() {
+        return HORDE_MOB.get();
     }
 
     private static Optional<ExpeditionDefinition> definition(String id, String name,

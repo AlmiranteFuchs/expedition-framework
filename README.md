@@ -56,7 +56,11 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
    The portal seals (and disappears) when the first checkpoint is hit.
 4. Right-click each checkpoint **in order** — out-of-order and duplicate
    activations are rejected. Any member can activate any checkpoint; the
-   progress is shared.
+   progress is shared. Each activation rolls a **challenge** — currently a
+   hostile horde that spawns near the checkpoint and hunts the nearest
+   member (`[expeditions.challenges]`). The horde is cleaned up when the
+   next checkpoint is reached or the run ends; it cannot outlive the
+   expedition.
 5. After all checkpoints, right-click the **Exit** to complete the run.
    The reward pool scales with party size
    (`expeditions.party.rewardBonusPerExtraMember`) and is distributed per
@@ -97,6 +101,14 @@ entryMax    = 256
 checkpointsPerExtraMember = 1    # legs appended per member joining (0-4)
 rewardBonusPerExtraMember = 0.5  # pool bonus per extra member (0.0-4.0)
 splitRewards = true              # false = every member gets the full pool
+
+[expeditions.challenges]
+enabled = true                   # roll a challenge on each checkpoint
+hordeChance = 1.0                # chance a checkpoint spawns a horde (0.0-1.0)
+hordeSize = 4                    # base mob count (1-32)
+hordeSizePerExtraMember = 2      # extra mobs per member beyond the first (0-16)
+hordeSpawnRadius = 8             # max spawn distance from the checkpoint (2-32)
+hordeMob = "minecraft:zombie"    # entity registry id
 
 # fallback authored route — only used when generate = false
 checkpoints = ["48,16", "96,-24", "144,48"]
@@ -258,14 +270,22 @@ Precedence and rules:
   extra member, and `splitRewards` chooses even split vs. full payout each.
   Per-run in-game selection at the terminal is future work; the domain
   (`PartyScaling`, `RouteGeneration`) takes its values from config today.
+- **Checkpoint challenges** — each activation rolls a challenge
+  (`CheckpointChallenge` in the domain, kinds extensible): a horde of the
+  configured mob spawns in a ring around the checkpoint, hunts the nearest
+  party member, and is tracked on the run by entity UUID. The previous
+  challenge is cleaned up when the next checkpoint is reached and whatever
+  remains is cleaned up at run end — entities in unloaded chunks are
+  force-loaded first, and anything still pending keeps its tracking entry
+  so a periodic sweep (once a second) retries when it materializes.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 56 unit tests + 24 GameTest in-game tests.
+- **Tests** — 62 unit tests + 25 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 49 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **24/24 game tests pass** on a real dedicated
+- `./gradlew test` — 62 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **25/25 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -295,7 +315,10 @@ Precedence and rules:
   - the portal spawns above the terminal, teleports to the remote entry and
     grants the compass; party members join through it, extend the route,
     share progress, split the scaled reward, return to the terminal on
-    completion, and drop out individually on death.
+    completion, and drop out individually on death,
+  - checkpoint activation spawns a tracked horde that hunts a party member;
+    reaching the next checkpoint discards it and rolls a fresh one, and run
+    end discards whatever remains.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -324,6 +347,9 @@ Precedence and rules:
   log in (recovery policy applies on login) or another run in that dimension
   ends.
 - Marker blocks are indestructible by design; the terminal is not protected.
+- Challenge entities whose chunk was unloaded at cleanup time keep their
+  tracking entry until the once-a-second sweep can reach them — worst case
+  a horde survives until its chunk reloads.
 - Placeholder textures.
 
 ## Architecture
@@ -332,15 +358,17 @@ Precedence and rules:
   `ExpeditionDefinition` (dimension, route, rewards incl. time bonus),
   `RouteSpec`/`ExpeditionRoute`/`RouteGeneration`/`RoutePlanner`,
   `RouteAnchor`/`Waypoint`, `ExpeditionRun` (lifecycle +
-  ordered checkpoint activation + timing + awarded amount), `ExpeditionLedger`
-  (per-player runs + token balances), `SafeColumnSearch` (standable-position
-  scan used by adapters).
+  ordered checkpoint activation + timing + awarded amount + tracked
+  challenge entities), `ExpeditionLedger` (per-player runs + token balances),
+  `SafeColumnSearch` (standable-position scan used by adapters),
+  `CheckpointChallenge` (challenge kinds + the roll), `PartyScaling`.
 - `com.expeditions.server.dimension` — `ExpeditionDimensionAdapter` +
   Overworld/Nether implementations + `ExpeditionAdapters` registry. This is the
   extension point for dimension support; the lifecycle never assumes terrain.
 - `com.expeditions.server` — `ExpeditionManager` (server facade: start/complete/
   fail, per-dimension route resolution, marker placement/removal/tracking,
-  `resumeOrFail` recovery, `pruneOrphanMarkers` on start, reward award),
+  `resumeOrFail` recovery, `pruneOrphanMarkers` on start, checkpoint
+  challenges + tracked-entity cleanup, reward award),
   `ExpeditionSavedData` (ledger + live markers ↔ NBT in overworld
   `DimensionDataStorage`, per-record fault isolation on load),
   `ExpeditionEventHandler` (death + login recovery + startup pruning + commands).
@@ -349,7 +377,7 @@ Precedence and rules:
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (18 tests, batches a–q).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (25 tests, batches a–t).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
   `CompassItem` and never competes with block interactions).

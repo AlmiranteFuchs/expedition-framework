@@ -238,4 +238,33 @@ class ExpeditionRunTest {
         run.complete();
         assertThrows(IllegalStateException.class, () -> run.joinParty(UUID.randomUUID()));
     }
+
+    @Test
+    void challengeEntitiesTrackAndUntrackWhileActive() {
+        ExpeditionRun run = newRun();
+        assertTrue(run.challengeEntities().isEmpty());
+        List<UUID> horde = List.of(UUID.randomUUID(), UUID.randomUUID());
+        run.trackChallengeEntities(horde);
+        assertEquals(horde, run.challengeEntities());
+        run.untrackChallengeEntity(horde.get(0));
+        assertEquals(List.of(horde.get(1)), run.challengeEntities());
+    }
+
+    @Test
+    void challengeEntitiesRejectedOnTerminalRun() {
+        ExpeditionRun run = fullyActivatedRun();
+        run.complete();
+        assertThrows(IllegalStateException.class,
+                () -> run.trackChallengeEntities(List.of(UUID.randomUUID())));
+    }
+
+    @Test
+    void restoredRunPreservesChallengeEntities() {
+        List<UUID> entities = List.of(UUID.randomUUID());
+        UUID playerId = UUID.randomUUID();
+        ExpeditionRun run = ExpeditionRun.restore(UUID.randomUUID(), playerId,
+                java.util.Set.of(playerId), definition(), List.of(CP1, CP2, CP3), EXIT,
+                EXIT, EXIT, CP1, 0L, ExpeditionStatus.ACTIVE, 1, false, 0, entities);
+        assertEquals(entities, run.challengeEntities());
+    }
 }

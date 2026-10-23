@@ -1,6 +1,7 @@
 package com.expeditions.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +40,7 @@ public final class ExpeditionRun {
     private final Waypoint portal;
     private final Waypoint entry;
     private final long startedGameTime;
+    private final List<UUID> challengeEntities;
     private ExpeditionStatus status;
     private int completedCheckpoints;
     private boolean rewarded;
@@ -47,7 +49,7 @@ public final class ExpeditionRun {
     private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
             Waypoint entry, long startedGameTime, ExpeditionStatus status, int completedCheckpoints,
-            boolean rewarded, int tokensAwarded) {
+            boolean rewarded, int tokensAwarded, List<UUID> challengeEntities) {
         this.runId = Objects.requireNonNull(runId, "runId");
         this.playerId = Objects.requireNonNull(playerId, "playerId");
         this.party = new HashSet<>(party);
@@ -65,6 +67,7 @@ public final class ExpeditionRun {
         this.completedCheckpoints = completedCheckpoints;
         this.rewarded = rewarded;
         this.tokensAwarded = tokensAwarded;
+        this.challengeEntities = new ArrayList<>(challengeEntities);
     }
 
     /**
@@ -91,7 +94,7 @@ public final class ExpeditionRun {
         }
         return new ExpeditionRun(runId, playerId, party, definition, resolvedCheckpoints,
                 resolvedExit, terminal, portal, entry,
-                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0);
+                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, List.of());
     }
 
     /**
@@ -123,7 +126,7 @@ public final class ExpeditionRun {
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
             Waypoint entry, long startedGameTime,
             ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
-            int tokensAwarded) {
+            int tokensAwarded, List<UUID> challengeEntities) {
         if (checkpoints.isEmpty()) {
             throw new IllegalArgumentException("Restored run must contain at least one checkpoint");
         }
@@ -135,7 +138,8 @@ public final class ExpeditionRun {
         }
         return new ExpeditionRun(runId, playerId, party, definition, checkpoints, exit,
                 terminal, portal, entry,
-                startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded);
+                startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded,
+                challengeEntities);
     }
 
     /** Convenience restore for saves written before portals existed. */
@@ -146,7 +150,8 @@ public final class ExpeditionRun {
             int tokensAwarded) {
         return restore(runId, playerId, party, definition, checkpoints, exit, exit, exit,
                 checkpoints.isEmpty() ? exit : checkpoints.get(0),
-                startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded);
+                startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded,
+                List.of());
     }
 
     /** Convenience restore for saves written before parties existed. */
@@ -235,6 +240,36 @@ public final class ExpeditionRun {
                     "Run " + runId + " route cannot change after the first checkpoint");
         }
         checkpoints.addAll(additionalCheckpoints);
+    }
+
+    /**
+     * Entities this run's checkpoint challenges spawned and still owns
+     * (unmodifiable). Persisted so a reload keeps cleanup responsibility: the
+     * manager discards them when the next checkpoint is reached or the run
+     * ends, so a horde can never outlive its expedition.
+     */
+    public List<UUID> challengeEntities() {
+        return Collections.unmodifiableList(challengeEntities);
+    }
+
+    /**
+     * Records entities spawned by the challenge that just triggered.
+     *
+     * @throws IllegalStateException if the run is not active
+     */
+    public void trackChallengeEntities(Collection<UUID> entities) {
+        ensureActive();
+        challengeEntities.addAll(entities);
+    }
+
+    /**
+     * Stops tracking one challenge entity after the manager disposed of it.
+     * Entities the cleanup could not reach (e.g. still pending in an unloaded
+     * chunk) stay tracked so a later sweep can retry — nothing is forgotten
+     * before it is gone.
+     */
+    public void untrackChallengeEntity(UUID entityId) {
+        challengeEntities.remove(entityId);
     }
 
     public ExpeditionDefinition definition() {

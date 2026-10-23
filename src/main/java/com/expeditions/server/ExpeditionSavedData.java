@@ -67,6 +67,8 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_TERMINAL = "Terminal";
     private static final String TAG_PORTAL = "Portal";
     private static final String TAG_ENTRY = "Entry";
+    private static final String TAG_CHALLENGE_ENTITIES = "ChallengeEntities";
+    private static final String TAG_ENTITY_ID = "EntityId";
     private static final String TAG_BALANCE = "Balance";
     private static final String TAG_X = "x";
     private static final String TAG_Y = "y";
@@ -148,6 +150,12 @@ public class ExpeditionSavedData extends SavedData {
         if (runTag.contains(TAG_ENTRY)) {
             entry = readWaypoint(runTag.getCompound(TAG_ENTRY));
         }
+        // Tracked challenge entities are absent in saves from before
+        // checkpoint challenges existed.
+        List<UUID> challengeEntities = new java.util.ArrayList<>();
+        for (Tag et : runTag.getList(TAG_CHALLENGE_ENTITIES, Tag.TAG_COMPOUND)) {
+            challengeEntities.add(((CompoundTag) et).getUUID(TAG_ENTITY_ID));
+        }
         return ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
@@ -163,7 +171,8 @@ public class ExpeditionSavedData extends SavedData {
                 ExpeditionStatus.valueOf(runTag.getString(TAG_STATUS)),
                 runTag.getInt(TAG_DONE),
                 runTag.getBoolean(TAG_REWARDED),
-                runTag.getInt(TAG_TOKENS_AWARDED));
+                runTag.getInt(TAG_TOKENS_AWARDED),
+                challengeEntities);
     }
 
     @Override
@@ -199,6 +208,13 @@ public class ExpeditionSavedData extends SavedData {
             runTag.put(TAG_TERMINAL, writeWaypoint(run.terminal()));
             runTag.put(TAG_PORTAL, writeWaypoint(run.portal()));
             runTag.put(TAG_ENTRY, writeWaypoint(run.entry()));
+            ListTag entities = new ListTag();
+            for (UUID entityId : run.challengeEntities()) {
+                CompoundTag entityTag = new CompoundTag();
+                entityTag.putUUID(TAG_ENTITY_ID, entityId);
+                entities.add(entityTag);
+            }
+            runTag.put(TAG_CHALLENGE_ENTITIES, entities);
             runs.add(runTag);
         }
         tag.put(TAG_RUNS, runs);

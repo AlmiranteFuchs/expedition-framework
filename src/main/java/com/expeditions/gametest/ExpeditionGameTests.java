@@ -15,6 +15,7 @@ import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -33,6 +34,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
@@ -931,6 +934,68 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
+    /**
+     * Checkpoint challenge — the horde: activating a checkpoint spawns the
+     * configured mob count around it, every entity hunts a party member and
+     * is tracked on the run. The next checkpoint discards the old horde and
+     * rolls a fresh one; run end discards whatever remains.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_t")
+    public static void checkpointHordeSpawnsAndCleansUp(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        level.setDayTime(18000); // horde mobs must not burn mid-test
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
+
+        // Real click path: the player is adjacent, so the horde spawns into
+        // chunks a real player would keep loaded.
+        useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+        helper.assertTrue(run.challengeEntities().size()
+                        == ExpeditionsConfig.challengeHordeSize(),
+                "horde must spawn the configured size, got " + run.challengeEntities().size());
+        BlockPos firstCheckpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
+        int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
+
+        // Mock players provide no chunk tickets: force-load the horde's
+        // chunks so its sections are accessible while we query them — the
+        // same thing the manager's cleanup does before discarding.
+        List<UUID> firstHorde = List.copyOf(run.challengeEntities());
+        for (UUID id : firstHorde) {
+            Entity entity = findEntity(level, firstCheckpoint, hordeRadius, id);
+            helper.assertTrue(entity instanceof Mob,
+                    "horde member " + id + " must exist as a Mob, was " + entity);
+            helper.assertTrue(((Mob) entity).getTarget() == player,
+                    "horde member must hunt a party member, target was "
+                            + ((Mob) entity).getTarget());
+        }
+
+        useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(1)));
+        helper.assertTrue(!run.challengeEntities().containsAll(firstHorde),
+                "the previous horde must be discarded at the next checkpoint");
+        helper.assertTrue(!run.challengeEntities().isEmpty(),
+                "a fresh horde must replace the previous one");
+
+        for (ExpeditionRun other : manager.runs()) {
+            if (other.isActive() && !other.playerId().equals(player.getUUID())) {
+                other.fail();
+            }
+        }
+        List<UUID> lastHorde = List.copyOf(run.challengeEntities());
+        BlockPos lastCheckpoint = ExpeditionManager.toPos(
+                run.checkpoints().get(run.completedCheckpoints() - 1));
+        manager.failRun(player);
+        helper.assertTrue(run.challengeEntities().isEmpty(),
+                "run end must clear challenge tracking");
+        for (UUID id : lastHorde) {
+            helper.assertTrue(findEntity(level, lastCheckpoint, hordeRadius, id) == null,
+                    "the remaining horde must be discarded when the run ends");
+        }
+        helper.succeed();
+    }
+
     private static ExpeditionSavedData savedData(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
                 ExpeditionSavedData.FACTORY, ExpeditionSavedData.DATA_NAME);
@@ -980,6 +1045,32 @@ public final class ExpeditionGameTests {
                 Vec3.atCenterOf(absolute), Direction.UP, absolute, false);
         player.gameMode.useItemOn(player, level,
                 player.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND, hit);
+    }
+
+    /**
+     * Finds an entity by UUID through the entity section storage — which,
+     * unlike {@code level.getEntity(uuid)}, also sees entities parked in
+     * sections whose chunk is not entity-ticking (mock players provide no
+     * chunk tickets, so spawned mobs never reach the visible lookup).
+     * Force-loading the covered chunks first makes their sections
+     * accessible for the duration of the call — the same mechanism the
+     * manager's cleanup relies on.
+     */
+    private static Entity findEntity(ServerLevel level, BlockPos center, int radius, UUID id) {
+        for (int cx = (center.getX() - radius) >> 4; cx <= (center.getX() + radius) >> 4; cx++) {
+            for (int cz = (center.getZ() - radius) >> 4;
+                    cz <= (center.getZ() + radius) >> 4; cz++) {
+                level.getChunk(cx, cz);
+            }
+        }
+        List<Entity> found = new java.util.ArrayList<>();
+        level.getEntities().get(new net.minecraft.world.phys.AABB(center).inflate(radius + 1),
+                entity -> {
+                    if (found.isEmpty() && entity.getUUID().equals(id)) {
+                        found.add(entity);
+                    }
+                });
+        return found.isEmpty() ? null : found.get(0);
     }
 
     private static Optional<ItemStack> compassOf(ServerPlayer player) {

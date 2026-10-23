@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * Game-bus hooks for the expedition system: player death fails the active run,
@@ -63,6 +64,17 @@ public final class ExpeditionEventHandler {
      */
     public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
         ExpeditionManager.pruneOrphanMarkers(event.getServer());
+    }
+
+    /**
+     * Once a second, retry discarding challenge entities whose cleanup ran
+     * while their chunk was unloaded — a tracked horde can never outlive its
+     * expedition unnoticed.
+     */
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (event.getServer().getTickCount() % 20 == 0) {
+            ExpeditionManager.get(event.getServer()).sweepChallengeEntities();
+        }
     }
 
     /** Registers the datapack expedition-definition loader. */
