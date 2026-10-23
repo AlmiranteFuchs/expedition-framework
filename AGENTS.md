@@ -169,8 +169,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Checkpoint challenges milestone verified: `build` + 62 unit tests + 25/25
-GameTest in-game tests pass (horde spawns tracked + targets a member,
-cleaned up at the next checkpoint and at run end, plus all prior coverage).
-Human client click-through and real disconnect not simulated — the compass
-needle angle itself is client rendering, untested.
+Dimension-parity milestone verified: `build` + 62 unit tests + 26/26
+GameTest in-game tests pass (Nether generates routes by default through
+`SafeColumnSearch`, cross-dimension checkpoint clicks are rejected, horde
+lifecycle, plus all prior coverage). Human client click-through and real
+disconnect not simulated — the compass needle angle itself is client
+rendering, untested.

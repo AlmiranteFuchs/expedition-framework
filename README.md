@@ -116,11 +116,24 @@ exit        = "192,0"
 
 [expeditions.nether]
 enabled  = true         # false hides the expedition without clearing the route
-checkpoints = ["24,24", "48,-16", "72,40"]
-exit        = "96,0"
+generate = true         # set false to use the authored anchors below instead
 tokens          = 16
 bonusTokens     = 8
 bonusTimeSeconds = 240
+
+[expeditions.nether.generation]
+checkpoints = 3
+minSpacing  = 32        # tighter legs than the Overworld — the safe scan
+maxSpacing  = 64        # window below the bedrock ceiling is small
+exitMin     = 64
+exitMax     = 128
+maxAttempts = 4
+entryMin    = 64        # the portal lands 64-128 blocks from the terminal
+entryMax    = 128
+
+# fallback authored route — only used when generate = false
+checkpoints = ["24,24", "48,-16", "72,40"]
+exit        = "96,0"
 ```
 
 Positions are X/Z columns; the dimension's **adapter** resolves them to safe
@@ -244,12 +257,17 @@ Precedence and rules:
 - **Datapack definitions** — expeditions loadable from
   `data/*/expeditions/*.json`, hot-reloadable via `/reload`, taking precedence
   over config per dimension.
-- **Generated routes** — the built-in Overworld expedition generates a fresh
-  route per run by default (config-tunable, authored fallback via
+- **Generated routes** — both built-in expeditions generate a fresh route
+  per run by default (config-tunable, authored fallback via
   `generate = false`); datapack `"generate"` specs do the same for any
   adapter-supported dimension. `RoutePlanner` rolls a seeded random walk from
   the player's position; `RouteSpec` keeps authored and generated routes
   distinct; restored runs always persist the resolved static form.
+- **Dimension integrity** — every run's dimension comes from its definition
+  and is persisted; checkpoint/exit interactions are rejected when the
+  player isn't in the run's dimension, and portal matching requires a
+  dimension match. A restored run whose dimension can't resolve fails
+  closed through the standard recovery path.
 - **Destination safety** — adapters validate candidates on real block state:
   free position + headroom, sturdy non-hazardous floor (lava/magma/cactus/
   fire/fluids rejected), inside the world border. Generated anchors retry a
@@ -279,13 +297,13 @@ Precedence and rules:
   force-loaded first, and anything still pending keeps its tracking entry
   so a periodic sweep (once a second) retries when it materializes.
 - **Commands** — `/expeditions balance|status|abandon`.
-- **Tests** — 62 unit tests + 25 GameTest in-game tests.
+- **Tests** — 62 unit tests + 26 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
 - `./gradlew test` — 62 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **25/25 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **26/26 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -318,7 +336,10 @@ Precedence and rules:
     completion, and drop out individually on death,
   - checkpoint activation spawns a tracked horde that hunts a party member;
     reaching the next checkpoint discards it and rolls a fresh one, and run
-    end discards whatever remains.
+    end discards whatever remains,
+  - a same-coordinates checkpoint in the wrong dimension cannot advance a
+    run, while the genuine Nether checkpoint still activates — and the
+    Nether expedition generates its route by default.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -342,7 +363,7 @@ Precedence and rules:
 - One expedition per dimension wins (lowest datapack id or the config
   section); each dimension still needs an adapter to be supported.
 - The Nether adapter guarantees a safe marker spot but not a safe *path*
-  between markers — routes still need coordinates chosen by hand.
+  between markers — generated legs can still span lava lakes or open air.
 - A permanently-offline player's active run keeps its markers until they next
   log in (recovery policy applies on login) or another run in that dimension
   ends.

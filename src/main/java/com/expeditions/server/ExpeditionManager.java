@@ -244,6 +244,7 @@ public final class ExpeditionManager {
      */
     public ExpeditionRun activateCheckpoint(ServerPlayer player, BlockPos pos) {
         ExpeditionRun run = requireActive(player.getUUID());
+        requireRunDimension(run, player.serverLevel());
         run.activateCheckpoint(toWaypoint(pos));
         if (run.completedCheckpoints() == 1) {
             closePortal(run);
@@ -270,6 +271,7 @@ public final class ExpeditionManager {
      */
     public ExpeditionRun completeRun(ServerPlayer player) {
         ExpeditionRun run = requireActive(player.getUUID());
+        requireRunDimension(run, player.serverLevel());
         run.complete();
         if (!run.isRewarded()) {
             long elapsed = run.elapsedTicks(player.serverLevel().getGameTime());
@@ -798,6 +800,18 @@ public final class ExpeditionManager {
     private ExpeditionRun requireActive(UUID playerId) {
         return ledger.activeRun(playerId)
                 .orElseThrow(() -> new IllegalStateException("No active expedition"));
+    }
+
+    /**
+     * Cross-dimensional interactions are rejected: a run's markers only exist
+     * in its own dimension, so progress from elsewhere can never be valid.
+     */
+    private static void requireRunDimension(ExpeditionRun run, ServerLevel level) {
+        if (!run.definition().dimension()
+                .equals(level.dimension().location().toString())) {
+            throw new IllegalStateException("Run " + run.runId() + " belongs to "
+                    + run.definition().dimension());
+        }
     }
 
     public static Waypoint toWaypoint(BlockPos pos) {

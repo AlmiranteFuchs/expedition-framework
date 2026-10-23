@@ -141,6 +141,47 @@ public final class ExpeditionsConfig {
                     "clearing the route so defaults can be restored later.")
             .define("expeditions.nether.enabled", true);
 
+    private static final ModConfigSpec.BooleanValue NETHER_GENERATE = BUILDER
+            .comment("Generate the Nether route dynamically per run instead of",
+                    "using the authored checkpoints/exit columns below.",
+                    "Distances stay shorter than the Overworld defaults — the",
+                    "safe scan window below the bedrock ceiling is tight.")
+            .define("expeditions.nether.generate", true);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_CHECKPOINTS = BUILDER
+            .comment("How many checkpoints a generated Nether route contains.")
+            .defineInRange("expeditions.nether.generation.checkpoints", 3, 1, 16);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_MIN_SPACING = BUILDER
+            .comment("Minimum distance between successive generated waypoints.")
+            .defineInRange("expeditions.nether.generation.minSpacing", 32, 1, 4096);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_MAX_SPACING = BUILDER
+            .comment("Maximum distance between successive generated waypoints.")
+            .defineInRange("expeditions.nether.generation.maxSpacing", 64, 1, 4096);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_EXIT_MIN = BUILDER
+            .comment("Minimum distance from the last checkpoint to the generated exit.")
+            .defineInRange("expeditions.nether.generation.exitMin", 64, 1, 4096);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_EXIT_MAX = BUILDER
+            .comment("Maximum distance from the last checkpoint to the generated exit.")
+            .defineInRange("expeditions.nether.generation.exitMax", 128, 1, 4096);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_MAX_ATTEMPTS = BUILDER
+            .comment("How many nearby candidate columns a generated anchor may",
+                    "retry when its position fails safety validation.")
+            .defineInRange("expeditions.nether.generation.maxAttempts", 4, 0, 8);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_ENTRY_MIN = BUILDER
+            .comment("Minimum distance the expedition portal travels from the",
+                    "terminal to the remote landing spot the route generates around.")
+            .defineInRange("expeditions.nether.generation.entryMin", 64, 1, 4096);
+
+    private static final ModConfigSpec.IntValue NETHER_GENERATION_ENTRY_MAX = BUILDER
+            .comment("Maximum distance the expedition portal travels from the terminal.")
+            .defineInRange("expeditions.nether.generation.entryMax", 128, 1, 4096);
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> NETHER_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Nether expedition.",
@@ -203,6 +244,22 @@ public final class ExpeditionsConfig {
                     OVERWORLD_BONUS_SECONDS.get());
         }
         if (dimension.equals(Level.NETHER) && NETHER_ENABLED.get()) {
+            if (NETHER_GENERATE.get()) {
+                return Optional.of(new ExpeditionDefinition(
+                        "expeditions:nether_trial", "Nether Trial", 0,
+                        dimension.location().toString(),
+                        new RouteGeneration(
+                                NETHER_GENERATION_CHECKPOINTS.get(),
+                                NETHER_GENERATION_MIN_SPACING.get(),
+                                NETHER_GENERATION_MAX_SPACING.get(),
+                                NETHER_GENERATION_EXIT_MIN.get(),
+                                NETHER_GENERATION_EXIT_MAX.get(),
+                                NETHER_GENERATION_MAX_ATTEMPTS.get(),
+                                NETHER_GENERATION_ENTRY_MIN.get(),
+                                NETHER_GENERATION_ENTRY_MAX.get()),
+                        NETHER_TOKENS.get(), NETHER_BONUS_TOKENS.get(),
+                        NETHER_BONUS_SECONDS.get() * TICKS_PER_SECOND));
+            }
             return definition("expeditions:nether_trial", "Nether Trial",
                     dimension, NETHER_CHECKPOINTS.get(), NETHER_EXIT.get(),
                     NETHER_TOKENS.get(), NETHER_BONUS_TOKENS.get(),

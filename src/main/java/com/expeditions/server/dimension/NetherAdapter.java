@@ -27,8 +27,11 @@ public final class NetherAdapter implements ExpeditionDimensionAdapter {
 
     @Override
     public Optional<BlockPos> resolveAnchor(ServerLevel level, RouteAnchor anchor) {
-        level.getChunk(anchor.x() >> 4, anchor.z() >> 4);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(anchor.x(), 0, anchor.z());
+        if (!level.getWorldBorder().isWithinBounds(pos)) {
+            return Optional.empty();
+        }
+        level.getChunk(anchor.x() >> 4, anchor.z() >> 4);
         OptionalInt y = SafeColumnSearch.findStandingY(
                 yy -> DestinationChecks.isFree(level, pos.setY(yy)),
                 yy -> DestinationChecks.isSturdyFloor(level, pos.setY(yy)),
