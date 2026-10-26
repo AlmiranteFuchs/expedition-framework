@@ -69,6 +69,7 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_DONE = "Done";
     private static final String TAG_REWARDED = "Rewarded";
     private static final String TAG_TOKENS_AWARDED = "TokensAwarded";
+    private static final String TAG_ARTIFACT_ISSUED = "ArtifactIssued";
     private static final String TAG_STARTED = "StartedGameTime";
     private static final String TAG_CHECKPOINTS = "Checkpoints";
     private static final String TAG_EXIT = "Exit";
@@ -229,6 +230,7 @@ public class ExpeditionSavedData extends SavedData {
                 runTag.getInt(TAG_DONE),
                 runTag.getBoolean(TAG_REWARDED),
                 runTag.getInt(TAG_TOKENS_AWARDED),
+                runTag.getBoolean(TAG_ARTIFACT_ISSUED),
                 challengeEntities,
                 objectiveStates,
                 readOptions(runTag),
@@ -297,6 +299,7 @@ public class ExpeditionSavedData extends SavedData {
             runTag.putInt(TAG_DONE, run.completedCheckpoints());
             runTag.putBoolean(TAG_REWARDED, run.isRewarded());
             runTag.putInt(TAG_TOKENS_AWARDED, run.tokensAwarded());
+            runTag.putBoolean(TAG_ARTIFACT_ISSUED, run.artifactIssued());
             runTag.putLong(TAG_STARTED, run.startedGameTime());
             ListTag party = new ListTag();
             for (UUID member : run.party()) {

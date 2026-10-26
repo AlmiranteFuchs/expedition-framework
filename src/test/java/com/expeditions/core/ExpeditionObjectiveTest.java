@@ -59,6 +59,10 @@ class ExpeditionObjectiveTest {
                 () -> ExpeditionObjective.collectItems("a", "d", false,
                         "Not An Id!", null, 4, 0));
         assertThrows(IllegalArgumentException.class,
+                () -> ExpeditionObjective.recoverArtifact("a", "d", false, 0, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> ExpeditionObjective.recoverArtifact("a", "d", false, -1, 0));
+        assertThrows(IllegalArgumentException.class,
                 () -> ExpeditionObjective.timeLimit("a", "d", false, 0, 0));
         assertThrows(IllegalArgumentException.class,
                 () -> ExpeditionObjective.visitCheckpoint("a", "d", false, 1, -1));

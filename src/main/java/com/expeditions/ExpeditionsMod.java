@@ -2,6 +2,7 @@ package com.expeditions;
 
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModCreativeTabs;
+import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionEventHandler;
 import com.mojang.logging.LogUtils;
@@ -27,6 +28,7 @@ public class ExpeditionsMod {
     public ExpeditionsMod(IEventBus modEventBus, ModContainer modContainer) {
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.SERVER, ExpeditionsConfig.SPEC);
 

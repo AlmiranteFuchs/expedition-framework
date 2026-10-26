@@ -14,7 +14,9 @@ import com.expeditions.core.RouteGeneration;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
+import com.expeditions.item.ExpeditionArtifactItem;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionMenu;
@@ -1946,32 +1948,35 @@ public final class ExpeditionGameTests {
                     ResourceLocation.fromNamespaceAndPath("test", "buffed"),
                     JsonParser.parseString(json)));
             ExpeditionRun run = startExpedition(helper, manager, player);
-            manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
-            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
-            helper.assertTrue(!run.challengeEntities().isEmpty(),
-                    "the checkpoint must roll a horde");
-            List<UUID> horde = List.copyOf(run.challengeEntities());
-            BlockPos checkpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
-            int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
-            forceLoadArea(level, checkpoint, radius);
-            pollUntil(helper,
-                    () -> horde.stream().allMatch(id -> level.getEntity(id) != null),
-                    "the horde's entity sections to become accessible", () -> {
-                for (UUID id : horde) {
-                    Entity entity = findEntity(level, checkpoint, radius, id);
-                    helper.assertTrue(entity instanceof Mob,
-                            "horde member must be a Mob, was " + entity);
-                    helper.assertTrue(
-                            HordePools.candidates(level, checkpoint, "minecraft:overworld")
-                                    .contains(entity.getType()),
-                            "horde member must come from the natural spawn pool, was "
-                                    + entity.getType());
-                    helper.assertTrue(((Mob) entity).hasEffect(MobEffects.DAMAGE_RESISTANCE),
-                            "horde member must carry the expedition's buff");
-                }
-                manager.failRun(player);
-                helper.succeed();
-            }, 400, () -> dumpArea(level, checkpoint, radius, horde));
+            try {
+                manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
+                useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+                helper.assertTrue(!run.challengeEntities().isEmpty(),
+                        "the checkpoint must roll a horde");
+                List<UUID> horde = List.copyOf(run.challengeEntities());
+                BlockPos checkpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
+                int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+                forceLoadArea(level, checkpoint, radius);
+                pollUntil(helper,
+                        () -> horde.stream().allMatch(id -> level.getEntity(id) != null),
+                        "the horde's entity sections to become accessible", () -> {
+                    for (UUID id : horde) {
+                        Entity entity = findEntity(level, checkpoint, radius, id);
+                        helper.assertTrue(entity instanceof Mob,
+                                "horde member must be a Mob, was " + entity);
+                        helper.assertTrue(
+                                HordePools.candidates(level, checkpoint, "minecraft:overworld")
+                                        .contains(entity.getType()),
+                                "horde member must come from the natural spawn pool, was "
+                                        + entity.getType());
+                        helper.assertTrue(((Mob) entity).hasEffect(MobEffects.DAMAGE_RESISTANCE),
+                                "horde member must carry the expedition's buff");
+                    }
+                    helper.succeed();
+                }, 400, () -> dumpArea(level, checkpoint, radius, horde));
+            } finally {
+                failRunIfActive(manager, player);
+            }
         } finally {
             ExpeditionDefinitions.reload(Map.of());
         }
@@ -2005,17 +2010,318 @@ public final class ExpeditionGameTests {
                     ResourceLocation.fromNamespaceAndPath("test", "modified"),
                     JsonParser.parseString(json)));
             ExpeditionRun run = startExpedition(helper, manager, player);
-            ExpeditionSavedData restored = roundTrip(helper, server);
-            ExpeditionRun reloaded = restored.ledger().run(player.getUUID()).orElseThrow(
-                    () -> new IllegalStateException("run must survive the round trip"));
-            helper.assertTrue(reloaded.definition().modifiers()
-                            .equals(run.definition().modifiers()),
-                    "modifiers must round-trip, was " + reloaded.definition().modifiers());
-            manager.failRun(player);
+            try {
+                ExpeditionSavedData restored = roundTrip(helper, server);
+                ExpeditionRun reloaded = restored.ledger().run(player.getUUID()).orElseThrow(
+                        () -> new IllegalStateException("run must survive the round trip"));
+                helper.assertTrue(reloaded.definition().modifiers()
+                                .equals(run.definition().modifiers()),
+                        "modifiers must round-trip, was " + reloaded.definition().modifiers());
+            } finally {
+                failRunIfActive(manager, player);
+            }
         } finally {
             ExpeditionDefinitions.reload(Map.of());
         }
         helper.succeed();
+    }
+
+    // ---- Batch "artifact": the physical mission artifact ------------------
+
+    /**
+     * The cargo checkpoint hands out the run-bound artifact exactly once;
+     * carrying it through the exit delivers the objective, consumes the
+     * physical item, and pays its bonus.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    public static void artifactIssuedAndDelivered(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Cargo Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8]],
+                  "exit": [24, 8],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "cargo", "description": "Deliver the artifact",
+                     "type": "recover_artifact", "checkpoint": 2,
+                     "bonus_tokens": 6, "required": true}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "cargo_trial"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                helper.assertTrue(findArtifactSlot(player, run.runId()) < 0,
+                        "checkpoint 1 must not issue the artifact");
+                helper.assertTrue(!run.artifactIssued(), "no artifact issued yet");
+
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(1)));
+                helper.assertTrue(findArtifactSlot(player, run.runId()) >= 0,
+                        "the cargo checkpoint must hand out the artifact");
+                helper.assertTrue(run.artifactIssued(),
+                        "the issued latch must be set");
+
+                ExpeditionRun done = manager.completeRun(player);
+                helper.assertTrue(done.status() == ExpeditionStatus.COMPLETED,
+                        "carrying the artifact through the exit must complete the run");
+                helper.assertTrue(done.completedObjectiveIds().contains("cargo"),
+                        "the artifact objective must be delivered");
+                helper.assertTrue(done.tokensAwarded() == 16,
+                        "the artifact bonus must pay, was " + done.tokensAwarded());
+                helper.assertTrue(findArtifactSlot(player, run.runId()) < 0,
+                        "delivery must consume the physical artifact");
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A required artifact gates the exit, and only THIS run's artifact
+     * counts: an item bound to another run is refused, and restoring the
+     * real cargo lets the run complete.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    public static void wrongRunArtifactIsRefused(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Cargo Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8]],
+                  "exit": [24, 8],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "cargo", "description": "Deliver the artifact",
+                     "type": "recover_artifact", "checkpoint": 1,
+                     "required": true}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "cargo_trial"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(1)));
+
+                // Swap the real artifact for one bound to a different run.
+                int slot = findArtifactSlot(player, run.runId());
+                helper.assertTrue(slot >= 0, "the artifact must have been issued");
+                ItemStack real = player.getInventory().getItem(slot).copy();
+                player.getInventory().setItem(slot, ItemStack.EMPTY);
+                ItemStack foreign = new ItemStack(ModItems.EXPEDITION_ARTIFACT.get());
+                UUID foreignRun = UUID.randomUUID();
+                foreign.set(ModDataComponents.RUN_ID.get(), foreignRun.toString());
+                player.getInventory().add(foreign);
+
+                try {
+                    manager.completeRun(player);
+                    throw new IllegalStateException(
+                            "an artifact bound to another run must not satisfy the objective");
+                } catch (IllegalStateException expected) {
+                    helper.assertTrue(run.status() == ExpeditionStatus.ACTIVE,
+                            "a refused run must stay active");
+                    helper.assertTrue(!run.isRewarded(), "a refused run must not pay");
+                    helper.assertTrue(findArtifactSlot(player, foreignRun) >= 0,
+                            "a refused click must not consume another run's artifact");
+                }
+
+                player.getInventory().add(real);
+                ExpeditionRun done = manager.completeRun(player);
+                helper.assertTrue(done.status() == ExpeditionStatus.COMPLETED,
+                        "restoring the run's own artifact must complete the run");
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A failed run strips the artifact from member inventories — mission
+     * cargo never outlives its run.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    public static void failedRunStripsArtifact(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Cargo Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8]],
+                  "exit": [24, 8],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "cargo", "description": "Deliver the artifact",
+                     "type": "recover_artifact", "checkpoint": 1}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "cargo_trial"),
+                JsonParser.parseString(json));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                helper.assertTrue(findArtifactSlot(player, run.runId()) >= 0,
+                        "the artifact must have been issued");
+
+                manager.failRun(player);
+                helper.assertTrue(findArtifactSlot(player, run.runId()) < 0,
+                        "a failed run must strip its artifact");
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * An artifact bound to a run that no longer exists is swept on the login
+     * path — orphaned cargo cannot accumulate in inventories.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    public static void staleArtifactSweptOnLogin(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        UUID deadRun = UUID.randomUUID();
+        ItemStack orphan = new ItemStack(ModItems.EXPEDITION_ARTIFACT.get());
+        orphan.set(ModDataComponents.RUN_ID.get(), deadRun.toString());
+        player.getInventory().add(orphan);
+
+        manager.sweepCompasses(player);
+        helper.assertTrue(findArtifactSlot(player, deadRun) < 0,
+                "an artifact bound to a dead run must be swept");
+        helper.succeed();
+    }
+
+    /**
+     * The issued latch and delivery state survive a save/load — a restart
+     * cannot re-issue the artifact or re-pay its bonus.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    public static void artifactStatePersistsAcrossReload(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Cargo Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[8, 8], [16, 8]],
+                  "exit": [24, 8],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "cargo", "description": "Deliver the artifact",
+                     "type": "recover_artifact", "checkpoint": 1,
+                     "bonus_tokens": 6}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "cargo_trial"),
+                JsonParser.parseString(json));
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                helper.assertTrue(run.artifactIssued(), "artifact must be issued");
+
+                ExpeditionRun restored = roundTrip(helper, server).ledger()
+                        .activeRun(player.getUUID()).orElseThrow(
+                                () -> new IllegalStateException("run must survive a save/load"));
+                helper.assertTrue(restored.artifactIssued(),
+                        "the issued latch must round-trip");
+                helper.assertTrue(restored.definition().artifactObjectiveAt(1).isPresent(),
+                        "the artifact objective definition must round-trip");
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code recover_artifact} objectives validate like every other kind:
+     * the cargo checkpoint must exist on the route, and unknown/missing
+     * fields are rejected at parse.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    public static void invalidArtifactObjectivesRejected(GameTestHelper helper) {
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "past_route"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "recover_artifact",
+                                         "checkpoint": 9}]}"""),
+                ResourceLocation.fromNamespaceAndPath("test", "no_checkpoint"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "recover_artifact"}]}"""));
+        try {
+            ExpeditionDefinitions.reload(entries);
+            helper.assertTrue(ExpeditionDefinitions.all().isEmpty(),
+                    "invalid artifact objectives must skip their definitions, got "
+                            + ExpeditionDefinitions.all().keySet());
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Fails the player's run if one is still active — test cleanup that can
+     * never leak a run (and its authored-anchor markers) into later tests.
+     */
+    private static void failRunIfActive(ExpeditionManager manager, ServerPlayer player) {
+        if (manager.activeRun(player.getUUID()).isPresent()) {
+            manager.failRun(player);
+        }
+    }
+
+    /** The inventory slot holding an artifact bound to {@code runId}, or -1. */
+    private static int findArtifactSlot(ServerPlayer player, UUID runId) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            if (ExpeditionArtifactItem.isBoundTo(inventory.getItem(i), runId)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static ExpeditionSavedData savedData(MinecraftServer server) {

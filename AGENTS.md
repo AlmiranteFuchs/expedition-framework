@@ -92,6 +92,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   own dimension, per position — a marker is only removed when no still-active
   run references that exact position (`isReferencedByActiveRun`), so a leaked
   run can never freeze a whole dimension's cleanup. Indestructible by design.
+- `recover_artifact` objectives bind a physical `ExpeditionArtifactItem` to
+  the run via `ModDataComponents.RUN_ID`: issued once at the declared
+  checkpoint (`artifactIssued` latch), delivered by holding it at the exit
+  click (consumed only after `complete()` succeeds), stripped at run end
+  and swept when its run is dead. Completion mirrors possession — losing
+  the item unlatches the objective.
 - Expedition compass: `ExpeditionCompassItem` (plain `Item`, NOT `CompassItem`
   so it never competes with block `useItemOn`) granted on portal entry and
   removed on any run end (also swept on login if a run ended while offline);
@@ -236,6 +242,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Datapack tests: simulate reloads via `ExpeditionDefinitions.reload(map)` and
   ALWAYS reset with `reload(Map.of())` in a finally block — the snapshot is a
   shared static and leaks between tests otherwise.
+- Tests that start a run MUST wrap post-start work in `try/finally
+  failRunIfActive(manager, player)` — authored anchors are absolute world
+  coordinates, so a leaked active run keeps its markers at the shared
+  positions and every later test resolving those anchors fails. The
+  GameTest world persists across `runGameTestServer` invocations (`run/world`),
+  so a leak poisons subsequent runs too.
 - `ExpeditionGameTests` uses `makeMockServerPlayerInLevel()` (deprecated in
   1.21.1 but functional) — revisit if a better mock player API exists.
 
@@ -254,11 +266,10 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Modifiers milestone verified: `build` + 88 unit tests + 48/48
-GameTest in-game tests pass (all prior coverage plus modifier parse/
-validation, member effects apply+strip, forced weather set+clear,
-dimension-pooled horde types with buffs, modifier save→load). Includes the
-per-position `cleanupMarkers` fix — one leaked run can no longer poison a
-dimension's cleanup. Human client click-through and real disconnect not
+M7 (physical mission artifact) verified: `build` + 94 unit tests + 54/54
+GameTest in-game tests pass (all prior coverage plus artifact issue/
+deliver/refuse/strip/sweep, `recover_artifact` parse+validation, issued
+latch save→load). Modifiers milestone also verified (88 unit + 48 game
+tests at `d5bfedf`). Human client click-through and real disconnect not
 simulated — the menu opens through the vanilla container path but has never
 been seen in a real client.

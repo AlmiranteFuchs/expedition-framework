@@ -1,6 +1,7 @@
 package com.expeditions.registry;
 
 import com.expeditions.ExpeditionsMod;
+import com.expeditions.item.ExpeditionArtifactItem;
 import com.expeditions.item.ExpeditionCompassItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -25,6 +26,10 @@ public final class ModItems {
     public static final DeferredItem<ExpeditionCompassItem> EXPEDITION_COMPASS = ITEMS.register(
             "expedition_compass",
             () -> new ExpeditionCompassItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<ExpeditionArtifactItem> EXPEDITION_ARTIFACT = ITEMS.register(
+            "expedition_artifact",
+            () -> new ExpeditionArtifactItem(new Item.Properties().stacksTo(1)));
 
     private ModItems() {
     }

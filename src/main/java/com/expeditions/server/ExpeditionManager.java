@@ -18,7 +18,9 @@ import com.expeditions.core.RoutePlanner;
 import com.expeditions.core.RouteSpec;
 import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
+import com.expeditions.item.ExpeditionArtifactItem;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.expeditions.server.dimension.ExpeditionAdapters;
@@ -363,6 +365,16 @@ public final class ExpeditionManager {
         if (run.completedCheckpoints() == 1) {
             closePortal(run);
         }
+        // A checkpoint holding the mission cargo issues the run's artifact
+        // exactly once; repeat activations never duplicate the item.
+        if (!run.artifactIssued()
+                && run.definition().artifactObjectiveAt(run.completedCheckpoints())
+                        .isPresent()) {
+            grantArtifact(player, run);
+            run.markArtifactIssued();
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.artifact_recovered"));
+        }
         retargetPartyCompasses(run);
         // The previous challenge spawned around the checkpoint before this
         // one; its chunks may be unloaded now that the party moved on.
@@ -394,7 +406,23 @@ public final class ExpeditionManager {
             player.sendSystemMessage(Component.translatable(
                     "message.expeditions.objective_completed", objective.description()));
         }
+        // Artifact delivery re-evaluates at every exit click like timed
+        // objectives: the item must be in a member's hands at this moment.
+        // It is consumed only AFTER complete() succeeds — a refused click
+        // (other required objectives missing) must not destroy the cargo.
+        HeldArtifact held = findHeldArtifact(run);
+        for (ExpeditionObjective objective : run.definition().objectives()) {
+            if (objective.kind() == ObjectiveKind.RECOVER_ARTIFACT
+                    && run.deliverArtifact(objective.id(), held != null)) {
+                player.sendSystemMessage(Component.translatable(
+                        "message.expeditions.objective_completed",
+                        objective.description()));
+            }
+        }
         run.complete();
+        if (held != null) {
+            held.consume();
+        }
         if (!run.isRewarded()) {
             int base = run.definition().totalReward(elapsed,
                     run.completedObjectiveIds(), run.options().bonusTimePercent());
@@ -524,6 +552,32 @@ public final class ExpeditionManager {
         if (ledger.activeRun(player.getUUID()).isEmpty()) {
             removeCompasses(player);
         }
+        removeStaleArtifacts(player);
+    }
+
+    /**
+     * Strips artifacts bound to runs that no longer exist or already ended.
+     * A live run's artifact is never touched — even a thief holding another
+     * party's cargo keeps their leverage.
+     */
+    private void removeStaleArtifacts(ServerPlayer player) {
+        Set<UUID> liveRuns = new HashSet<>();
+        for (ExpeditionRun run : ledger.runs()) {
+            if (run.isActive()) {
+                liveRuns.add(run.runId());
+            }
+        }
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            if (ExpeditionArtifactItem.boundRun(inventory.getItem(i))
+                    .filter(bound -> !liveRuns.contains(bound)).isPresent()) {
+                inventory.setItem(i, ItemStack.EMPTY);
+            }
+        }
+        if (ExpeditionArtifactItem.boundRun(player.containerMenu.getCarried())
+                .filter(bound -> !liveRuns.contains(bound)).isPresent()) {
+            player.containerMenu.setCarried(ItemStack.EMPTY);
+        }
     }
 
     /**
@@ -539,6 +593,10 @@ public final class ExpeditionManager {
             return;
         }
         ExpeditionRun run = active.get();
+        if (ExpeditionArtifactItem.isBoundTo(picked, run.runId())) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.expeditions.artifact_recovered"));
+        }
         boolean dirty = false;
         for (ExpeditionObjective objective : run.definition().objectives()) {
             if (objective.kind() != ObjectiveKind.COLLECT_ITEMS
@@ -641,6 +699,7 @@ public final class ExpeditionManager {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
                 removeMemberEffects(run, memberPlayer);
+                removeArtifacts(memberPlayer, run.runId());
                 removeCompasses(memberPlayer);
                 teleportToTerminal(memberPlayer, run);
             }
@@ -983,6 +1042,69 @@ public final class ExpeditionManager {
             if (memberPlayer != null) {
                 forEachCompass(memberPlayer, stack -> retarget(stack, dimension, target));
             }
+        }
+    }
+
+    /**
+     * Issues the run's artifact into the activator's inventory (or at their
+     * feet), bound by the {@code run_id} component — the physical proof that
+     * only this run's exit can consume.
+     */
+    private static void grantArtifact(ServerPlayer player, ExpeditionRun run) {
+        ItemStack stack = new ItemStack(ModItems.EXPEDITION_ARTIFACT.get());
+        stack.set(ModDataComponents.RUN_ID.get(), run.runId().toString());
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+    }
+
+    /** An artifact stack currently held by an online party member. */
+    private record HeldArtifact(ServerPlayer holder, int slot) {
+        /** Removes the artifact — only called after the run actually completes. */
+        void consume() {
+            if (slot >= 0) {
+                holder.getInventory().setItem(slot, ItemStack.EMPTY);
+            } else {
+                holder.containerMenu.setCarried(ItemStack.EMPTY);
+            }
+        }
+    }
+
+    /**
+     * The first artifact stack bound to {@code run} found in any online
+     * member's inventory (cursor-held counts; slot -1). Offline members
+     * cannot hand over items — documented extraction rule.
+     */
+    private HeldArtifact findHeldArtifact(ExpeditionRun run) {
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer == null) {
+                continue;
+            }
+            var inventory = memberPlayer.getInventory();
+            for (int i = 0; i < inventory.getContainerSize(); i++) {
+                if (ExpeditionArtifactItem.isBoundTo(inventory.getItem(i), run.runId())) {
+                    return new HeldArtifact(memberPlayer, i);
+                }
+            }
+            if (ExpeditionArtifactItem.isBoundTo(
+                    memberPlayer.containerMenu.getCarried(), run.runId())) {
+                return new HeldArtifact(memberPlayer, -1);
+            }
+        }
+        return null;
+    }
+
+    /** Strips this run's remaining artifacts from a member's inventory. */
+    private static void removeArtifacts(ServerPlayer player, UUID runId) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            if (ExpeditionArtifactItem.isBoundTo(inventory.getItem(i), runId)) {
+                inventory.setItem(i, ItemStack.EMPTY);
+            }
+        }
+        if (ExpeditionArtifactItem.isBoundTo(player.containerMenu.getCarried(), runId)) {
+            player.containerMenu.setCarried(ItemStack.EMPTY);
         }
     }
 

@@ -20,5 +20,13 @@ public enum ObjectiveKind {
      * Finish the expedition within a time budget ({@code time_limit}).
      * Evaluated once at completion: completed iff elapsed ticks ≤ the limit.
      */
-    TIME_LIMIT
+    TIME_LIMIT,
+    /**
+     * Recover the run's physical artifact and deliver it to the exit
+     * ({@code recover_artifact}). The artifact is issued once when the named
+     * checkpoint activates; the objective completes at the exit click when a
+     * party member is holding the run-bound item — evaluated at delivery,
+     * like {@link #TIME_LIMIT}, never latched on pickup.
+     */
+    RECOVER_ARTIFACT
 }

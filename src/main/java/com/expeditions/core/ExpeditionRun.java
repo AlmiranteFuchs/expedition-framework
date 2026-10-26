@@ -50,12 +50,14 @@ public final class ExpeditionRun {
     private int completedCheckpoints;
     private boolean rewarded;
     private int tokensAwarded;
+    private boolean artifactIssued;
     private final Map<String, ObjectiveState> objectiveStates;
 
     private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
             Waypoint entry, long startedGameTime, ExpeditionStatus status, int completedCheckpoints,
-            boolean rewarded, int tokensAwarded, List<UUID> challengeEntities,
+            boolean rewarded, int tokensAwarded, boolean artifactIssued,
+            List<UUID> challengeEntities,
             Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
             String portalDimension) {
         this.runId = Objects.requireNonNull(runId, "runId");
@@ -75,6 +77,7 @@ public final class ExpeditionRun {
         this.completedCheckpoints = completedCheckpoints;
         this.rewarded = rewarded;
         this.tokensAwarded = tokensAwarded;
+        this.artifactIssued = artifactIssued;
         this.challengeEntities = new ArrayList<>(challengeEntities);
         this.options = Objects.requireNonNull(options, "options");
         if (portalDimension == null || portalDimension.isBlank()) {
@@ -128,8 +131,8 @@ public final class ExpeditionRun {
         }
         return new ExpeditionRun(runId, playerId, party, definition, resolvedCheckpoints,
                 resolvedExit, terminal, portal, entry,
-                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, List.of(), Map.of(),
-                options, portalDimension);
+                startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, false,
+                List.of(), Map.of(), options, portalDimension);
     }
 
     /**
@@ -182,6 +185,24 @@ public final class ExpeditionRun {
             int tokensAwarded, List<UUID> challengeEntities,
             Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
             String portalDimension) {
+        return restore(runId, playerId, party, definition, checkpoints, exit, terminal,
+                portal, entry, startedGameTime, status, completedCheckpoints, rewarded,
+                tokensAwarded, false, challengeEntities, objectiveStates, options,
+                portalDimension);
+    }
+
+    /**
+     * Restores a run with its artifact-issue latch (saves written before
+     * artifacts existed default to not-issued).
+     */
+    public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime,
+            ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
+            int tokensAwarded, boolean artifactIssued, List<UUID> challengeEntities,
+            Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
+            String portalDimension) {
         if (checkpoints.isEmpty()) {
             throw new IllegalArgumentException("Restored run must contain at least one checkpoint");
         }
@@ -194,7 +215,7 @@ public final class ExpeditionRun {
         return new ExpeditionRun(runId, playerId, party, definition, checkpoints, exit,
                 terminal, portal, entry,
                 startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded,
-                challengeEntities, objectiveStates, options, portalDimension);
+                artifactIssued, challengeEntities, objectiveStates, options, portalDimension);
     }
 
     /** Convenience restore for saves written before objective tracking existed. */
@@ -449,6 +470,48 @@ public final class ExpeditionRun {
     }
 
     /**
+     * Whether the run's mission artifact has already been issued at its
+     * checkpoint — a persisted latch so the item exists exactly once per run.
+     */
+    public boolean artifactIssued() {
+        return artifactIssued;
+    }
+
+    /**
+     * Records that the artifact was issued (idempotent).
+     *
+     * @throws IllegalStateException if the run is not active
+     */
+    public void markArtifactIssued() {
+        ensureActive();
+        artifactIssued = true;
+    }
+
+    /**
+     * Delivers a {@link ObjectiveKind#RECOVER_ARTIFACT} objective: the
+     * caller has already verified a member physically holds the run-bound
+     * item, so this latches the objective completed. Delivery re-evaluates
+     * like timed objectives — a refused completion retried without the item
+     * must not leave the objective complete, so a negative call unlatches it.
+     *
+     * @return whether this call newly completed the objective
+     * @throws IllegalStateException    if the run is not active
+     * @throws IllegalArgumentException if the objective is unknown or not an
+     *         artifact objective
+     */
+    public boolean deliverArtifact(String objectiveId, boolean delivered) {
+        ensureActive();
+        ExpeditionObjective objective = objective(objectiveId);
+        if (objective.kind() != ObjectiveKind.RECOVER_ARTIFACT) {
+            throw new IllegalArgumentException(
+                    "Objective \"" + objectiveId + "\" is not a recover_artifact objective");
+        }
+        boolean was = state(objectiveId).completed();
+        objectiveStates.put(objectiveId, new ObjectiveState(delivered ? 1 : 0, delivered));
+        return delivered && !was;
+    }
+
+    /**
      * Objective states keyed by objective id (unmodifiable, definition
      * order). Every objective declared by the definition has an entry even
      * if it has never progressed.
@@ -462,7 +525,11 @@ public final class ExpeditionRun {
         return Optional.ofNullable(objectiveStates.get(objectiveId));
     }
 
-    /** Ids of objectives already completed (latches; never shrinks). */
+    /**
+     * Ids of objectives already completed. Every kind latches except
+     * {@link ObjectiveKind#RECOVER_ARTIFACT}: its completion mirrors
+     * physical possession at the exit, so losing the artifact unlatches it.
+     */
     public Set<String> completedObjectiveIds() {
         Set<String> completed = new HashSet<>();
         objectiveStates.forEach((id, state) -> {

@@ -26,6 +26,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.EXPEDITION_CHECKPOINT_ITEM.get());
                         output.accept(ModItems.EXPEDITION_EXIT_ITEM.get());
                         output.accept(ModItems.EXPEDITION_COMPASS.get());
+                        output.accept(ModItems.EXPEDITION_ARTIFACT.get());
                     })
                     .build());
 

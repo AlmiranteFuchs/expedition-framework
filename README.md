@@ -207,17 +207,29 @@ run):
    "type": "collect_items", "tag": "minecraft:logs", "count": 2,
    "bonus_tokens": 2},
   {"id": "speedy", "description": "Finish within a minute",
-   "type": "time_limit", "seconds": 60, "bonus_tokens": 7}
+   "type": "time_limit", "seconds": 60, "bonus_tokens": 7},
+  {"id": "cargo", "description": "Deliver the artifact",
+   "type": "recover_artifact", "checkpoint": 2, "bonus_tokens": 6,
+   "required": true}
 ]
 ```
 
 Every objective needs a unique `id` and a `type`; `description` (defaults to
 the id), `required` (default false) and `bonus_tokens` (default 0) are
 optional. `visit_checkpoint` takes `checkpoint` (1-based route index),
-`collect_items` takes exactly one of `item` or `tag` plus `count`, and
-`time_limit` takes `seconds`. Progress is server-side only: pickups feed
-`collect_items` (any party member's counts), checkpoints feed
-`visit_checkpoint`, and `time_limit` is evaluated at completion. Configured
+`collect_items` takes exactly one of `item` or `tag` plus `count`,
+`time_limit` takes `seconds`, and `recover_artifact` takes `checkpoint`
+(the checkpoint that issues the run's physical artifact item).
+
+Artifact rules: activating the cargo checkpoint hands the activator a
+run-bound `ExpeditionArtifactItem` exactly once (`run_id` data component);
+the item follows normal inventory/death/drop behavior while the run is
+active. At the exit, any online member must be holding it — an artifact
+bound to another run is refused and left untouched, a refused click never
+consumes it, and the item is consumed only after the run actually
+completes. Run end (complete or fail) strips its artifacts, the login
+sweep removes artifacts bound to dead runs, and offline members can't
+hand over cargo. Configured
 built-in expeditions carry no objectives; datapacks are the configuration
 surface.
 
@@ -461,13 +473,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   mod-aware with no configuration; `expeditions:horde_mobs/<dimension>`
   entity tags override explicitly.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start`.
-- **Tests** — 88 unit tests + 48 GameTest in-game tests.
+- **Tests** — 94 unit tests + 54 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 88 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **48/48 game tests pass** on a real dedicated
+- `./gradlew test` — 94 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **54/54 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -511,6 +523,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   - untouched optional objectives never block or pay, a required objective
     gates the exit until done, objective progress survives save→load, and
     malformed objective definitions are skipped at reload.
+  - the cargo checkpoint issues the run-bound artifact exactly once,
+    carrying it through the exit completes the delivery and consumes the
+    item, an artifact bound to another run is refused without being
+    consumed, a failed run strips its artifact, dead-run artifacts are
+    swept on login, and the issued latch survives save→load.
   - item valuation ranks tiers correctly (junk < food < gem < equipment),
     completion grants bonus drops from the run's dimension pool, redeem
     refuses without enough tokens and pays a Nether draw in the Nether,
@@ -589,10 +606,11 @@ no custom menu type).
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (42 tests, batches a–y).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (54 tests, batches a–z + art).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
-  `CompassItem` and never competes with block interactions).
+  `CompassItem` and never competes with block interactions) and
+  `ExpeditionArtifactItem` (run-bound mission cargo via `ModDataComponents.RUN_ID`).
 - `com.expeditions.client` — `ExpeditionsClient` (client-only `@Mod` with
   `dist = CLIENT`) registers the `angle` item property over the tracker target.
 - `ExpeditionsConfig` — NeoForge server config → built-in `ExpeditionDefinition`

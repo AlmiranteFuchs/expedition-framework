@@ -267,4 +267,103 @@ class ExpeditionRunTest {
                 EXIT, EXIT, CP1, 0L, ExpeditionStatus.ACTIVE, 1, false, 0, entities);
         assertEquals(entities, run.challengeEntities());
     }
+
+    // ---- Physical mission artifact -----------------------------------------
+
+    private static ExpeditionDefinition artifactDefinition(boolean required) {
+        return new ExpeditionDefinition("expeditions:artifact_run", "Cargo", 1,
+                "minecraft:overworld", new ExpeditionRoute(
+                        List.of(new RouteAnchor(10, 10), new RouteAnchor(20, 10),
+                                new RouteAnchor(30, 10)),
+                        new RouteAnchor(40, 10)),
+                8, 0, 0,
+                List.of(ExpeditionObjective.recoverArtifact(
+                        "cargo", "Recover the artifact", required, 2, 3)),
+                ExpeditionModifiers.NONE);
+    }
+
+    private static ExpeditionRun artifactRun(boolean required) {
+        return ExpeditionRun.start(UUID.randomUUID(), UUID.randomUUID(),
+                artifactDefinition(required), List.of(CP1, CP2, CP3), EXIT, 0L);
+    }
+
+    @Test
+    void artifactIssuesExactlyOncePerRun() {
+        ExpeditionRun run = artifactRun(true);
+        assertFalse(run.artifactIssued());
+        run.markArtifactIssued();
+        assertTrue(run.artifactIssued());
+        // The latch guards re-issuance on repeat activations/restarts; the
+        // manager only grants while this is false.
+    }
+
+    @Test
+    void artifactDeliveryLatchesAndUnlatchesWithPossession() {
+        ExpeditionRun run = artifactRun(true);
+        ExpeditionObjective objective = run.definition().objectives().get(0);
+        // Not in hand → not delivered.
+        assertFalse(run.deliverArtifact(objective.id(), false));
+        assertFalse(run.objectiveState(objective.id()).orElseThrow().completed());
+        // In hand → delivered.
+        assertTrue(run.deliverArtifact(objective.id(), true));
+        assertTrue(run.objectiveState(objective.id()).orElseThrow().completed());
+        // Clicking again while still holding: already delivered, no re-complete.
+        assertFalse(run.deliverArtifact(objective.id(), true));
+        // Dropped before extraction → pending again (at-risk rule).
+        run.deliverArtifact(objective.id(), false);
+        assertFalse(run.objectiveState(objective.id()).orElseThrow().completed());
+    }
+
+    @Test
+    void requiredArtifactGatesCompletionUntilDelivered() {
+        ExpeditionRun run = artifactRun(true);
+        run.activateCheckpoint(CP1);
+        run.activateCheckpoint(CP2);
+        run.activateCheckpoint(CP3);
+        // All checkpoints done but the artifact was never delivered.
+        assertThrows(IllegalStateException.class, run::complete);
+        run.deliverArtifact("cargo", true);
+        run.complete();
+        assertEquals(ExpeditionStatus.COMPLETED, run.status());
+    }
+
+    @Test
+    void optionalArtifactSkipsWithoutBlockingCompletion() {
+        ExpeditionRun run = artifactRun(false);
+        run.activateCheckpoint(CP1);
+        run.activateCheckpoint(CP2);
+        run.activateCheckpoint(CP3);
+        run.complete();
+        assertEquals(ExpeditionStatus.COMPLETED, run.status());
+        assertFalse(run.objectiveState("cargo").orElseThrow().completed());
+    }
+
+    @Test
+    void artifactDeliveryRejectedOnTerminalRun() {
+        ExpeditionRun run = artifactRun(false);
+        run.activateCheckpoint(CP1);
+        run.activateCheckpoint(CP2);
+        run.activateCheckpoint(CP3);
+        run.complete();
+        assertThrows(IllegalStateException.class,
+                () -> run.deliverArtifact("cargo", true));
+        assertThrows(IllegalStateException.class, run::markArtifactIssued);
+    }
+
+    @Test
+    void deliverArtifactRejectsWrongObjectiveKind() {
+        ExpeditionDefinition def = new ExpeditionDefinition("expeditions:t", "T", 1,
+                "minecraft:overworld", new ExpeditionRoute(
+                        List.of(new RouteAnchor(10, 10), new RouteAnchor(20, 10),
+                                new RouteAnchor(30, 10)),
+                        new RouteAnchor(40, 10)),
+                8, 0, 0,
+                List.of(ExpeditionObjective.visitCheckpoint(
+                        "visit", "Visit", true, 2, 0)),
+                ExpeditionModifiers.NONE);
+        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), UUID.randomUUID(),
+                def, List.of(CP1, CP2, CP3), EXIT, 0L);
+        assertThrows(IllegalArgumentException.class,
+                () -> run.deliverArtifact("visit", true));
+    }
 }

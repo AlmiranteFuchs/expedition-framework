@@ -192,8 +192,9 @@ public final class ExpeditionDefinitions {
      * {@code description}, {@code required} and {@code bonus_tokens}.
      * Per type: {@code visit_checkpoint} takes {@code checkpoint} (1-based
      * index), {@code collect_items} takes exactly one of {@code item} or
-     * {@code tag} plus {@code count}, and {@code time_limit} takes
-     * {@code seconds}.
+     * {@code tag} plus {@code count}, {@code time_limit} takes
+     * {@code seconds}, and {@code recover_artifact} takes {@code checkpoint}
+     * (the checkpoint that issues the run's artifact).
      */
     private static List<ExpeditionObjective> parseObjectives(JsonElement element) {
         if (element == null) {
@@ -241,6 +242,8 @@ public final class ExpeditionDefinitions {
                 case "time_limit" -> objectives.add(ExpeditionObjective.timeLimit(
                         id, description, required,
                         (long) requiredInt(json, "seconds") * TICKS_PER_SECOND, bonus));
+                case "recover_artifact" -> objectives.add(ExpeditionObjective.recoverArtifact(
+                        id, description, required, requiredInt(json, "checkpoint"), bonus));
                 default -> throw new IllegalArgumentException(
                         "unknown objective type \"" + json.get("type").getAsString() + "\"");
             }

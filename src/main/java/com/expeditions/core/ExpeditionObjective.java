@@ -87,6 +87,17 @@ public record ExpeditionObjective(String id, String description, boolean require
                 tag = null;
                 count = 0;
             }
+            case RECOVER_ARTIFACT -> {
+                if (checkpoint < 1) {
+                    throw new IllegalArgumentException(
+                            "recover_artifact objective \"" + id
+                                    + "\" needs a checkpoint index >= 1");
+                }
+                item = null;
+                tag = null;
+                count = 0;
+                timeLimitTicks = 0;
+            }
         }
     }
 
@@ -115,10 +126,20 @@ public record ExpeditionObjective(String id, String description, boolean require
                 ObjectiveKind.TIME_LIMIT, 0, null, null, 0, ticks, bonusTokens);
     }
 
+    /**
+     * An artifact objective: the artifact is issued when checkpoint
+     * {@code index} activates and completes when delivered at the exit.
+     */
+    public static ExpeditionObjective recoverArtifact(String id, String description,
+            boolean required, int index, int bonusTokens) {
+        return new ExpeditionObjective(id, description, required,
+                ObjectiveKind.RECOVER_ARTIFACT, index, null, null, 0, 0, bonusTokens);
+    }
+
     /** Progress value at which this objective completes. */
     public int progressTarget() {
         return switch (kind) {
-            case VISIT_CHECKPOINT -> 1;
+            case VISIT_CHECKPOINT, RECOVER_ARTIFACT -> 1;
             case COLLECT_ITEMS -> count;
             case TIME_LIMIT -> (int) Math.min(timeLimitTicks, Integer.MAX_VALUE);
         };

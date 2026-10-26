@@ -85,14 +85,30 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
                         "Duplicate objective id \"" + objective.id()
                                 + "\" in expedition \"" + id + "\"");
             }
-            if (objective.kind() == ObjectiveKind.VISIT_CHECKPOINT
+            if ((objective.kind() == ObjectiveKind.VISIT_CHECKPOINT
+                    || objective.kind() == ObjectiveKind.RECOVER_ARTIFACT)
                     && objective.checkpoint() > checkpoints) {
                 throw new IllegalArgumentException(
-                        "visit_checkpoint objective \"" + objective.id()
-                                + "\" targets checkpoint " + objective.checkpoint()
+                        objective.kind().name().toLowerCase() + " objective \""
+                                + objective.id() + "\" targets checkpoint "
+                                + objective.checkpoint()
                                 + " but the route has only " + checkpoints);
             }
         }
+    }
+
+    /**
+     * The {@link ObjectiveKind#RECOVER_ARTIFACT} objective issued at
+     * checkpoint {@code index} (1-based), if one targets it. Definitions
+     * reject duplicate objective ids, so at most one artifact objective per
+     * checkpoint — but nothing prevents several checkpoints from each
+     * holding one.
+     */
+    public java.util.Optional<ExpeditionObjective> artifactObjectiveAt(int index) {
+        return objectives.stream()
+                .filter(o -> o.kind() == ObjectiveKind.RECOVER_ARTIFACT
+                        && o.checkpoint() == index)
+                .findFirst();
     }
 
     private static int routeCheckpointCount(RouteSpec route) {
