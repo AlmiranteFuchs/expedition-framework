@@ -116,6 +116,7 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_DEF_END = "EndTick";
     private static final String TAG_DEF_WAVE = "NextWaveTick";
     private static final String TAG_FAILED_OBJECTIVES = "FailedObjectives";
+    private static final String TAG_SECURED = "SecuredTokens";
 
     private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
@@ -246,7 +247,24 @@ public class ExpeditionSavedData extends SavedData {
                 readOptions(runTag),
                 readPortalDimension(runTag, dimension),
                 readDefense(runTag),
-                readFailedObjectives(runTag));
+                readFailedObjectives(runTag),
+                readSecuredTokens(runTag));
+    }
+
+    /**
+     * Per-member banked checkpoint credits, absent in saves from before
+     * checkpoint crediting existed — those runs top up at completion.
+     */
+    private static Map<UUID, Integer> readSecuredTokens(CompoundTag runTag) {
+        Map<UUID, Integer> secured = new HashMap<>();
+        if (!runTag.contains(TAG_SECURED)) {
+            return secured;
+        }
+        CompoundTag securedTag = runTag.getCompound(TAG_SECURED);
+        for (String key : securedTag.getAllKeys()) {
+            secured.put(UUID.fromString(key), securedTag.getInt(key));
+        }
+        return secured;
     }
 
     /**
@@ -339,6 +357,13 @@ public class ExpeditionSavedData extends SavedData {
             runTag.putBoolean(TAG_REWARDED, run.isRewarded());
             runTag.putInt(TAG_TOKENS_AWARDED, run.tokensAwarded());
             runTag.putBoolean(TAG_ARTIFACT_ISSUED, run.artifactIssued());
+            CompoundTag securedTag = new CompoundTag();
+            run.securedTokens().forEach((member, amount) -> {
+                if (amount > 0) {
+                    securedTag.putInt(member.toString(), amount);
+                }
+            });
+            runTag.put(TAG_SECURED, securedTag);
             runTag.putLong(TAG_STARTED, run.startedGameTime());
             ListTag party = new ListTag();
             for (UUID member : run.party()) {

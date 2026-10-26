@@ -1293,8 +1293,10 @@ public final class ExpeditionGameTests {
                 helper.assertTrue(run.status() == ExpeditionStatus.ACTIVE,
                         "a refused run must stay active");
                 helper.assertTrue(!run.isRewarded(), "a refused run must not be rewarded");
-                helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
-                        "a refused run must pay nothing");
+                helper.assertTrue(manager.tokenBalance(player.getUUID())
+                                == run.securedTokens(player.getUUID()),
+                        "a refused run pays only its banked credits, got "
+                                + manager.tokenBalance(player.getUUID()));
             }
             // Simulate the real click path for the refusal message too.
             useBlockAt(helper, player, ExpeditionManager.toPos(run.exit()));
@@ -1308,6 +1310,7 @@ public final class ExpeditionGameTests {
                             + done.tokensAwarded());
         } finally {
             ExpeditionDefinitions.reload(Map.of());
+            failRunIfActive(manager, player);
         }
         helper.succeed();
     }
@@ -2804,6 +2807,175 @@ public final class ExpeditionGameTests {
                 net.minecraft.world.entity.item.ItemEntity.class,
                 new net.minecraft.world.phys.AABB(pos).inflate(1.5),
                 e -> e.getItem().is(ModItems.ASSIMILATION_ESSENCE.get())).size();
+    }
+
+    // ---- checkpoint credits (M9) ----------------------------------------------
+
+    /** What the manager credits each member for a checkpoint portion. */
+    private static int creditShare(ExpeditionRun run, int portion) {
+        int scaled = com.expeditions.core.PartyScaling.scaledTotal(portion,
+                run.party().size(), ExpeditionsConfig.partyRewardBonusPerExtraMember())
+                * run.options().difficulty().rewardPercent() / 100;
+        return com.expeditions.core.PartyScaling.memberShare(scaled,
+                run.party().size(), ExpeditionsConfig.partySplitRewards());
+    }
+
+    /**
+     * Guaranteed tokens bank at each activation: the balance grows by the
+     * credited share immediately, the run records it as secured, and it
+     * survives the run failing — only the at-risk remainder is lost.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    public static void checkpointCreditsBankAtActivation(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ExpeditionRun run = null;
+        try {
+            run = startExpedition(helper, manager, player);
+            int before = savedData(helper.getLevel().getServer()).ledger()
+                    .tokenBalance(player.getUUID());
+
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+            int first = creditShare(run, run.checkpointTokenPortion(1));
+            helper.assertTrue(
+                    savedData(helper.getLevel().getServer()).ledger()
+                            .tokenBalance(player.getUUID()) == before + first,
+                    "the first checkpoint must bank its share immediately");
+            helper.assertTrue(run.securedTokens(player.getUUID()) == first,
+                    "the run must record the secured credit, got "
+                            + run.securedTokens(player.getUUID()));
+
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(1)));
+            int second = creditShare(run, run.checkpointTokenPortion(2));
+            helper.assertTrue(
+                    savedData(helper.getLevel().getServer()).ledger()
+                            .tokenBalance(player.getUUID()) == before + first + second,
+                    "each activation must bank its own share");
+            helper.assertTrue(run.isRewarded() == false,
+                    "banking credits must not mark the run rewarded");
+
+            // Run fails: the banked credits survive — at-risk means the
+            // completion remainder, not what was already banked.
+            manager.failRun(player);
+            helper.assertTrue(
+                    savedData(helper.getLevel().getServer()).ledger()
+                            .tokenBalance(player.getUUID()) == before + first + second,
+                    "banked credits must survive the run failing");
+        } finally {
+            failRunIfActive(manager, player);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Completion tops each member up to their full share: banked credits
+     * count toward it, so total received == the share exactly once.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    public static void completionTopsUpToFullShare(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ExpeditionRun run = null;
+        int credited = 0;
+        try {
+            run = startExpedition(helper, manager, player);
+            int before = savedData(helper.getLevel().getServer()).ledger()
+                    .tokenBalance(player.getUUID());
+            for (Waypoint checkpoint : run.checkpoints()) {
+                useBlockAt(helper, player, ExpeditionManager.toPos(checkpoint));
+                credited += creditShare(run,
+                        run.checkpointTokenPortion(run.completedCheckpoints()));
+            }
+            failLeakedForeignRuns(player);
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.exit()));
+
+            long elapsed = run.elapsedTicks(helper.getLevel().getGameTime());
+            int total = run.definition().totalReward(elapsed,
+                    run.completedObjectiveIds(), run.options().bonusTimePercent());
+            int expected = com.expeditions.core.PartyScaling.memberShare(
+                    com.expeditions.core.PartyScaling.scaledTotal(total, 1,
+                            ExpeditionsConfig.partyRewardBonusPerExtraMember())
+                            * run.options().difficulty().rewardPercent() / 100,
+                    1, ExpeditionsConfig.partySplitRewards());
+            helper.assertTrue(
+                    savedData(helper.getLevel().getServer()).ledger()
+                            .tokenBalance(player.getUUID()) == before + expected,
+                    "member must end with exactly the full share, was "
+                            + (savedData(helper.getLevel().getServer()).ledger()
+                                    .tokenBalance(player.getUUID()) - before)
+                            + " (credits " + credited + ", share " + expected + ")");
+            helper.assertTrue(run.tokensAwarded() == expected,
+                    "tokensAwarded records the full share value");
+        } finally {
+            failRunIfActive(manager, player);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A member who drops out mid-run keeps only their banked credits: the
+     * survivor is topped up to the solo share, the ex-member forfeits the
+     * at-risk remainder but never the secured part.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    public static void droppedMemberKeepsOnlySecuredCredits(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerPlayer member = helper.makeMockServerPlayerInLevel();
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ExpeditionRun run = null;
+        try {
+            run = startExpedition(helper, manager, player);
+            manager.enterPortal(member, ExpeditionManager.toPos(run.portal()));
+            helper.assertTrue(run.isMember(member.getUUID()),
+                    "the member must join through the open portal");
+            int memberBefore = savedData(helper.getLevel().getServer()).ledger()
+                    .tokenBalance(member.getUUID());
+
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+            int secured = creditShare(run, run.checkpointTokenPortion(1));
+            helper.assertTrue(run.securedTokens(member.getUUID()) == secured,
+                    "members bank the same credit");
+
+            run.leaveParty(member.getUUID());
+            for (int i = 1; i < run.checkpoints().size(); i++) {
+                useBlockAt(helper, player,
+                        ExpeditionManager.toPos(run.checkpoints().get(i)));
+            }
+            failLeakedForeignRuns(player);
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.exit()));
+
+            helper.assertTrue(
+                    savedData(helper.getLevel().getServer()).ledger()
+                            .tokenBalance(member.getUUID()) == memberBefore + secured,
+                    "the ex-member keeps exactly their banked credit");
+        } finally {
+            failRunIfActive(manager, player);
+        }
+        helper.succeed();
+    }
+
+    /** Secured credits round-trip with the run record. */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    public static void securedCreditsPersistAcrossReload(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ExpeditionRun run = null;
+        try {
+            run = startExpedition(helper, manager, player);
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+            int secured = run.securedTokens(player.getUUID());
+            helper.assertTrue(secured > 0, "the credit must be banked first");
+
+            ExpeditionRun restored = roundTrip(helper, helper.getLevel().getServer())
+                    .ledger().activeRun(player.getUUID()).orElseThrow(
+                            () -> new IllegalStateException("run must round-trip"));
+            helper.assertTrue(restored.securedTokens(player.getUUID()) == secured,
+                    "secured credits must round-trip, got "
+                            + restored.securedTokens(player.getUUID()));
+        } finally {
+            failRunIfActive(manager, player);
+        }
+        helper.succeed();
     }
 
     /**

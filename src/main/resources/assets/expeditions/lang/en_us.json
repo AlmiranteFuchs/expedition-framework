@@ -12,6 +12,7 @@
   "message.expeditions.expedition_started": "Expedition started: %1$s. Follow the markers!",
   "message.expeditions.next_checkpoint": "Next checkpoint %1$s/%2$s at %3$s.",
   "message.expeditions.checkpoint_reached": "Checkpoint %1$s/%2$s reached.",
+  "message.expeditions.checkpoint_secured": "Checkpoint secured: +%1$s expedition tokens banked.",
   "message.expeditions.all_checkpoints": "All checkpoints reached! Head to the exit at %1$s.",
   "message.expeditions.wrong_checkpoint": "That is not your next checkpoint.",
   "message.expeditions.not_finished": "Your expedition is not finished yet.",

@@ -48,7 +48,7 @@ covers direction.
 | — | Foundation (terminal, manager, defs, routes, objectives, horde, modifiers, options, economy, persistence) | **Complete** | 101 unit + 65/65 game tests green |
 | M7 | Physical mission artifact + extraction | **Complete** | Domain latch/delivery + run-bound item + datapack `recover_artifact` + unit/game tests. Distinct from the M12 *progression* artifact: mission cargo is per-run, bound by `run_id`, consumed/stripped at run end — it never unlocks anything |
 | M8 | Destructible defense device | **Complete** | `ObjectiveKind.DEFEND_DEVICE` + datapack `defend_device`; `ExpeditionDeviceBlock` (tracked marker); `DefenseState` (hp/maxHp/endTick/nextWaveTick) persisted on the run; stage-gated at its declared checkpoint; exactly-once destruction (`damageDevice` → required fails run, optional marks objective failed); bounded waves/mob cap via config; unit + 6 game tests |
-| M9 | Checkpoint economy / reward reliability | **Partial** | Idempotency (`markRewarded`, single-file save) solid; per-checkpoint crediting still missing — rewards are all-or-nothing at `completeRun`. Remaining: credit tokens at each checkpoint activation (guaranteed), keep completion+objective bonuses at-risk until extraction |
+| M9 | Checkpoint economy / reward reliability | **Complete** | Guaranteed `tokens` bank per activation (`checkpointTokenPortion`, balanced split over resolved route); `securedTokens` per member persisted on the run; completion tops members up to the full share (`max(0, share − secured)`) — bonuses/objectives stay at-risk until extraction; credits survive failure/death/restart; 5 unit + 4 game tests |
 | M10 | First complete expedition (mandatory checkpoint route + existing objective handlers) | Not started | Blocked on M8. Composition only — beacon activation, artifact recovery, collection, defense, extraction all reuse existing handlers |
 | M11 | Structured feedback + expedition summary | **Partial** | Chat messages on transitions exist; no structured end-of-run summary separating guaranteed/pending/awarded/lost rewards; failure reason not surfaced |
 | M12 | Terminal progression + dimensional campaign | Not started | Expanded scope (see below): permanent keys, consumable costs, trophies, mission prerequisites with explanations, dimensional campaign states, crafted progression artifact, Big Bad event unlock, subsequent operation unlocks. No unlock/trophy concepts exist; menu is selection-only |
@@ -164,6 +164,29 @@ A `defend_device` objective deploys a siege at its declared checkpoint:
 - Run end (death/abandon/completion elsewhere) stands the device down and
   cleans its siege.
 
+## M9 — checkpoint economy (implemented)
+
+The guaranteed `tokens` are no longer all-or-nothing at extraction:
+
+- **Banked per checkpoint** — each activation credits every member the
+  balanced portion of the definition's `tokens`
+  (`tokens * i / n - tokens * (i-1) / n`, summed exactly) through the same
+  scaling/split/difficulty formula as completion. Credits hit the ledger
+  immediately — they survive run failure, member drop-out, disconnect and
+  restart.
+- **At-risk remainder** — bonus time tokens and objective bonuses are only
+  settled at `completeRun`. Completion tops each member up to their full
+  share (`max(0, share − secured)`), so a member is never paid twice and a
+  member whose party shrank after crediting keeps the overage.
+- **`securedTokens` per member** lives on the run record and persists —
+  old saves default to empty and simply top up fully.
+- **Party sealed at first checkpoint** means every member is present for
+  every credit — totals equalize naturally; a member who leaves mid-run
+  keeps only what they banked.
+- `tokensAwarded`/`markRewarded` semantics unchanged: the recorded value
+  is the full per-member share (secured + top-up), so bonus-drop budgets
+  and restore invariants are untouched.
+
 ## M15 prototype — assimilation layer (implemented)
 
 The Big Bad's visual signature: `expeditions:assimilation_layer`, a thin
@@ -210,9 +233,9 @@ project so far, per `AGENTS.md` rules.
 
 ## Next recommended milestone
 
-**M9 (checkpoint economy / reward reliability)** — earliest genuinely
-incomplete milestone now that M8 landed. Remaining work is small and
-isolated: credit guaranteed tokens at each checkpoint activation instead
-of all-or-nothing at `completeRun`, keeping completion + objective
-bonuses at-risk until extraction. Then M12 (progression infra) → M15
+**M11 (structured feedback + expedition summary)** — earliest remaining
+incomplete milestone, and it now has the data shape it was waiting for:
+M9 splits secured vs. at-risk rewards, so the end-of-run summary can show
+banked/awarded/lost cleanly. Small surface: a summary payload on run end
+plus failure-reason surfacing. Then M12 (progression infra) → M15
 (threat + Big Bad, needs M12+M13) → M10 (composes everything).

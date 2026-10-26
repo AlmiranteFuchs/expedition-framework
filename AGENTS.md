@@ -50,6 +50,14 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   in-range progress, reward only on COMPLETED); `ExpeditionSavedData.load`
   skips+logs malformed records per entry — never let one corrupt record kill
   the whole file.
+- Two-tier rewards: `securedTokens` per member are banked into the ledger
+  at each checkpoint activation (`checkpointTokenPortion`, balanced split
+  of guaranteed `tokens`) and survive failure/death/restart; completion
+  only tops members up to the full share (`max(0, share − secured)`).
+  `tokensAwarded`/`markRewarded` keep recording the FULL per-member share
+  value — never the just-paid top-up — so bonus-drop budgets and the
+  COMPLETED-only restore invariant stay intact. Party seals at the first
+  checkpoint, so all members are present for every credit.
 
 ## Recovery policy (fail-closed)
 
@@ -86,8 +94,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   ring; authored anchors are strict. One chunk load per candidate — bounded
   and synchronous by design.
 - Routes resolve BEFORE any marker is placed.
-- Rewards: guaranteed `tokens` + `bonusTokens` when finished within
-  `bonusTimeTicks`; computed by `ExpeditionDefinition.totalReward(elapsedTicks)`.
+- Rewards: guaranteed `tokens` banked per checkpoint + at-risk `bonusTokens`
+  and objective bonuses settled at extraction; totals computed by
+  `ExpeditionDefinition.totalReward(elapsedTicks, completedObjectiveIds)`.
 - Marker blocks are placed at run start and removed at run end in the run's
   own dimension, per position — a marker is only removed when no still-active
   run references that exact position (`isReferencedByActiveRun`), so a leaked
@@ -312,11 +321,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Assimilation layer (M15 prototype) verified: `build` + 101 unit tests +
-65/65 GameTest in-game tests pass (all prior coverage plus layer attach on
-all 6 faces, non-sturdy rejection, support-loss removal, essence drop
-rules, thin shapes). The desaturated-skin renderer is client-side only —
-NOT covered by the GameTest server; verify visually via `runClient`.
+M9 (checkpoint economy) verified: `build` + 106 unit tests + 69/69
+GameTest in-game tests pass (all prior coverage plus checkpoint crediting,
+failure-survival, completion top-up, dropped-member and persistence).
 Human client click-through and real disconnect not simulated — the menu
 opens through the vanilla container path but has never been seen in a real
 client.

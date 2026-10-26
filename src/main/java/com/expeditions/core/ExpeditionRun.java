@@ -3,6 +3,7 @@ package com.expeditions.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,6 +55,7 @@ public final class ExpeditionRun {
     private DefenseState defense;
     private final Map<String, ObjectiveState> objectiveStates;
     private final Set<String> failedObjectives;
+    private final Map<UUID, Integer> securedTokens;
 
     private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
@@ -62,6 +64,20 @@ public final class ExpeditionRun {
             List<UUID> challengeEntities,
             Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
             String portalDimension, DefenseState defense, Set<String> failedObjectives) {
+        this(runId, playerId, party, definition, checkpoints, exit, terminal, portal,
+                entry, startedGameTime, status, completedCheckpoints, rewarded,
+                tokensAwarded, artifactIssued, challengeEntities, objectiveStates,
+                options, portalDimension, defense, failedObjectives, Map.of());
+    }
+
+    private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime, ExpeditionStatus status, int completedCheckpoints,
+            boolean rewarded, int tokensAwarded, boolean artifactIssued,
+            List<UUID> challengeEntities,
+            Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
+            String portalDimension, DefenseState defense, Set<String> failedObjectives,
+            Map<UUID, Integer> securedTokens) {
         this.runId = Objects.requireNonNull(runId, "runId");
         this.playerId = Objects.requireNonNull(playerId, "playerId");
         this.party = new HashSet<>(party);
@@ -95,6 +111,7 @@ public final class ExpeditionRun {
         }
         this.defense = defense;
         this.failedObjectives = new HashSet<>(failedObjectives);
+        this.securedTokens = new HashMap<>(securedTokens);
         if (defense != null
                 && objective(defense.objectiveId()).kind() != ObjectiveKind.DEFEND_DEVICE) {
             throw new IllegalArgumentException(
@@ -230,6 +247,26 @@ public final class ExpeditionRun {
             int tokensAwarded, boolean artifactIssued, List<UUID> challengeEntities,
             Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
             String portalDimension, DefenseState defense, Set<String> failedObjectives) {
+        return restore(runId, playerId, party, definition, checkpoints, exit, terminal,
+                portal, entry, startedGameTime, status, completedCheckpoints, rewarded,
+                tokensAwarded, artifactIssued, challengeEntities, objectiveStates, options,
+                portalDimension, defense, failedObjectives, Map.of());
+    }
+
+    /**
+     * Restores a run with its per-member secured token credits (saves
+     * written before checkpoint crediting existed default to none — those
+     * runs simply top up to the full share at completion).
+     */
+    public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime,
+            ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
+            int tokensAwarded, boolean artifactIssued, List<UUID> challengeEntities,
+            Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
+            String portalDimension, DefenseState defense, Set<String> failedObjectives,
+            Map<UUID, Integer> securedTokens) {
         if (checkpoints.isEmpty()) {
             throw new IllegalArgumentException("Restored run must contain at least one checkpoint");
         }
@@ -243,7 +280,7 @@ public final class ExpeditionRun {
                 terminal, portal, entry,
                 startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded,
                 artifactIssued, challengeEntities, objectiveStates, options, portalDimension,
-                defense, failedObjectives);
+                defense, failedObjectives, securedTokens);
     }
 
     /** Convenience restore for saves written before objective tracking existed. */
@@ -811,14 +848,72 @@ public final class ExpeditionRun {
         return rewarded;
     }
 
-    /** Tokens granted per member by {@link #markRewarded(int)}, or 0 if not rewarded. */
+    /**
+     * The per-member award value recorded by {@link #markRewarded(int)}:
+     * the full completion share including tokens members already banked at
+     * checkpoints. 0 if not rewarded.
+     */
     public int tokensAwarded() {
         return tokensAwarded;
     }
 
     /**
-     * Records that the completion reward of {@code tokens} per member has been
-     * granted. Valid exactly once, and only on a completed run.
+     * Guaranteed tokens already banked for {@code memberId} by checkpoint
+     * activations — paid out immediately, so they survive failure, death
+     * and restarts. 0 for members who banked nothing (or late joiners).
+     */
+    public int securedTokens(UUID memberId) {
+        return securedTokens.getOrDefault(memberId, 0);
+    }
+
+    /** Per-member secured totals (unmodifiable); may include ex-members. */
+    public Map<UUID, Integer> securedTokens() {
+        return Collections.unmodifiableMap(securedTokens);
+    }
+
+    /**
+     * Records {@code tokens} banked for {@code memberId} — the manager has
+     * already paid them into the ledger; this only keeps the run's books so
+     * completion can top up instead of double-paying.
+     *
+     * @throws IllegalStateException    if the run is not active
+     * @throws IllegalArgumentException if the member is not in the party or
+     *                                  the amount is negative
+     */
+    public void secureTokens(UUID memberId, int tokens) {
+        ensureActive();
+        if (!party.contains(memberId)) {
+            throw new IllegalArgumentException(
+                    "Cannot secure tokens for non-member " + memberId);
+        }
+        if (tokens < 0) {
+            throw new IllegalArgumentException("Token amount must be >= 0");
+        }
+        securedTokens.merge(memberId, tokens, Integer::sum);
+    }
+
+    /**
+     * The guaranteed-token portion credited when the checkpoint with
+     * 1-based {@code checkpointIndex} activates: an even split of the
+     * definition's base {@code tokens} over the resolved route, balanced so
+     * the portions sum exactly to the total
+     * ({@code tokens * i / n - tokens * (i-1) / n}).
+     */
+    public int checkpointTokenPortion(int checkpointIndex) {
+        int n = checkpoints.size();
+        if (checkpointIndex < 1 || checkpointIndex > n) {
+            throw new IllegalArgumentException(
+                    "Checkpoint index " + checkpointIndex + " out of range 1.." + n);
+        }
+        int total = definition.tokenReward();
+        return total * checkpointIndex / n - total * (checkpointIndex - 1) / n;
+    }
+
+    /**
+     * Records that the completion award of {@code tokens} per member has been
+     * settled — the full share value; part of it may already have been paid
+     * out as checkpoint credits (see {@link #securedTokens()}). Valid
+     * exactly once, and only on a completed run.
      *
      * @throws IllegalStateException otherwise
      */

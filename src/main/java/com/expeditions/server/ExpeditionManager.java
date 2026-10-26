@@ -384,6 +384,25 @@ public final class ExpeditionManager {
         // valid activation stage is its declared checkpoint.
         run.definition().defenseObjectiveAt(run.completedCheckpoints())
                 .ifPresent(objective -> startSiege(player, run, objective));
+        // Guaranteed tokens are banked per checkpoint — they are paid into
+        // member balances immediately and survive failure, death and
+        // restarts. Completion only tops members up to their full share.
+        int portion = run.checkpointTokenPortion(run.completedCheckpoints());
+        if (portion > 0) {
+            int scaled = PartyScaling.scaledTotal(portion, run.party().size(),
+                    ExpeditionsConfig.partyRewardBonusPerExtraMember())
+                    * run.options().difficulty().rewardPercent() / 100;
+            int share = PartyScaling.memberShare(scaled, run.party().size(),
+                    ExpeditionsConfig.partySplitRewards());
+            if (share > 0) {
+                for (UUID member : run.party()) {
+                    ledger.addTokens(member, share);
+                    run.secureTokens(member, share);
+                }
+                player.sendSystemMessage(Component.translatable(
+                        "message.expeditions.checkpoint_secured", share));
+            }
+        }
         retargetPartyCompasses(run);
         // The previous challenge spawned around the checkpoint before this
         // one; its chunks may be unloaded now that the party moved on.
@@ -397,12 +416,16 @@ public final class ExpeditionManager {
     }
 
     /**
-     * Completes the interacting player's run and grants the scaled reward to
+     * Completes the interacting player's run and settles the scaled award to
      * every member present — base tokens plus each completed objective's
      * bonus, times the configured party bonus, then split evenly or paid in
-     * full per config — exactly once. Timed objectives are evaluated first;
-     * unfinished required objectives refuse the completion entirely. Members
-     * are teleported back to the run's terminal.
+     * full per config — exactly once. Members keep whatever checkpoint
+     * credits they already banked; the run only pays the difference between
+     * their secured total and their full share (late joiners equalize; the
+     * at-risk remainder is what extraction actually pays). Timed objectives
+     * are evaluated first; unfinished required objectives refuse the
+     * completion entirely. Members are teleported back to the run's
+     * terminal.
      *
      * @throws IllegalStateException if the run is missing, finished, has
      *         checkpoints left or unfinished required objectives
@@ -441,7 +464,12 @@ public final class ExpeditionManager {
             int share = PartyScaling.memberShare(scaled, run.party().size(),
                     ExpeditionsConfig.partySplitRewards());
             for (UUID member : run.party()) {
-                ledger.addTokens(member, share);
+                // Top up to the full share — checkpoint credits already paid
+                // count toward it, so no member is paid twice. A member whose
+                // secured total exceeds the final share (party shrank after
+                // crediting) keeps the overage; it was earned.
+                int topUp = Math.max(0, share - run.securedTokens(member));
+                ledger.addTokens(member, topUp);
             }
             run.markRewarded(share);
             grantBonusDrops(run);

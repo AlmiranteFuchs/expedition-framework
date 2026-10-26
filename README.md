@@ -69,7 +69,8 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
    (`expeditions.party.rewardBonusPerExtraMember`) and is distributed per
    `expeditions.party.splitRewards` (default: split evenly). Every member is
    teleported back to the terminal and compasses are removed.
-6. Dying drops you out of the party with no reward; the run fails only when
+6. Dying drops you out of the party keeping only banked checkpoint tokens;
+   the run fails only when
    the last member dies or leaves. `/expeditions abandon` leaves the run the
    same way. Disconnecting does not end a run — it resumes on rejoin (use the
    portal again if you never entered).
@@ -86,7 +87,7 @@ rolled per run, anchored to the player's position at the terminal:
 ```toml
 [expeditions.overworld]
 generate = true   # set false to use the authored anchors below instead
-tokens          = 8     # guaranteed tokens on completion
+tokens          = 8     # guaranteed tokens, banked per checkpoint reached
 bonusTokens     = 4     # extra for finishing within bonusTimeSeconds (0 = off)
 bonusTimeSeconds = 300
 
@@ -397,10 +398,14 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Server-validated checkpoints** — only the next expected checkpoint advances;
   out-of-order, duplicate and foreign positions are rejected; activation requires
   real block reach.
-- **Death failure** — `LivingDeathEvent` fails active runs, no reward.
-- **Token rewards** — guaranteed tokens plus an optional time bonus, granted
-  exactly once on completion and persisted per player. Balances saturate at
-  `Integer.MAX_VALUE` rather than overflowing.
+- **Death failure** — `LivingDeathEvent` fails active runs; members keep
+  only tokens already banked at checkpoints, nothing else.
+- **Token rewards** — the guaranteed `tokens` are banked per checkpoint
+  reached (a balanced split paid into member balances immediately, so they
+  survive failure, death and restarts). The completion award — time bonus
+  plus each objective's bonus — is the at-risk part: extraction only tops
+  members up to their full share, granted exactly once and persisted per
+  player. Balances saturate at `Integer.MAX_VALUE` rather than overflowing.
 - **Objectives** — optional or required goals (visit a checkpoint, collect
   items by id or tag, finish within a time limit) declared per expedition.
   Progress is tracked per run, survives save/load, and each objective's bonus
@@ -502,16 +507,20 @@ chunk, and validate on real block state — not heightmap assumptions.
   by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
-- **Tests** — 101 unit tests + 65 GameTest in-game tests.
+- **Tests** — 106 unit tests + 69 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 101 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **65/65 game tests pass** on a real dedicated
+- `./gradlew test` — 106 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **69/69 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
-  - death fails the run with no reward,
+  - death fails the run keeping only banked checkpoint credits,
+  - guaranteed tokens bank at each checkpoint activation and survive
+    failure, completion tops members up to the full share without
+    double-paying, a dropped party member keeps only secured credits, and
+    the secured totals survive save→load,
   - out-of-order and duplicate checkpoint clicks are rejected,
   - the exit refuses unfinished runs,
   - the Nether expedition resolves inside the safe scan window and its markers

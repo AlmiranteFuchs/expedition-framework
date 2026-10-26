@@ -483,4 +483,72 @@ class ExpeditionRunTest {
                 null, java.util.Set.of("siege"));
         assertTrue(failed.objectiveFailed("siege"));
     }
+
+    // ---- checkpoint credits (M9) ----------------------------------------------
+
+    @Test
+    void checkpointPortionsSplitTheGuaranteedTokensExactly() {
+        ExpeditionRun run = newRun(); // 8 tokens over 3 checkpoints
+        int sum = 0;
+        for (int i = 1; i <= run.totalCheckpoints(); i++) {
+            sum += run.checkpointTokenPortion(i);
+        }
+        assertEquals(8, sum, "portions must sum to the guaranteed tokens");
+        assertEquals(2, run.checkpointTokenPortion(1));
+        assertEquals(3, run.checkpointTokenPortion(2));
+        assertEquals(3, run.checkpointTokenPortion(3));
+    }
+
+    @Test
+    void checkpointPortionRejectsOutOfRange() {
+        ExpeditionRun run = newRun();
+        assertThrows(IllegalArgumentException.class,
+                () -> run.checkpointTokenPortion(0));
+        assertThrows(IllegalArgumentException.class,
+                () -> run.checkpointTokenPortion(4));
+    }
+
+    @Test
+    void secureTokensAccumulatesPerMemberAndValidates() {
+        UUID owner = UUID.randomUUID();
+        UUID member = UUID.randomUUID();
+        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), owner,
+                java.util.Set.of(owner, member), definition(),
+                List.of(CP1, CP2, CP3), EXIT, EXIT, EXIT, CP1, 0L);
+        run.secureTokens(owner, 2);
+        run.secureTokens(owner, 3);
+        run.secureTokens(member, 2);
+        assertEquals(5, run.securedTokens(owner));
+        assertEquals(2, run.securedTokens(member));
+        assertEquals(0, run.securedTokens(UUID.randomUUID()),
+                "a non-member banks nothing");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> run.secureTokens(UUID.randomUUID(), 1),
+                        "crediting a non-member must be rejected");
+        assertThrows(IllegalArgumentException.class,
+                () -> run.secureTokens(owner, -1));
+    }
+
+    @Test
+    void secureTokensRejectedOnTerminalRun() {
+        ExpeditionRun run = newRun();
+        run.fail();
+        assertThrows(IllegalStateException.class,
+                () -> run.secureTokens(run.playerId(), 1));
+    }
+
+    @Test
+    void restoredRunPreservesSecuredTokens() {
+        UUID owner = UUID.randomUUID();
+        ExpeditionRun run = ExpeditionRun.restore(UUID.randomUUID(), owner,
+                java.util.Set.of(owner), definition(),
+                List.of(CP1, CP2, CP3), EXIT, EXIT, EXIT, CP1, 0L,
+                ExpeditionStatus.ACTIVE, 1, false, 0, false, List.of(),
+                java.util.Map.of(), ExpeditionOptions.DEFAULT, "minecraft:overworld",
+                null, java.util.Set.of(),
+                java.util.Map.of(owner, 5));
+        assertEquals(5, run.securedTokens(owner));
+        assertEquals(5, run.securedTokens().get(owner));
+    }
 }
