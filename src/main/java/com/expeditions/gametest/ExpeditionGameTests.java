@@ -219,6 +219,7 @@ public final class ExpeditionGameTests {
         for (int attempt = 0;
                 attempt < 5 && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
             useBlockAt(nether, player, terminalPos);
+            clickMenuStart(player);
         }
 
         UUID playerId = player.getUUID();
@@ -255,7 +256,8 @@ public final class ExpeditionGameTests {
 
     /**
      * Dimensions without a configured expedition and adapter — here the End —
-     * refuse to start a run: the terminal click leaves no active expedition.
+     * host no local expedition: a terminal click opens the options menu but
+     * starts nothing on its own.
      */
     @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_f")
     public static void unsupportedDimensionRejected(GameTestHelper helper) {
@@ -943,6 +945,7 @@ public final class ExpeditionGameTests {
             helper.setBlock(new BlockPos(1, 1, 1),
                     ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
             helper.useBlock(new BlockPos(1, 1, 1), player);
+            clickMenuStart(player);
 
             helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
                     "a run must not start when a destination is hazardous");
@@ -1060,6 +1063,7 @@ public final class ExpeditionGameTests {
         for (int attempt = 0;
                 attempt < 5 && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
             useBlockAt(nether, player, terminalPos);
+            clickMenuStart(player);
         }
         ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
                 () -> new IllegalStateException("terminal interaction must start a nether run"));
@@ -1474,6 +1478,7 @@ public final class ExpeditionGameTests {
         for (int attempt = 0;
                 attempt < 5 && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
             useBlockAt(nether, player, terminalPos);
+            clickMenuStart(player);
         }
         ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
                 () -> new IllegalStateException("terminal interaction must start a nether run"));
@@ -1609,6 +1614,14 @@ public final class ExpeditionGameTests {
                         .is(ModBlocks.EXPEDITION_PORTAL.get()),
                 "join portal must be placed in the overworld");
 
+        // End any foreign active runs so marker removal is verifiable
+        // deterministically — a leaked run in the nether legitimately keeps
+        // shared markers alive.
+        for (ExpeditionRun other : manager.runs()) {
+            if (other.isActive() && !other.playerId().equals(player.getUUID())) {
+                other.fail();
+            }
+        }
         manager.failRun(player);
         helper.assertTrue(!helper.getLevel().getBlockState(ExpeditionManager.toPos(run.portal()))
                         .is(ModBlocks.EXPEDITION_PORTAL.get()),
@@ -1686,8 +1699,8 @@ public final class ExpeditionGameTests {
     }
 
     /**
-     * The terminal's sneak-click menu is a real selection path: opening it
-     * and clicking the start button launches a run with the chosen options.
+     * The terminal click opens the options menu, and its start button
+     * launches a run with the chosen options.
      */
     @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
     public static void menuStartLaunchesRun(GameTestHelper helper) {
@@ -1696,14 +1709,9 @@ public final class ExpeditionGameTests {
         player.setGameMode(GameType.CREATIVE);
         BlockPos terminalRel = new BlockPos(1, 1, 1);
         helper.setBlock(terminalRel, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
-        try {
-            player.setShiftKeyDown(true);
-            useBlockAt(helper, player, helper.absolutePos(terminalRel));
-        } finally {
-            player.setShiftKeyDown(false);
-        }
+        useBlockAt(helper, player, helper.absolutePos(terminalRel));
         helper.assertTrue(player.containerMenu instanceof ExpeditionMenu,
-                "sneak-click must open the expedition menu, got " + player.containerMenu);
+                "click must open the expedition menu, got " + player.containerMenu);
         // Slot 31 is the menu's start button.
         player.containerMenu.clicked(31, 0, ClickType.PICKUP, player);
         ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
@@ -1772,13 +1780,22 @@ public final class ExpeditionGameTests {
     private static ExpeditionRun startExpedition(GameTestHelper helper, ExpeditionManager manager,
             ServerPlayer player) {
         // Interact with a real terminal block via the same useWithoutItem path a
-        // player click would take.
+        // player click would take — the terminal opens its options menu and the
+        // run starts from the menu's start button (slot 31).
         BlockPos terminalRel = new BlockPos(1, 1, 1);
         helper.setBlock(terminalRel, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
         helper.useBlock(terminalRel, player);
+        clickMenuStart(player);
         ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
                 () -> new IllegalStateException("terminal interaction must start a run"));
         return run;
+    }
+
+    /** Clicks the expedition menu's start button if a menu is open. */
+    private static void clickMenuStart(ServerPlayer player) {
+        if (player.containerMenu instanceof ExpeditionMenu) {
+            player.containerMenu.clicked(31, 0, ClickType.PICKUP, player);
+        }
     }
 
     /**

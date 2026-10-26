@@ -50,13 +50,22 @@ public class ExpeditionMenu extends ChestMenu {
     private int timeIndex;
 
     public ExpeditionMenu(int containerId, Inventory playerInventory,
-            ExpeditionManager manager, BlockPos terminalPos) {
+            ExpeditionManager manager, BlockPos terminalPos, String homeDimension) {
         super(MenuType.GENERIC_9x4, containerId, playerInventory,
                 new SimpleContainer(9 * ROWS), ROWS);
         this.container = (SimpleContainer) this.getContainer();
         this.manager = manager;
         this.terminalPos = terminalPos;
         this.startable = manager.listStartable();
+        // Preselect the expedition of the terminal's own dimension — the
+        // historical default — so clicking start without cycling behaves
+        // like the old quick-start.
+        for (int i = 0; i < startable.size(); i++) {
+            if (startable.get(i).dimension().equals(homeDimension)) {
+                expeditionIndex = i;
+                break;
+            }
+        }
         refresh();
     }
 

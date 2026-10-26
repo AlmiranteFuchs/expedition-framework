@@ -18,9 +18,9 @@ import net.minecraft.world.phys.BlockHitResult;
 /**
  * Expedition terminal: the in-world entry point to the expedition framework.
  *
- * <p>Right-clicking starts the configured Overworld expedition when the player
- * has no active run, or reports the current run's progress otherwise. All state
- * changes happen on the server.
+ * <p>Right-clicking opens the expedition options menu (its start button
+ * launches the run) when the player has no active run, or reports the current
+ * run's progress otherwise. All state changes happen on the server.
  */
 public class ExpeditionTerminalBlock extends Block {
     public ExpeditionTerminalBlock(Properties properties) {
@@ -36,34 +36,15 @@ public class ExpeditionTerminalBlock extends Block {
             // state vanished is failed closed instead of trapping the player.
             manager.resumeOrFail(serverPlayer).ifPresentOrElse(
                     run -> reportProgress(serverPlayer, run),
-                    () -> {
-                        // Plain click quick-starts the dimension's expedition;
-                        // sneak-click opens the expedition selection menu.
-                        if (serverPlayer.isShiftKeyDown()) {
-                            serverPlayer.openMenu(new SimpleMenuProvider(
-                                    (id, inventory, p) -> new ExpeditionMenu(
-                                            id, inventory, manager, pos),
-                                    Component.translatable("gui.expeditions.terminal")));
-                        } else {
-                            startExpedition(serverPlayer, manager, pos);
-                        }
-                    });
+                    // The terminal's job is configuring the expedition: any
+                    // click opens the options menu; its start button launches.
+                    () -> serverPlayer.openMenu(new SimpleMenuProvider(
+                            (id, inventory, p) -> new ExpeditionMenu(
+                                    id, inventory, manager, pos,
+                                    level.dimension().location().toString()),
+                            Component.translatable("gui.expeditions.terminal"))));
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
-    }
-
-    private static void startExpedition(ServerPlayer player, ExpeditionManager manager,
-            BlockPos pos) {
-        try {
-            ExpeditionRun run = manager.startRun(player, pos);
-            Waypoint first = run.nextCheckpoint().orElseThrow();
-            player.sendSystemMessage(Component.translatable("message.expeditions.expedition_started",
-                    run.definition().displayName()));
-            player.sendSystemMessage(Component.translatable("message.expeditions.next_checkpoint",
-                    run.completedCheckpoints() + 1, run.totalCheckpoints(), format(first)));
-        } catch (IllegalStateException e) {
-            player.sendSystemMessage(Component.literal(e.getMessage()));
-        }
     }
 
     private static void reportProgress(ServerPlayer player, ExpeditionRun run) {

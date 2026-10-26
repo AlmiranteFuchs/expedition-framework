@@ -408,13 +408,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   table. Pool contents live in `expeditions:reward_items/<dimension>` item
   tags (`default` fallback), so modpacks and adapters extend them as plain
   datapack tags.
-- **Per-run options** — sneak-click a terminal to open the expedition menu:
-  pick any startable expedition (including other dimensions — the portal
-  stays at home while the route resolves remotely), a difficulty tier
+- **Per-run options** — clicking a terminal opens the expedition menu: pick
+  any startable expedition (including other dimensions — the portal stays
+  at home while the route resolves remotely), a difficulty tier
   (relaxed→brutal, scaling horde size and rewards), route length and a
-  bonus-time window. `/expeditions start <id> [difficulty] [checkpoints]
-  [time%]` does the same without a GUI. Plain-click still quick-starts the
-  local dimension's expedition. Options persist with the run.
+  bonus-time window, then hit start. `/expeditions start <id> [difficulty]
+  [checkpoints] [time%]` does the same without a GUI. Options persist with
+  the run.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start`.
 - **Tests** — 83 unit tests + 42 GameTest in-game tests.
 

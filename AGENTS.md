@@ -173,9 +173,14 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   portal/terminal cleanup+teleport paths must use it (not the run dim).
   `listStartable()` = datapack + unshadowed config defs filtered by
   loaded-dimension + adapter — the menu and `/expeditions start` share it.
-  Plain terminal click = `DEFAULT` options; sneak-click opens `ExpeditionMenu`
-  (vanilla `ChestMenu` subclass — server-only, container is display-only;
-  `clicked` consumes option-row slots, `quickMoveStack` blocks insertion).
+  Terminal click opens `ExpeditionMenu` (vanilla `ChestMenu` subclass —
+  server-only, container is display-only; `clicked` consumes option-row
+  slots, `quickMoveStack` blocks insertion). The menu preselects the
+  terminal's home-dimension expedition — sorted id order ≠ player intent.
+  `pruneOrphanMarkers` must snapshot `liveMarkers` before iterating
+  (untrack drops empty keys mid-loop — a real CME once markers span two
+  dimension keys), and `isReferencedByActiveRun` matches portals against
+  `portalDimension`, not the run's dimension.
   `StringArgumentType.word()` cannot parse `ns:id` strings (stops at ':') —
   use `ResourceLocationArgument.id()` for id parameters.
 

@@ -567,7 +567,11 @@ public final class ExpeditionManager {
      */
     public static void pruneOrphanMarkers(MinecraftServer server) {
         ExpeditionManager manager = get(server);
-        for (Map.Entry<String, Set<BlockPos>> entry : manager.data.liveMarkers().entrySet()) {
+        // Snapshot the map: untrackMarker drops empty dimension keys, and a
+        // remote expedition's markers span two keys (route dim + portal dim),
+        // so mutating during iteration is a real CME risk, not theoretical.
+        for (Map.Entry<String, Set<BlockPos>> entry
+                : Map.copyOf(manager.data.liveMarkers()).entrySet()) {
             ServerLevel level = manager.levelFor(entry.getKey());
             if (level == null) {
                 continue; // unknown dimension: leave the tracking record alone
@@ -586,10 +590,10 @@ public final class ExpeditionManager {
         Waypoint waypoint = toWaypoint(pos);
         return ledger.runs().stream()
                 .filter(ExpeditionRun::isActive)
-                .filter(r -> r.definition().dimension().equals(dimension))
-                .anyMatch(r -> r.checkpoints().contains(waypoint)
-                        || r.exit().equals(waypoint)
-                        || r.portal().equals(waypoint));
+                .anyMatch(r -> (r.definition().dimension().equals(dimension)
+                        && (r.checkpoints().contains(waypoint) || r.exit().equals(waypoint)))
+                        || (r.portalDimension().equals(dimension)
+                                && r.portal().equals(waypoint)));
     }
 
     private boolean isRunRecoverable(ExpeditionRun run) {
