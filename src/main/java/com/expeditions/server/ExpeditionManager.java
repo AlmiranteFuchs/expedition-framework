@@ -76,8 +76,10 @@ import net.minecraft.world.phys.AABB;
 public final class ExpeditionManager {
     /** Candidate columns retried when a generated anchor fails validation. */
     /** How many fresh seeds a generated route may roll before the start
-     * refuses — a bad random walk shouldn't doom an otherwise safe site. */
-    private static final int GENERATED_ROUTE_REROLLS = 3;
+     * refuses — a bad random walk shouldn't doom an otherwise safe site.
+     * Resolution is cheap (a bounded column scan per anchor), so a generous
+     * count keeps rough terrain from refusing a start that a re-roll fixes. */
+    private static final int GENERATED_ROUTE_REROLLS = 8;
 
     private static final int[][] JITTER = {
             {16, 0}, {-16, 0}, {0, 16}, {0, -16},
