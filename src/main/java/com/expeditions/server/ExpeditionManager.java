@@ -9,6 +9,7 @@ import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
+import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.ObjectiveKind;
 import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.PartyScaling;
@@ -549,6 +550,15 @@ public final class ExpeditionManager {
      * and the party is teleported back.
      */
     public ExpeditionRun failRun(ServerPlayer player) {
+        return failRun(player, "ended");
+    }
+
+    /**
+     * {@link #failRun(ServerPlayer)} recording why the run ended —
+     * {@code reasonKey} names a {@code message.expeditions.fail_reason.*}
+     * entry shown in the end-of-run summary.
+     */
+    public ExpeditionRun failRun(ServerPlayer player, String reasonKey) {
         ExpeditionRun run = requireActive(player.getUUID());
         if (run.party().size() > 1) {
             run.leaveParty(player.getUUID());
@@ -557,7 +567,7 @@ public final class ExpeditionManager {
             data.setDirty();
             return run;
         }
-        run.fail();
+        run.fail(reasonKey);
         endRun(run);
         return run;
     }
@@ -575,7 +585,8 @@ public final class ExpeditionManager {
             return active;
         }
         ExpeditionRun run = active.get();
-        run.fail();
+        run.fail(levelFor(run.definition().dimension()) == null
+                ? "dimension_lost" : "site_lost");
         endRun(run);
         return Optional.empty();
     }
@@ -766,7 +777,71 @@ public final class ExpeditionManager {
             }
         }
         cleanupMarkers(run);
+        broadcastSummary(run);
         data.setDirty();
+    }
+
+    /**
+     * The end-of-run summary every online member sees — a structured
+     * breakdown separating what was banked, what extraction paid, and what
+     * was lost: the legible part of "danger with counterplay". On failure
+     * the recorded cause is surfaced alongside the kept credits and the
+     * at-risk estimate (what completion would have paid at that moment).
+     */
+    private void broadcastSummary(ExpeditionRun run) {
+        boolean completed = run.status() == ExpeditionStatus.COMPLETED;
+        // The at-risk estimate is the share the run would have settled now;
+        // when the run's dimension is gone there is nothing to estimate.
+        ServerLevel level = levelFor(run.definition().dimension());
+        int share;
+        if (level != null) {
+            int total = run.definition().totalReward(
+                    run.elapsedTicks(level.getGameTime()),
+                    run.completedObjectiveIds(), run.options().bonusTimePercent());
+            share = PartyScaling.memberShare(
+                    PartyScaling.scaledTotal(total, run.party().size(),
+                            ExpeditionsConfig.partyRewardBonusPerExtraMember())
+                            * run.options().difficulty().rewardPercent() / 100,
+                    run.party().size(), ExpeditionsConfig.partySplitRewards());
+        } else {
+            share = 0;
+        }
+        int objectives = run.definition().objectives().size();
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer == null) {
+                continue;
+            }
+            int secured = run.securedTokens(member);
+            if (completed) {
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.summary_complete",
+                        run.definition().displayName()));
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.summary_progress",
+                        run.completedCheckpoints(), run.totalCheckpoints(),
+                        run.completedObjectiveIds().size(), objectives));
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.summary_rewards", secured,
+                        Math.max(0, share - secured), Math.max(secured, share),
+                        ledger.tokenBalance(member)));
+            } else {
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.summary_failed",
+                        run.definition().displayName()));
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.summary_reason",
+                        Component.translatable("message.expeditions.fail_reason."
+                                + run.failReason().orElse("ended"))));
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.summary_progress",
+                        run.completedCheckpoints(), run.totalCheckpoints(),
+                        run.completedObjectiveIds().size(), objectives));
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.summary_kept", secured,
+                        Math.max(0, share - secured)));
+            }
+        }
     }
 
     /** Applies the run's declared member effects (last while the run is active). */
@@ -991,7 +1066,7 @@ public final class ExpeditionManager {
             }
         }
         if (objective != null && objective.required() && run.isActive()) {
-            run.fail();
+            run.fail("device_destroyed");
             endRun(run);
         }
     }

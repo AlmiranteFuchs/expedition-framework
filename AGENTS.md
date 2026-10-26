@@ -321,9 +321,11 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-M9 (checkpoint economy) verified: `build` + 106 unit tests + 69/69
-GameTest in-game tests pass (all prior coverage plus checkpoint crediting,
-failure-survival, completion top-up, dropped-member and persistence).
-Human client click-through and real disconnect not simulated — the menu
-opens through the vanilla container path but has never been seen in a real
-client.
+M11 (structured summary) verified: `build` + 106 unit tests + 70/70
+GameTest in-game tests pass (all prior coverage plus failure-cause
+recording on every fail path). `run.fail(reasonKey)` carries a
+`fail_reason.*` lang suffix to `broadcastSummary` — transient by design,
+terminal runs never resume. Mock players are not in `getPlayerList`, so
+the summary broadcast itself is not exercised in tests (same limitation
+as member teleports). Human client click-through and real disconnect not
+simulated.

@@ -151,6 +151,9 @@ public final class ExpeditionGameTests {
 
         helper.assertTrue(run.status() == ExpeditionStatus.FAILED,
                 "run must be FAILED after death, was " + run.status());
+        helper.assertTrue(run.failReason().orElse("").equals("died"),
+                "the death cause must be recorded for the summary, was "
+                        + run.failReason());
         helper.assertTrue(manager.tokenBalance(playerId) == 0,
                 "no tokens may be granted for a failed run");
         helper.assertTrue(manager.activeRun(playerId).isEmpty(),
@@ -399,6 +402,9 @@ public final class ExpeditionGameTests {
                 "unrecoverable run must not resume");
         helper.assertTrue(run.status() == ExpeditionStatus.FAILED,
                 "unrecoverable run must fail closed, was " + run.status());
+        helper.assertTrue(run.failReason().orElse("").equals("site_lost"),
+                "vanished markers must record the site_lost cause, was "
+                        + run.failReason());
         helper.assertTrue(manager.tokenBalance(playerId) == 0,
                 "no tokens may be granted");
         for (Waypoint w : run.checkpoints()) {
@@ -1111,6 +1117,9 @@ public final class ExpeditionGameTests {
                 "a run in a missing dimension must not resume");
         helper.assertTrue(run.status() == ExpeditionStatus.FAILED,
                 "an unrecoverable run must be failed, was " + run.status());
+        helper.assertTrue(run.failReason().orElse("").equals("dimension_lost"),
+                "a missing dimension must record the dimension_lost cause, was "
+                        + run.failReason());
         helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
                 "no reward may be paid for an unrecoverable run");
         helper.succeed();
@@ -2405,6 +2414,10 @@ public final class ExpeditionGameTests {
                 helper.assertTrue(!level.getBlockState(devicePos)
                                 .is(ModBlocks.EXPEDITION_DEVICE.get()),
                         "the destroyed device must come down");
+                helper.assertTrue(run.failReason().orElse("")
+                                .equals("device_destroyed"),
+                        "device destruction must record the cause, was "
+                                + run.failReason());
                 helper.assertTrue(!run.isRewarded(), "a destroyed run must not pay");
                 // Entity-section promotion is async: the horde may take a
                 // few ticks to become discardable, then the tracking record
@@ -2948,6 +2961,34 @@ public final class ExpeditionGameTests {
                     savedData(helper.getLevel().getServer()).ledger()
                             .tokenBalance(member.getUUID()) == memberBefore + secured,
                     "the ex-member keeps exactly their banked credit");
+        } finally {
+            failRunIfActive(manager, player);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Failure causes recorded for the end-of-run summary: an explicit
+     * abandon carries its reason; a bare {@code fail()} leaves the summary
+     * to its generic fallback.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_sum")
+    public static void failureReasonsAreRecorded(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ExpeditionRun run = null;
+        try {
+            run = startExpedition(helper, manager, player);
+            manager.failRun(player, "abandoned");
+            helper.assertTrue(run.failReason().orElse("").equals("abandoned"),
+                    "the abandon cause must be recorded, was " + run.failReason());
+
+            ServerPlayer other = helper.makeMockServerPlayerInLevel();
+            ExpeditionRun plain = startExpedition(helper, manager, other);
+            manager.failRun(other);
+            helper.assertTrue(plain.failReason().orElse("").equals("ended"),
+                    "an unnamed failure falls back to 'ended', was "
+                            + plain.failReason());
         } finally {
             failRunIfActive(manager, player);
         }

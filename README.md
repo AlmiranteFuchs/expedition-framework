@@ -495,6 +495,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   roll from the spawn site's natural monster table — dimension-, biome- and
   mod-aware with no configuration; `expeditions:horde_mobs/<dimension>`
   entity tags override explicitly.
+- **Run summary** — every member gets a structured end-of-run breakdown:
+  checkpoints and objectives done, tokens banked per checkpoint, the
+  extraction top-up and total on success; on failure the recorded cause
+  (death, abandon, device destroyed, site or dimension lost) plus credits
+  kept and what was still at risk.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that attaches to any sturdy face of a solid
@@ -507,13 +512,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
-- **Tests** — 106 unit tests + 69 GameTest in-game tests.
+- **Tests** — 106 unit tests + 70 GameTest in-game tests.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.3.0.jar` assembled.
 - `./gradlew test` — 106 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **69/69 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **70/70 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,

@@ -37,7 +37,7 @@ public final class ExpeditionEventHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             ExpeditionManager manager = ExpeditionManager.get(player.server);
             if (manager.activeRun(player.getUUID()).isPresent()) {
-                manager.failRun(player);
+                manager.failRun(player, "died");
                 player.sendSystemMessage(Component.translatable("message.expeditions.expedition_failed"));
             }
         }
@@ -238,7 +238,7 @@ public final class ExpeditionEventHandler {
             return 0;
         }
         try {
-            ExpeditionManager.get(player.server).failRun(player);
+            ExpeditionManager.get(player.server).failRun(player, "abandoned");
             player.sendSystemMessage(Component.translatable("message.expeditions.expedition_abandoned"));
             return 1;
         } catch (IllegalStateException e) {

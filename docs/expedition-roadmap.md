@@ -50,7 +50,7 @@ covers direction.
 | M8 | Destructible defense device | **Complete** | `ObjectiveKind.DEFEND_DEVICE` + datapack `defend_device`; `ExpeditionDeviceBlock` (tracked marker); `DefenseState` (hp/maxHp/endTick/nextWaveTick) persisted on the run; stage-gated at its declared checkpoint; exactly-once destruction (`damageDevice` → required fails run, optional marks objective failed); bounded waves/mob cap via config; unit + 6 game tests |
 | M9 | Checkpoint economy / reward reliability | **Complete** | Guaranteed `tokens` bank per activation (`checkpointTokenPortion`, balanced split over resolved route); `securedTokens` per member persisted on the run; completion tops members up to the full share (`max(0, share − secured)`) — bonuses/objectives stay at-risk until extraction; credits survive failure/death/restart; 5 unit + 4 game tests |
 | M10 | First complete expedition (mandatory checkpoint route + existing objective handlers) | Not started | Blocked on M8. Composition only — beacon activation, artifact recovery, collection, defense, extraction all reuse existing handlers |
-| M11 | Structured feedback + expedition summary | **Partial** | Chat messages on transitions exist; no structured end-of-run summary separating guaranteed/pending/awarded/lost rewards; failure reason not surfaced |
+| M11 | Structured feedback + expedition summary | **Complete** | `broadcastSummary` at `endRun`: per-member breakdown — checkpoints/objectives done, banked, extraction top-up, total, balance (complete); cause + kept credits + at-risk estimate (failed). `run.fail(reasonKey)` records the cause at every fail site (died/abandoned/device_destroyed/site_lost/dimension_lost) |
 | M12 | Terminal progression + dimensional campaign | Not started | Expanded scope (see below): permanent keys, consumable costs, trophies, mission prerequisites with explanations, dimensional campaign states, crafted progression artifact, Big Bad event unlock, subsequent operation unlocks. No unlock/trophy concepts exist; menu is selection-only |
 | M13 | Dimension compatibility | **Mostly complete** | Adapters, bounded safe search, natural mob pools, fail-safe refusals done. New scope fits: threat behavior must route through `ExpeditionDimensionAdapter`/`HordePools` (dimension-scoped state, per-dimension spawn pools), not a parallel system. Untested against a real third-party modded dimension |
 | M14 | Configuration & expansion | **Partial** | TOML + datapack + tags + options cover most parameters. New scope: threat tuning knobs (pressure growth, caps, per-dimension overrides). Structure archetypes deferred by design |
@@ -233,9 +233,9 @@ project so far, per `AGENTS.md` rules.
 
 ## Next recommended milestone
 
-**M11 (structured feedback + expedition summary)** — earliest remaining
-incomplete milestone, and it now has the data shape it was waiting for:
-M9 splits secured vs. at-risk rewards, so the end-of-run summary can show
-banked/awarded/lost cleanly. Small surface: a summary payload on run end
-plus failure-reason surfacing. Then M12 (progression infra) → M15
-(threat + Big Bad, needs M12+M13) → M10 (composes everything).
+**M12 (terminal progression + dimensional campaign)** — the earliest
+remaining incomplete milestone now that the economy (M9) and feedback
+loop (M11) are settled. Largest chunk left: permanent keys, consumable
+costs, trophies, mission prerequisites, dimensional campaign states,
+crafted progression artifact, Big Bad unlock chain. Then M15 (threat +
+Big Bad, needs M12+M13) → M10 (composes everything).

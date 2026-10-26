@@ -48,6 +48,7 @@ public final class ExpeditionRun {
     private final ExpeditionOptions options;
     private final String portalDimension;
     private ExpeditionStatus status;
+    private String failReason;
     private int completedCheckpoints;
     private boolean rewarded;
     private int tokensAwarded;
@@ -835,13 +836,31 @@ public final class ExpeditionRun {
     }
 
     /**
-     * Marks the run failed. Only valid while active.
+     * Marks the run failed with no recorded cause. Only valid while active.
      *
      * @throws IllegalStateException if the run is already in a terminal state
      */
     public void fail() {
+        fail(null);
+    }
+
+    /**
+     * Marks the run failed, recording {@code reasonKey} for the end-of-run
+     * summary — a lang suffix under {@code message.expeditions.fail_reason.*},
+     * not user-facing text. Transient: terminal runs never resume, so the
+     * reason is only needed until the summary is broadcast.
+     *
+     * @throws IllegalStateException if the run is already in a terminal state
+     */
+    public void fail(String reasonKey) {
         ensureActive();
         status = ExpeditionStatus.FAILED;
+        failReason = reasonKey;
+    }
+
+    /** Why the run failed, when the caller recorded a cause. */
+    public Optional<String> failReason() {
+        return Optional.ofNullable(failReason);
     }
 
     public boolean isRewarded() {
