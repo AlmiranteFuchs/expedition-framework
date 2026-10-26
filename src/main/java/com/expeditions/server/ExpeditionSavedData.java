@@ -1,7 +1,9 @@
 package com.expeditions.server;
 
 import com.expeditions.core.Difficulty;
+import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
+import com.expeditions.core.ExpeditionModifiers;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionObjective;
@@ -11,6 +13,7 @@ import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.ObjectiveKind;
 import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
+import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
 import com.mojang.logging.LogUtils;
 import java.util.Collections;
@@ -94,6 +97,11 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_OPT_DIFFICULTY = "Difficulty";
     private static final String TAG_OPT_CHECKPOINTS = "Checkpoints";
     private static final String TAG_OPT_TIME_PERCENT = "TimePercent";
+    private static final String TAG_MOD_WEATHER = "ModWeather";
+    private static final String TAG_PLAYER_EFFECTS = "PlayerEffects";
+    private static final String TAG_HORDE_EFFECTS = "HordeEffects";
+    private static final String TAG_EFFECT_ID = "EffectId";
+    private static final String TAG_EFFECT_AMPLIFIER = "Amplifier";
     private static final String TAG_X = "x";
     private static final String TAG_Y = "y";
     private static final String TAG_Z = "z";
@@ -203,7 +211,8 @@ public class ExpeditionSavedData extends SavedData {
                 runTag.getInt(TAG_TOKEN_REWARD),
                 runTag.getInt(TAG_BONUS_TOKENS),
                 runTag.getInt(TAG_BONUS_TICKS),
-                objectives);
+                objectives,
+                readModifiers(runTag));
         return ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
@@ -252,6 +261,24 @@ public class ExpeditionSavedData extends SavedData {
                 ? (runDimension.isBlank() ? DEFAULT_DIMENSION : runDimension) : stored;
     }
 
+    /** Modifiers are absent in saves from before they existed. */
+    private static ExpeditionModifiers readModifiers(CompoundTag runTag) {
+        WeatherModifier weather = WeatherModifier.byName(runTag.getString(TAG_MOD_WEATHER));
+        return new ExpeditionModifiers(weather != null ? weather : WeatherModifier.NONE,
+                readEffects(runTag, TAG_PLAYER_EFFECTS),
+                readEffects(runTag, TAG_HORDE_EFFECTS));
+    }
+
+    private static List<EffectSpec> readEffects(CompoundTag runTag, String key) {
+        List<EffectSpec> effects = new java.util.ArrayList<>();
+        for (Tag et : runTag.getList(key, Tag.TAG_COMPOUND)) {
+            CompoundTag effectTag = (CompoundTag) et;
+            effects.add(new EffectSpec(effectTag.getString(TAG_EFFECT_ID),
+                    effectTag.getInt(TAG_EFFECT_AMPLIFIER)));
+        }
+        return effects;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider lookup) {
         ListTag runs = new ListTag();
@@ -292,6 +319,12 @@ public class ExpeditionSavedData extends SavedData {
             optionsTag.putInt(TAG_OPT_CHECKPOINTS, run.options().checkpoints());
             optionsTag.putInt(TAG_OPT_TIME_PERCENT, run.options().bonusTimePercent());
             runTag.put(TAG_OPTIONS, optionsTag);
+            runTag.putString(TAG_MOD_WEATHER,
+                    run.definition().modifiers().weather().name());
+            runTag.put(TAG_PLAYER_EFFECTS,
+                    writeEffects(run.definition().modifiers().playerEffects()));
+            runTag.put(TAG_HORDE_EFFECTS,
+                    writeEffects(run.definition().modifiers().hordeEffects()));
             ListTag entities = new ListTag();
             for (UUID entityId : run.challengeEntities()) {
                 CompoundTag entityTag = new CompoundTag();
@@ -384,6 +417,17 @@ public class ExpeditionSavedData extends SavedData {
         tag.putInt(TAG_Y, w.y());
         tag.putInt(TAG_Z, w.z());
         return tag;
+    }
+
+    private static ListTag writeEffects(List<EffectSpec> effects) {
+        ListTag list = new ListTag();
+        for (EffectSpec effect : effects) {
+            CompoundTag effectTag = new CompoundTag();
+            effectTag.putString(TAG_EFFECT_ID, effect.effectId());
+            effectTag.putInt(TAG_EFFECT_AMPLIFIER, effect.amplifier());
+            list.add(effectTag);
+        }
+        return list;
     }
 
     private static CompoundTag writePos(BlockPos pos) {

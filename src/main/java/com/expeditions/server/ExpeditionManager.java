@@ -2,6 +2,7 @@ package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.CheckpointChallenge;
+import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionLedger;
@@ -15,6 +16,7 @@ import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.core.RoutePlanner;
 import com.expeditions.core.RouteSpec;
+import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
@@ -32,6 +34,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -43,6 +46,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -249,6 +254,8 @@ public final class ExpeditionManager {
                 toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
                 toWaypoint(entryPos), level.getGameTime(), options, portalDimension);
         ledger.startRun(run);
+        applyMemberEffects(run, player);
+        applyWeather(run, level);
         data.setDirty();
         return run;
     }
@@ -314,6 +321,7 @@ public final class ExpeditionManager {
                 return;
             }
             run.joinParty(player.getUUID());
+            applyMemberEffects(run, player);
             ServerLevel runLevel = levelFor(run.definition().dimension());
             if (runLevel != null) {
                 extendRouteForMember(run, runLevel);
@@ -620,8 +628,10 @@ public final class ExpeditionManager {
         ServerLevel portalLevel = levelFor(run.portalDimension());
         if (portalLevel != null) {
             BlockPos portalPos = toPos(run.portal());
-            removeMarkerAt(portalLevel, portalPos);
-            data.untrackMarker(run.portalDimension(), portalPos);
+            if (!isReferencedByActiveRun(run.portalDimension(), portalPos)) {
+                removeMarkerAt(portalLevel, portalPos);
+                data.untrackMarker(run.portalDimension(), portalPos);
+            }
         }
         if (level != null && run.completedCheckpoints() > 0) {
             clearChallengeEntities(run, level,
@@ -630,12 +640,56 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
+                removeMemberEffects(run, memberPlayer);
                 removeCompasses(memberPlayer);
                 teleportToTerminal(memberPlayer, run);
             }
         }
+        if (level != null && run.definition().modifiers().weather() != WeatherModifier.NONE) {
+            // Only clear when no other active run in the dimension still
+            // wants the forced weather — parallel runs share the sky.
+            boolean weatherStillWanted = ledger.runs().stream()
+                    .filter(ExpeditionRun::isActive)
+                    .anyMatch(r -> r.definition().dimension().equals(dimension)
+                            && r.definition().modifiers().weather() != WeatherModifier.NONE);
+            if (!weatherStillWanted) {
+                level.setWeatherParameters(6000, 0, false, false);
+            }
+        }
         cleanupMarkers(run);
         data.setDirty();
+    }
+
+    /** Applies the run's declared member effects (last while the run is active). */
+    private void applyMemberEffects(ExpeditionRun run, ServerPlayer player) {
+        for (EffectSpec spec : run.definition().modifiers().playerEffects()) {
+            effectOf(spec).ifPresent(effect -> player.addEffect(new MobEffectInstance(
+                    effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),
+                    false, false, true)));
+        }
+    }
+
+    /** Strips the run's declared member effects — other effects are untouched. */
+    private void removeMemberEffects(ExpeditionRun run, ServerPlayer player) {
+        for (EffectSpec spec : run.definition().modifiers().playerEffects()) {
+            effectOf(spec).ifPresent(player::removeEffect);
+        }
+    }
+
+    /** Forces the run's declared weather onto its dimension (no-op for NONE). */
+    private void applyWeather(ExpeditionRun run, ServerLevel level) {
+        switch (run.definition().modifiers().weather()) {
+            case CLEAR -> level.setWeatherParameters(6000, 0, false, false);
+            case RAIN -> level.setWeatherParameters(0, 24000, true, false);
+            case THUNDER -> level.setWeatherParameters(0, 24000, true, true);
+            default -> {
+            }
+        }
+    }
+
+    /** Effect holder for a spec — datapack-validated, but absent ids degrade to a no-op. */
+    private static Optional<Holder.Reference<MobEffect>> effectOf(EffectSpec spec) {
+        return BuiltInRegistries.MOB_EFFECT.getHolder(ResourceLocation.parse(spec.effectId()));
     }
 
     /**
@@ -675,8 +729,13 @@ public final class ExpeditionManager {
      * {@link Mob} contributes nothing.
      */
     private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center) {
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(
-                ResourceLocation.parse(ExpeditionsConfig.challengeHordeMob()));
+        // The horde rolls one type from the dimension's pool per activation;
+        // the configured hordeMob is the fallback for unconfigured pools.
+        List<EntityType<?>> pool = HordePools.pool(run.definition().dimension());
+        EntityType<?> type = pool.isEmpty()
+                ? BuiltInRegistries.ENTITY_TYPE.get(
+                        ResourceLocation.parse(ExpeditionsConfig.challengeHordeMob()))
+                : pool.get(level.getRandom().nextInt(pool.size()));
         int size = (ExpeditionsConfig.challengeHordeSize()
                 + ExpeditionsConfig.challengeHordeSizePerExtraMember()
                         * (run.party().size() - 1))
@@ -703,6 +762,11 @@ public final class ExpeditionManager {
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(surface),
                     MobSpawnType.EVENT, null);
             mob.setPersistenceRequired();
+            for (EffectSpec spec : run.definition().modifiers().hordeEffects()) {
+                effectOf(spec).ifPresent(effect -> mob.addEffect(new MobEffectInstance(
+                        effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),
+                        false, false)));
+            }
             mob.setTarget(nearestMember(run, level, surface));
             level.addFreshEntity(mob);
             spawned.add(mob.getUUID());
@@ -879,20 +943,24 @@ public final class ExpeditionManager {
     }
 
     private void cleanupMarkers(ExpeditionRun run) {
-        // Markers are shared per dimension; only remove them once no other
-        // active run in that dimension still needs them.
+        // Markers can coincide with another active run's — only remove the
+        // positions no still-active run references. The ending run is already
+        // terminal, so the active-run check never counts it back in.
         String dimension = run.definition().dimension();
-        if (ledger.anyOtherActiveRunInDimension(run.playerId(), dimension)) {
-            return;
-        }
         ServerLevel level = levelFor(dimension);
         if (level == null) {
             return;
         }
         for (Waypoint w : run.checkpoints()) {
-            removeMarker(level, w, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
+            if (!isReferencedByActiveRun(dimension, toPos(w))) {
+                removeMarker(level, w,
+                        ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
+            }
         }
-        removeMarker(level, run.exit(), ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+        if (!isReferencedByActiveRun(dimension, toPos(run.exit()))) {
+            removeMarker(level, run.exit(),
+                    ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+        }
     }
 
     /**

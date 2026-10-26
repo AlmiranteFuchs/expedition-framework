@@ -89,8 +89,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Rewards: guaranteed `tokens` + `bonusTokens` when finished within
   `bonusTimeTicks`; computed by `ExpeditionDefinition.totalReward(elapsedTicks)`.
 - Marker blocks are placed at run start and removed at run end in the run's
-  own dimension unless another active run in that dimension shares them.
-  Indestructible by design.
+  own dimension, per position — a marker is only removed when no still-active
+  run references that exact position (`isReferencedByActiveRun`), so a leaked
+  run can never freeze a whole dimension's cleanup. Indestructible by design.
 - Expedition compass: `ExpeditionCompassItem` (plain `Item`, NOT `CompassItem`
   so it never competes with block `useItemOn`) granted on portal entry and
   removed on any run end (also swept on login if a run ended while offline);
@@ -181,6 +182,28 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   (untrack drops empty keys mid-loop — a real CME once markers span two
   dimension keys), and `isReferencedByActiveRun` matches portals against
   `portalDimension`, not the run's dimension.
+- Modifiers (milestone 9): `ExpeditionModifiers` on the definition —
+  `WeatherModifier` forced on the run's dimension at start and cleared at
+  end ONLY when no other active run in that dimension still wants weather;
+  `playerEffects` applied to members at start/`enterPortal` with INFINITE
+  duration and stripped at `endRun` (match specs exactly — never remove
+  effects the expedition didn't grant); `hordeEffects` baked into horde mobs
+  at spawn. Effect ids validate against the registry at parse; runtime
+  lookups degrade to no-ops. Mob pools: `HordePools.pool(dim)` reads the
+  `expeditions:horde_mobs/<dim>` entity tag → `default` → config `hordeMob`;
+  one type is rolled per horde activation (thematic), not per mob.
+- `cleanupMarkers` removes per position via `isReferencedByActiveRun`, NOT
+  the old `anyOtherActiveRunInDimension` dimension-wide guard — that guard
+  let one leaked active run poison marker cleanup for the whole dimension,
+  and leftover authored-route markers then refused the next run's
+  resolveAnchor (found via GameTest cascade). Same guard now protects the
+  portal removal in `endRun`.
+- `ServerLevel.isRaining()` lerps the visual level per tick — assert
+  `level.getLevelData().isRaining()` for the authoritative forced-weather
+  flag in tests.
+- `ExpeditionMenu.start` catches `IllegalStateException` from `startRun` into
+  a chat message AND a warn log — without the log, start refusals are
+  invisible to tests and server admins (that hid the cascade above).
   `StringArgumentType.word()` cannot parse `ns:id` strings (stops at ':') —
   use `ResourceLocationArgument.id()` for id parameters.
 
@@ -200,7 +223,10 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   `player.teleportTo(level, x, y, z, Set.of(), yaw, pitch)`, and pass that level
   to `useItemOn`. Mock players leaked by retries can leave foreign active runs —
   fail them before asserting marker cleanup, and remember the shared ledger
-  holds their runs when asserting on save/load contents.
+  holds their runs when asserting on save/load contents. Wrap every
+  `startExpedition` in try/finally → `manager.failRun(player)`: a leaked
+  active run keeps its marker positions referenced forever and the next test
+  reusing the same authored anchors fails route resolution.
 - Persistence tests: `ExpeditionSavedData.save(tag, registryAccess)` →
   `ExpeditionSavedData.load(tag, ...)` round-trips in game tests; corrupt the
   tag in between to test malformed-data handling.
@@ -225,9 +251,11 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Options milestone verified: `build` + 83 unit tests + 42/42
-GameTest in-game tests pass (all prior coverage plus remote-dimension
-starts, menu start button, command modifiers, option persistence,
-difficulty-scaled payout). Human client click-through and real disconnect
-not simulated — the menu opens through the vanilla container path but has
-never been seen in a real client.
+Modifiers milestone verified: `build` + 88 unit tests + 48/48
+GameTest in-game tests pass (all prior coverage plus modifier parse/
+validation, member effects apply+strip, forced weather set+clear,
+dimension-pooled horde types with buffs, modifier save→load). Includes the
+per-position `cleanupMarkers` fix — one leaked run can no longer poison a
+dimension's cleanup. Human client click-through and real disconnect not
+simulated — the menu opens through the vanilla container path but has never
+been seen in a real client.

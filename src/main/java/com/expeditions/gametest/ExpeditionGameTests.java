@@ -1,6 +1,7 @@
 package com.expeditions.gametest;
 
 import com.expeditions.core.Difficulty;
+import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
 import com.expeditions.core.ExpeditionOptions;
@@ -11,12 +12,14 @@ import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.ExpeditionsConfig;
+import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionMenu;
 import com.expeditions.server.ExpeditionSavedData;
+import com.expeditions.server.HordePools;
 import com.expeditions.server.ItemRewards;
 import com.expeditions.server.ItemValuator;
 import com.expeditions.server.data.ExpeditionDefinitions;
@@ -42,6 +45,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.RelativeMovement;
@@ -1752,6 +1756,264 @@ public final class ExpeditionGameTests {
                 "command must apply the checkpoint override, got "
                         + run.checkpoints().size());
         manager.failRun(player);
+        helper.succeed();
+    }
+
+    /**
+     * Datapack {@code "modifiers"} parse: weather plus member/horde effect
+     * lists with amplifiers land on the definition.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    public static void modifiersParseFromDatapack(GameTestHelper helper) {
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[10, 10]],
+                  "exit": [30, 30],
+                  "tokens": 10,
+                  "modifiers": {
+                    "weather": "thunder",
+                    "player_effects": [{"id": "minecraft:speed", "amplifier": 1}],
+                    "horde_effects": [{"id": "minecraft:strength"}]
+                  }
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "modified"),
+                    JsonParser.parseString(json)));
+            ExpeditionDefinition def = ExpeditionDefinitions.all().get("test:modified");
+            helper.assertTrue(def != null, "the modified definition must load");
+            helper.assertTrue(def.modifiers().weather() == WeatherModifier.THUNDER,
+                    "weather must parse, was " + def.modifiers().weather());
+            helper.assertTrue(def.modifiers().playerEffects().equals(
+                            List.of(new EffectSpec("minecraft:speed", 1))),
+                    "player effects must parse, was " + def.modifiers().playerEffects());
+            helper.assertTrue(def.modifiers().hordeEffects().equals(
+                            List.of(new EffectSpec("minecraft:strength", 0))),
+                    "horde effects must parse, was " + def.modifiers().hordeEffects());
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Bad modifier values fail the definition loudly: unknown weather names
+     * and unregistered effect ids get the whole file skipped on reload.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    public static void malformedModifiersSkipped(GameTestHelper helper) {
+        String base = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[1, 1]],
+                  "exit": [2, 2],
+                  "modifiers": %s
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "bad_weather"),
+                    JsonParser.parseString(base.formatted("{\"weather\": \"apocalypse\"}")),
+                    ResourceLocation.fromNamespaceAndPath("test", "bad_effect"),
+                    JsonParser.parseString(base.formatted(
+                            "{\"player_effects\": [{\"id\": \"minecraft:not_a_real_effect\"}]}")),
+                    ResourceLocation.fromNamespaceAndPath("test", "valid"),
+                    JsonParser.parseString("""
+                            {
+                              "dimension": "minecraft:overworld",
+                              "checkpoints": [[1, 1]],
+                              "exit": [2, 2]
+                            }
+                            """)));
+            helper.assertTrue(ExpeditionDefinitions.all().size() == 1,
+                    "bad modifier definitions must be skipped, loaded "
+                            + ExpeditionDefinitions.all().keySet());
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Member effects: the expedition's {@code player_effects} land on the
+     * party when the run starts and are stripped when the run ends.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    public static void playerEffectsApplyAndRemove(GameTestHelper helper) {
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "generate": {"checkpoints": 1, "min_spacing": 16, "max_spacing": 24,
+                               "exit_min": 24, "exit_max": 32,
+                               "entry_min": 32, "entry_max": 48},
+                  "tokens": 1,
+                  "modifiers": {"player_effects": [{"id": "minecraft:speed", "amplifier": 1}]}
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "speedy"),
+                    JsonParser.parseString(json)));
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                helper.assertTrue(run.definition().id().equals("test:speedy"),
+                        "the modified definition must start, was " + run.definition().id());
+                helper.assertTrue(player.hasEffect(MobEffects.MOVEMENT_SPEED),
+                        "member must gain the expedition's effect at start");
+            } finally {
+                manager.failRun(player);
+            }
+            helper.assertTrue(!player.hasEffect(MobEffects.MOVEMENT_SPEED),
+                    "member must lose the expedition's effect at run end");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Weather modifier: starting the run forces the declared weather on the
+     * expedition's dimension and ending the run clears it.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    public static void weatherModifierAppliesAndClears(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "generate": {"checkpoints": 1, "min_spacing": 16, "max_spacing": 24,
+                               "exit_min": 24, "exit_max": 32,
+                               "entry_min": 32, "entry_max": 48},
+                  "tokens": 1,
+                  "modifiers": {"weather": "rain"}
+                }
+                """;
+        level.setWeatherParameters(6000, 0, false, false);
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "stormy"),
+                    JsonParser.parseString(json)));
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                helper.assertTrue(run.definition().id().equals("test:stormy"),
+                        "the weather definition must start, was " + run.definition().id());
+                // isRaining() lerps per tick for visuals; the level data flag
+                // is the authoritative state the modifier sets.
+                helper.assertTrue(level.getLevelData().isRaining(),
+                        "the run must force its declared weather onto the dimension");
+            } finally {
+                manager.failRun(player);
+            }
+            helper.assertTrue(!level.getLevelData().isRaining(),
+                    "run end must clear the forced weather");
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+            level.setWeatherParameters(6000, 0, false, false);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The horde rolls its type from the dimension's {@code horde_mobs} pool
+     * (not the single config mob) and every member carries the expedition's
+     * declared buffs.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_z")
+    public static void hordeSpawnsPooledAndBuffed(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        level.setDayTime(18000); // pool mobs must not burn mid-test
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "generate": {"checkpoints": 1, "min_spacing": 16, "max_spacing": 24,
+                               "exit_min": 24, "exit_max": 32,
+                               "entry_min": 32, "entry_max": 48},
+                  "tokens": 1,
+                  "modifiers": {"horde_effects": [{"id": "minecraft:resistance", "amplifier": 2}]}
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "buffed"),
+                    JsonParser.parseString(json)));
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
+            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+            helper.assertTrue(!run.challengeEntities().isEmpty(),
+                    "the checkpoint must roll a horde");
+            List<UUID> horde = List.copyOf(run.challengeEntities());
+            BlockPos checkpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
+            int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+            forceLoadArea(level, checkpoint, radius);
+            pollUntil(helper,
+                    () -> horde.stream().allMatch(id -> level.getEntity(id) != null),
+                    "the horde's entity sections to become accessible", () -> {
+                for (UUID id : horde) {
+                    Entity entity = findEntity(level, checkpoint, radius, id);
+                    helper.assertTrue(entity instanceof Mob,
+                            "horde member must be a Mob, was " + entity);
+                    helper.assertTrue(
+                            HordePools.pool("minecraft:overworld").contains(entity.getType()),
+                            "horde member must come from the overworld pool, was "
+                                    + entity.getType());
+                    helper.assertTrue(((Mob) entity).hasEffect(MobEffects.DAMAGE_RESISTANCE),
+                            "horde member must carry the expedition's buff");
+                }
+                manager.failRun(player);
+                helper.succeed();
+            }, 400, () -> dumpArea(level, checkpoint, radius, horde));
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+    }
+
+    /**
+     * Modifiers ride the run's persisted definition: a save/load round trip
+     * restores weather and both effect lists.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    public static void modifiersPersistAcrossReload(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "generate": {"checkpoints": 1, "min_spacing": 16, "max_spacing": 24,
+                               "exit_min": 24, "exit_max": 32,
+                               "entry_min": 32, "entry_max": 48},
+                  "tokens": 1,
+                  "modifiers": {
+                    "weather": "clear",
+                    "player_effects": [{"id": "minecraft:luck"}],
+                    "horde_effects": [{"id": "minecraft:speed", "amplifier": 2}]
+                  }
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "modified"),
+                    JsonParser.parseString(json)));
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            ExpeditionSavedData restored = roundTrip(helper, server);
+            ExpeditionRun reloaded = restored.ledger().run(player.getUUID()).orElseThrow(
+                    () -> new IllegalStateException("run must survive the round trip"));
+            helper.assertTrue(reloaded.definition().modifiers()
+                            .equals(run.definition().modifiers()),
+                    "modifiers must round-trip, was " + reloaded.definition().modifiers());
+            manager.failRun(player);
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
         helper.succeed();
     }
 

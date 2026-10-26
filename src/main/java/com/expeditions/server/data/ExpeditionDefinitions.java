@@ -1,11 +1,14 @@
 package com.expeditions.server.data;
 
+import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
+import com.expeditions.core.ExpeditionModifiers;
 import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.core.RouteSpec;
+import com.expeditions.core.WeatherModifier;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -124,7 +127,63 @@ public final class ExpeditionDefinitions {
                 optionalInt(json, "tokens", 0),
                 optionalInt(json, "bonus_tokens", 0),
                 optionalInt(json, "bonus_time_seconds", 0) * TICKS_PER_SECOND,
-                parseObjectives(json.get("objectives")));
+                parseObjectives(json.get("objectives")),
+                parseModifiers(json.get("modifiers")));
+    }
+
+    /**
+     * Parses the optional {@code "modifiers"} object:
+     * {@code "weather"} ({@code clear}|{@code rain}|{@code thunder}),
+     * {@code "player_effects"} and {@code "horde_effects"} (arrays of
+     * {@code {"id": effect-id, "amplifier": n}}). Effect ids are validated
+     * against the mob-effect registry so modded effects work and typos fail
+     * the definition loudly.
+     */
+    private static ExpeditionModifiers parseModifiers(JsonElement element) {
+        if (element == null) {
+            return ExpeditionModifiers.NONE;
+        }
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("\"modifiers\" must be an object");
+        }
+        JsonObject json = element.getAsJsonObject();
+        WeatherModifier weather = WeatherModifier.NONE;
+        String weatherName = optionalString(json, "weather", null);
+        if (weatherName != null) {
+            weather = WeatherModifier.byName(weatherName);
+            if (weather == null) {
+                throw new IllegalArgumentException(
+                        "unknown modifier weather \"" + weatherName + "\"");
+            }
+        }
+        return new ExpeditionModifiers(weather,
+                parseEffects(json.get("player_effects"), "player_effects"),
+                parseEffects(json.get("horde_effects"), "horde_effects"));
+    }
+
+    private static List<EffectSpec> parseEffects(JsonElement element, String key) {
+        if (element == null) {
+            return List.of();
+        }
+        if (!element.isJsonArray()) {
+            throw new IllegalArgumentException("\"" + key + "\" must be an array");
+        }
+        List<EffectSpec> effects = new ArrayList<>();
+        for (JsonElement e : element.getAsJsonArray()) {
+            if (!e.isJsonObject()) {
+                throw new IllegalArgumentException(key + " entries must be JSON objects");
+            }
+            JsonObject json = e.getAsJsonObject();
+            String effectId = requiredString(json, "id");
+            ResourceLocation parsed = ResourceLocation.tryParse(effectId);
+            if (parsed == null
+                    || BuiltInRegistries.MOB_EFFECT.getOptional(parsed).isEmpty()) {
+                throw new IllegalArgumentException(
+                        key + " references unknown effect \"" + effectId + "\"");
+            }
+            effects.add(new EffectSpec(effectId, optionalInt(json, "amplifier", 0)));
+        }
+        return effects;
     }
 
     /**

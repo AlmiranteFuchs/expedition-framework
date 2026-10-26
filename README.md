@@ -58,7 +58,10 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
    activations are rejected. Any member can activate any checkpoint; the
    progress is shared. Each activation rolls a **challenge** — currently a
    hostile horde that spawns near the checkpoint and hunts the nearest
-   member (`[expeditions.challenges]`). The horde is cleaned up when the
+   member (`[expeditions.challenges]`). The horde type rolls from the
+   dimension's `expeditions:horde_mobs/<dimension>` entity-tag pool
+   (config `hordeMob` is the fallback) and carries the expedition's
+   declared buffs. The horde is cleaned up when the
    next checkpoint is reached or the run ends; it cannot outlive the
    expedition.
 5. After all checkpoints, right-click the **Exit** to complete the run.
@@ -114,7 +117,7 @@ hordeChance = 1.0                # chance a checkpoint spawns a horde (0.0-1.0)
 hordeSize = 4                    # base mob count (1-32)
 hordeSizePerExtraMember = 2      # extra mobs per member beyond the first (0-16)
 hordeSpawnRadius = 8             # max spawn distance from the checkpoint (2-32)
-hordeMob = "minecraft:zombie"    # entity registry id
+hordeMob = "minecraft:zombie"    # fallback mob when no horde_mobs tag pool applies
 
 # fallback authored route — only used when generate = false
 checkpoints = ["48,16", "96,-24", "144,48"]
@@ -185,7 +188,8 @@ Modpacks can define expeditions in datapacks at
 
 Required: `dimension`, `checkpoints` (non-empty `[x,z]` pairs), `exit`.
 Optional: `display_name` (defaults to the file path), `difficulty`, `tokens`,
-`bonus_tokens`, `bonus_time_seconds` (all default 0), `objectives`.
+`bonus_tokens`, `bonus_time_seconds` (all default 0), `objectives`,
+`modifiers`.
 
 **Objectives** — an optional `objectives` array adds goals that pay their own
 `bonus_tokens` on successful completion (each at most once per run; a
@@ -216,6 +220,27 @@ optional. `visit_checkpoint` takes `checkpoint` (1-based route index),
 `visit_checkpoint`, and `time_limit` is evaluated at completion. Configured
 built-in expeditions carry no objectives; datapacks are the configuration
 surface.
+
+**Modifiers** — an optional `modifiers` object declares environmental and
+combat effects for the expedition's lifetime:
+
+```json
+"modifiers": {
+  "weather": "thunder",
+  "player_effects": [{"id": "minecraft:speed", "amplifier": 1}],
+  "horde_effects": [{"id": "minecraft:strength"}]
+}
+```
+
+`weather` (`clear`|`rain`|`thunder`) is forced on the expedition's dimension
+at run start and cleared at run end (a no-op in dimensions without weather,
+and only cleared when no other active run still wants it). `player_effects`
+apply to each party member for the run's duration — on start and on joining
+through the portal — and are stripped at run end (other effects are
+untouched). `horde_effects` are permanent buffs baked into every horde mob at
+spawn. Effect ids validate against the mob-effect registry, so modded
+effects work; `amplifier` defaults to 0. A bad weather name or unknown
+effect id fails the whole definition loudly.
 
 **Generated routes** — replace `checkpoints`/`exit` with a `generate` block for
 a fresh route rolled per run, anchored to the terminal the player activated:
@@ -268,6 +293,16 @@ modded dimensions:
   "values": ["mymod:some_supply", "#c:gems"]
 }
 ```
+
+### Horde pools
+
+Checkpoint hordes roll their type from the entity tag
+`expeditions:horde_mobs/<dimension path>` — shipped for `overworld` and
+`the_nether`, with `horde_mobs/default` as the fallback for unconfigured
+dimensions. The same datapack rules as reward pools apply: mods and modpacks
+merge entries (`"replace": false`), so dimension-appropriate modded mobs join
+the pool without code. When no tag applies at all, the config `hordeMob` id
+is used.
 
 Draw weights come from `ItemValuator`'s stat score, so pool items rank by
 their own components — no per-item rarity table to maintain.
@@ -415,14 +450,19 @@ chunk, and validate on real block state — not heightmap assumptions.
   bonus-time window, then hit start. `/expeditions start <id> [difficulty]
   [checkpoints] [time%]` does the same without a GUI. Options persist with
   the run.
+- **Expedition modifiers** — datapack `"modifiers"` force weather on the
+  expedition's dimension, apply mob effects to party members for the run's
+  duration, and bake permanent buffs into spawned horde mobs. Horde types
+  roll from `expeditions:horde_mobs/<dimension>` entity tags (modded mobs
+  join via datapack) with the config `hordeMob` as fallback.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start`.
-- **Tests** — 83 unit tests + 42 GameTest in-game tests.
+- **Tests** — 88 unit tests + 48 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 83 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **42/42 game tests pass** on a real dedicated
+- `./gradlew test` — 88 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **48/48 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -474,6 +514,11 @@ chunk, and validate on real block state — not heightmap assumptions.
     home, checkpoint-count and difficulty modifiers reshape the route and
     payout, options survive save/load, the terminal menu's start button
     launches the run, and `/expeditions start` takes the same modifiers.
+  - expedition modifiers apply and clean up: member effects land at start and
+    are stripped at run end, forced weather sets and clears on the dimension,
+    the horde rolls its type from the dimension's entity-tag pool and every
+    member carries the declared buffs, modifiers survive save→load, and
+    malformed modifier definitions are skipped at reload.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 

@@ -5,6 +5,7 @@ import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.Waypoint;
+import com.mojang.logging.LogUtils;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -20,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.util.Unit;
 import net.minecraft.world.item.component.ItemLore;
+import org.slf4j.Logger;
 
 /**
  * Terminal configuration screen: a vanilla chest GUI (no custom menu type,
@@ -30,6 +32,7 @@ import net.minecraft.world.item.component.ItemLore;
  * can never pull the button items out.
  */
 public class ExpeditionMenu extends ChestMenu {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final int ROWS = 4;
     private static final int SLOT_EXPEDITION = 10;
     private static final int SLOT_DIFFICULTY = 12;
@@ -142,6 +145,8 @@ public class ExpeditionMenu extends ChestMenu {
                             run.completedCheckpoints() + 1, run.totalCheckpoints(),
                             format(first))));
         } catch (IllegalStateException e) {
+            LOGGER.warn("Expedition start refused for {}: {}",
+                    player.getScoreboardName(), e.getMessage());
             player.sendSystemMessage(Component.literal(e.getMessage()));
         }
     }

@@ -24,10 +24,21 @@ import java.util.Set;
  * @param bonusTimeTicks elapsed-tick budget for the bonus; 0 disables it
  * @param objectives     optional/required objectives paid as per-objective
  *                       bonuses on successful completion
+ * @param modifiers      environmental/combat modifiers applied while the run
+ *                       is active (weather, member effects, horde buffs)
  */
 public record ExpeditionDefinition(String id, String displayName, int difficulty,
         String dimension, RouteSpec route, int tokenReward,
-        int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives) {
+        int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives,
+        ExpeditionModifiers modifiers) {
+
+    /** Definition without modifiers (config defaults, older saves). */
+    public ExpeditionDefinition(String id, String displayName, int difficulty,
+            String dimension, RouteSpec route, int tokenReward,
+            int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives) {
+        this(id, displayName, difficulty, dimension, route, tokenReward,
+                bonusTokens, bonusTimeTicks, objectives, ExpeditionModifiers.NONE);
+    }
 
     /** Definition without objectives (config defaults, saves from before objectives existed). */
     public ExpeditionDefinition(String id, String displayName, int difficulty,
@@ -64,6 +75,7 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
             throw new IllegalArgumentException("Bonus time must be >= 0");
         }
         objectives = List.copyOf(objectives);
+        Objects.requireNonNull(modifiers, "modifiers");
         Set<String> seen = new HashSet<>();
         int checkpoints = routeCheckpointCount(route);
         for (ExpeditionObjective objective : objectives) {
