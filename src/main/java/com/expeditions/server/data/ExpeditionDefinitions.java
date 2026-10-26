@@ -193,8 +193,10 @@ public final class ExpeditionDefinitions {
      * Per type: {@code visit_checkpoint} takes {@code checkpoint} (1-based
      * index), {@code collect_items} takes exactly one of {@code item} or
      * {@code tag} plus {@code count}, {@code time_limit} takes
-     * {@code seconds}, and {@code recover_artifact} takes {@code checkpoint}
-     * (the checkpoint that issues the run's artifact).
+     * {@code seconds}, {@code recover_artifact} takes {@code checkpoint}
+     * (the checkpoint that issues the run's artifact), and
+     * {@code defend_device} takes {@code checkpoint} (the checkpoint that
+     * deploys the device) plus {@code seconds} (the siege duration).
      */
     private static List<ExpeditionObjective> parseObjectives(JsonElement element) {
         if (element == null) {
@@ -244,6 +246,9 @@ public final class ExpeditionDefinitions {
                         (long) requiredInt(json, "seconds") * TICKS_PER_SECOND, bonus));
                 case "recover_artifact" -> objectives.add(ExpeditionObjective.recoverArtifact(
                         id, description, required, requiredInt(json, "checkpoint"), bonus));
+                case "defend_device" -> objectives.add(ExpeditionObjective.defendDevice(
+                        id, description, required, requiredInt(json, "checkpoint"),
+                        (long) requiredInt(json, "seconds") * TICKS_PER_SECOND, bonus));
                 default -> throw new IllegalArgumentException(
                         "unknown objective type \"" + json.get("type").getAsString() + "\"");
             }

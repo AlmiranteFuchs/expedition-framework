@@ -86,7 +86,8 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
                                 + "\" in expedition \"" + id + "\"");
             }
             if ((objective.kind() == ObjectiveKind.VISIT_CHECKPOINT
-                    || objective.kind() == ObjectiveKind.RECOVER_ARTIFACT)
+                    || objective.kind() == ObjectiveKind.RECOVER_ARTIFACT
+                    || objective.kind() == ObjectiveKind.DEFEND_DEVICE)
                     && objective.checkpoint() > checkpoints) {
                 throw new IllegalArgumentException(
                         objective.kind().name().toLowerCase() + " objective \""
@@ -107,6 +108,17 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
     public java.util.Optional<ExpeditionObjective> artifactObjectiveAt(int index) {
         return objectives.stream()
                 .filter(o -> o.kind() == ObjectiveKind.RECOVER_ARTIFACT
+                        && o.checkpoint() == index)
+                .findFirst();
+    }
+
+    /**
+     * The {@link ObjectiveKind#DEFEND_DEVICE} objective triggering at
+     * checkpoint {@code index} (1-based), if one targets it.
+     */
+    public java.util.Optional<ExpeditionObjective> defenseObjectiveAt(int index) {
+        return objectives.stream()
+                .filter(o -> o.kind() == ObjectiveKind.DEFEND_DEVICE
                         && o.checkpoint() == index)
                 .findFirst();
     }

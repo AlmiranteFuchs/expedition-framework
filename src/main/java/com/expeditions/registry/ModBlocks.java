@@ -2,6 +2,7 @@ package com.expeditions.registry;
 
 import com.expeditions.ExpeditionsMod;
 import com.expeditions.block.ExpeditionCheckpointBlock;
+import com.expeditions.block.ExpeditionDeviceBlock;
 import com.expeditions.block.ExpeditionExitBlock;
 import com.expeditions.block.ExpeditionPortalBlock;
 import com.expeditions.block.ExpeditionTerminalBlock;
@@ -45,6 +46,20 @@ public final class ModBlocks {
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
                     .lightLevel(state -> 13)));
+
+    /**
+     * Defense device deployed by a {@code defend_device} objective. Shares
+     * the markers' pickaxe protection — its explicit health lives in the
+     * run record, so only siege damage routed through the manager destroys
+     * it. Never an item.
+     */
+    public static final DeferredHolder<Block, ExpeditionDeviceBlock> EXPEDITION_DEVICE = BLOCKS.register(
+            "expedition_device",
+            () -> new ExpeditionDeviceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .strength(-1.0f, 3_600_000.0f)
+                    .noLootTable()
+                    .lightLevel(state -> 9)));
 
     /**
      * Temporary teleport marker spawned above a terminal while a run is open

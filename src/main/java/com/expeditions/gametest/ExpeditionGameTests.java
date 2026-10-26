@@ -1,5 +1,6 @@
 package com.expeditions.gametest;
 
+import com.expeditions.core.DefenseState;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
@@ -27,6 +28,8 @@ import com.expeditions.server.ItemValuator;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -99,11 +102,7 @@ public final class ExpeditionGameTests {
 
         // Other tests/retries share the configured marker positions; end any
         // foreign active runs so marker removal is verifiable deterministically.
-        for (ExpeditionRun other : manager.runs()) {
-            if (other.isActive() && !other.playerId().equals(playerId)) {
-                other.fail();
-            }
-        }
+                failLeakedForeignRuns(player);
 
         BlockPos exitPos = ExpeditionManager.toPos(run.exit());
         useBlockAt(helper, player, exitPos);
@@ -247,11 +246,7 @@ public final class ExpeditionGameTests {
 
         // End any foreign active runs (test retries leak mock players) so
         // marker removal is verifiable deterministically.
-        for (ExpeditionRun other : manager.runs()) {
-            if (other.isActive() && !other.playerId().equals(playerId)) {
-                other.fail();
-            }
-        }
+                failLeakedForeignRuns(player);
         manager.failRun(player);
         for (Waypoint w : run.checkpoints()) {
             helper.assertTrue(nether.getBlockState(ExpeditionManager.toPos(w)).isAir(),
@@ -398,11 +393,7 @@ public final class ExpeditionGameTests {
 
         // End foreign active runs (test retries leak mock players) so marker
         // cleanup is not held back by runs sharing the configured positions.
-        for (ExpeditionRun other : manager.runs()) {
-            if (other.isActive() && !other.playerId().equals(playerId)) {
-                other.fail();
-            }
-        }
+                failLeakedForeignRuns(player);
         helper.assertTrue(manager.resumeOrFail(player).isEmpty(),
                 "unrecoverable run must not resume");
         helper.assertTrue(run.status() == ExpeditionStatus.FAILED,
@@ -675,11 +666,7 @@ public final class ExpeditionGameTests {
 
             // End foreign runs so marker cleanup is not held back, then end
             // this run and confirm its generated markers are removed.
-            for (ExpeditionRun other : manager.runs()) {
-                if (other.isActive() && !other.playerId().equals(player.getUUID())) {
-                    other.fail();
-                }
-            }
+                        failLeakedForeignRuns(player);
             manager.failRun(player);
             for (Waypoint w : run.checkpoints()) {
                 helper.assertTrue(helper.getLevel().getBlockState(ExpeditionManager.toPos(w))
@@ -904,11 +891,7 @@ public final class ExpeditionGameTests {
         }
         assertSafeDestination(helper, level, ExpeditionManager.toPos(run.exit()));
 
-        for (ExpeditionRun other : manager.runs()) {
-            if (other.isActive() && !other.playerId().equals(player.getUUID())) {
-                other.fail();
-            }
-        }
+                failLeakedForeignRuns(player);
         manager.failRun(player);
         helper.succeed();
     }
@@ -1022,11 +1005,7 @@ public final class ExpeditionGameTests {
         helper.assertTrue(!run.challengeEntities().isEmpty(),
                 "a fresh horde must replace the previous one");
 
-        for (ExpeditionRun other : manager.runs()) {
-            if (other.isActive() && !other.playerId().equals(player.getUUID())) {
-                other.fail();
-            }
-        }
+                failLeakedForeignRuns(player);
         List<UUID> lastHorde = List.copyOf(run.challengeEntities());
         BlockPos lastCheckpoint = ExpeditionManager.toPos(
                 run.checkpoints().get(run.completedCheckpoints() - 1));
@@ -1623,11 +1602,7 @@ public final class ExpeditionGameTests {
         // End any foreign active runs so marker removal is verifiable
         // deterministically — a leaked run in the nether legitimately keeps
         // shared markers alive.
-        for (ExpeditionRun other : manager.runs()) {
-            if (other.isActive() && !other.playerId().equals(player.getUUID())) {
-                other.fail();
-            }
-        }
+                failLeakedForeignRuns(player);
         manager.failRun(player);
         helper.assertTrue(!helper.getLevel().getBlockState(ExpeditionManager.toPos(run.portal()))
                         .is(ModBlocks.EXPEDITION_PORTAL.get()),
@@ -1948,35 +1923,41 @@ public final class ExpeditionGameTests {
                     ResourceLocation.fromNamespaceAndPath("test", "buffed"),
                     JsonParser.parseString(json)));
             ExpeditionRun run = startExpedition(helper, manager, player);
+            List<UUID> horde;
+            BlockPos checkpoint;
+            int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
             try {
                 manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
                 useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
                 helper.assertTrue(!run.challengeEntities().isEmpty(),
                         "the checkpoint must roll a horde");
-                List<UUID> horde = List.copyOf(run.challengeEntities());
-                BlockPos checkpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
-                int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+                horde = List.copyOf(run.challengeEntities());
+                checkpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
                 forceLoadArea(level, checkpoint, radius);
-                pollUntil(helper,
-                        () -> horde.stream().allMatch(id -> level.getEntity(id) != null),
-                        "the horde's entity sections to become accessible", () -> {
-                    for (UUID id : horde) {
-                        Entity entity = findEntity(level, checkpoint, radius, id);
-                        helper.assertTrue(entity instanceof Mob,
-                                "horde member must be a Mob, was " + entity);
-                        helper.assertTrue(
-                                HordePools.candidates(level, checkpoint, "minecraft:overworld")
-                                        .contains(entity.getType()),
-                                "horde member must come from the natural spawn pool, was "
-                                        + entity.getType());
-                        helper.assertTrue(((Mob) entity).hasEffect(MobEffects.DAMAGE_RESISTANCE),
-                                "horde member must carry the expedition's buff");
-                    }
-                    helper.succeed();
-                }, 400, () -> dumpArea(level, checkpoint, radius, horde));
-            } finally {
+            } catch (Throwable t) {
                 failRunIfActive(manager, player);
+                throw t;
             }
+            // Async wait: cleanup lives in the poll's terminal callbacks,
+            // not this method's finally (which runs at schedule time).
+            pollUntil(helper,
+                    () -> horde.stream().allMatch(id -> level.getEntity(id) != null),
+                    "the horde's entity sections to become accessible", () -> {
+                for (UUID id : horde) {
+                    Entity entity = findEntity(level, checkpoint, radius, id);
+                    helper.assertTrue(entity instanceof Mob,
+                            "horde member must be a Mob, was " + entity);
+                    helper.assertTrue(
+                            HordePools.candidates(level, checkpoint, "minecraft:overworld")
+                                    .contains(entity.getType()),
+                            "horde member must come from the natural spawn pool, was "
+                                    + entity.getType());
+                    helper.assertTrue(((Mob) entity).hasEffect(MobEffects.DAMAGE_RESISTANCE),
+                            "horde member must carry the expedition's buff");
+                }
+                helper.succeed();
+            }, 400, () -> dumpArea(level, checkpoint, radius, horde),
+                    () -> failRunIfActive(manager, player));
         } finally {
             ExpeditionDefinitions.reload(Map.of());
         }
@@ -2303,6 +2284,329 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
+    // ---- Batch "defense": the destructible defense device -----------------
+
+    /**
+     * Activating the declared checkpoint deploys the device and rolls the
+     * first siege wave; surviving the duration completes the objective
+     * mid-run and pays its bonus at the exit.
+     */
+    @GameTest(template = "arena", timeoutTicks = 600, batch = "expedition_def")
+    public static void defenseSurvivesAndPays(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Siege Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[64, 64], [72, 64]],
+                  "exit": [80, 64],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "siege", "description": "Hold the device",
+                     "type": "defend_device", "checkpoint": 1, "seconds": 3,
+                     "bonus_tokens": 7, "required": true}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "siege_trial"),
+                JsonParser.parseString(json));
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            BlockPos devicePos;
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                devicePos = ExpeditionManager.toPos(
+                        run.defense().orElseThrow().device());
+                helper.assertTrue(level.getBlockState(devicePos)
+                                .is(ModBlocks.EXPEDITION_DEVICE.get()),
+                        "the declared checkpoint must deploy the device");
+                helper.assertTrue(!run.challengeEntities().isEmpty(),
+                        "the first siege wave must spawn");
+            } catch (Throwable t) {
+                failRunIfActive(manager, player);
+                throw t;
+            }
+            // The wait is asynchronous: the run must stay alive until the
+            // siege resolves — cleanup belongs in the poll's terminal
+            // callbacks, not this method's finally (it runs on scheduling).
+            pollUntil(helper,
+                    () -> run.objectiveState("siege")
+                            .map(ObjectiveState::completed).orElse(false),
+                    "the siege timer to expire", () -> {
+                helper.assertTrue(run.defense().isEmpty(),
+                        "a survived siege must stand down");
+                helper.assertTrue(!level.getBlockState(devicePos)
+                                .is(ModBlocks.EXPEDITION_DEVICE.get()),
+                        "a survived device must be removed");
+
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(1)));
+                ExpeditionRun done = manager.completeRun(player);
+                helper.assertTrue(done.tokensAwarded() == 17,
+                        "the defense bonus must pay, was " + done.tokensAwarded());
+                helper.succeed();
+            }, 200, () -> "status=" + run.status() + " defense=" + run.defense()
+                    + " gameTime=" + level.getGameTime(),
+                    () -> failRunIfActive(manager, player));
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+    }
+
+    /**
+     * Destruction of a REQUIRED device's run fails exactly once: block
+     * removed, siege called off, run failed, nothing paid.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    public static void requiredDeviceDestroyedFailsRun(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Siege Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[64, 64], [72, 64]],
+                  "exit": [80, 64],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "siege", "description": "Hold the device",
+                     "type": "defend_device", "checkpoint": 1, "seconds": 30,
+                     "required": true}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "siege_trial"),
+                JsonParser.parseString(json));
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                BlockPos devicePos = ExpeditionManager
+                        .toPos(run.checkpoints().get(0)).above();
+
+                manager.damageDeviceAt(level, devicePos, 999);
+                helper.assertTrue(run.status() == ExpeditionStatus.FAILED,
+                        "a required device's destruction must fail the run");
+                helper.assertTrue(!level.getBlockState(devicePos)
+                                .is(ModBlocks.EXPEDITION_DEVICE.get()),
+                        "the destroyed device must come down");
+                helper.assertTrue(!run.isRewarded(), "a destroyed run must not pay");
+                // Entity-section promotion is async: the horde may take a
+                // few ticks to become discardable, then the tracking record
+                // drains to empty.
+                pollUntil(helper, () -> run.challengeEntities().isEmpty(),
+                        "the siege to be called off", helper::succeed, 100,
+                        () -> "tracked=" + run.challengeEntities());
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+    }
+
+    /**
+     * An OPTIONAL device's destruction only marks its objective failed: the
+     * run continues and completes normally without the bonus.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    public static void optionalDeviceDestroyedDoesNotFailRun(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Siege Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[64, 64], [72, 64]],
+                  "exit": [80, 64],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "siege", "description": "Hold the device",
+                     "type": "defend_device", "checkpoint": 1, "seconds": 30,
+                     "bonus_tokens": 7}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "siege_trial"),
+                JsonParser.parseString(json));
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                BlockPos devicePos = ExpeditionManager
+                        .toPos(run.checkpoints().get(0)).above();
+                manager.damageDeviceAt(level, devicePos, 999);
+                helper.assertTrue(run.status() == ExpeditionStatus.ACTIVE,
+                        "an optional device's loss must not fail the run");
+                helper.assertTrue(run.objectiveFailed("siege"),
+                        "the defense objective must be marked failed");
+
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(1)));
+                ExpeditionRun done = manager.completeRun(player);
+                helper.assertTrue(done.status() == ExpeditionStatus.COMPLETED,
+                        "the run must complete without the device");
+                helper.assertTrue(done.tokensAwarded() == 10,
+                        "a failed optional objective pays no bonus, was "
+                                + done.tokensAwarded());
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The device deploys only at its declared checkpoint — activating any
+     * other checkpoint must not spawn it.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    public static void defenseDeploysOnlyAtDeclaredCheckpoint(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Siege Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[64, 64], [72, 64]],
+                  "exit": [80, 64],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "siege", "description": "Hold the device",
+                     "type": "defend_device", "checkpoint": 2, "seconds": 30}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "siege_trial"),
+                JsonParser.parseString(json));
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                helper.assertTrue(run.defense().isEmpty(),
+                        "checkpoint 1 must not deploy the cp-2 device");
+                helper.assertTrue(!level.getBlockState(ExpeditionManager
+                                        .toPos(run.checkpoints().get(0)).above())
+                                .is(ModBlocks.EXPEDITION_DEVICE.get()),
+                        "no device may stand over checkpoint 1");
+
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(1)));
+                helper.assertTrue(run.defense().isPresent(),
+                        "checkpoint 2 must deploy the device");
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The siege state — device position, health, timer — survives a
+     * save/load so a restart cannot reset or duplicate the event.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    public static void defenseStatePersistsAcrossReload(GameTestHelper helper) {
+        String json = """
+                {
+                  "display_name": "Siege Trial",
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[64, 64], [72, 64]],
+                  "exit": [80, 64],
+                  "tokens": 10,
+                  "objectives": [
+                    {"id": "siege", "description": "Hold the device",
+                     "type": "defend_device", "checkpoint": 1, "seconds": 30}
+                  ]
+                }
+                """;
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "siege_trial"),
+                JsonParser.parseString(json));
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        try {
+            ExpeditionDefinitions.reload(entries);
+            ExpeditionRun run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(0)));
+                helper.assertTrue(run.defense().isPresent(),
+                        "the siege must be running");
+
+                ExpeditionRun restored = roundTrip(helper, server).ledger()
+                        .activeRun(player.getUUID()).orElseThrow(
+                                () -> new IllegalStateException("run must survive a save/load"));
+                DefenseState restoredDefense = restored.defense().orElseThrow(
+                        () -> new IllegalStateException("defense must round-trip"));
+                helper.assertTrue(restoredDefense.equals(run.defense().get()),
+                        "the full siege state must round-trip, was " + restoredDefense);
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code defend_device} objectives validate like every other kind:
+     * duration and a real route checkpoint are both mandatory.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    public static void invalidDefenseObjectivesRejected(GameTestHelper helper) {
+        Map<ResourceLocation, JsonElement> entries = Map.of(
+                ResourceLocation.fromNamespaceAndPath("test", "past_route"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "defend_device",
+                                         "checkpoint": 9, "seconds": 10}]}"""),
+                ResourceLocation.fromNamespaceAndPath("test", "no_seconds"),
+                JsonParser.parseString("""
+                        {"dimension": "minecraft:overworld",
+                         "checkpoints": [[1, 1]], "exit": [2, 2],
+                         "objectives": [{"id": "x", "type": "defend_device",
+                                         "checkpoint": 1}]}"""));
+        try {
+            ExpeditionDefinitions.reload(entries);
+            helper.assertTrue(ExpeditionDefinitions.all().isEmpty(),
+                    "invalid defense objectives must skip their definitions, got "
+                            + ExpeditionDefinitions.all().keySet());
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
     /**
      * Fails the player's run if one is still active — test cleanup that can
      * never leak a run (and its authored-anchor markers) into later tests.
@@ -2310,6 +2614,35 @@ public final class ExpeditionGameTests {
     private static void failRunIfActive(ExpeditionManager manager, ServerPlayer player) {
         if (manager.activeRun(player.getUUID()).isPresent()) {
             manager.failRun(player);
+        }
+    }
+
+    /**
+     * Fails foreign active runs that share a marker position with the
+     * player's run — leaked by earlier tests/retries — so marker removal
+     * stays deterministic at the shared authored anchors. A foreign run at
+     * positions disjoint from ours cannot pin our markers and must never be
+     * touched: failing it would murder a concurrent in-flight test.
+     */
+    private static void failLeakedForeignRuns(ServerPlayer player) {
+        ExpeditionManager manager = ExpeditionManager.get(player.server);
+        Optional<ExpeditionRun> own = manager.activeRun(player.getUUID());
+        if (own.isEmpty()) {
+            return;
+        }
+        Set<Waypoint> shared = new HashSet<>(own.get().checkpoints());
+        shared.add(own.get().exit());
+        own.get().defense().map(DefenseState::device).ifPresent(shared::add);
+        for (ExpeditionRun other : manager.runs()) {
+            if (!other.isActive() || other.playerId().equals(player.getUUID())) {
+                continue;
+            }
+            Set<Waypoint> theirs = new HashSet<>(other.checkpoints());
+            theirs.add(other.exit());
+            other.defense().map(DefenseState::device).ifPresent(theirs::add);
+            if (!Collections.disjoint(shared, theirs)) {
+                other.fail();
+            }
         }
     }
 
@@ -2412,15 +2745,35 @@ public final class ExpeditionGameTests {
 
     private static void pollUntil(GameTestHelper helper, BooleanSupplier condition,
             String what, Runnable then, int triesLeft, java.util.function.Supplier<String> dump) {
+        pollUntil(helper, condition, what, then, triesLeft, dump, () -> { });
+    }
+
+    /**
+     * {@code cleanup} runs in the terminal callback of either outcome —
+     * never in the test method's synchronous finally, which executes the
+     * moment the async wait is scheduled (killing a polled run mid-wait).
+     */
+    private static void pollUntil(GameTestHelper helper, BooleanSupplier condition,
+            String what, Runnable then, int triesLeft,
+            java.util.function.Supplier<String> dump, Runnable cleanup) {
         if (condition.getAsBoolean()) {
-            then.run();
+            try {
+                then.run();
+            } finally {
+                cleanup.run();
+            }
             return;
         }
         if (triesLeft <= 0) {
-            helper.fail("timed out waiting for " + what + ". " + dump.get());
+            try {
+                helper.fail("timed out waiting for " + what + ". " + dump.get());
+            } finally {
+                cleanup.run();
+            }
             return;
         }
-        helper.runAfterDelay(1, () -> pollUntil(helper, condition, what, then, triesLeft - 1, dump));
+        helper.runAfterDelay(1, () -> pollUntil(helper, condition, what, then,
+                triesLeft - 1, dump, cleanup));
     }
 
     /** Diagnostic: chunk full-statuses, entity-section contents, and the

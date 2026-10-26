@@ -98,6 +98,21 @@ public record ExpeditionObjective(String id, String description, boolean require
                 count = 0;
                 timeLimitTicks = 0;
             }
+            case DEFEND_DEVICE -> {
+                if (checkpoint < 1) {
+                    throw new IllegalArgumentException(
+                            "defend_device objective \"" + id
+                                    + "\" needs a checkpoint index >= 1");
+                }
+                if (timeLimitTicks < 1) {
+                    throw new IllegalArgumentException(
+                            "defend_device objective \"" + id
+                                    + "\" needs a siege duration >= 1 tick");
+                }
+                item = null;
+                tag = null;
+                count = 0;
+            }
         }
     }
 
@@ -136,10 +151,20 @@ public record ExpeditionObjective(String id, String description, boolean require
                 ObjectiveKind.RECOVER_ARTIFACT, index, null, null, 0, 0, bonusTokens);
     }
 
+    /**
+     * A defense objective: a destructible device spawns when checkpoint
+     * {@code index} activates and must survive {@code ticks} of siege.
+     */
+    public static ExpeditionObjective defendDevice(String id, String description,
+            boolean required, int index, long ticks, int bonusTokens) {
+        return new ExpeditionObjective(id, description, required,
+                ObjectiveKind.DEFEND_DEVICE, index, null, null, 0, ticks, bonusTokens);
+    }
+
     /** Progress value at which this objective completes. */
     public int progressTarget() {
         return switch (kind) {
-            case VISIT_CHECKPOINT, RECOVER_ARTIFACT -> 1;
+            case VISIT_CHECKPOINT, RECOVER_ARTIFACT, DEFEND_DEVICE -> 1;
             case COLLECT_ITEMS -> count;
             case TIME_LIMIT -> (int) Math.min(timeLimitTicks, Integer.MAX_VALUE);
         };

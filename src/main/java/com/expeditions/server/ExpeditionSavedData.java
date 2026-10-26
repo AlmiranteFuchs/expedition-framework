@@ -1,5 +1,6 @@
 package com.expeditions.server;
 
+import com.expeditions.core.DefenseState;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
@@ -27,6 +28,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.slf4j.Logger;
@@ -106,6 +108,14 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_X = "x";
     private static final String TAG_Y = "y";
     private static final String TAG_Z = "z";
+    private static final String TAG_DEFENSE = "Defense";
+    private static final String TAG_DEF_OBJECTIVE = "ObjectiveId";
+    private static final String TAG_DEF_DEVICE = "Device";
+    private static final String TAG_DEF_HP = "Hp";
+    private static final String TAG_DEF_MAX_HP = "MaxHp";
+    private static final String TAG_DEF_END = "EndTick";
+    private static final String TAG_DEF_WAVE = "NextWaveTick";
+    private static final String TAG_FAILED_OBJECTIVES = "FailedObjectives";
 
     private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
@@ -234,7 +244,36 @@ public class ExpeditionSavedData extends SavedData {
                 challengeEntities,
                 objectiveStates,
                 readOptions(runTag),
-                readPortalDimension(runTag, dimension));
+                readPortalDimension(runTag, dimension),
+                readDefense(runTag),
+                readFailedObjectives(runTag));
+    }
+
+    /**
+     * The run's active siege, absent in saves from before defense events
+     * existed — a terminal run never carries one.
+     */
+    private static DefenseState readDefense(CompoundTag runTag) {
+        if (!runTag.contains(TAG_DEFENSE)) {
+            return null;
+        }
+        CompoundTag d = runTag.getCompound(TAG_DEFENSE);
+        return new DefenseState(
+                d.getString(TAG_DEF_OBJECTIVE),
+                readWaypoint(d.getCompound(TAG_DEF_DEVICE)),
+                d.getInt(TAG_DEF_HP),
+                d.getInt(TAG_DEF_MAX_HP),
+                d.getLong(TAG_DEF_END),
+                d.getLong(TAG_DEF_WAVE));
+    }
+
+    /** Objective ids an event permanently failed (destroyed device). */
+    private static Set<String> readFailedObjectives(CompoundTag runTag) {
+        Set<String> failed = new HashSet<>();
+        for (Tag t : runTag.getList(TAG_FAILED_OBJECTIVES, Tag.TAG_STRING)) {
+            failed.add(((StringTag) t).getAsString());
+        }
+        return failed;
     }
 
     /**
@@ -335,6 +374,21 @@ public class ExpeditionSavedData extends SavedData {
                 entities.add(entityTag);
             }
             runTag.put(TAG_CHALLENGE_ENTITIES, entities);
+            run.defense().ifPresent(d -> {
+                CompoundTag defenseTag = new CompoundTag();
+                defenseTag.putString(TAG_DEF_OBJECTIVE, d.objectiveId());
+                defenseTag.put(TAG_DEF_DEVICE, writeWaypoint(d.device()));
+                defenseTag.putInt(TAG_DEF_HP, d.hp());
+                defenseTag.putInt(TAG_DEF_MAX_HP, d.maxHp());
+                defenseTag.putLong(TAG_DEF_END, d.endTick());
+                defenseTag.putLong(TAG_DEF_WAVE, d.nextWaveTick());
+                runTag.put(TAG_DEFENSE, defenseTag);
+            });
+            ListTag failedObjectives = new ListTag();
+            for (String failed : run.failedObjectiveIds()) {
+                failedObjectives.add(StringTag.valueOf(failed));
+            }
+            runTag.put(TAG_FAILED_OBJECTIVES, failedObjectives);
             ListTag objectives = new ListTag();
             for (ExpeditionObjective objective : run.definition().objectives()) {
                 CompoundTag objectiveTag = new CompoundTag();

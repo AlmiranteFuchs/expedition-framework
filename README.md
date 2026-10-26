@@ -210,7 +210,10 @@ run):
    "type": "time_limit", "seconds": 60, "bonus_tokens": 7},
   {"id": "cargo", "description": "Deliver the artifact",
    "type": "recover_artifact", "checkpoint": 2, "bonus_tokens": 6,
-   "required": true}
+   "required": true},
+  {"id": "siege", "description": "Hold the device",
+   "type": "defend_device", "checkpoint": 1, "seconds": 60,
+   "bonus_tokens": 15, "required": true}
 ]
 ```
 
@@ -218,8 +221,23 @@ Every objective needs a unique `id` and a `type`; `description` (defaults to
 the id), `required` (default false) and `bonus_tokens` (default 0) are
 optional. `visit_checkpoint` takes `checkpoint` (1-based route index),
 `collect_items` takes exactly one of `item` or `tag` plus `count`,
-`time_limit` takes `seconds`, and `recover_artifact` takes `checkpoint`
-(the checkpoint that issues the run's physical artifact item).
+`time_limit` takes `seconds`, `recover_artifact` takes `checkpoint`
+(the checkpoint that issues the run's physical artifact item), and
+`defend_device` takes `checkpoint` (the checkpoint that deploys the
+device) plus `seconds` (the siege duration).
+
+Defense rules: activating the device checkpoint places a destructible
+`expeditions:expedition_device` above it (only into replaceable space —
+it can never overwrite another run's marker) and starts a bounded siege:
+waves spawn up to `defenseMobCap` live mobs that pathfind to the device
+and chip it, while the run record holds the authoritative health
+(`defenseDeviceHp`, `defenseWaveSeconds`, `defenseWaveSize` configure it).
+Survive the timer → objective completes, device stands down, siege is
+called off. Destroyed device → the objective is marked failed exactly
+once: required fails the run, optional just never pays. A device that
+vanishes without a tracked hit (creative break, `/fill`) counts as
+destroyed; a siege in progress when the run ends is stood down with the
+other markers.
 
 Artifact rules: activating the cargo checkpoint hands the activator a
 run-bound `ExpeditionArtifactItem` exactly once (`run_id` data component);
@@ -473,13 +491,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   mod-aware with no configuration; `expeditions:horde_mobs/<dimension>`
   entity tags override explicitly.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start`.
-- **Tests** — 94 unit tests + 54 GameTest in-game tests.
+- **Tests** — 101 unit tests + 60 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
-- `./gradlew test` — 94 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **54/54 game tests pass** on a real dedicated
+- `./gradlew test` — 101 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **60/60 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -528,6 +546,12 @@ chunk, and validate on real block state — not heightmap assumptions.
     item, an artifact bound to another run is refused without being
     consumed, a failed run strips its artifact, dead-run artifacts are
     swept on login, and the issued latch survives save→load.
+  - a defense checkpoint deploys the device only at its declared stage,
+    surviving the siege completes the objective and pays the bonus,
+    destroying a required device fails the run exactly once with the siege
+    called off, an optional device's destruction leaves the run completable,
+    malformed defense objectives are rejected, and defense state survives
+    save→load.
   - item valuation ranks tiers correctly (junk < food < gem < equipment),
     completion grants bonus drops from the run's dimension pool, redeem
     refuses without enough tokens and pays a Nether draw in the Nether,
@@ -606,7 +630,7 @@ no custom menu type).
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (54 tests, batches a–z + art).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (60 tests, batches a–z + art + def).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
   `CompassItem` and never competes with block interactions) and

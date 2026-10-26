@@ -17,7 +17,9 @@ import com.expeditions.core.RouteGeneration;
 import com.expeditions.core.RoutePlanner;
 import com.expeditions.core.RouteSpec;
 import com.expeditions.core.WeatherModifier;
+import com.expeditions.core.DefenseState;
 import com.expeditions.core.Waypoint;
+import com.expeditions.entity.AttackDeviceGoal;
 import com.expeditions.item.ExpeditionArtifactItem;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModDataComponents;
@@ -91,6 +93,9 @@ public final class ExpeditionManager {
     private static final int[][] JITTER = {
             {16, 0}, {-16, 0}, {0, 16}, {0, -16},
             {16, 16}, {-16, -16}, {16, -16}, {-16, 16}};
+
+    private static final org.slf4j.Logger LOGGER =
+            com.mojang.logging.LogUtils.getLogger();
 
     private final MinecraftServer server;
     private final ExpeditionLedger ledger;
@@ -375,6 +380,10 @@ public final class ExpeditionManager {
             player.sendSystemMessage(Component.translatable(
                     "message.expeditions.artifact_recovered"));
         }
+        // A checkpoint holding the defense device deploys it — the only
+        // valid activation stage is its declared checkpoint.
+        run.definition().defenseObjectiveAt(run.completedCheckpoints())
+                .ifPresent(objective -> startSiege(player, run, objective));
         retargetPartyCompasses(run);
         // The previous challenge spawned around the checkpoint before this
         // one; its chunks may be unloaded now that the party moved on.
@@ -657,7 +666,9 @@ public final class ExpeditionManager {
         return ledger.runs().stream()
                 .filter(ExpeditionRun::isActive)
                 .anyMatch(r -> (r.definition().dimension().equals(dimension)
-                        && (r.checkpoints().contains(waypoint) || r.exit().equals(waypoint)))
+                        && (r.checkpoints().contains(waypoint) || r.exit().equals(waypoint)
+                                || r.defense().map(d -> d.device().equals(waypoint))
+                                        .orElse(false)))
                         || (r.portalDimension().equals(dimension)
                                 && r.portal().equals(waypoint)));
     }
@@ -694,6 +705,17 @@ public final class ExpeditionManager {
         if (level != null && run.completedCheckpoints() > 0) {
             clearChallengeEntities(run, level,
                     toPos(run.checkpoints().get(run.completedCheckpoints() - 1)));
+        }
+        // A siege still running when the run ends (abandon, death) stands
+        // down with the rest of the markers.
+        if (level != null) {
+            run.defense().ifPresent(d -> {
+                BlockPos devicePos = toPos(d.device());
+                if (!isReferencedByActiveRun(dimension, devicePos)) {
+                    removeMarkerAt(level, devicePos);
+                    data.untrackMarker(dimension, devicePos);
+                }
+            });
         }
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
@@ -832,6 +854,229 @@ public final class ExpeditionManager {
         }
     }
 
+    // ---- Defense events ----------------------------------------------------
+
+    /**
+     * Deploys the defense device above the just-activated checkpoint and
+     * starts the siege: tracked marker, explicit health in the run record,
+     * an immediate first wave. The device is a marker — it shares the
+     * pickaxe protection and the orphan-pruning safety net.
+     */
+    private void startSiege(ServerPlayer player, ExpeditionRun run,
+            ExpeditionObjective objective) {
+        ServerLevel level = player.serverLevel();
+        // The device goes above the just-activated checkpoint, but never over
+        // another marker: two runs in the same dimension can resolve
+        // overlapping positions, and clobbering a shared checkpoint would
+        // silently destroy another run. Take the first replaceable spot in a
+        // bounded column; if none exists the siege does not start.
+        BlockPos devicePos = toPos(run.checkpoints()
+                .get(run.completedCheckpoints() - 1)).above();
+        for (int i = 0; i < 4 && !level.getBlockState(devicePos).canBeReplaced(); i++) {
+            devicePos = devicePos.above();
+        }
+        if (!level.getBlockState(devicePos).canBeReplaced()) {
+            LOGGER.warn("No room for a defense device above {}; siege for run {} not started",
+                    devicePos, run.runId());
+            return;
+        }
+        level.setBlock(devicePos, ModBlocks.EXPEDITION_DEVICE.get().defaultBlockState(), 3);
+        data.trackMarker(level.dimension().location().toString(), devicePos);
+        long now = level.getGameTime();
+        run.startDefense(objective.id(), toWaypoint(devicePos),
+                ExpeditionsConfig.defenseDeviceHp(), now,
+                objective.timeLimitTicks(),
+                ExpeditionsConfig.defenseWaveSeconds() * 20L);
+        spawnSiegeWave(run, level, devicePos);
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer != null) {
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.defense_started",
+                        objective.timeLimitTicks() / 20));
+            }
+        }
+    }
+
+    /**
+     * Device damage entry point — siege mobs and player punches both land
+     * here so the run record stays the single authority on device health.
+     * No-op for positions no active run defends.
+     */
+    public void damageDeviceAt(ServerLevel level, BlockPos pos, int amount) {
+        defenseRunAt(level, pos).ifPresent(run -> {
+            // Capture the sieged objective before destruction clears the state.
+            String objectiveId = run.defense().map(DefenseState::objectiveId).orElse(null);
+            if (run.damageDevice(amount)) {
+                onDeviceDestroyed(run, level, pos, objectiveId);
+            }
+            data.setDirty();
+        });
+    }
+
+    /** Whether {@code pos} is the live device of an active run's siege. */
+    public boolean isDefenseDeviceAt(ServerLevel level, BlockPos pos) {
+        return defenseRunAt(level, pos).isPresent();
+    }
+
+    /** Status of the device at {@code pos} for player feedback, if live. */
+    public Optional<DeviceStatus> defenseStatusAt(ServerLevel level, BlockPos pos) {
+        return defenseRunAt(level, pos)
+                .flatMap(ExpeditionRun::defense)
+                .map(d -> new DeviceStatus(d.hp(), d.maxHp(),
+                        Math.max(0, d.endTick() - level.getGameTime())));
+    }
+
+    /** Remaining siege time for {@link ExpeditionDeviceBlock} feedback. */
+    public record DeviceStatus(int hp, int maxHp, long remainingTicks) {
+    }
+
+    private Optional<ExpeditionRun> defenseRunAt(ServerLevel level, BlockPos pos) {
+        String dimension = level.dimension().location().toString();
+        Waypoint waypoint = toWaypoint(pos);
+        return ledger.runs().stream()
+                .filter(ExpeditionRun::isActive)
+                .filter(r -> r.definition().dimension().equals(dimension))
+                .filter(r -> r.defense().map(d -> d.device().equals(waypoint)).orElse(false))
+                .findFirst();
+    }
+
+    /**
+     * Exactly-once destruction: the block comes down, the siege is called
+     * off, the objective is already marked failed by the domain. A required
+     * objective fails the whole run by mission rule; an optional one just
+     * never pays.
+     */
+    private void onDeviceDestroyed(ExpeditionRun run, ServerLevel level, BlockPos devicePos,
+            String objectiveId) {
+        removeMarkerAt(level, devicePos);
+        data.untrackMarker(level.dimension().location().toString(), devicePos);
+        clearChallengeEntities(run, level, devicePos);
+        ExpeditionObjective objective = run.definition().objectives().stream()
+                .filter(o -> o.id().equals(objectiveId))
+                .findFirst().orElse(null);
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer != null) {
+                memberPlayer.sendSystemMessage(Component.translatable(
+                        "message.expeditions.device_destroyed"));
+            }
+        }
+        if (objective != null && objective.required() && run.isActive()) {
+            run.fail();
+            endRun(run);
+        }
+    }
+
+    /**
+     * Advances every active siege once a second: expired timers complete
+     * their objective and stand the device down, due waves spawn, and a
+     * missing device block counts as destruction (fail-safe).
+     */
+    public void tickDefenses() {
+        for (ExpeditionRun run : ledger.runs()) {
+            if (!run.isActive() || run.defense().isEmpty()) {
+                continue;
+            }
+            ServerLevel level = levelFor(run.definition().dimension());
+            if (level == null) {
+                continue;
+            }
+            DefenseState defense = run.defense().get();
+            BlockPos devicePos = toPos(defense.device());
+            long now = level.getGameTime();
+            if (!level.getBlockState(devicePos).is(ModBlocks.EXPEDITION_DEVICE.get())) {
+                // The block vanished without manager involvement (creative
+                // break, /fill): the device is destroyed by definition.
+                String objectiveId = defense.objectiveId();
+                if (run.damageDevice(Integer.MAX_VALUE)) {
+                    onDeviceDestroyed(run, level, devicePos, objectiveId);
+                }
+                continue;
+            }
+            Optional<ExpeditionObjective> survived = run.completeDefenseIfExpired(now);
+            if (survived.isPresent()) {
+                standDownDevice(run, level, devicePos);
+                for (UUID member : run.party()) {
+                    ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+                    if (memberPlayer != null) {
+                        memberPlayer.sendSystemMessage(Component.translatable(
+                                "message.expeditions.objective_completed",
+                                survived.get().description()));
+                    }
+                }
+                continue;
+            }
+            if (run.defenseWaveDue(now)) {
+                spawnSiegeWave(run, level, devicePos);
+                run.defenseWaveSpawned(now + ExpeditionsConfig.defenseWaveSeconds() * 20L);
+            }
+            data.setDirty();
+        }
+    }
+
+    /** Removes a survived device and calls off the remaining siege mobs. */
+    private void standDownDevice(ExpeditionRun run, ServerLevel level, BlockPos devicePos) {
+        removeMarkerAt(level, devicePos);
+        data.untrackMarker(level.dimension().location().toString(), devicePos);
+        clearChallengeEntities(run, level, devicePos);
+    }
+
+    /**
+     * Spawns one wave of siege mobs around the device, bounded by the
+     * configured cap of live challenge entities and wave size — the type
+     * rolls from the device's own natural mob pool like any horde. Each
+     * mob pathfinds to the device and chips it; players intercept them.
+     */
+    private void spawnSiegeWave(ExpeditionRun run, ServerLevel level, BlockPos devicePos) {
+        int alive = 0;
+        for (UUID entityId : run.challengeEntities()) {
+            if (level.getEntity(entityId) != null) {
+                alive++;
+            }
+        }
+        int room = ExpeditionsConfig.defenseMobCap() - alive;
+        int count = Math.min(room, ExpeditionsConfig.defenseWaveSize());
+        if (count <= 0) {
+            return;
+        }
+        EntityType<?> type = HordePools.pick(level, devicePos,
+                run.definition().dimension(), level.getRandom());
+        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        List<UUID> spawned = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            double angle = level.getRandom().nextDouble() * Math.PI * 2;
+            int distance = 2 + level.getRandom().nextInt(radius - 1);
+            BlockPos column = devicePos.offset(
+                    (int) Math.round(Math.cos(angle) * distance), 0,
+                    (int) Math.round(Math.sin(angle) * distance));
+            level.getChunk(column);
+            BlockPos surface = level.getHeightmapPos(
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
+            if (!(type.create(level) instanceof Mob mob)) {
+                continue;
+            }
+            mob.moveTo(surface.getX() + 0.5, surface.getY(), surface.getZ() + 0.5,
+                    level.getRandom().nextFloat() * 360f, 0f);
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(surface),
+                    MobSpawnType.EVENT, null);
+            mob.setPersistenceRequired();
+            for (EffectSpec spec : run.definition().modifiers().hordeEffects()) {
+                effectOf(spec).ifPresent(effect -> mob.addEffect(new MobEffectInstance(
+                        effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),
+                        false, false)));
+            }
+            mob.goalSelector.addGoal(1, new AttackDeviceGoal(mob, devicePos,
+                    ExpeditionsConfig.defenseMobDamage(),
+                    ExpeditionsConfig.defenseMobAttackTicks()));
+            level.addFreshEntity(mob);
+            spawned.add(mob.getUUID());
+        }
+        if (!spawned.isEmpty()) {
+            run.trackChallengeEntities(spawned);
+        }
+    }
+
     /** The online, living party member nearest to {@code pos}, if any. */
     private ServerPlayer nearestMember(ExpeditionRun run, ServerLevel level, BlockPos pos) {
         ServerPlayer nearest = null;
@@ -871,7 +1116,7 @@ public final class ExpeditionManager {
                 level.getChunk(cx, cz);
             }
         }
-        AABB box = new AABB(center).inflate(radius + 1);
+        AABB box = columnBox(level, center, radius + 1);
         for (UUID entityId : List.copyOf(run.challengeEntities())) {
             Entity entity = findInSections(level, box, entityId);
             if (entity != null) {
@@ -879,6 +1124,17 @@ public final class ExpeditionManager {
                 run.untrackChallengeEntity(entityId);
             }
         }
+    }
+
+    /**
+     * Search volume for a challenge's entities: the spawn radius in X/Z and
+     * the full column height — horde members are placed at each column's
+     * surface, which can sit far below an elevated checkpoint or device.
+     */
+    private static AABB columnBox(ServerLevel level, BlockPos center, int radius) {
+        return new AABB(center.getX() - radius, level.getMinBuildHeight(),
+                center.getZ() - radius, center.getX() + radius + 1,
+                level.getMaxBuildHeight(), center.getZ() + radius + 1);
     }
 
     /**
@@ -903,8 +1159,8 @@ public final class ExpeditionManager {
             // The current horde spawned around the last activated checkpoint.
             Waypoint center = run.checkpoints().get(
                     Math.min(run.completedCheckpoints(), run.totalCheckpoints()) - 1);
-            AABB box = new AABB(toPos(center))
-                    .inflate(ExpeditionsConfig.challengeHordeSpawnRadius() + 1);
+            AABB box = columnBox(level, toPos(center),
+                    ExpeditionsConfig.challengeHordeSpawnRadius() + 1);
             for (UUID entityId : List.copyOf(run.challengeEntities())) {
                 Entity entity = findInSections(level, box, entityId);
                 if (entity != null) {
@@ -1193,7 +1449,8 @@ public final class ExpeditionManager {
         BlockState state = level.getBlockState(pos);
         if (state.is(ModBlocks.EXPEDITION_CHECKPOINT.get())
                 || state.is(ModBlocks.EXPEDITION_EXIT.get())
-                || state.is(ModBlocks.EXPEDITION_PORTAL.get())) {
+                || state.is(ModBlocks.EXPEDITION_PORTAL.get())
+                || state.is(ModBlocks.EXPEDITION_DEVICE.get())) {
             level.removeBlock(pos, false);
         }
     }

@@ -215,6 +215,24 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   invisible to tests and server admins (that hid the cascade above).
   `StringArgumentType.word()` cannot parse `ns:id` strings (stops at ':') —
   use `ResourceLocationArgument.id()` for id parameters.
+- Defense events (M8): `defend_device` objectives deploy
+  `EXPEDITION_DEVICE` above the just-activated checkpoint and run a siege
+  from `DefenseState` on the run (hp/maxHp/endTick/nextWaveTick, persisted).
+  `tickDefenses` (once-a-second ServerTickEvent) handles expiry→complete,
+  missing block→destruction (fail-safe), and due waves. `damageDevice` is
+  the single hp authority — mobs (`AttackDeviceGoal`) and player punches
+  both route through `damageDeviceAt`; destruction clears the state,
+  marks the objective failed, then required → `run.fail()` / optional →
+  just never pays. The device is a tracked marker — it shares
+  `isReferencedByActiveRun`/orphan-prune protection and `removeMarkerAt`
+  must recognize it. Placement only takes replaceable space (bounded
+  upward search): two runs in one dimension can resolve overlapping route
+  positions, so never `setBlock` a marker over an existing block.
+- Entity-cleanup searches must span the full column vertically
+  (`columnBox`): hordes/siege mobs spawn at each column's surface, which
+  can sit far below an elevated checkpoint or device — a cubic
+  `center.inflate(radius)` box silently misses them and tracked
+  persistence-required mobs leak.
 
 ## Testing conventions
 
@@ -248,6 +266,19 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   positions and every later test resolving those anchors fails. The
   GameTest world persists across `runGameTestServer` invocations (`run/world`),
   so a leak poisons subsequent runs too.
+- `pollUntil` only SCHEDULES the async wait — a `finally
+  failRunIfActive` after it executes while the poll is still pending and
+  kills the very run being polled (this burned a full debug session:
+  `FAILED` runs carrying stale `defense` records). Tests that poll on a
+  live run pass their cleanup as pollUntil's terminal `cleanup` callback
+  (runs on success AND timeout); use a try/catch guard only for the
+  synchronous setup before the poll. Prefer unique route anchors in such
+  tests so foreign marker-cleanup sweeps (`failLeakedForeignRuns`, which
+  only touches runs sharing marker positions with ours) can't reach them.
+- Foreign-run sweeps may only fail runs SHARING a marker position with
+  the caller's run (`failLeakedForeignRuns`) — a blanket `other.fail()`
+  on every active run murders concurrent in-flight tests (mock players
+  are NOT in `getPlayerList`, so online checks can't discriminate).
 - `ExpeditionGameTests` uses `makeMockServerPlayerInLevel()` (deprecated in
   1.21.1 but functional) — revisit if a better mock player API exists.
 
@@ -266,10 +297,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-M7 (physical mission artifact) verified: `build` + 94 unit tests + 54/54
-GameTest in-game tests pass (all prior coverage plus artifact issue/
-deliver/refuse/strip/sweep, `recover_artifact` parse+validation, issued
-latch save→load). Modifiers milestone also verified (88 unit + 48 game
-tests at `d5bfedf`). Human client click-through and real disconnect not
-simulated — the menu opens through the vanilla container path but has never
-been seen in a real client.
+M8 (destructible defense device) verified: `build` + 101 unit tests +
+60/60 GameTest in-game tests pass (all prior coverage plus device deploy/
+survive/destroy required+optional, stage gating, `defend_device` parse+
+validation, defense state save→load). Human client click-through and real
+disconnect not simulated — the menu opens through the vanilla container
+path but has never been seen in a real client.

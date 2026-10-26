@@ -51,7 +51,9 @@ public final class ExpeditionRun {
     private boolean rewarded;
     private int tokensAwarded;
     private boolean artifactIssued;
+    private DefenseState defense;
     private final Map<String, ObjectiveState> objectiveStates;
+    private final Set<String> failedObjectives;
 
     private ExpeditionRun(UUID runId, UUID playerId, Set<UUID> party, ExpeditionDefinition definition,
             List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
@@ -59,7 +61,7 @@ public final class ExpeditionRun {
             boolean rewarded, int tokensAwarded, boolean artifactIssued,
             List<UUID> challengeEntities,
             Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
-            String portalDimension) {
+            String portalDimension, DefenseState defense, Set<String> failedObjectives) {
         this.runId = Objects.requireNonNull(runId, "runId");
         this.playerId = Objects.requireNonNull(playerId, "playerId");
         this.party = new HashSet<>(party);
@@ -90,6 +92,13 @@ public final class ExpeditionRun {
         this.objectiveStates = new LinkedHashMap<>(objectiveStates);
         for (ExpeditionObjective objective : definition.objectives()) {
             this.objectiveStates.putIfAbsent(objective.id(), ObjectiveState.UNSTARTED);
+        }
+        this.defense = defense;
+        this.failedObjectives = new HashSet<>(failedObjectives);
+        if (defense != null
+                && objective(defense.objectiveId()).kind() != ObjectiveKind.DEFEND_DEVICE) {
+            throw new IllegalArgumentException(
+                    "Defense state must reference a defend_device objective");
         }
     }
 
@@ -132,7 +141,7 @@ public final class ExpeditionRun {
         return new ExpeditionRun(runId, playerId, party, definition, resolvedCheckpoints,
                 resolvedExit, terminal, portal, entry,
                 startedGameTime, ExpeditionStatus.ACTIVE, 0, false, 0, false,
-                List.of(), Map.of(), options, portalDimension);
+                List.of(), Map.of(), options, portalDimension, null, Set.of());
     }
 
     /**
@@ -203,6 +212,24 @@ public final class ExpeditionRun {
             int tokensAwarded, boolean artifactIssued, List<UUID> challengeEntities,
             Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
             String portalDimension) {
+        return restore(runId, playerId, party, definition, checkpoints, exit, terminal,
+                portal, entry, startedGameTime, status, completedCheckpoints, rewarded,
+                tokensAwarded, artifactIssued, challengeEntities, objectiveStates, options,
+                portalDimension, null, Set.of());
+    }
+
+    /**
+     * Restores a run with its defense state and failed objectives (saves
+     * written before sieges existed default to none).
+     */
+    public static ExpeditionRun restore(UUID runId, UUID playerId, Set<UUID> party,
+            ExpeditionDefinition definition,
+            List<Waypoint> checkpoints, Waypoint exit, Waypoint terminal, Waypoint portal,
+            Waypoint entry, long startedGameTime,
+            ExpeditionStatus status, int completedCheckpoints, boolean rewarded,
+            int tokensAwarded, boolean artifactIssued, List<UUID> challengeEntities,
+            Map<String, ObjectiveState> objectiveStates, ExpeditionOptions options,
+            String portalDimension, DefenseState defense, Set<String> failedObjectives) {
         if (checkpoints.isEmpty()) {
             throw new IllegalArgumentException("Restored run must contain at least one checkpoint");
         }
@@ -215,7 +242,8 @@ public final class ExpeditionRun {
         return new ExpeditionRun(runId, playerId, party, definition, checkpoints, exit,
                 terminal, portal, entry,
                 startedGameTime, status, completedCheckpoints, rewarded, tokensAwarded,
-                artifactIssued, challengeEntities, objectiveStates, options, portalDimension);
+                artifactIssued, challengeEntities, objectiveStates, options, portalDimension,
+                defense, failedObjectives);
     }
 
     /** Convenience restore for saves written before objective tracking existed. */
@@ -509,6 +537,105 @@ public final class ExpeditionRun {
         boolean was = state(objectiveId).completed();
         objectiveStates.put(objectiveId, new ObjectiveState(delivered ? 1 : 0, delivered));
         return delivered && !was;
+    }
+
+    // ---- Defense events ----------------------------------------------------
+
+    /** The active defense siege, if one is running (transient, never on a restored terminal run). */
+    public Optional<DefenseState> defense() {
+        return Optional.ofNullable(defense);
+    }
+
+    /** Ids of objectives permanently failed by the run (e.g. a destroyed device). */
+    public Set<String> failedObjectiveIds() {
+        return Collections.unmodifiableSet(failedObjectives);
+    }
+
+    /** Whether objective {@code id} was permanently failed by an event. */
+    public boolean objectiveFailed(String objectiveId) {
+        return failedObjectives.contains(objectiveId);
+    }
+
+    /**
+     * Starts the siege for a {@link ObjectiveKind#DEFEND_DEVICE} objective:
+     * the device stands at {@code device} with {@code maxHp} health, the
+     * siege ends {@code durationTicks} from {@code now}, and waves may spawn
+     * every {@code waveIntervalTicks}. Only one siege runs at a time — a
+     * definition declaring several declares them at different checkpoints.
+     *
+     * @throws IllegalStateException if the run is not active or a siege is
+     *         already running
+     * @throws IllegalArgumentException if the objective is unknown, not a
+     *         defense objective, or already resolved
+     */
+    public void startDefense(String objectiveId, Waypoint device, int maxHp,
+            long now, long durationTicks, long waveIntervalTicks) {
+        ensureActive();
+        if (defense != null) {
+            throw new IllegalStateException("A defense event is already active");
+        }
+        ExpeditionObjective objective = objective(objectiveId);
+        if (objective.kind() != ObjectiveKind.DEFEND_DEVICE) {
+            throw new IllegalArgumentException(
+                    "Objective \"" + objectiveId + "\" is not a defend_device objective");
+        }
+        if (failedObjectives.contains(objectiveId) || state(objectiveId).completed()) {
+            throw new IllegalArgumentException(
+                    "Objective \"" + objectiveId + "\" is already resolved");
+        }
+        defense = new DefenseState(objectiveId, device, maxHp, maxHp,
+                now + durationTicks, now + waveIntervalTicks);
+    }
+
+    /**
+     * Chips the device by {@code amount} health. When the device falls, the
+     * siege ends and its objective is permanently marked failed — the caller
+     * decides whether that objective's {@code required} flag fails the run.
+     *
+     * @return true exactly once: the call that destroyed the device
+     */
+    public boolean damageDevice(int amount) {
+        ensureActive();
+        if (defense == null || amount < 1) {
+            return false;
+        }
+        defense = defense.damaged(amount);
+        if (defense.hp() > 0) {
+            return false;
+        }
+        failedObjectives.add(defense.objectiveId());
+        defense = null;
+        return true;
+    }
+
+    /**
+     * Completes the defense objective when the siege timer has expired with
+     * the device standing — the only kind that resolves mid-run rather than
+     * at the exit.
+     *
+     * @return the completed objective, or empty when the siege is still running
+     */
+    public Optional<ExpeditionObjective> completeDefenseIfExpired(long now) {
+        ensureActive();
+        if (defense == null || !defense.expired(now)) {
+            return Optional.empty();
+        }
+        ExpeditionObjective objective = objective(defense.objectiveId());
+        objectiveStates.put(objective.id(), new ObjectiveState(1, true));
+        defense = null;
+        return Optional.of(objective);
+    }
+
+    /** Whether another siege wave may spawn at {@code now}. */
+    public boolean defenseWaveDue(long now) {
+        return defense != null && defense.waveDue(now);
+    }
+
+    /** Marks a wave as spawned; the next one may spawn at {@code nextTick}. */
+    public void defenseWaveSpawned(long nextTick) {
+        if (defense != null) {
+            defense = defense.nextWaveAt(nextTick);
+        }
     }
 
     /**

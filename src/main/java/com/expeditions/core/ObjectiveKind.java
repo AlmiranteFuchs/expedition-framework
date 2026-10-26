@@ -28,5 +28,13 @@ public enum ObjectiveKind {
      * party member is holding the run-bound item — evaluated at delivery,
      * like {@link #TIME_LIMIT}, never latched on pickup.
      */
-    RECOVER_ARTIFACT
+    RECOVER_ARTIFACT,
+    /**
+     * Defend a destructible device spawned at the named checkpoint for a
+     * bounded siege duration ({@code defend_device}). Completes the moment
+     * the timer expires with the device standing — not at the exit. Device
+     * destruction marks the objective failed instead: an optional one just
+     * never pays, a required one fails the run by mission rule.
+     */
+    DEFEND_DEVICE
 }

@@ -366,4 +366,121 @@ class ExpeditionRunTest {
         assertThrows(IllegalArgumentException.class,
                 () -> run.deliverArtifact("visit", true));
     }
+
+    // ---- Defense events ----------------------------------------------------
+
+    private static ExpeditionDefinition defenseDefinition(boolean required) {
+        return new ExpeditionDefinition("expeditions:siege", "Siege", 1,
+                "minecraft:overworld", new ExpeditionRoute(
+                        List.of(new RouteAnchor(10, 10), new RouteAnchor(20, 10),
+                                new RouteAnchor(30, 10)),
+                        new RouteAnchor(40, 10)),
+                8, 0, 0,
+                List.of(ExpeditionObjective.defendDevice(
+                        "siege", "Hold the device", required, 2, 600, 4)),
+                ExpeditionModifiers.NONE);
+    }
+
+    private static ExpeditionRun defenseRun(boolean required) {
+        return ExpeditionRun.start(UUID.randomUUID(), UUID.randomUUID(),
+                defenseDefinition(required), List.of(CP1, CP2, CP3), EXIT, 0L);
+    }
+
+    @Test
+    void defenseStartsOnceOnActiveRun() {
+        ExpeditionRun run = defenseRun(true);
+        assertTrue(run.defense().isEmpty());
+        run.startDefense("siege", CP2, 20, 100L, 600L, 200L);
+        DefenseState defense = run.defense().orElseThrow();
+        assertEquals(20, defense.hp());
+        assertEquals(700L, defense.endTick());
+        assertEquals(300L, defense.nextWaveTick());
+        assertThrows(IllegalStateException.class,
+                () -> run.startDefense("siege", CP2, 20, 100L, 600L, 200L));
+    }
+
+    @Test
+    void startDefenseRejectsWrongKindAndUnknownObjective() {
+        ExpeditionDefinition def = new ExpeditionDefinition("expeditions:t", "T", 1,
+                "minecraft:overworld", new ExpeditionRoute(
+                        List.of(new RouteAnchor(10, 10), new RouteAnchor(20, 10),
+                                new RouteAnchor(30, 10)),
+                        new RouteAnchor(40, 10)),
+                8, 0, 0,
+                List.of(ExpeditionObjective.visitCheckpoint(
+                        "visit", "Visit", true, 2, 0)),
+                ExpeditionModifiers.NONE);
+        ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), UUID.randomUUID(),
+                def, List.of(CP1, CP2, CP3), EXIT, 0L);
+        assertThrows(IllegalArgumentException.class,
+                () -> run.startDefense("visit", CP2, 20, 0L, 600L, 200L));
+        assertThrows(IllegalArgumentException.class,
+                () -> run.startDefense("missing", CP2, 20, 0L, 600L, 200L));
+    }
+
+    @Test
+    void deviceDamageDestroysExactlyOnceAndFailsObjective() {
+        ExpeditionRun run = defenseRun(true);
+        run.startDefense("siege", CP2, 20, 0L, 600L, 200L);
+        assertFalse(run.damageDevice(5));
+        assertEquals(15, run.defense().orElseThrow().hp());
+        assertTrue(run.damageDevice(15));
+        // Exactly once: the siege is gone and the objective marked failed.
+        assertTrue(run.defense().isEmpty());
+        assertTrue(run.objectiveFailed("siege"));
+        assertTrue(run.failedObjectiveIds().contains("siege"));
+        assertFalse(run.damageDevice(99), "no live device — nothing to destroy");
+    }
+
+    @Test
+    void defenseSurvivesByTimerAndCompletesObjective() {
+        ExpeditionRun run = defenseRun(false);
+        run.startDefense("siege", CP2, 20, 0L, 600L, 200L);
+        assertTrue(run.completeDefenseIfExpired(599L).isEmpty(),
+                "the siege must not complete early");
+        assertTrue(run.completeDefenseIfExpired(600L).isPresent());
+        assertTrue(run.objectiveState("siege").orElseThrow().completed());
+        assertTrue(run.defense().isEmpty(), "a survived siege stands down");
+    }
+
+    @Test
+    void defenseWavePacingTracksNextTick() {
+        ExpeditionRun run = defenseRun(false);
+        run.startDefense("siege", CP2, 20, 0L, 600L, 200L);
+        assertFalse(run.defenseWaveDue(100L));
+        assertTrue(run.defenseWaveDue(200L));
+        run.defenseWaveSpawned(400L);
+        assertFalse(run.defenseWaveDue(300L));
+        assertTrue(run.defenseWaveDue(400L));
+    }
+
+    @Test
+    void defenseRejectedOnTerminalRun() {
+        ExpeditionRun run = defenseRun(false);
+        run.fail();
+        assertThrows(IllegalStateException.class,
+                () -> run.startDefense("siege", CP2, 20, 0L, 600L, 200L));
+        assertThrows(IllegalStateException.class, () -> run.damageDevice(1));
+    }
+
+    @Test
+    void restoredRunPreservesDefenseAndFailures() {
+        UUID playerId = UUID.randomUUID();
+        DefenseState defense = new DefenseState("siege", CP2, 12, 20, 700L, 300L);
+        ExpeditionRun run = ExpeditionRun.restore(UUID.randomUUID(), playerId,
+                java.util.Set.of(playerId), defenseDefinition(false),
+                List.of(CP1, CP2, CP3), EXIT, EXIT, EXIT, CP1, 0L,
+                ExpeditionStatus.ACTIVE, 1, false, 0, false, List.of(),
+                java.util.Map.of(), ExpeditionOptions.DEFAULT, "minecraft:overworld",
+                defense, java.util.Set.of());
+        assertEquals(defense, run.defense().orElseThrow());
+
+        ExpeditionRun failed = ExpeditionRun.restore(UUID.randomUUID(), playerId,
+                java.util.Set.of(playerId), defenseDefinition(false),
+                List.of(CP1, CP2, CP3), EXIT, EXIT, EXIT, CP1, 0L,
+                ExpeditionStatus.ACTIVE, 1, false, 0, false, List.of(),
+                java.util.Map.of(), ExpeditionOptions.DEFAULT, "minecraft:overworld",
+                null, java.util.Set.of("siege"));
+        assertTrue(failed.objectiveFailed("siege"));
+    }
 }

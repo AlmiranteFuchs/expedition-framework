@@ -83,7 +83,9 @@ public final class ExpeditionEventHandler {
      */
     public static void onServerTick(ServerTickEvent.Post event) {
         if (event.getServer().getTickCount() % 20 == 0) {
-            ExpeditionManager.get(event.getServer()).sweepChallengeEntities();
+            ExpeditionManager manager = ExpeditionManager.get(event.getServer());
+            manager.tickDefenses();
+            manager.sweepChallengeEntities();
         }
     }
 

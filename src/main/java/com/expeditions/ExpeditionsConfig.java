@@ -110,6 +110,33 @@ public final class ExpeditionsConfig {
             .comment("Entity type horde mobs spawn as (entity registry id).")
             .define("expeditions.challenges.hordeMob", "minecraft:zombie");
 
+    private static final ModConfigSpec.IntValue DEFENSE_DEVICE_HP = BUILDER
+            .comment("Health of the defense device a defend_device objective",
+                    "deploys (points of siege damage it survives).")
+            .defineInRange("expeditions.challenges.defenseDeviceHp", 20, 1, 1000);
+
+    private static final ModConfigSpec.IntValue DEFENSE_MOB_CAP = BUILDER
+            .comment("Maximum live siege mobs per defense event — new waves",
+                    "pause while the cap is reached.")
+            .defineInRange("expeditions.challenges.defenseMobCap", 6, 1, 64);
+
+    private static final ModConfigSpec.IntValue DEFENSE_WAVE_SECONDS = BUILDER
+            .comment("Seconds between siege waves during a defense event.")
+            .defineInRange("expeditions.challenges.defenseWaveSeconds", 10, 1, 300);
+
+    private static final ModConfigSpec.IntValue DEFENSE_WAVE_SIZE = BUILDER
+            .comment("Mobs each siege wave tries to spawn, capped by",
+                    "defenseMobCap headroom.")
+            .defineInRange("expeditions.challenges.defenseWaveSize", 3, 1, 32);
+
+    private static final ModConfigSpec.IntValue DEFENSE_MOB_DAMAGE = BUILDER
+            .comment("Device health each siege mob hit removes.")
+            .defineInRange("expeditions.challenges.defenseMobDamage", 1, 1, 100);
+
+    private static final ModConfigSpec.IntValue DEFENSE_MOB_ATTACK_TICKS = BUILDER
+            .comment("Ticks between a siege mob's hits once in reach of the device.")
+            .defineInRange("expeditions.challenges.defenseMobAttackTicks", 20, 1, 200);
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> OVERWORLD_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Overworld expedition.",
@@ -327,6 +354,36 @@ public final class ExpeditionsConfig {
     /** Entity registry id horde mobs spawn as. */
     public static String challengeHordeMob() {
         return HORDE_MOB.get();
+    }
+
+    /** Health of a deployed defense device. */
+    public static int defenseDeviceHp() {
+        return DEFENSE_DEVICE_HP.get();
+    }
+
+    /** Maximum live siege mobs per defense event. */
+    public static int defenseMobCap() {
+        return DEFENSE_MOB_CAP.get();
+    }
+
+    /** Seconds between siege waves. */
+    public static int defenseWaveSeconds() {
+        return DEFENSE_WAVE_SECONDS.get();
+    }
+
+    /** Mobs each siege wave tries to spawn. */
+    public static int defenseWaveSize() {
+        return DEFENSE_WAVE_SIZE.get();
+    }
+
+    /** Device health removed per siege mob hit. */
+    public static int defenseMobDamage() {
+        return DEFENSE_MOB_DAMAGE.get();
+    }
+
+    /** Ticks between a siege mob's hits in reach of the device. */
+    public static int defenseMobAttackTicks() {
+        return DEFENSE_MOB_ATTACK_TICKS.get();
     }
 
     /** Whether completion grants bonus item drops alongside tokens. */
