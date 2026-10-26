@@ -729,13 +729,10 @@ public final class ExpeditionManager {
      * {@link Mob} contributes nothing.
      */
     private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center) {
-        // The horde rolls one type from the dimension's pool per activation;
-        // the configured hordeMob is the fallback for unconfigured pools.
-        List<EntityType<?>> pool = HordePools.pool(run.definition().dimension());
-        EntityType<?> type = pool.isEmpty()
-                ? BuiltInRegistries.ENTITY_TYPE.get(
-                        ResourceLocation.parse(ExpeditionsConfig.challengeHordeMob()))
-                : pool.get(level.getRandom().nextInt(pool.size()));
+        // One type per activation, rolled from the spawn site's own mob pool
+        // (biome spawn table → tag override → config fallback).
+        EntityType<?> type = HordePools.pick(level, center,
+                run.definition().dimension(), level.getRandom());
         int size = (ExpeditionsConfig.challengeHordeSize()
                 + ExpeditionsConfig.challengeHordeSizePerExtraMember()
                         * (run.party().size() - 1))

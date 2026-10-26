@@ -59,9 +59,9 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
    progress is shared. Each activation rolls a **challenge** — currently a
    hostile horde that spawns near the checkpoint and hunts the nearest
    member (`[expeditions.challenges]`). The horde type rolls from the
-   dimension's `expeditions:horde_mobs/<dimension>` entity-tag pool
-   (config `hordeMob` is the fallback) and carries the expedition's
-   declared buffs. The horde is cleaned up when the
+   checkpoint biome's own natural spawn table — dimension- and
+   biome-appropriate, including mod-registered mobs — and carries the
+   expedition's declared buffs. The horde is cleaned up when the
    next checkpoint is reached or the run ends; it cannot outlive the
    expedition.
 5. After all checkpoints, right-click the **Exit** to complete the run.
@@ -117,7 +117,7 @@ hordeChance = 1.0                # chance a checkpoint spawns a horde (0.0-1.0)
 hordeSize = 4                    # base mob count (1-32)
 hordeSizePerExtraMember = 2      # extra mobs per member beyond the first (0-16)
 hordeSpawnRadius = 8             # max spawn distance from the checkpoint (2-32)
-hordeMob = "minecraft:zombie"    # fallback mob when no horde_mobs tag pool applies
+hordeMob = "minecraft:zombie"    # last-resort mob when neither spawn table nor tag pools apply
 
 # fallback authored route — only used when generate = false
 checkpoints = ["48,16", "96,-24", "144,48"]
@@ -296,13 +296,17 @@ modded dimensions:
 
 ### Horde pools
 
-Checkpoint hordes roll their type from the entity tag
-`expeditions:horde_mobs/<dimension path>` — shipped for `overworld` and
-`the_nether`, with `horde_mobs/default` as the fallback for unconfigured
-dimensions. The same datapack rules as reward pools apply: mods and modpacks
-merge entries (`"replace": false`), so dimension-appropriate modded mobs join
-the pool without code. When no tag applies at all, the config `hordeMob` id
-is used.
+Hordes are **smart by default**: the pool is the checkpoint biome's own
+natural monster spawn table (spawn weights included), so a desert checkpoint
+rolls husks, the Nether rolls its natives, and modded biomes/dimensions roll
+the mod's registered mobs — nothing to configure. Water/lava-spawn types are
+filtered out since the horde fights on land.
+
+Explicit control is still available: a non-empty
+`expeditions:horde_mobs/<dimension path>` entity tag **replaces** the natural
+pool for that dimension (plain datapack, `"replace": false` merges). If a
+dimension's biomes spawn nothing at all, `horde_mobs/default` and finally
+the config `hordeMob` id are used.
 
 Draw weights come from `ItemValuator`'s stat score, so pool items rank by
 their own components — no per-item rarity table to maintain.
@@ -453,8 +457,9 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Expedition modifiers** — datapack `"modifiers"` force weather on the
   expedition's dimension, apply mob effects to party members for the run's
   duration, and bake permanent buffs into spawned horde mobs. Horde types
-  roll from `expeditions:horde_mobs/<dimension>` entity tags (modded mobs
-  join via datapack) with the config `hordeMob` as fallback.
+  roll from the spawn site's natural monster table — dimension-, biome- and
+  mod-aware with no configuration; `expeditions:horde_mobs/<dimension>`
+  entity tags override explicitly.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start`.
 - **Tests** — 88 unit tests + 48 GameTest in-game tests.
 

@@ -1920,9 +1920,9 @@ public final class ExpeditionGameTests {
     }
 
     /**
-     * The horde rolls its type from the dimension's {@code horde_mobs} pool
-     * (not the single config mob) and every member carries the expedition's
-     * declared buffs.
+     * The horde rolls its type from the spawn site's natural monster pool
+     * (the biome's own spawn table — no configuration) and every member
+     * carries the expedition's declared buffs.
      */
     @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_z")
     public static void hordeSpawnsPooledAndBuffed(GameTestHelper helper) {
@@ -1962,8 +1962,9 @@ public final class ExpeditionGameTests {
                     helper.assertTrue(entity instanceof Mob,
                             "horde member must be a Mob, was " + entity);
                     helper.assertTrue(
-                            HordePools.pool("minecraft:overworld").contains(entity.getType()),
-                            "horde member must come from the overworld pool, was "
+                            HordePools.candidates(level, checkpoint, "minecraft:overworld")
+                                    .contains(entity.getType()),
+                            "horde member must come from the natural spawn pool, was "
                                     + entity.getType());
                     helper.assertTrue(((Mob) entity).hasEffect(MobEffects.DAMAGE_RESISTANCE),
                             "horde member must carry the expedition's buff");

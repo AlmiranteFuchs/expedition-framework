@@ -189,9 +189,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   duration and stripped at `endRun` (match specs exactly — never remove
   effects the expedition didn't grant); `hordeEffects` baked into horde mobs
   at spawn. Effect ids validate against the registry at parse; runtime
-  lookups degrade to no-ops. Mob pools: `HordePools.pool(dim)` reads the
-  `expeditions:horde_mobs/<dim>` entity tag → `default` → config `hordeMob`;
-  one type is rolled per horde activation (thematic), not per mob.
+  lookups degrade to no-ops. Mob pools: `HordePools.pick(level, pos, dim, rng)`
+  resolves smart-first — the biome's natural MONSTER spawn table at the spawn
+  position (weighted; water/lava placements filtered out), overridden ONLY by
+  a non-empty `horde_mobs/<dim>` entity tag, then `horde_mobs/default`, then
+  config `hordeMob`. One type is rolled per horde activation (thematic), not
+  per mob.
 - `cleanupMarkers` removes per position via `isReferencedByActiveRun`, NOT
   the old `anyOtherActiveRunInDimension` dimension-wide guard — that guard
   let one leaked active run poison marker cleanup for the whole dimension,
