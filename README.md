@@ -491,13 +491,24 @@ chunk, and validate on real block state — not heightmap assumptions.
   mod-aware with no configuration; `expeditions:horde_mobs/<dimension>`
   entity tags override explicitly.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start`.
-- **Tests** — 101 unit tests + 60 GameTest in-game tests.
+- **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
+  a thin harvestable membrane that attaches to any sturdy face of a solid
+  block (all six directions) and renders the covered face grayscale: the
+  client renderer desaturates the face's real sprite at runtime, so the
+  underlying block keeps its detail and shading but loses its color —
+  without modifying, replacing, or storing the covered block's state.
+  Non-sturdy surfaces (air, fluids, fences, slabs, leaves) refuse
+  placement; losing the support removes the layer silently. Breaking it
+  by hand drops exactly one `expeditions:assimilation_essence`
+  (placeholder progression item); creative breaks, support loss and
+  world-edit removal drop nothing.
+- **Tests** — 101 unit tests + 65 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.1.0.jar` assembled.
 - `./gradlew test` — 101 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **60/60 game tests pass** on a real dedicated
+- `./gradlew runGameTestServer` — **65/65 game tests pass** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run with no reward,
@@ -552,6 +563,12 @@ chunk, and validate on real block state — not heightmap assumptions.
     called off, an optional device's destruction leaves the run completable,
     malformed defense objectives are rejected, and defense state survives
     save→load.
+  - the assimilation layer attaches to all six faces of a solid support and
+    records its direction, refuses non-sturdy supports (fence, slab,
+    leaves), survives a sturdy support swap, is silently removed on support
+    loss with no drops, drops exactly one essence on survival harvest
+    (none in creative), leaves the support block untouched, and exposes a
+    1/16 collision membrane with a 2/16 selection outline per direction.
   - item valuation ranks tiers correctly (junk < food < gem < equipment),
     completion grants bonus drops from the run's dimension pool, redeem
     refuses without enough tokens and pays a Nether draw in the Nether,
@@ -570,6 +587,16 @@ chunk, and validate on real block state — not heightmap assumptions.
 
 ## Known limitations
 
+- The assimilation layer's grayscale covers **only the attached face** — a
+  covered block's other faces stay colored (by design: the layer is per-face).
+  Blocks rendered purely by custom renderers/block entities show the membrane
+  without the faithful desaturated skin, and animated sprites desaturate from
+  their first frame. A shader-based selective desaturator is the documented
+  upgrade path if face coverage proves insufficient.
+- The assimilation layer's visuals are **client-only and not covered by the
+  GameTest server** — verified mechanically (placement, survival, drops,
+  shapes), not visually. Manual check: `./gradlew runClient`, place the layer
+  on grass/stone/ore faces from all six directions and reload the chunk.
 - Not yet verified by a **human client session** — game tests drive the real
   server interaction path, but no GUI click-through was performed. Real
   disconnect/reconnect was not simulated either; reconnect behavior is tested

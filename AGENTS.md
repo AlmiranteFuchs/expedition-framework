@@ -233,6 +233,21 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   can sit far below an elevated checkpoint or device — a cubic
   `center.inflate(radius)` box silently misses them and tracked
   persistence-required mobs leak.
+- Assimilation layer (M15 prototype): `AssimilationLayerBlock` attaches to
+  one sturdy face (`isFaceSturdy` — the ONLY support rule; glass counts,
+  slabs/fences/leaves don't), dies with support via `updateShape` → air.
+  Support loss goes through `updateOrDestroy` → `destroyBlock(drop=true)`,
+  so "harvest-only drops, silent cleanup" CANNOT be a loot table — use
+  `noLootTable()` + grant the drop in `playerDestroy` (survival-break
+  only; creative never reaches it).
+- Client-only code stays in `com.expeditions.client` under the
+  `ExpeditionsClient` `@Mod(Dist.CLIENT)` class (mod-bus listeners:
+  `FMLClientSetupEvent`, `EntityRenderersEvent.RegisterRenderers`). The
+  grayscale trick is `DesaturationTextures` (runtime sprite→gray
+  DynamicTexture cache) + a `BlockEntityRenderer` that draws the covered
+  face's own sprite desaturated — resolve sprites via face quads, then
+  unculled quads, then the particle icon; never mutate atlas sprites or
+  covered block state.
 
 ## Testing conventions
 
@@ -297,9 +312,11 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-M8 (destructible defense device) verified: `build` + 101 unit tests +
-60/60 GameTest in-game tests pass (all prior coverage plus device deploy/
-survive/destroy required+optional, stage gating, `defend_device` parse+
-validation, defense state save→load). Human client click-through and real
-disconnect not simulated — the menu opens through the vanilla container
-path but has never been seen in a real client.
+Assimilation layer (M15 prototype) verified: `build` + 101 unit tests +
+65/65 GameTest in-game tests pass (all prior coverage plus layer attach on
+all 6 faces, non-sturdy rejection, support-loss removal, essence drop
+rules, thin shapes). The desaturated-skin renderer is client-side only —
+NOT covered by the GameTest server; verify visually via `runClient`.
+Human client click-through and real disconnect not simulated — the menu
+opens through the vanilla container path but has never been seen in a real
+client.

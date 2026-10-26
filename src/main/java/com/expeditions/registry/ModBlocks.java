@@ -1,12 +1,14 @@
 package com.expeditions.registry;
 
 import com.expeditions.ExpeditionsMod;
+import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.block.ExpeditionCheckpointBlock;
 import com.expeditions.block.ExpeditionDeviceBlock;
 import com.expeditions.block.ExpeditionExitBlock;
 import com.expeditions.block.ExpeditionPortalBlock;
 import com.expeditions.block.ExpeditionTerminalBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -60,6 +62,22 @@ public final class ModBlocks {
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
                     .lightLevel(state -> 9)));
+
+    /**
+     * The Big Bad's assimilation layer: a thin membrane that attaches to one
+     * face of a solid block and renders it grayscale. Harvestable for
+     * assimilation essence; silently disappears when its support does.
+     */
+    public static final DeferredHolder<Block, AssimilationLayerBlock> ASSIMILATION_LAYER = BLOCKS.register(
+            "assimilation_layer",
+            () -> new AssimilationLayerBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(0.2f)
+                    .noLootTable()
+                    .sound(SoundType.HONEY_BLOCK)
+                    .noOcclusion()
+                    .lightLevel(state -> 3)
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
 
     /**
      * Temporary teleport marker spawned above a terminal while a run is open

@@ -1,0 +1,33 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "expeditions:block/assimilation_layer"
+    },
+    "facing=down": {
+      "model": "expeditions:block/assimilation_layer",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "expeditions:block/assimilation_layer",
+      "x": 90,
+      "uvlock": true
+    },
+    "facing=south": {
+      "model": "expeditions:block/assimilation_layer",
+      "x": 270,
+      "uvlock": true
+    },
+    "facing=east": {
+      "model": "expeditions:block/assimilation_layer",
+      "x": 90,
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=west": {
+      "model": "expeditions:block/assimilation_layer",
+      "x": 90,
+      "y": 90,
+      "uvlock": true
+    }
+  }
+}

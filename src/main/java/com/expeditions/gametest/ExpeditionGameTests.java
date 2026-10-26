@@ -13,6 +13,7 @@ import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.ExpeditionsConfig;
+import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
 import com.expeditions.item.ExpeditionArtifactItem;
@@ -2605,6 +2606,204 @@ public final class ExpeditionGameTests {
             ExpeditionDefinitions.reload(Map.of());
         }
         helper.succeed();
+    }
+
+    // ---- assimilation layer -------------------------------------------------
+
+    /**
+     * The layer item places against every sturdy face of a solid support and
+     * records the covered face's direction in {@code FACING}.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    public static void assimilationLayerAttachesToAllSixFaces(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerLevel level = helper.getLevel();
+        BlockPos support = helper.absolutePos(new BlockPos(4, 2, 4));
+        level.setBlock(support, Blocks.STONE.defaultBlockState(), 3);
+        player.setItemInHand(InteractionHand.MAIN_HAND,
+                new ItemStack(ModItems.ASSIMILATION_LAYER_ITEM.get()));
+
+        for (Direction face : Direction.values()) {
+            BlockPos cell = support.relative(face);
+            level.setBlock(cell, Blocks.AIR.defaultBlockState(), 3);
+            player.setPos(cell.getX() + 0.5 + face.getStepX() * 3,
+                    cell.getY() + 1 + face.getStepY() * 3,
+                    cell.getZ() + 0.5 + face.getStepZ() * 3);
+            BlockHitResult hit = new BlockHitResult(
+                    Vec3.atCenterOf(support).add(
+                            face.getStepX() * 0.5, face.getStepY() * 0.5,
+                            face.getStepZ() * 0.5),
+                    face, support, false);
+            player.gameMode.useItemOn(player, level,
+                    player.getItemInHand(InteractionHand.MAIN_HAND),
+                    InteractionHand.MAIN_HAND, hit);
+            BlockState placed = level.getBlockState(cell);
+            helper.assertTrue(placed.is(ModBlocks.ASSIMILATION_LAYER.get()),
+                    "layer must place on the " + face + " face, got " + placed);
+            helper.assertTrue(placed.getValue(AssimilationLayerBlock.FACING) == face,
+                    "FACING must record " + face + ", got "
+                            + placed.getValue(AssimilationLayerBlock.FACING));
+            helper.assertTrue(level.getBlockState(support).is(Blocks.STONE),
+                    "the support must be untouched");
+            level.setBlock(cell, Blocks.AIR.defaultBlockState(), 3);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Non-sturdy support faces — a fence top, a bottom slab's top, leaves —
+     * refuse placement. (Glass and other full-face blocks legitimately
+     * accept it; the rule is {@code isFaceSturdy}, not "is stone".)
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    public static void assimilationLayerRejectsUnsupportedFaces(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerLevel level = helper.getLevel();
+        player.setItemInHand(InteractionHand.MAIN_HAND,
+                new ItemStack(ModItems.ASSIMILATION_LAYER_ITEM.get()));
+        player.setGameMode(GameType.SURVIVAL);
+
+        BlockPos[] supports = {
+                helper.absolutePos(new BlockPos(4, 2, 4)),
+                helper.absolutePos(new BlockPos(6, 2, 4)),
+                helper.absolutePos(new BlockPos(8, 2, 4))};
+        BlockState[] states = {
+                Blocks.OAK_FENCE.defaultBlockState(),
+                Blocks.OAK_SLAB.defaultBlockState(),
+                Blocks.OAK_LEAVES.defaultBlockState()};
+        for (int i = 0; i < supports.length; i++) {
+            level.setBlock(supports[i], states[i], 3);
+            BlockPos cell = supports[i].above();
+            level.setBlock(cell, Blocks.AIR.defaultBlockState(), 3);
+            player.setPos(cell.getX() + 0.5, cell.getY() + 3, cell.getZ() + 0.5);
+            player.gameMode.useItemOn(player, level,
+                    player.getItemInHand(InteractionHand.MAIN_HAND),
+                    InteractionHand.MAIN_HAND,
+                    new BlockHitResult(Vec3.atCenterOf(supports[i])
+                            .add(0, 0.5, 0), Direction.UP, supports[i], false));
+            helper.assertTrue(level.getBlockState(cell).isAir(),
+                    states[i].getBlock() + " must refuse the layer, got "
+                            + level.getBlockState(cell));
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The layer dies with its support (no drops) but survives a swap to
+     * another sturdy support — the same {@code isFaceSturdy} rule drives
+     * both placement and survival.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    public static void assimilationLayerDiesWithSupport(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos support = helper.absolutePos(new BlockPos(4, 2, 4));
+        BlockPos cell = support.east();
+        level.setBlock(support, Blocks.STONE.defaultBlockState(), 3);
+        level.setBlock(cell, layerFacing(Direction.EAST), 3);
+
+        // Sturdy -> sturdy keeps the layer.
+        level.setBlock(support, Blocks.DIRT.defaultBlockState(), 3);
+        helper.assertTrue(level.getBlockState(cell).is(ModBlocks.ASSIMILATION_LAYER.get()),
+                "a sturdy support swap must keep the layer");
+
+        // Removing the support removes the layer, silently.
+        level.setBlock(support, Blocks.AIR.defaultBlockState(), 3);
+        helper.assertTrue(level.getBlockState(cell).isAir(),
+                "losing support must remove the layer, got "
+                        + level.getBlockState(cell));
+        helper.assertTrue(countEssenceItems(level, cell) == 0,
+                "support loss must not drop essence");
+
+        // Replacing it with a non-sturdy block also kills the layer.
+        level.setBlock(support, Blocks.DIRT.defaultBlockState(), 3);
+        level.setBlock(cell, layerFacing(Direction.EAST), 3);
+        level.setBlock(support, Blocks.OAK_SLAB.defaultBlockState(), 3);
+        helper.assertTrue(level.getBlockState(cell).isAir(),
+                "a non-sturdy support must remove the layer");
+        helper.succeed();
+    }
+
+    /**
+     * Normal harvesting drops exactly one essence: through the real survival
+     * break path (the block carries no loot table by design — support loss
+     * must stay silent — so the drop is granted in {@code playerDestroy}).
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    public static void assimilationLayerHarvestDropsExactlyOneEssence(
+            GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        ServerLevel level = helper.getLevel();
+        BlockPos support = helper.absolutePos(new BlockPos(4, 2, 4));
+        BlockPos cell = support.above();
+        level.setBlock(support, Blocks.STONE.defaultBlockState(), 3);
+        level.setBlock(cell, layerFacing(Direction.UP), 3);
+
+        player.setGameMode(GameType.SURVIVAL);
+        player.setPos(cell.getX() + 0.5, cell.getY() + 2, cell.getZ() + 0.5);
+        player.gameMode.destroyBlock(cell);
+        helper.assertTrue(level.getBlockState(cell).isAir(),
+                "breaking must remove only the layer");
+        helper.assertTrue(level.getBlockState(support).is(Blocks.STONE),
+                "harvesting must leave the support intact");
+        pollUntil(helper, () -> countEssenceItems(level, cell) == 1,
+                "exactly one essence item must spawn", () -> {
+                    // Creative breaking grants nothing and cannot double-drop.
+                    level.setBlock(cell, layerFacing(Direction.UP), 3);
+                    player.setGameMode(GameType.CREATIVE);
+                    player.gameMode.destroyBlock(cell);
+                    helper.assertTrue(countEssenceItems(level, cell) == 1,
+                            "creative break must drop nothing extra, found "
+                                    + countEssenceItems(level, cell));
+                    helper.succeed();
+                }, 200,
+                () -> "items at cell: " + countEssenceItems(level, cell));
+    }
+
+    /**
+     * Collision is a 1/16 membrane, the outline a forgiving 2/16, both aligned
+     * to the covered face for all six directions — never a full cube.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    public static void assimilationLayerShapesAreThin(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pos = helper.absolutePos(new BlockPos(4, 2, 4));
+        for (Direction face : Direction.values()) {
+            BlockState state = layerFacing(face);
+            var outline = state.getShape(level, pos,
+                    net.minecraft.world.phys.shapes.CollisionContext.empty());
+            var collision = state.getCollisionShape(level, pos,
+                    net.minecraft.world.phys.shapes.CollisionContext.empty());
+            double thin = switch (face.getAxis()) {
+                case X -> collision.bounds().getXsize();
+                case Y -> collision.bounds().getYsize();
+                case Z -> collision.bounds().getZsize();
+            };
+            double thinOutline = switch (face.getAxis()) {
+                case X -> outline.bounds().getXsize();
+                case Y -> outline.bounds().getYsize();
+                case Z -> outline.bounds().getZsize();
+            };
+            helper.assertTrue(thin > 0 && thin <= 0.07,
+                    face + " collision must be a non-empty thin plate, got " + thin);
+            helper.assertTrue(thinOutline > thin && thinOutline <= 0.2,
+                    face + " outline must be forgiving but thin, got " + thinOutline);
+            helper.assertTrue(collision.bounds().getSize() < 1.0,
+                    face + " must not occupy a full cell");
+        }
+        helper.succeed();
+    }
+
+    private static BlockState layerFacing(Direction face) {
+        return ModBlocks.ASSIMILATION_LAYER.get().defaultBlockState()
+                .setValue(AssimilationLayerBlock.FACING, face);
+    }
+
+    /** Essence item entities within a small box around {@code pos}. */
+    private static int countEssenceItems(ServerLevel level, BlockPos pos) {
+        return level.getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class,
+                new net.minecraft.world.phys.AABB(pos).inflate(1.5),
+                e -> e.getItem().is(ModItems.ASSIMILATION_ESSENCE.get())).size();
     }
 
     /**

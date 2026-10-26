@@ -1,5 +1,6 @@
 package com.expeditions;
 
+import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModCreativeTabs;
 import com.expeditions.registry.ModDataComponents;
@@ -29,6 +30,7 @@ public class ExpeditionsMod {
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.SERVER, ExpeditionsConfig.SPEC);
 

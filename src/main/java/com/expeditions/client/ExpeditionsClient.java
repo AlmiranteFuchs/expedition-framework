@@ -1,7 +1,11 @@
 package com.expeditions.client;
 
 import com.expeditions.ExpeditionsMod;
+import com.expeditions.registry.ModBlockEntities;
+import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
@@ -13,6 +17,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
 /**
  * Client-only setup: registers the compass needle property for the expedition
@@ -24,9 +29,14 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 public class ExpeditionsClient {
     public ExpeditionsClient(IEventBus modEventBus, ModContainer container) {
         modEventBus.addListener(ExpeditionsClient::onClientSetup);
+        modEventBus.addListener(ExpeditionsClient::onRegisterRenderers);
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {
+        // The layer's translucent membrane mesh needs the translucent
+        // render layer; the desaturated skin is drawn by the BER.
+        event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(
+                ModBlocks.ASSIMILATION_LAYER.get(), RenderType.translucent()));
         event.enqueueWork(() -> ItemProperties.register(
                 ModItems.EXPEDITION_COMPASS.get(),
                 ResourceLocation.withDefaultNamespace("angle"),
@@ -36,5 +46,12 @@ public class ExpeditionsClient {
                             ? tracker.target().orElse(null)
                             : CompassItem.getSpawnPosition(level);
                 })));
+    }
+
+    private static void onRegisterRenderers(
+            EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(
+                ModBlockEntities.ASSIMILATION_LAYER.get(),
+                AssimilationLayerRenderer::new);
     }
 }

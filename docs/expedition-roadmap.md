@@ -45,7 +45,7 @@ covers direction.
 
 | M | Feature | Status | Evidence / gaps |
 |---|---|---|---|
-| — | Foundation (terminal, manager, defs, routes, objectives, horde, modifiers, options, economy, persistence) | **Complete** | 101 unit + 60/60 game tests green |
+| — | Foundation (terminal, manager, defs, routes, objectives, horde, modifiers, options, economy, persistence) | **Complete** | 101 unit + 65/65 game tests green |
 | M7 | Physical mission artifact + extraction | **Complete** | Domain latch/delivery + run-bound item + datapack `recover_artifact` + unit/game tests. Distinct from the M12 *progression* artifact: mission cargo is per-run, bound by `run_id`, consumed/stripped at run end — it never unlocks anything |
 | M8 | Destructible defense device | **Complete** | `ObjectiveKind.DEFEND_DEVICE` + datapack `defend_device`; `ExpeditionDeviceBlock` (tracked marker); `DefenseState` (hp/maxHp/endTick/nextWaveTick) persisted on the run; stage-gated at its declared checkpoint; exactly-once destruction (`damageDevice` → required fails run, optional marks objective failed); bounded waves/mob cap via config; unit + 6 game tests |
 | M9 | Checkpoint economy / reward reliability | **Partial** | Idempotency (`markRewarded`, single-file save) solid; per-checkpoint crediting still missing — rewards are all-or-nothing at `completeRun`. Remaining: credit tokens at each checkpoint activation (guaranteed), keep completion+objective bonuses at-risk until extraction |
@@ -54,7 +54,7 @@ covers direction.
 | M12 | Terminal progression + dimensional campaign | Not started | Expanded scope (see below): permanent keys, consumable costs, trophies, mission prerequisites with explanations, dimensional campaign states, crafted progression artifact, Big Bad event unlock, subsequent operation unlocks. No unlock/trophy concepts exist; menu is selection-only |
 | M13 | Dimension compatibility | **Mostly complete** | Adapters, bounded safe search, natural mob pools, fail-safe refusals done. New scope fits: threat behavior must route through `ExpeditionDimensionAdapter`/`HordePools` (dimension-scoped state, per-dimension spawn pools), not a parallel system. Untested against a real third-party modded dimension |
 | M14 | Configuration & expansion | **Partial** | TOML + datapack + tags + options cover most parameters. New scope: threat tuning knobs (pressure growth, caps, per-dimension overrides). Structure archetypes deferred by design |
-| M15 | Global dimensional threat + Big Bad event | Not started | Smallest necessary addition — doesn't fit M12 (progression infra) or M13 (compat plumbing). A persistent per-dimension pressure level that escalates horde pressure (size, effects, spawn presence) across *all* expeditions in that dimension, culminating in an unlockable Big Bad event. Depends: M12 (unlock chain gates it), M13 (dimension-scoped behavior), M14 (tuning surface) |
+| M15 | Global dimensional threat + Big Bad event | **Partial** — visual prototype landed | Smallest necessary addition — doesn't fit M12 (progression infra) or M13 (compat plumbing). A persistent per-dimension pressure level that escalates horde pressure (size, effects, spawn presence) across *all* expeditions in that dimension, culminating in an unlockable Big Bad event. Depends: M12 (unlock chain gates it), M13 (dimension-scoped behavior), M14 (tuning surface). Landed: the Big Bad's **assimilation layer** block + grayscale skin renderer (prototype below). Remaining: pressure level, spread/exposure logic, boss event |
 
 ### Foundation audit — what supports the new requirements
 
@@ -163,6 +163,43 @@ A `defend_device` objective deploys a siege at its declared checkpoint:
   entities are challenge-tracked and cleaned like any horde.
 - Run end (death/abandon/completion elsewhere) stands the device down and
   cleans its siege.
+
+## M15 prototype — assimilation layer (implemented)
+
+The Big Bad's visual signature: `expeditions:assimilation_layer`, a thin
+harvestable membrane that attaches to one sturdy face of a solid block and
+renders that face grayscale — without touching the covered block.
+
+- **Attachment** — `FACING` is the covered face's outward normal; the
+  support sits at `pos.relative(FACING.getOpposite())` and is re-validated
+  on every neighbor change via `isFaceSturdy`. Air, fluids, fences, slabs,
+  leaves refuse placement; glass and other full faces legitimately accept
+  it (sturdy ≠ stone). Support loss or a non-sturdy swap removes the layer
+  through `updateShape` → air.
+- **Geometry** — 1/16 collision membrane hugging the covered face, 2/16
+  selection outline for forgiving aim; thin plate model, never a cube.
+- **Drops** — `noLootTable()` by design: the support-loss path goes through
+  `updateOrDestroy` → `destroyBlock(drop=true)` which *would* roll loot, so
+  a real loot table cannot distinguish harvest from cleanup. Exactly one
+  `assimilation_essence` (placeholder progression drop) is granted in
+  `playerDestroy`, reached only by genuine survival breaks — never in
+  creative, never on support loss, piston crush or restoration.
+- **Grayscale** — no shader pipeline: the block-entity renderer resolves
+  the covered face's actual sprite (face quad → unculled quad → particle
+  icon), desaturates it once at runtime into a `DynamicTexture`
+  (`client/DesaturationTextures`, keyed by sprite name, session-cached),
+  and draws it as an opaque skin a hair above the face inside the layer's
+  own cell, with vanilla face shading + cell lighting. The translucent
+  membrane model sits on top as the "growth". Works for any block with a
+  baked face sprite; BER-only/custom-rendered blocks get the membrane
+  fallback. Client-only, zero world data, chunk rebuilds handled
+  automatically (the skin lives outside the chunk mesh).
+- **Known limits** — desaturation covers only the attached face (full-cube
+  desaturation would need per-face layers or a chunk-render hook); the
+  desaturated pixel copy does not follow animated sprites (first frame);
+  non-square sturdy faces (e.g., stair tops) get a full-square skin.
+  Acceptable for the prototype; a shader-based selective desaturator is
+  the documented upgrade path if face-coverage proves insufficient.
 
 ## Dependencies researched
 

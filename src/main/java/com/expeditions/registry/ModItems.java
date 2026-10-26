@@ -31,6 +31,14 @@ public final class ModItems {
             "expedition_artifact",
             () -> new ExpeditionArtifactItem(new Item.Properties().stacksTo(1)));
 
+    /** Places the assimilation layer; {@code clickedFace} becomes its FACING. */
+    public static final DeferredItem<BlockItem> ASSIMILATION_LAYER_ITEM = ITEMS.registerSimpleBlockItem(
+            "assimilation_layer", ModBlocks.ASSIMILATION_LAYER);
+
+    /** Harvest drop from the assimilation layer — progression placeholder. */
+    public static final DeferredItem<Item> ASSIMILATION_ESSENCE = ITEMS.registerSimpleItem(
+            "assimilation_essence");
+
     private ModItems() {
     }
 }

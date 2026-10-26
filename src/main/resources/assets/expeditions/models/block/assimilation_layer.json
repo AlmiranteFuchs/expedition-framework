@@ -1,0 +1,21 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "expeditions:block/assimilation_layer",
+    "membrane": "expeditions:block/assimilation_layer"
+  },
+  "elements": [
+    {
+      "from": [0, 0.5, 0],
+      "to": [16, 1.5, 16],
+      "faces": {
+        "up": { "texture": "#membrane" },
+        "down": { "texture": "#membrane" },
+        "north": { "texture": "#membrane" },
+        "south": { "texture": "#membrane" },
+        "east": { "texture": "#membrane" },
+        "west": { "texture": "#membrane" }
+      }
+    }
+  ]
+}
