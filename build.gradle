@@ -37,6 +37,19 @@ base {
 // Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+// Game-test filter namespaces. Each templateNamespace resolves its structure
+// as <ns>:<template>, so every namespace needs an arena.nbt — generated at
+// build time from the canonical expeditions copy (see processResources below).
+// Add a namespace here whenever a test uses a new templateNamespace.
+def gameTestStructureNamespaces = [
+    'expeditions_smoke', 'expeditions_def', 'expeditions_mic',
+    'expeditions_asm', 'expeditions_prog', 'expeditions_art',
+    'expeditions_eco', 'expeditions_party', 'expeditions_obj',
+    'expeditions_loot', 'expeditions_opts', 'expeditions_mod',
+    'expeditions_horde'
+]
+ext.allGameTestNamespaces = (['expeditions'] + gameTestStructureNamespaces).join(',')
+
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
@@ -69,10 +82,13 @@ neoForge {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
-            // -PgtNamespaces=expeditions_smoke runs only the smoke suite
-            // (a few tests) — the full suite runs without the property.
+            // -PgtNamespaces=<ns>[,<ns>...] runs only tests whose
+            // templateNamespace matches — e.g. expeditions_smoke for the
+            // smoke loop, expeditions_def for the defense batch. Feature
+            // namespaces are listed in gameTestStructureNamespaces above;
+            // omit the property to run the full suite.
             systemProperty 'neoforge.enabledGameTestNamespaces',
-                project.findProperty('gtNamespaces') ?: project.mod_id
+                project.findProperty('gtNamespaces') ?: project.ext.allGameTestNamespaces
         }
 
         data {
@@ -197,6 +213,16 @@ def cleanGameTestWorld = tasks.register('cleanGameTestWorld', Delete) {
 }
 tasks.named('runGameTestServer') {
     dependsOn cleanGameTestWorld
+}
+
+// Each filter namespace needs its own arena.nbt under data/<ns>/structure/ —
+// generate them all from the canonical expeditions copy, never hand-duplicate.
+processResources {
+    gameTestStructureNamespaces.each { ns ->
+        from('src/main/resources/data/expeditions/structure') {
+            into "data/${ns}/structure"
+        }
+    }
 }
 
 tasks.named('test', Test).configure {

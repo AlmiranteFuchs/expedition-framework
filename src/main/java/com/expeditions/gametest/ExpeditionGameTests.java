@@ -752,7 +752,7 @@ public final class ExpeditionGameTests {
      * The terminal spawns a portal above itself; stepping into it teleports
      * the player to the run's remote entry and grants the compass.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mod", batch = "expedition_s")
     public static void portalTeleportsToEntry(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());
@@ -784,7 +784,7 @@ public final class ExpeditionGameTests {
      * route extends, progress is shared, and the first checkpoint activation
      * seals the party by removing the portal.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mod", batch = "expedition_s")
     public static void partyJoinExtendsRouteAndSealsPortal(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());
@@ -823,7 +823,7 @@ public final class ExpeditionGameTests {
      * Party completion: the scaled pool is split among members (default
      * config) and everyone is teleported back to the terminal.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mod", batch = "expedition_s")
     public static void partyCompletionSplitsRewardAndReturnsMembers(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());
@@ -863,7 +863,7 @@ public final class ExpeditionGameTests {
      * A member dying leaves the party without failing the run; the survivors
      * continue. Their own run participation ends.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_s")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mod", batch = "expedition_s")
     public static void memberDeathDropsOutOfParty(GameTestHelper helper) {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer owner = helper.makeMockServerPlayerInLevel();
@@ -1155,7 +1155,7 @@ public final class ExpeditionGameTests {
      * completion. The payout is the deterministic base plus each completed
      * objective's bonus — awarded exactly once.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_loot", batch = "expedition_w")
     public static void objectivesProgressAndPayOut(GameTestHelper helper) {
         String json = """
                 {
@@ -1245,7 +1245,7 @@ public final class ExpeditionGameTests {
      * Optional objectives missed entirely do not block completion: the run
      * pays only the deterministic base reward.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_loot", batch = "expedition_w")
     public static void optionalObjectivesDoNotBlockCompletion(GameTestHelper helper) {
         String json = """
                 {
@@ -1290,7 +1290,7 @@ public final class ExpeditionGameTests {
      * unfinished refuses completion and pays nothing; finishing the
      * objective afterwards lets the run complete and pays its bonus.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_loot", batch = "expedition_w")
     public static void requiredObjectivesGateCompletion(GameTestHelper helper) {
         String json = """
                 {
@@ -1351,7 +1351,7 @@ public final class ExpeditionGameTests {
      * Objective progress survives a save/load: collection progress and the
      * completed visit latch round-trip through NBT.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_loot", batch = "expedition_w")
     public static void objectiveProgressPersists(GameTestHelper helper) {
         String json = """
                 {
@@ -1407,7 +1407,7 @@ public final class ExpeditionGameTests {
      * Broken objective definitions are rejected at load like any malformed
      * datapack entry — skipped and logged, never silently accepted.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_w")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_loot", batch = "expedition_w")
     public static void invalidObjectivesAreRejected(GameTestHelper helper) {
         Map<ResourceLocation, JsonElement> entries = Map.of(
                 ResourceLocation.fromNamespaceAndPath("test", "bad_type"),
@@ -1452,7 +1452,7 @@ public final class ExpeditionGameTests {
      * stack must come from `expeditions:reward_items/overworld`, and the
      * draw must produce at least one stack.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_x")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_opts", batch = "expedition_x")
     public static void bonusDropsComeFromDimensionPool(GameTestHelper helper) {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -1484,7 +1484,7 @@ public final class ExpeditionGameTests {
      * Reward pools are dimension-sensitive: a Nether completion draws only
      * from `reward_items/the_nether`, never the Overworld or default pools.
      */
-    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_x")
+    @GameTest(template = "arena", timeoutTicks = 1200, templateNamespace = "expeditions_opts", batch = "expedition_x")
     public static void netherBonusDropsUseNetherPool(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ServerLevel nether = server.getLevel(Level.NETHER);
@@ -1530,7 +1530,7 @@ public final class ExpeditionGameTests {
      * exactly once and grants items from the player's current-dimension pool;
      * with an insufficient balance it refuses without touching the balance.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_x")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_opts", batch = "expedition_x")
     public static void redeemConvertsTokensToSupplies(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -1574,7 +1574,7 @@ public final class ExpeditionGameTests {
      * materials, which outrank food and junk — for vanilla and any modded
      * items that carry the same components.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_x")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_opts", batch = "expedition_x")
     public static void itemValuationRanksTiers(GameTestHelper helper) {
         int stick = ItemValuator.score(new ItemStack(Items.STICK));
         int bread = ItemValuator.score(new ItemStack(Items.BREAD));
@@ -1600,7 +1600,7 @@ public final class ExpeditionGameTests {
      * while the portal stays at home — and run end removes it via the
      * portal's own dimension, not the run's.
      */
-    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_y")
+    @GameTest(template = "arena", timeoutTicks = 1200, templateNamespace = "expeditions_obj", batch = "expedition_y")
     public static void remoteExpeditionRunsInNether(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ServerLevel nether = server.getLevel(Level.NETHER);
@@ -1655,7 +1655,7 @@ public final class ExpeditionGameTests {
      * Per-run options survive save/load so a restarted server resumes the
      * run with the same modifiers — the menu choices are part of the run.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_obj", batch = "expedition_y")
     public static void optionsPersistAcrossReload(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -1682,7 +1682,7 @@ public final class ExpeditionGameTests {
      * The checkpoints option resizes generated routes while authored routes
      * stay untouched (the option only applies to generation).
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_obj", batch = "expedition_y")
     public static void checkpointsOptionResizesRoute(GameTestHelper helper) {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -1699,7 +1699,7 @@ public final class ExpeditionGameTests {
      * Difficulty scales the payout: BRUTAL doubles the scaled reward pool
      * (8 base + 4 time bonus = 12, x200% = 24) with a solo party.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_obj", batch = "expedition_y")
     public static void brutalDifficultyDoublesReward(GameTestHelper helper) {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -1719,7 +1719,7 @@ public final class ExpeditionGameTests {
      * The terminal click opens the options menu, and its start button
      * launches a run with the chosen options.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_obj", batch = "expedition_y")
     public static void menuStartLaunchesRun(GameTestHelper helper) {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -1743,7 +1743,7 @@ public final class ExpeditionGameTests {
      * `/expeditions start` accepts the same modifiers without a terminal:
      * the command anchors its portal at the player's feet.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_y")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_obj", batch = "expedition_y")
     public static void startCommandAppliesModifiers(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -1776,7 +1776,7 @@ public final class ExpeditionGameTests {
      * Datapack {@code "modifiers"} parse: weather plus member/horde effect
      * lists with amplifiers land on the definition.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_party", batch = "expedition_z")
     public static void modifiersParseFromDatapack(GameTestHelper helper) {
         String json = """
                 {
@@ -1815,7 +1815,7 @@ public final class ExpeditionGameTests {
      * Bad modifier values fail the definition loudly: unknown weather names
      * and unregistered effect ids get the whole file skipped on reload.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_party", batch = "expedition_z")
     public static void malformedModifiersSkipped(GameTestHelper helper) {
         String base = """
                 {
@@ -1853,7 +1853,7 @@ public final class ExpeditionGameTests {
      * Member effects: the expedition's {@code player_effects} land on the
      * party when the run starts and are stripped when the run ends.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_party", batch = "expedition_z")
     public static void playerEffectsApplyAndRemove(GameTestHelper helper) {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -1892,7 +1892,7 @@ public final class ExpeditionGameTests {
      * Weather modifier: starting the run forces the declared weather on the
      * expedition's dimension and ending the run clears it.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_party", batch = "expedition_z")
     public static void weatherModifierAppliesAndClears(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());
@@ -1937,7 +1937,7 @@ public final class ExpeditionGameTests {
      * (the biome's own spawn table — no configuration) and every member
      * carries the expedition's declared buffs.
      */
-    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_z")
+    @GameTest(template = "arena", timeoutTicks = 1200, templateNamespace = "expeditions_party", batch = "expedition_z")
     public static void hordeSpawnsPooledAndBuffed(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         level.setDayTime(18000); // pool mobs must not burn mid-test
@@ -2003,7 +2003,7 @@ public final class ExpeditionGameTests {
      * Modifiers ride the run's persisted definition: a save/load round trip
      * restores weather and both effect lists.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_z")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_party", batch = "expedition_z")
     public static void modifiersPersistAcrossReload(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -2050,7 +2050,7 @@ public final class ExpeditionGameTests {
      * carrying it through the exit delivers the objective, consumes the
      * physical item, and pays its bonus.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_art", batch = "expedition_art")
     public static void artifactIssuedAndDelivered(GameTestHelper helper) {
         String json = """
                 {
@@ -2111,7 +2111,7 @@ public final class ExpeditionGameTests {
      * counts: an item bound to another run is refused, and restoring the
      * real cargo lets the run complete.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_art", batch = "expedition_art")
     public static void wrongRunArtifactIsRefused(GameTestHelper helper) {
         String json = """
                 {
@@ -2180,7 +2180,7 @@ public final class ExpeditionGameTests {
      * A failed run strips the artifact from member inventories — mission
      * cargo never outlives its run.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_art", batch = "expedition_art")
     public static void failedRunStripsArtifact(GameTestHelper helper) {
         String json = """
                 {
@@ -2225,7 +2225,7 @@ public final class ExpeditionGameTests {
      * An artifact bound to a run that no longer exists is swept on the login
      * path — orphaned cargo cannot accumulate in inventories.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_art", batch = "expedition_art")
     public static void staleArtifactSweptOnLogin(GameTestHelper helper) {
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -2244,7 +2244,7 @@ public final class ExpeditionGameTests {
      * The issued latch and delivery state survive a save/load — a restart
      * cannot re-issue the artifact or re-pay its bonus.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_art", batch = "expedition_art")
     public static void artifactStatePersistsAcrossReload(GameTestHelper helper) {
         String json = """
                 {
@@ -2295,7 +2295,7 @@ public final class ExpeditionGameTests {
      * the cargo checkpoint must exist on the route, and unknown/missing
      * fields are rejected at parse.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_art")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_art", batch = "expedition_art")
     public static void invalidArtifactObjectivesRejected(GameTestHelper helper) {
         Map<ResourceLocation, JsonElement> entries = Map.of(
                 ResourceLocation.fromNamespaceAndPath("test", "past_route"),
@@ -2327,7 +2327,7 @@ public final class ExpeditionGameTests {
      * first siege wave; surviving the duration completes the objective
      * mid-run and pays its bonus at the exit.
      */
-    @GameTest(template = "arena", timeoutTicks = 600, batch = "expedition_def")
+    @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void defenseSurvivesAndPays(GameTestHelper helper) {
         String json = """
                 {
@@ -2399,7 +2399,7 @@ public final class ExpeditionGameTests {
      * Destruction of a REQUIRED device's run fails exactly once: block
      * removed, siege called off, run failed, nothing paid.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void requiredDeviceDestroyedFailsRun(GameTestHelper helper) {
         String json = """
                 {
@@ -2460,7 +2460,7 @@ public final class ExpeditionGameTests {
      * An OPTIONAL device's destruction only marks its objective failed: the
      * run continues and completes normally without the bonus.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void optionalDeviceDestroyedDoesNotFailRun(GameTestHelper helper) {
         String json = """
                 {
@@ -2518,7 +2518,7 @@ public final class ExpeditionGameTests {
      * The device deploys only at its declared checkpoint — activating any
      * other checkpoint must not spawn it.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void defenseDeploysOnlyAtDeclaredCheckpoint(GameTestHelper helper) {
         String json = """
                 {
@@ -2570,7 +2570,7 @@ public final class ExpeditionGameTests {
      * The siege state — device position, health, timer — survives a
      * save/load so a restart cannot reset or duplicate the event.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void defenseStatePersistsAcrossReload(GameTestHelper helper) {
         String json = """
                 {
@@ -2621,7 +2621,7 @@ public final class ExpeditionGameTests {
      * {@code defend_device} objectives validate like every other kind:
      * duration and a real route checkpoint are both mandatory.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_def")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void invalidDefenseObjectivesRejected(GameTestHelper helper) {
         Map<ResourceLocation, JsonElement> entries = Map.of(
                 ResourceLocation.fromNamespaceAndPath("test", "past_route"),
@@ -2653,7 +2653,7 @@ public final class ExpeditionGameTests {
      * The layer item places against every sturdy face of a solid support and
      * records the covered face's direction in {@code FACING}.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_asm", batch = "expedition_asm")
     public static void assimilationLayerAttachesToAllSixFaces(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         ServerLevel level = helper.getLevel();
@@ -2694,7 +2694,7 @@ public final class ExpeditionGameTests {
      * refuse placement. (Glass and other full-face blocks legitimately
      * accept it; the rule is {@code isFaceSturdy}, not "is stone".)
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_asm", batch = "expedition_asm")
     public static void assimilationLayerRejectsUnsupportedFaces(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         ServerLevel level = helper.getLevel();
@@ -2732,7 +2732,7 @@ public final class ExpeditionGameTests {
      * another sturdy support — the same {@code isFaceSturdy} rule drives
      * both placement and survival.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_asm", batch = "expedition_asm")
     public static void assimilationLayerDiesWithSupport(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockPos support = helper.absolutePos(new BlockPos(4, 2, 4));
@@ -2786,7 +2786,7 @@ public final class ExpeditionGameTests {
      * break path (the block carries no loot table by design — support loss
      * must stay silent — so the drop is granted in {@code playerDestroy}).
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_asm", batch = "expedition_asm")
     public static void assimilationLayerHarvestDropsExactlyOneEssence(
             GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -2821,7 +2821,7 @@ public final class ExpeditionGameTests {
      * Collision is a 1/16 membrane, the outline a forgiving 2/16, both aligned
      * to the covered face for all six directions — never a full cube.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_asm")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_asm", batch = "expedition_asm")
     public static void assimilationLayerShapesAreThin(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockPos pos = helper.absolutePos(new BlockPos(4, 2, 4));
@@ -2880,7 +2880,7 @@ public final class ExpeditionGameTests {
      * credited share immediately, the run records it as secured, and it
      * survives the run failing — only the at-risk remainder is lost.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "expedition_eco")
     public static void checkpointCreditsBankAtActivation(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
@@ -2926,7 +2926,7 @@ public final class ExpeditionGameTests {
      * Completion tops each member up to their full share: banked credits
      * count toward it, so total received == the share exactly once.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "expedition_eco")
     public static void completionTopsUpToFullShare(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
@@ -2972,7 +2972,7 @@ public final class ExpeditionGameTests {
      * survivor is topped up to the solo share, the ex-member forfeits the
      * at-risk remainder but never the secured part.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "expedition_eco")
     public static void droppedMemberKeepsOnlySecuredCredits(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         ServerPlayer member = helper.makeMockServerPlayerInLevel();
@@ -3038,7 +3038,7 @@ public final class ExpeditionGameTests {
     }
 
     /** Secured credits round-trip with the run record. */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_eco")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "expedition_eco")
     public static void securedCreditsPersistAcrossReload(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
@@ -3066,7 +3066,7 @@ public final class ExpeditionGameTests {
      * start with an explanation — no markers placed — until the player holds
      * the key, then the same expedition starts normally.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
     public static void lockedExpeditionRefusesStartUntilKeyHeld(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3113,7 +3113,7 @@ public final class ExpeditionGameTests {
      * party member at completion — the party-wide award, not just the
      * clicking player.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
     public static void completionGrantsUnlocksPartyWide(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3158,7 +3158,7 @@ public final class ExpeditionGameTests {
      * balance can't cover, and is charged exactly when an affordable start
      * goes through.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
     public static void costTokensChargedOnlyOnSuccessfulStart(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3204,7 +3204,7 @@ public final class ExpeditionGameTests {
      * Unlocks and the run's progression fields survive save/load — a resumed
      * run keeps the {@code grants} it will award at completion.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
     public static void unlocksAndProgressionFieldsPersist(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3251,7 +3251,7 @@ public final class ExpeditionGameTests {
      * the mark the microbiome reads — plus the expedition's id lands as a
      * trophy on the completing player.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
     public static void campaignAdvancesOnCompletion(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3323,7 +3323,7 @@ public final class ExpeditionGameTests {
      * start until the dimension's campaign reaches it — and the refusal
      * names the state the dimension still needs.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
     public static void campaignGateRefusesStart(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3378,7 +3378,7 @@ public final class ExpeditionGameTests {
      * terminal grants the key its component carries — permanently,
      * idempotently, and without consuming the artifact.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
     public static void attunementSigilGrantsKeyAtTerminal(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());
@@ -3415,7 +3415,7 @@ public final class ExpeditionGameTests {
      * past thresholds the organism fights back — more horde bodies, and
      * empowered ones. The counter persists in the shared saved data.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mic", batch = "expedition_mic")
     public static void pressureEscalatesHordes(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3469,7 +3469,7 @@ public final class ExpeditionGameTests {
      * boss assault — a buffed pack — and completing the run wins the whole
      * dimension (the cleared mark the microbiome reads).
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mic", batch = "expedition_mic")
     public static void bigBadAssaultAndDimensionClear(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ExpeditionManager manager = ExpeditionManager.get(server);
@@ -3524,7 +3524,7 @@ public final class ExpeditionGameTests {
      * must instead land inside the spawn scan window around the
      * checkpoint's own elevation, standing on a real floor.
      */
-    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_nh")
+    @GameTest(template = "arena", timeoutTicks = 1200, templateNamespace = "expeditions_horde", batch = "expedition_nh")
     public static void netherHordeSpawnsNearCheckpoint(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ServerLevel nether = server.getLevel(Level.NETHER);
@@ -3595,7 +3595,7 @@ public final class ExpeditionGameTests {
      * crawl the colony outward across the open floor — bounded by the
      * configured cap, never a takeover.
      */
-    @GameTest(template = "arena", timeoutTicks = 600, batch = "expedition_mic")
+    @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_mic", batch = "expedition_mic")
     public static void microbiomeHeartSpreadsAndCaps(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         // A heart flush inside a large sturdy surface carpets its top
@@ -3649,7 +3649,7 @@ public final class ExpeditionGameTests {
      * seeds its side faces and the colony extends downward along the
      * pillar's sides, never detaching from a legal support.
      */
-    @GameTest(template = "arena", timeoutTicks = 600, batch = "expedition_mic")
+    @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_mic", batch = "expedition_mic")
     public static void microbiomeHeartCrawlsPillar(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockPos pillarBase = helper.absolutePos(new BlockPos(5, 0, 5));
@@ -3705,7 +3705,7 @@ public final class ExpeditionGameTests {
      * microbiome goes silent — the gate hearts and traversal spawning both
      * consult — until the mark is lifted.
      */
-    @GameTest(template = "arena", timeoutTicks = 200, batch = "expedition_mic")
+    @GameTest(template = "arena", timeoutTicks = 200, templateNamespace = "expeditions_mic", batch = "expedition_mic")
     public static void microbiomeClearedSilences(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         String dim = level.dimension().location().toString();
@@ -3727,7 +3727,7 @@ public final class ExpeditionGameTests {
      * around the player — far enough out to be discovered, never in the
      * air, on hazards, or through a ceiling.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mic", batch = "expedition_mic")
     public static void microbiomeSpawnsOnTraversal(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         BlockPos center = helper.absolutePos(new BlockPos(0, 2, 0));
@@ -3758,7 +3758,7 @@ public final class ExpeditionGameTests {
      * route's visible landmark. The starter pulses give the patch
      * immediate presence; the heart's own ticker takes over after.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mcol")
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mic", batch = "expedition_mcol")
     public static void microbiomeColonizesMarkers(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());

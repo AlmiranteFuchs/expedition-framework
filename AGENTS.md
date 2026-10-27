@@ -19,6 +19,18 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
 - Smoke iteration: `./gradlew runGameTestServer -PgtNamespaces=expeditions_smoke`
   runs only `ExpeditionSmokeTests` (~20s vs ~90s full). Use it mid-change;
   run the full suite before committing.
+- Feature namespaces: `-PgtNamespaces=<ns>` (comma-separated) runs only tests
+  whose `@GameTest(templateNamespace)` matches. `expeditions_smoke`=1-test
+  loop; `expeditions_def`=defense; `expeditions_mic`=microbiome;
+  `expeditions_asm`=assimilation; `expeditions_prog`=campaign/sigil;
+  `expeditions_art`=artifacts; `expeditions_eco`=economy;
+  `expeditions_party`=party/portal; `expeditions_obj`=objectives;
+  `expeditions_loot`=drops; `expeditions_opts`=options;
+  `expeditions_mod`=modifiers; `expeditions_horde`=nether horde;
+  `expeditions`=core lifecycle. Each namespace's `arena.nbt` is generated at
+  build time from `data/expeditions/structure/arena.nbt` — register new
+  namespaces in `gameTestStructureNamespaces` (build.gradle), never copy
+  the nbt by hand.
 - Dev server: `./gradlew runServer`; dev client: `./gradlew runClient`
 - Datagen: `./gradlew runData` → `src/generated/resources`
 
