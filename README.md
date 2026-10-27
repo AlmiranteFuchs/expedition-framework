@@ -520,8 +520,21 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Progression** — permanent per-player unlock keys gate expeditions
   (`requires`), are awarded party-wide on completion (`grants`), and
   expeditions can charge tokens at start (`cost_tokens`); the terminal
-  explains what a locked expedition still needs.
-- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks`.
+  explains what a locked expedition still needs. The crafted
+  `attunement_sigil` carries a key in its data component and attunes it at
+  a terminal without being consumed.
+- **Dimensional campaign** — completions advance each dimension
+  `FRONTIER → ESTABLISHED → CLEARED` (config thresholds); definitions gate
+  on `min_campaign_state` and trophies record landmark completions.
+- **Bundled campaign** — two shipped definitions play the full loop out
+  of the jar: `field_survey` (entry, grants `field_clear`) and
+  `deep_salvage` (key + token + established-campaign gated, composing
+  artifact recovery and a device siege under rain modifiers).
+- **Dimensional pressure + Big Bad** — runs raise a per-dimension pressure
+  counter that enlarges hordes and empowers spawns past thresholds;
+  `big_bad` expeditions turn their final checkpoint into a boss assault
+  and clear the dimension on completion.
+- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that attaches to any sturdy face of a solid
   block (all six directions) and renders the covered face grayscale: the
@@ -545,13 +558,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 111 unit tests + 80 GameTest in-game tests.
+- **Tests** — 113 unit tests + 87 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.3.0.jar` assembled.
-- `./gradlew test` — 111 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **80/80 game tests passed** on a real dedicated
+- `./gradlew test` — 113 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **87/87 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -710,7 +723,10 @@ no custom menu type).
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (80 tests, batches a–z + art + def + mic + nh).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (86 tests in
+  per-feature filter namespaces — run one with
+  `-PgtNamespaces=expeditions_<feature>`) + `ExpeditionSmokeTests`
+  (1-test fast loop).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
   `CompassItem` and never competes with block interactions) and
@@ -722,5 +738,9 @@ no custom menu type).
 
 ## Next milestones
 
-1. Party-size options at the terminal and per-member objective variants.
-2. Challenge variety beyond the horde (the `CheckpointChallenge` seam).
+The roadmap's alpha surface is feature-complete; next is hardening and feel:
+
+1. Client playtest of the visual layer (trace pulse, membrane, colonies).
+2. Third-party dimension smoke (M13's open gap).
+3. Per-dimension config overrides and a Big Bad design pass beyond the
+   current assault-wave prototype.

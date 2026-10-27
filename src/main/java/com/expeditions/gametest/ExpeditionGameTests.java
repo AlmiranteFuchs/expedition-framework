@@ -1,14 +1,17 @@
 package com.expeditions.gametest;
 
+import com.expeditions.core.CampaignState;
 import com.expeditions.core.DefenseState;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionLedger;
+import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
+import com.expeditions.core.ObjectiveKind;
 import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
@@ -29,10 +32,14 @@ import com.expeditions.server.ItemRewards;
 import com.expeditions.server.ItemValuator;
 import com.expeditions.server.Microbiome;
 import com.expeditions.server.MobSpawns;
+import com.expeditions.server.data.ExpeditionDefinitionLoader;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.expeditions.server.dimension.DestinationChecks;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -93,6 +100,9 @@ public final class ExpeditionGameTests {
         // players tick once at the world spawn before teleporting.
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
+        // Shipped datapack defs would shadow the config defaults these tests
+        // resolve routes against; they reload their own defs explicitly.
+        ExpeditionDefinitionLoader.suppressLoadingForTests(true);
     }
 
     private ExpeditionGameTests() {
@@ -3411,6 +3421,72 @@ public final class ExpeditionGameTests {
     }
 
     /**
+     * M10 — the bundled alpha campaign is real: the shipped datapack
+     * definitions (read from the mod's own resources, not a copy) parse
+     * exactly like an external datapack, compose every mechanic, and the
+     * entry mission starts a run on natural terrain.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_prog", batch = "expedition_prog")
+    public static void bundledExpeditionsCompose(GameTestHelper helper) throws IOException {
+        Map<ResourceLocation, JsonElement> shipped = Map.of(
+                ResourceLocation.fromNamespaceAndPath("expeditions", "field_survey"),
+                shippedDef("field_survey"),
+                ResourceLocation.fromNamespaceAndPath("expeditions", "deep_salvage"),
+                shippedDef("deep_salvage"));
+        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        BlockPos terminalPos = helper.absolutePos(new BlockPos(1, 1, 1));
+        try {
+            ExpeditionDefinitions.reload(shipped);
+            ExpeditionDefinition survey =
+                    ExpeditionDefinitions.all().get("expeditions:field_survey");
+            ExpeditionDefinition salvage =
+                    ExpeditionDefinitions.all().get("expeditions:deep_salvage");
+            helper.assertTrue(survey != null && salvage != null,
+                    "both bundled definitions must load");
+            helper.assertTrue(survey.grants().contains("expeditions:field_clear"),
+                    "field_survey must grant the key deep_salvage requires");
+            helper.assertTrue(salvage.requires().contains("expeditions:field_clear"),
+                    "deep_salvage must chain on field_survey's grant");
+            helper.assertTrue(salvage.minCampaignState() == CampaignState.ESTABLISHED,
+                    "deep_salvage must gate on the established campaign state");
+            helper.assertTrue(salvage.costTokens() == 15,
+                    "deep_salvage must charge tokens");
+            helper.assertTrue(salvage.modifiers().weather() == WeatherModifier.RAIN,
+                    "deep_salvage must declare its weather modifier");
+            var kinds = salvage.objectives().stream()
+                    .map(ExpeditionObjective::kind).toList();
+            for (ObjectiveKind kind : List.of(ObjectiveKind.VISIT_CHECKPOINT,
+                    ObjectiveKind.RECOVER_ARTIFACT, ObjectiveKind.DEFEND_DEVICE,
+                    ObjectiveKind.COLLECT_ITEMS, ObjectiveKind.TIME_LIMIT)) {
+                helper.assertTrue(kinds.contains(kind),
+                        "deep_salvage must compose a " + kind + " objective");
+            }
+            boolean refused = false;
+            try {
+                manager.startRun(player, terminalPos,
+                        new ExpeditionOptions("expeditions:deep_salvage",
+                                Difficulty.STANDARD, 0, 0));
+            } catch (IllegalStateException e) {
+                refused = true;
+            }
+            helper.assertTrue(refused,
+                    "deep_salvage must refuse a player without the field_clear key");
+            ExpeditionRun run = manager.startRun(player, terminalPos,
+                    new ExpeditionOptions("expeditions:field_survey",
+                            Difficulty.STANDARD, 0, 0));
+            helper.assertTrue(run.status() == ExpeditionStatus.ACTIVE,
+                    "field_survey must start on natural terrain");
+            helper.assertTrue(run.checkpoints().size() == 3,
+                    "field_survey must generate 3 checkpoints");
+            manager.failRun(player); // leave no active run behind for later tests
+            helper.succeed();
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+    }
+
+    /**
      * Dimensional pressure: running expeditions stirs the dimension, and
      * past thresholds the organism fights back — more horde bodies, and
      * empowered ones. The counter persists in the shared saved data.
@@ -4121,6 +4197,21 @@ public final class ExpeditionGameTests {
                 "destination floor must be sturdy at " + pos);
         helper.assertTrue(floor.getFluidState().isEmpty(),
                 "destination floor must not be fluid at " + pos);
+    }
+
+    /**
+     * Reads one of the mod's own bundled expedition definitions from the
+     * classpath — the test verifies the real shipped JSON, not a copy.
+     */
+    private static JsonElement shippedDef(String name) throws IOException {
+        try (InputStream in = ExpeditionGameTests.class.getResourceAsStream(
+                "/data/expeditions/expeditions/" + name + ".json")) {
+            if (in == null) {
+                throw new IOException("bundled definition missing: " + name);
+            }
+            return JsonParser.parseString(
+                    new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        }
     }
 
     /** Asserts the player's compass has a lodestone target equal to {@code pos}. */

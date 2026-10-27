@@ -307,6 +307,11 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Datapack tests: simulate reloads via `ExpeditionDefinitions.reload(map)` and
   ALWAYS reset with `reload(Map.of())` in a finally block — the snapshot is a
   shared static and leaks between tests otherwise.
+- Bundled datapack defs (`data/expeditions/expeditions/`) are suppressed
+  suite-wide via `ExpeditionDefinitionLoader.suppressLoadingForTests` so
+  shipped defs never shadow the config defaults tests resolve against;
+  tests that need them reload the real JSON from the classpath
+  (`shippedDef`).
 - Ambient world writes are suppressed for the suite: authored-route anchors
   from every datapack test resolve to shared absolute columns near the world
   origin, and microbiome colonies/hearts there would make later route

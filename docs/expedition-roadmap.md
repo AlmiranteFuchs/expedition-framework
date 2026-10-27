@@ -45,16 +45,16 @@ covers direction.
 
 | M | Feature | Status | Evidence / gaps |
 |---|---|---|---|
-| — | Foundation (terminal, manager, defs, routes, objectives, horde, modifiers, options, economy, persistence) | **Complete** | 101 unit + 65/65 game tests green |
+| — | Foundation (terminal, manager, defs, routes, objectives, horde, modifiers, options, economy, persistence) | **Complete** | 113 unit + 87 game tests green |
 | M7 | Physical mission artifact + extraction | **Complete** | Domain latch/delivery + run-bound item + datapack `recover_artifact` + unit/game tests. Distinct from the M12 *progression* artifact: mission cargo is per-run, bound by `run_id`, consumed/stripped at run end — it never unlocks anything |
 | M8 | Destructible defense device | **Complete** | `ObjectiveKind.DEFEND_DEVICE` + datapack `defend_device`; `ExpeditionDeviceBlock` (tracked marker); `DefenseState` (hp/maxHp/endTick/nextWaveTick) persisted on the run; stage-gated at its declared checkpoint; exactly-once destruction (`damageDevice` → required fails run, optional marks objective failed); bounded waves/mob cap via config; unit + 6 game tests |
 | M9 | Checkpoint economy / reward reliability | **Complete** | Guaranteed `tokens` bank per activation (`checkpointTokenPortion`, balanced split over resolved route); `securedTokens` per member persisted on the run; completion tops members up to the full share (`max(0, share − secured)`) — bonuses/objectives stay at-risk until extraction; credits survive failure/death/restart; 5 unit + 4 game tests |
-| M10 | First complete expedition (mandatory checkpoint route + existing objective handlers) | Not started | Blocked on M8. Composition only — beacon activation, artifact recovery, collection, defense, extraction all reuse existing handlers |
+| M10 | First complete expedition (mandatory checkpoint route + existing objective handlers) | **Complete** | Two bundled defs ship in `data/expeditions/expeditions/`: `field_survey` (entry, grants `field_clear`) and `deep_salvage` (the composed flagship — visit + artifact + defense + collect + time objectives, key/cost/campaign gating, modifiers). `bundledExpeditionsCompose` verifies the shipped JSON parses and starts |
 | M11 | Structured feedback + expedition summary | **Complete** | `broadcastSummary` at `endRun`: per-member breakdown — checkpoints/objectives done, banked, extraction top-up, total, balance (complete); cause + kept credits + at-risk estimate (failed). `run.fail(reasonKey)` records the cause at every fail site (died/abandoned/device_destroyed/site_lost/dimension_lost) |
-| M12 | Terminal progression + dimensional campaign | **Partial** — unlock infra landed | Slice a done: per-player unlock keys in the ledger (persisted), definitions gain `requires`/`grants`/`cost_tokens`, `startRun` gates with a named-explanation refusal, charges cost post-validation, grants keys party-wide on completion; menu shows locked expeditions with missing-requirement lore; `/expeditions unlocks`. Remaining: trophies, dimensional campaign states, crafted progression artifact |
+| M12 | Terminal progression + dimensional campaign | **Complete** | M12a: per-player unlock keys, `requires`/`grants`/`cost_tokens`, menu lore for locked missions, `/expeditions unlocks`. M12b: `CampaignState` (FRONTIER→ESTABLISHED→CLEARED) per dimension, `min_campaign_state` gating, trophies + `/expeditions trophies`. M12c: `attunement_sigil` crafted artifact grants a key at the terminal without being consumed |
 | M13 | Dimension compatibility | **Mostly complete** | Adapters, bounded safe search, natural mob pools, fail-safe refusals done. New scope fits: threat behavior must route through `ExpeditionDimensionAdapter`/`HordePools` (dimension-scoped state, per-dimension spawn pools), not a parallel system. Untested against a real third-party modded dimension |
-| M14 | Configuration & expansion | **Partial** | TOML + datapack + tags + options cover most parameters. New scope: threat tuning knobs (pressure growth, caps, per-dimension overrides). Structure archetypes deferred by design |
-| M15 | Global dimensional threat + Big Bad event | **Partial** — microbiome landed | Smallest necessary addition — doesn't fit M12 (progression infra) or M13 (compat plumbing). A persistent per-dimension pressure level that escalates horde pressure (size, effects, spawn presence) across *all* expeditions in that dimension, culminating in an unlockable Big Bad event. Depends: M12 (unlock chain gates it), M13 (dimension-scoped behavior), M14 (tuning surface). Landed: the **microbiome** — traversal-seeded heart colonies that grow the assimilation layer under a bounded cap, silenced per-dimension by the cleared seam (below). Remaining: pressure level, boss event |
+| M14 | Configuration & expansion | **Partial** | TOML + datapack + tags + options cover most parameters. Pressure/microbiome tuning knobs landed with M15. Remaining: per-dimension overrides; structure archetypes deferred by design |
+| M15 | Global dimensional threat + Big Bad event | **Complete** | Microbiome heart colonies (below) + per-dimension `dimensionPressure` that escalates horde size and adds empowered spawns past thresholds + `big_bad` defs spawn a boss assault at the final checkpoint; completing a big_bad run flips the dimension to CLEARED, silencing the microbiome |
 
 ### Foundation audit — what supports the new requirements
 
@@ -285,11 +285,72 @@ while moving through a dimension, killable to stop the spread.
   consults it first). The "won the dimension" transition lands with M12b;
   the shutoff is already enforced.
 
+## M12b — dimensional campaign states + trophies (implemented)
+
+Per-dimension campaign progression persisted in `ExpeditionSavedData`:
+
+- **`CampaignState`** — `FRONTIER → ESTABLISHED → CLEARED`, derived from
+  `campaignProgress` (completions per dimension) against config
+  thresholds (`campaignEstablishedAtCompletions`,
+  `campaignClearedAtCompletions`). Each completion calls
+  `recordCampaignCompletion`: progress increments, and crossing the
+  cleared threshold flips `clearedDimensions` — which is what silences
+  the microbiome.
+- **`min_campaign_state`** — definitions gate on the dimension's state;
+  `RequirementCheck` carries the campaign gap alongside keys/tokens and
+  the menu explains it in lore like any missing requirement.
+- **Trophies** — completions of defs that `grants` keys also record a
+  trophy entry; `/expeditions trophies` lists them. `resetCampaign`
+  clears progress + cleared dims + trophies (admin/test path).
+
+## M12c — attunement sigil (implemented)
+
+The crafted progression artifact: `expeditions:attunement_sigil`, a
+non-consumable item carrying an unlock key in its
+`expeditions:attunement_key` data component. Using it on a terminal
+grants the key (idempotent — the artifact is proof, not a charge). The
+recipe is a normal datapack recipe, so packs can re-attune it to their
+own key ids via the component.
+
+## M15 — dimensional pressure + the Big Bad (implemented)
+
+- **Pressure** — `dimensionPressure` per dimension in the SavedData:
+  `raisePressure` on run starts and completions (config
+  `pressurePerRunStart`/`pressurePerRunCompletion`, capped by
+  `pressureMax`), `resetPressure` as the test/admin path.
+  Escalation reads the counter in `spawnHorde`/`spawnSiegeWave`: horde
+  size grows by `pressureHordeBonusPer` steps, and past
+  `pressureBuffThreshold` spawned mobs get empowered buffs.
+- **Big Bad** — a `"big_bad": true` definition turns its final
+  checkpoint activation into a boss assault (`triggerCheckpointChallenge`
+  picks a bigger, buffed wave). Completing a big_bad run calls
+  `setDimensionCleared` — the campaign flip that ends the threat in that
+  dimension.
+
+## M10 — the bundled campaign (implemented)
+
+Two definitions ship in `data/expeditions/expeditions/`, making the mod
+playable out of the jar and demonstrating the full feature surface:
+
+- **`expeditions:field_survey`** — the entry mission: no requirements,
+  generated 3-checkpoint route, required visit + optional collect/time
+  objectives, grants `expeditions:field_clear`.
+- **`expeditions:deep_salvage`** — the composed flagship: requires
+  `field_clear`, costs 15 tokens, gates on `min_campaign_state:
+  established`, generated 4-checkpoint route composing visit →
+  recover_artifact → defend_device plus optional collect/time objectives,
+  rain + night-vision/speed modifiers.
+
+The game-test suite suppresses datapack definition loading
+(`ExpeditionDefinitionLoader.suppressLoadingForTests`) so shipped defs
+never shadow the config defaults tests resolve against;
+`bundledExpeditionsCompose` verifies the real shipped JSON parses,
+chains, gates, and starts.
+
 ## Next recommended milestone
 
-**M12b (dimensional campaign states + trophies)** — unlocks and
-prerequisites are in; the remaining M12 scope is per-dimension campaign
-progression (frontier → established → cleared gating which expeditions
-terminals offer), trophy records, and the crafted progression artifact
-that grants a key at the terminal. Then M15 (threat + Big Bad, needs
-M12+M13) → M10 (composes everything).
+Alpha is feature-complete — every roadmap mechanic has a base
+implementation. Remaining work is hardening and feel: client playtest of
+the visual layer (trace pulse, membrane, heart colonies), third-party
+dimension smoke (M13's open gap), per-dimension config overrides (M14),
+and any Big Bad *design* pass beyond the current assault-wave prototype.

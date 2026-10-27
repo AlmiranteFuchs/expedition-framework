@@ -14,6 +14,17 @@ import net.minecraft.util.profiling.ProfilerFiller;
  * reload ({@code /reload}, join, datapack changes).
  */
 public class ExpeditionDefinitionLoader extends SimpleJsonResourceReloadListener {
+    /**
+     * Test-only seam: the game-test suite suppresses datapack loading so the
+     * shipped expedition definitions never shadow the config defaults its
+     * tests rely on; tests inject defs via {@link ExpeditionDefinitions#reload}.
+     */
+    private static volatile boolean loadingSuppressedForTests;
+
+    public static void suppressLoadingForTests(boolean suppressed) {
+        loadingSuppressedForTests = suppressed;
+    }
+
     public ExpeditionDefinitionLoader() {
         super(new Gson(), "expeditions");
     }
@@ -21,6 +32,8 @@ public class ExpeditionDefinitionLoader extends SimpleJsonResourceReloadListener
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> entries, ResourceManager resourceManager,
             ProfilerFiller profiler) {
-        ExpeditionDefinitions.reload(entries);
+        if (!loadingSuppressedForTests) {
+            ExpeditionDefinitions.reload(entries);
+        }
     }
 }

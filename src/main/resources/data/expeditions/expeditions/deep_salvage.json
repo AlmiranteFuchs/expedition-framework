@@ -1,0 +1,69 @@
+{
+    "dimension": "minecraft:overworld",
+    "display_name": "Deep Salvage",
+    "difficulty": 2,
+    "generate": {
+        "checkpoints": 4,
+        "min_spacing": 56,
+        "max_spacing": 112
+    },
+    "tokens": 60,
+    "bonus_tokens": 30,
+    "bonus_time_seconds": 720,
+    "cost_tokens": 15,
+    "requires": ["expeditions:field_clear"],
+    "grants": ["expeditions:salvage_clear"],
+    "min_campaign_state": "established",
+    "modifiers": {
+        "weather": "rain",
+        "player_effects": [
+            {"id": "minecraft:night_vision", "amplifier": 0}
+        ],
+        "horde_effects": [
+            {"id": "minecraft:speed", "amplifier": 0}
+        ]
+    },
+    "objectives": [
+        {
+            "id": "reach",
+            "description": "Reach the site",
+            "type": "visit_checkpoint",
+            "checkpoint": 1,
+            "required": true
+        },
+        {
+            "id": "cargo",
+            "description": "Recover the cargo",
+            "type": "recover_artifact",
+            "checkpoint": 2,
+            "required": true,
+            "bonus_tokens": 10
+        },
+        {
+            "id": "siege",
+            "description": "Hold the extractor",
+            "type": "defend_device",
+            "checkpoint": 3,
+            "seconds": 90,
+            "required": true,
+            "bonus_tokens": 15
+        },
+        {
+            "id": "scrap",
+            "description": "Salvage 8 iron",
+            "type": "collect_items",
+            "item": "minecraft:iron_ingot",
+            "count": 8,
+            "required": false,
+            "bonus_tokens": 12
+        },
+        {
+            "id": "pace",
+            "description": "Finish under 10 minutes",
+            "type": "time_limit",
+            "seconds": 600,
+            "required": false,
+            "bonus_tokens": 10
+        }
+    ]
+}

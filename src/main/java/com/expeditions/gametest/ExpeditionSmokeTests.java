@@ -5,6 +5,7 @@ import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.Waypoint;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.Microbiome;
+import com.expeditions.server.data.ExpeditionDefinitionLoader;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -29,6 +30,7 @@ public final class ExpeditionSmokeTests {
         // tick once at the world spawn before teleporting.
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
+        ExpeditionDefinitionLoader.suppressLoadingForTests(true);
     }
 
     private ExpeditionSmokeTests() {

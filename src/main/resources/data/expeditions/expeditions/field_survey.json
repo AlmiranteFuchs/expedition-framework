@@ -1,0 +1,40 @@
+{
+    "dimension": "minecraft:overworld",
+    "display_name": "Field Survey",
+    "difficulty": 0,
+    "generate": {
+        "checkpoints": 3,
+        "min_spacing": 40,
+        "max_spacing": 80
+    },
+    "tokens": 20,
+    "bonus_tokens": 10,
+    "bonus_time_seconds": 300,
+    "grants": ["expeditions:field_clear"],
+    "objectives": [
+        {
+            "id": "survey",
+            "description": "Touch every checkpoint",
+            "type": "visit_checkpoint",
+            "checkpoint": 1,
+            "required": true
+        },
+        {
+            "id": "specimens",
+            "description": "Bring back 4 bones",
+            "type": "collect_items",
+            "item": "minecraft:bone",
+            "count": 4,
+            "required": false,
+            "bonus_tokens": 8
+        },
+        {
+            "id": "pace",
+            "description": "Finish under 4 minutes",
+            "type": "time_limit",
+            "seconds": 240,
+            "required": false,
+            "bonus_tokens": 6
+        }
+    ]
+}
