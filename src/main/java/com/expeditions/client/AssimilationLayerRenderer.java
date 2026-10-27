@@ -43,6 +43,9 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     /** Offset of the skin into the layer cell, off the covered face. */
     private static final double EPS = 1.0 / 512.0;
 
+    /** Overlay light: always bright, regardless of the cell's lighting. */
+    private static final int FULLBRIGHT = 0xF000F0;
+
     /** Directional face shading, lifted from vanilla's factors (down 0.5,
      * sides 0.6/0.8) to offset the translucent membrane plate darkening
      * what shows through it — tuned so each face reads like the block's
@@ -74,7 +77,18 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
                 RenderType.entityTranslucent(textureFor(level, pos, support, facing)));
         int light = LevelRenderer.getLightColor(level, pos);
         float shade = SHADE.get(facing);
-        emitQuad(consumer, poseStack, facing, shade, light, packedOverlay);
+        emitQuad(consumer, poseStack, facing, shade, 1.0f, light, packedOverlay,
+                (float) EPS);
+
+        // The amber trace overlay: the assimilation's living signature —
+        // fullbright so it announces itself in the dark, alpha riding a
+        // slow sine so the layer breathes.
+        float pulse = 0.55f + 0.35f * (float) Math.sin(
+                (level.getGameTime() + partialTick) * 0.05f);
+        VertexConsumer trace = buffers.getBuffer(
+                RenderType.entityTranslucent(TraceTexture.get()));
+        emitQuad(trace, poseStack, facing, 1.0f, pulse, FULLBRIGHT, packedOverlay,
+                (float) EPS * 2);
     }
 
     /**
@@ -104,9 +118,9 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
      * exactly with the texture it is desaturating.
      */
     private static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
-            Direction facing, float shade, int light, int overlay) {
+            Direction facing, float shade, float alpha, int light, int overlay,
+            float e) {
         PoseStack.Pose pose = poseStack.last();
-        float e = (float) EPS;
         float[][] corners = switch (facing) {
             case UP -> new float[][] {
                     {0, e, 0}, {0, e, 1}, {1, e, 1}, {1, e, 0}};
@@ -132,7 +146,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         float nz = facing.getStepZ();
         for (int i = 0; i < 4; i++) {
             consumer.addVertex(pose, corners[i][0], corners[i][1], corners[i][2])
-                    .setColor(shade, shade, shade, 1.0f)
+                    .setColor(shade, shade, shade, alpha)
                     .setUv(uv[i][0], uv[i][1])
                     .setOverlay(overlay)
                     .setLight(light)
