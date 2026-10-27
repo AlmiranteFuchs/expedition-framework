@@ -6,6 +6,7 @@ import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionLedger;
+import com.expeditions.core.SafeColumnSearch;
 import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
@@ -27,6 +28,7 @@ import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.data.ExpeditionDefinitions;
+import com.expeditions.server.dimension.DestinationChecks;
 import com.expeditions.server.dimension.ExpeditionAdapters;
 import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -63,7 +66,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 
 /**
@@ -381,7 +383,7 @@ public final class ExpeditionManager {
             data.setDirty();
         }
         if (!hasCompass(player)) {
-            grantCompass(player, run, level.dimension());
+            grantCompass(player, run);
         }
         // The portal may sit in a different dimension than the expedition;
         // teleport into the run's own level.
@@ -983,23 +985,11 @@ public final class ExpeditionManager {
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            double angle = level.getRandom().nextDouble() * Math.PI * 2;
-            int distance = 2 + level.getRandom().nextInt(radius - 1);
-            BlockPos column = center.offset(
-                    (int) Math.round(Math.cos(angle) * distance), 0,
-                    (int) Math.round(Math.sin(angle) * distance));
-            // Force-load the spawn column (bounded by the configured radius)
-            // before reading the heightmap — an ungenerated column reports a
-            // stale height — and so the mob is actually live.
-            level.getChunk(column);
-            BlockPos surface = level.getHeightmapPos(
-                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
-            if (!(type.create(level) instanceof Mob mob)) {
+            Mob mob = trySpawnMob(type, level, center, radius);
+            if (mob == null) {
                 continue;
             }
-            mob.moveTo(surface.getX() + 0.5, surface.getY(), surface.getZ() + 0.5,
-                    level.getRandom().nextFloat() * 360f, 0f);
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(surface),
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
                     MobSpawnType.EVENT, null);
             mob.setPersistenceRequired();
             for (EffectSpec spec : run.definition().modifiers().hordeEffects()) {
@@ -1007,9 +997,10 @@ public final class ExpeditionManager {
                         effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),
                         false, false)));
             }
-            mob.setTarget(nearestMember(run, level, surface));
-            level.addFreshEntity(mob);
-            spawned.add(mob.getUUID());
+            mob.setTarget(nearestMember(run, level, mob.blockPosition()));
+            if (level.addFreshEntity(mob)) {
+                spawned.add(mob.getUUID());
+            }
         }
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
@@ -1207,20 +1198,11 @@ public final class ExpeditionManager {
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            double angle = level.getRandom().nextDouble() * Math.PI * 2;
-            int distance = 2 + level.getRandom().nextInt(radius - 1);
-            BlockPos column = devicePos.offset(
-                    (int) Math.round(Math.cos(angle) * distance), 0,
-                    (int) Math.round(Math.sin(angle) * distance));
-            level.getChunk(column);
-            BlockPos surface = level.getHeightmapPos(
-                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
-            if (!(type.create(level) instanceof Mob mob)) {
+            Mob mob = trySpawnMob(type, level, devicePos, radius);
+            if (mob == null) {
                 continue;
             }
-            mob.moveTo(surface.getX() + 0.5, surface.getY(), surface.getZ() + 0.5,
-                    level.getRandom().nextFloat() * 360f, 0f);
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(surface),
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
                     MobSpawnType.EVENT, null);
             mob.setPersistenceRequired();
             for (EffectSpec spec : run.definition().modifiers().hordeEffects()) {
@@ -1231,12 +1213,84 @@ public final class ExpeditionManager {
             mob.goalSelector.addGoal(1, new AttackDeviceGoal(mob, devicePos,
                     ExpeditionsConfig.defenseMobDamage(),
                     ExpeditionsConfig.defenseMobAttackTicks()));
-            level.addFreshEntity(mob);
-            spawned.add(mob.getUUID());
+            if (level.addFreshEntity(mob)) {
+                spawned.add(mob.getUUID());
+            }
         }
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
         }
+    }
+
+    /** How far above an event's elevation a spawn column is scanned. */
+    private static final int MOB_SPAWN_SCAN_UP = 16;
+    /** How far below — deep enough to reach floors in enclosed dimensions. */
+    private static final int MOB_SPAWN_SCAN_DOWN = 40;
+
+    /** Random columns a single mob gets to find a home in, like vanilla's
+     * per-mob spawn retries — a lone ledge or a tall mob shouldn't empty
+     * the whole event. */
+    private static final int MOB_SPAWN_ATTEMPTS = 8;
+
+    /**
+     * Places a positioned, collision-free {@link Mob} of {@code type} in a
+     * random column of the ring around {@code center}, or null when no
+     * attempted column works. Not yet finalized or added to the level.
+     */
+    private static Mob trySpawnMob(EntityType<?> type, ServerLevel level,
+            BlockPos center, int radius) {
+        for (int attempt = 0; attempt < MOB_SPAWN_ATTEMPTS; attempt++) {
+            double angle = level.getRandom().nextDouble() * Math.PI * 2;
+            int distance = 2 + level.getRandom().nextInt(radius - 1);
+            BlockPos column = center.offset(
+                    (int) Math.round(Math.cos(angle) * distance), 0,
+                    (int) Math.round(Math.sin(angle) * distance));
+            // Force-load the spawn column (bounded by the configured radius)
+            // before reading its blocks — an ungenerated column reports
+            // stale state — and so the mob is actually live.
+            level.getChunk(column);
+            Optional<BlockPos> surface = findMobSpawn(level, column,
+                    center.getY());
+            if (surface.isEmpty() || !(type.create(level) instanceof Mob mob)) {
+                continue;
+            }
+            mob.moveTo(surface.get().getX() + 0.5, surface.get().getY(),
+                    surface.get().getZ() + 0.5,
+                    level.getRandom().nextFloat() * 360f, 0f);
+            // The standing contract guarantees two free blocks; a mob taller
+            // or wider than that would suffocate in the wall — keep looking.
+            if (level.noCollision(mob)) {
+                return mob;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * A standable spot in {@code column} near {@code nearY}: the same
+     * "two free blocks above a sturdy, non-hazardous floor" contract route
+     * resolution uses, scanned in a bounded window around the event's own
+     * elevation. The heightmap is deliberately not consulted — in enclosed
+     * dimensions it names the ceiling (a horde on the nether roof is a
+     * horde that doesn't exist), and in open ones the window keeps spawns
+     * near the players' own level instead of a far ridge top.
+     */
+    private static Optional<BlockPos> findMobSpawn(ServerLevel level,
+            BlockPos column, int nearY) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(
+                column.getX(), 0, column.getZ());
+        int top = Math.min(level.getMaxBuildHeight() - 1,
+                nearY + MOB_SPAWN_SCAN_UP);
+        int bottom = Math.max(level.getMinBuildHeight() + 1,
+                nearY - MOB_SPAWN_SCAN_DOWN);
+        OptionalInt y = SafeColumnSearch.findStandingY(
+                yy -> DestinationChecks.isFree(level, pos.setY(yy)),
+                yy -> DestinationChecks.isSturdyFloor(level, pos.setY(yy)),
+                yy -> DestinationChecks.isHazard(level, pos.setY(yy)),
+                top, bottom);
+        return y.isPresent()
+                ? Optional.of(pos.setY(y.getAsInt()).immutable())
+                : Optional.empty();
     }
 
     /** The online, living party member nearest to {@code pos}, if any. */
@@ -1441,10 +1495,9 @@ public final class ExpeditionManager {
      * Gives the player an expedition compass pointed at the run's current
      * target, dropping it at their feet if the inventory is full.
      */
-    private static void grantCompass(ServerPlayer player, ExpeditionRun run,
-            ResourceKey<Level> dimension) {
+    private static void grantCompass(ServerPlayer player, ExpeditionRun run) {
         ItemStack stack = new ItemStack(ModItems.EXPEDITION_COMPASS.get());
-        retarget(stack, dimension, nextTarget(run));
+        retarget(stack, runDimension(run), nextTarget(run));
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
@@ -1453,8 +1506,7 @@ public final class ExpeditionManager {
     /** Points every expedition compass of every online member at the next target. */
     private void retargetPartyCompasses(ExpeditionRun run) {
         Waypoint target = nextTarget(run);
-        ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION,
-                ResourceLocation.parse(run.definition().dimension()));
+        ResourceKey<Level> dimension = runDimension(run);
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
@@ -1577,6 +1629,16 @@ public final class ExpeditionManager {
     private static void retarget(ItemStack stack, ResourceKey<Level> dimension, Waypoint target) {
         stack.set(DataComponents.LODESTONE_TRACKER, new LodestoneTracker(
                 Optional.of(GlobalPos.of(dimension, toPos(target))), false));
+    }
+
+    /**
+     * The run's own dimension key — NOT the portal's. A remote expedition's
+     * compass must target a {@link GlobalPos} in the dimension the holder
+     * will stand in, or the vanilla needle-validity check spins it.
+     */
+    private static ResourceKey<Level> runDimension(ExpeditionRun run) {
+        return ResourceKey.create(Registries.DIMENSION,
+                ResourceLocation.parse(run.definition().dimension()));
     }
 
     /**

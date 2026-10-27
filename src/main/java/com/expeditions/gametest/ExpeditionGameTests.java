@@ -27,6 +27,7 @@ import com.expeditions.server.HordePools;
 import com.expeditions.server.ItemRewards;
 import com.expeditions.server.ItemValuator;
 import com.expeditions.server.data.ExpeditionDefinitions;
+import com.expeditions.server.dimension.DestinationChecks;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import java.util.Collections;
@@ -2736,6 +2737,25 @@ public final class ExpeditionGameTests {
         level.setBlock(support, Blocks.OAK_SLAB.defaultBlockState(), 3);
         helper.assertTrue(level.getBlockState(cell).isAir(),
                 "a non-sturdy support must remove the layer");
+
+        // The same contract holds on every face — support loss from a real
+        // player break, not just setBlock.
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.SURVIVAL);
+        for (Direction face : Direction.values()) {
+            BlockPos faceCell = support.relative(face);
+            level.setBlock(support, Blocks.STONE.defaultBlockState(), 3);
+            level.setBlock(faceCell, layerFacing(face), 3);
+            player.setPos(faceCell.getX() + 0.5 - face.getStepX() * 2,
+                    faceCell.getY() + 1, faceCell.getZ() + 0.5 - face.getStepZ() * 2);
+            player.gameMode.destroyBlock(support);
+            helper.assertTrue(level.getBlockState(faceCell).isAir(),
+                    face + "-attached layer must die when the player breaks "
+                            + "its support, got " + level.getBlockState(faceCell));
+            helper.assertTrue(countEssenceItems(level, faceCell) == 0,
+                    face + "-attached layer must not drop essence on "
+                            + "support loss");
+        }
         helper.succeed();
     }
 
@@ -3201,6 +3221,77 @@ public final class ExpeditionGameTests {
             ExpeditionDefinitions.reload(Map.of());
         }
         helper.succeed();
+    }
+
+    /**
+     * Enclosed dimensions have no heightmap floor — a Nether column's top
+     * is the bedrock roof, so heightmap-based spawning puts the horde on
+     * top of the world where no player can reach it. Every horde member
+     * must instead land inside the spawn scan window around the
+     * checkpoint's own elevation, standing on a real floor.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_nh")
+    public static void netherHordeSpawnsNearCheckpoint(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel nether = server.getLevel(Level.NETHER);
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+
+        BlockPos terminalPos = new BlockPos(0, 80, 0);
+        clearAndFloor(nether, terminalPos);
+        nether.setBlock(terminalPos,
+                ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState(), 3);
+        player.teleportTo(nether, 1.5, 80.0, 0.5, Set.of(), 0f, 0f);
+        for (int attempt = 0;
+                attempt < 5 && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
+            useBlockAt(nether, player, terminalPos);
+            clickMenuStart(player);
+        }
+        ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
+                () -> new IllegalStateException(
+                        "terminal interaction must start a nether run"));
+        try {
+            BlockPos checkpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
+            player.teleportTo(nether, checkpoint.getX() + 0.5,
+                    checkpoint.getY() + 1.0, checkpoint.getZ() + 0.5,
+                    Set.of(), 0f, 0f);
+            useBlockAt(nether, player, checkpoint);
+            // Columns that can't host the rolled mob (too short a gap for a
+            // ghast, solid wall) are legitimately skipped — the contract is
+            // that SOMETHING spawned and everything tracked is reachable.
+            helper.assertTrue(!run.challengeEntities().isEmpty(),
+                    "a nether horde must spawn");
+            int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
+            List<UUID> horde = List.copyOf(run.challengeEntities());
+            forceLoadArea(nether, checkpoint, hordeRadius);
+            pollUntil(helper,
+                    () -> horde.stream().allMatch(id -> nether.getEntity(id) != null),
+                    "the horde's entity sections to become accessible", () -> {
+                for (UUID id : horde) {
+                    Entity entity = findEntity(nether, checkpoint, hordeRadius, id);
+                    helper.assertTrue(entity instanceof Mob,
+                            "horde member " + id + " must exist as a Mob, was "
+                                    + entity);
+                    BlockPos feet = entity.blockPosition();
+                    helper.assertTrue(
+                            feet.getY() <= checkpoint.getY() + 17
+                                    && feet.getY() >= checkpoint.getY() - 41,
+                            "horde member must spawn near the checkpoint's "
+                                    + "elevation, not the roof: feet " + feet
+                                    + " vs checkpoint " + checkpoint);
+                    helper.assertTrue(
+                            DestinationChecks.isSturdyFloor(nether, feet.below())
+                                    && DestinationChecks.isFree(nether, feet)
+                                    && DestinationChecks.isFree(nether, feet.above()),
+                            "horde member must stand on a real floor, feet at "
+                                    + feet);
+                }
+                helper.succeed();
+            }, 400, () -> dumpArea(nether, checkpoint, hordeRadius, horde));
+        } finally {
+            failRunIfActive(manager, player);
+        }
     }
 
     /**
