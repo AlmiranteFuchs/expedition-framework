@@ -1,6 +1,7 @@
 package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
+import com.expeditions.block.entity.AssimilationHeartBlockEntity;
 import com.expeditions.core.SafeColumnSearch;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.dimension.DestinationChecks;
@@ -73,6 +74,72 @@ public final class Microbiome {
         if (level.random.nextDouble() < ExpeditionsConfig.microbiomeSpawnChance()) {
             trySpawnHeart(level, playerPos, level.random);
         }
+    }
+
+    /**
+     * Seeds a colony near a run marker — the microbiome colonizes
+     * expedition infrastructure, and the glowing blob doubles as the
+     * route's landmark. Best-effort like mob spawning: random columns in
+     * the ring first, then a deterministic staggered sweep, so a viable
+     * neighborhood always hosts one. The starter pulses give the patch
+     * immediate presence; full growth still comes from the heart's own
+     * ticker.
+     */
+    public static Optional<BlockPos> seedColonyNear(ServerLevel level,
+            BlockPos marker, RandomSource random) {
+        if (!enabled(level) || !ExpeditionsConfig.microbiomeMarkerColonies()) {
+            return Optional.empty();
+        }
+        int radius = ExpeditionsConfig.microbiomeMarkerColonyRadius();
+        for (int attempt = 0; attempt < 8; attempt++) {
+            Optional<BlockPos> spot = columnSpot(level, marker,
+                    random.nextDouble() * Math.PI * 2,
+                    2 + random.nextInt(Math.max(1, radius - 1)));
+            if (spot.isPresent()) {
+                return plantColony(level, spot.get());
+            }
+        }
+        for (int ri = 0; ri < 3; ri++) {
+            int distance = Math.max(2, radius * (ri + 1) / 4);
+            for (int ai = 0; ai < 8; ai++) {
+                Optional<BlockPos> spot = columnSpot(level, marker,
+                        ai * Math.PI / 4 + ri * 0.41, distance);
+                if (spot.isPresent()) {
+                    return plantColony(level, spot.get());
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * A standable cell in {@code column} near the marker's elevation —
+     * the same two-free-above-a-sturdy-floor contract as mob spawning.
+     */
+    private static Optional<BlockPos> columnSpot(ServerLevel level,
+            BlockPos marker, double angle, int distance) {
+        BlockPos column = marker.offset(
+                (int) Math.round(Math.cos(angle) * distance), 0,
+                (int) Math.round(Math.sin(angle) * distance));
+        level.getChunk(column);
+        return MobSpawns.findStandingSpot(level, column, marker.getY());
+    }
+
+    /** Places a heart at {@code heartPos} and gives it a starter patch. */
+    private static Optional<BlockPos> plantColony(ServerLevel level,
+            BlockPos heartPos) {
+        if (!level.setBlock(heartPos,
+                ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3)) {
+            return Optional.empty();
+        }
+        if (level.getBlockEntity(heartPos)
+                instanceof AssimilationHeartBlockEntity heart) {
+            int starter = ExpeditionsConfig.microbiomeMarkerColonyStarterPulses();
+            for (int i = 0; i < starter; i++) {
+                heart.pulse(level);
+            }
+        }
+        return Optional.of(heartPos);
     }
 
     private static ExpeditionSavedData savedData(ServerLevel level) {

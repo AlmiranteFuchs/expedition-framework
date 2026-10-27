@@ -261,9 +261,14 @@ public final class ExpeditionManager {
         for (BlockPos pos : checkpointPositions) {
             level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
             data.trackMarker(dimension, pos);
+            // The microbiome colonizes expedition infrastructure — a
+            // glowing blob near each marker doubles as the route's
+            // landmark. Best-effort; non-viable terrain simply skips it.
+            Microbiome.seedColonyNear(level, pos, level.random);
         }
         level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
         data.trackMarker(dimension, exitPos);
+        Microbiome.seedColonyNear(level, exitPos, level.random);
         portalLevel.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState(), 3);
         data.trackMarker(portalDimension, portalPos);
 

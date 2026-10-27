@@ -541,14 +541,17 @@ chunk, and validate on real block state — not heightmap assumptions.
   extending members along walls and wrapping them over block edges —
   bounded by `microbiome.maxColonySize` (a blob, never a takeover).
   Breaking the heart stops the spread; a dimension marked cleared in the
-  saved data silences hearts and spawning both.
-- **Tests** — 111 unit tests + 79 GameTest in-game tests.
+  saved data silences hearts and spawning both. Expedition markers get
+  colonized too — a heart seeds in the ring around each checkpoint and
+  exit (`microbiome.markerColonies`), so the glowing blob doubles as the
+  route's landmark.
+- **Tests** — 111 unit tests + 80 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.3.0.jar` assembled.
 - `./gradlew test` — 111 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **79/79 game tests passed** on a real dedicated
+- `./gradlew runGameTestServer` — **80/80 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -617,7 +620,8 @@ chunk, and validate on real block state — not heightmap assumptions.
     a heart pulses layers onto its own faces then grows the colony along
     walls and over edges to the configured cap and no further, crawls down
     a pillar's sides without detaching, and a cleared dimension silences
-    both seeding and growth.
+    both seeding and growth. Placed checkpoint/exit markers get colonized
+    with a starter patch — the blob is the route's visible landmark.
   - item valuation ranks tiers correctly (junk < food < gem < equipment),
     completion grants bonus drops from the run's dimension pool, redeem
     refuses without enough tokens and pays a Nether draw in the Nether,
@@ -706,7 +710,7 @@ no custom menu type).
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (79 tests, batches a–z + art + def + mic + nh).
+- `com.expeditions.gametest` — `ExpeditionGameTests` (80 tests, batches a–z + art + def + mic + nh).
 - `com.expeditions.item` — `ExpeditionCompassItem` (a plain `Item`; its needle
   is driven server-side via `LODESTONE_TRACKER`, so it does not extend
   `CompassItem` and never competes with block interactions) and

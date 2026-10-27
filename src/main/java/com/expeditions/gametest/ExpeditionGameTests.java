@@ -3468,6 +3468,59 @@ public final class ExpeditionGameTests {
     }
 
     /**
+     * Marker colonization: placing an expedition's checkpoint and exit
+     * markers seeds a colony in each one's ring — the glowing blob is the
+     * route's visible landmark. The starter pulses give the patch
+     * immediate presence; the heart's own ticker takes over after.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    public static void microbiomeColonizesMarkers(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        ExpeditionRun run = startExpedition(helper, manager, player);
+        try {
+            int r = ExpeditionsConfig.microbiomeMarkerColonyRadius() + 2;
+            for (Waypoint waypoint : run.checkpoints()) {
+                BlockPos cp = ExpeditionManager.toPos(waypoint);
+                BlockPos heartPos = findHeartNear(level, cp, r);
+                helper.assertTrue(heartPos != null,
+                        "a colony must seed near checkpoint " + cp);
+                AssimilationHeartBlockEntity heart =
+                        (AssimilationHeartBlockEntity) level.getBlockEntity(heartPos);
+                helper.assertTrue(!heart.colony().isEmpty(),
+                        "a marker colony must grow a starter patch at "
+                                + heartPos);
+                for (BlockPos member : heart.colony()) {
+                    helper.assertTrue(
+                            level.getBlockState(member).canSurvive(level, member),
+                            "starter layer must be legally attached at " + member);
+                }
+            }
+        } finally {
+            failRunIfActive(manager, player);
+        }
+        helper.succeed();
+    }
+
+    /** The first heart block in the box around {@code center}, if any. */
+    private static BlockPos findHeartNear(ServerLevel level, BlockPos center, int r) {
+        for (int dy = -8; dy <= 8; dy++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    BlockPos p = center.offset(dx, dy, dz);
+                    if (level.getBlockState(p)
+                            .is(ModBlocks.ASSIMILATION_HEART.get())) {
+                        return p;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Fails the player's run if one is still active — test cleanup that can
      * never leak a run (and its authored-anchor markers) into later tests.
      */

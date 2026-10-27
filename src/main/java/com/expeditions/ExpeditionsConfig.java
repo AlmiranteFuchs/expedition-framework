@@ -171,6 +171,25 @@ public final class ExpeditionsConfig {
                     "local blob, never a takeover.")
             .defineInRange("expeditions.microbiome.maxColonySize", 48, 1, 512);
 
+    private static final ModConfigSpec.BooleanValue MICROBIOME_MARKER_COLONIES = BUILDER
+            .comment("Whether expedition markers get colonized: a heart is",
+                    "seeded in the ring around each placed checkpoint and",
+                    "exit, so the glowing blob doubles as a landmark for",
+                    "the run's route.")
+            .define("expeditions.microbiome.markerColonies", true);
+
+    private static final ModConfigSpec.IntValue MICROBIOME_MARKER_RADIUS = BUILDER
+            .comment("Maximum distance from a marker its colony's heart",
+                    "may land — close enough to read as the marker's sign,",
+                    "never on the marker itself.")
+            .defineInRange("expeditions.microbiome.markerColonyRadius", 8, 2, 32);
+
+    private static final ModConfigSpec.IntValue MICROBIOME_MARKER_STARTER = BUILDER
+            .comment("Growth pulses applied to a marker colony at seed",
+                    "time, so the patch is immediately visible instead of",
+                    "growing in over minutes.")
+            .defineInRange("expeditions.microbiome.markerColonyStarterPulses", 6, 0, 64);
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> OVERWORLD_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Overworld expedition.",
@@ -453,6 +472,21 @@ public final class ExpeditionsConfig {
     /** Maximum layers one heart sustains. */
     public static int microbiomeMaxColonySize() {
         return MICROBIOME_MAX_COLONY.get();
+    }
+
+    /** Whether expedition markers get colonized. */
+    public static boolean microbiomeMarkerColonies() {
+        return MICROBIOME_MARKER_COLONIES.get();
+    }
+
+    /** Maximum distance from a marker its colony's heart may land. */
+    public static int microbiomeMarkerColonyRadius() {
+        return MICROBIOME_MARKER_RADIUS.get();
+    }
+
+    /** Growth pulses applied to a marker colony at seed time. */
+    public static int microbiomeMarkerColonyStarterPulses() {
+        return MICROBIOME_MARKER_STARTER.get();
     }
 
     /** Whether completion grants bonus item drops alongside tokens. */
