@@ -43,9 +43,12 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     /** Offset of the skin into the layer cell, off the covered face. */
     private static final double EPS = 1.0 / 512.0;
 
-    /** Vanilla directional face shading (down, up, north, south, west, east). */
+    /** Directional face shading, lifted from vanilla's factors (down 0.5,
+     * sides 0.6/0.8) to offset the translucent membrane plate darkening
+     * what shows through it — tuned so each face reads like the block's
+     * own, desaturated. */
     private static final Map<Direction, Float> SHADE = Map.of(
-            Direction.DOWN, 0.5f, Direction.UP, 1.0f,
+            Direction.DOWN, 0.75f, Direction.UP, 1.0f,
             Direction.NORTH, 0.8f, Direction.SOUTH, 0.8f,
             Direction.WEST, 0.6f, Direction.EAST, 0.6f);
 

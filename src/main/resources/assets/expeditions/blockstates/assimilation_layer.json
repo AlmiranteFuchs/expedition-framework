@@ -20,13 +20,13 @@
     "facing=east": {
       "model": "expeditions:block/assimilation_layer",
       "x": 90,
-      "y": 270,
+      "y": 90,
       "uvlock": true
     },
     "facing=west": {
       "model": "expeditions:block/assimilation_layer",
       "x": 90,
-      "y": 90,
+      "y": 270,
       "uvlock": true
     }
   }
