@@ -137,6 +137,40 @@ public final class ExpeditionsConfig {
             .comment("Ticks between a siege mob's hits once in reach of the device.")
             .defineInRange("expeditions.challenges.defenseMobAttackTicks", 20, 1, 200);
 
+    private static final ModConfigSpec.BooleanValue MICROBIOME_ENABLED = BUILDER
+            .comment("Whether the microbiome lives in the world: hearts spawn",
+                    "as players travel and existing hearts pulse the",
+                    "assimilation layer outward. Cleared dimensions stay",
+                    "silent regardless.")
+            .define("expeditions.microbiome.enabled", true);
+
+    private static final ModConfigSpec.IntValue MICROBIOME_SPAWN_INTERVAL = BUILDER
+            .comment("Ticks between per-player heart spawn rolls while a",
+                    "player moves through a dimension.")
+            .defineInRange("expeditions.microbiome.heartSpawnIntervalTicks", 2400, 20, 72000);
+
+    private static final ModConfigSpec.DoubleValue MICROBIOME_SPAWN_CHANCE = BUILDER
+            .comment("Chance each interval roll actually tries to seed a heart.")
+            .defineInRange("expeditions.microbiome.heartSpawnChance", 0.35, 0.0, 1.0);
+
+    private static final ModConfigSpec.IntValue MICROBIOME_SPAWN_MIN = BUILDER
+            .comment("Minimum distance from the player a heart may appear",
+                    "(far enough to be discovered, not underfoot).")
+            .defineInRange("expeditions.microbiome.spawnRadiusMin", 32, 8, 256);
+
+    private static final ModConfigSpec.IntValue MICROBIOME_SPAWN_MAX = BUILDER
+            .comment("Maximum distance from the player a heart may appear.")
+            .defineInRange("expeditions.microbiome.spawnRadiusMax", 64, 8, 256);
+
+    private static final ModConfigSpec.IntValue MICROBIOME_GROWTH_TICKS = BUILDER
+            .comment("Ticks between a heart's growth pulses.")
+            .defineInRange("expeditions.microbiome.growthIntervalTicks", 60, 5, 1200);
+
+    private static final ModConfigSpec.IntValue MICROBIOME_MAX_COLONY = BUILDER
+            .comment("Maximum assimilation layers one heart sustains — a",
+                    "local blob, never a takeover.")
+            .defineInRange("expeditions.microbiome.maxColonySize", 48, 1, 512);
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> OVERWORLD_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Overworld expedition.",
@@ -384,6 +418,41 @@ public final class ExpeditionsConfig {
     /** Ticks between a siege mob's hits in reach of the device. */
     public static int defenseMobAttackTicks() {
         return DEFENSE_MOB_ATTACK_TICKS.get();
+    }
+
+    /** Whether the microbiome may grow or spawn at all. */
+    public static boolean microbiomeEnabled() {
+        return MICROBIOME_ENABLED.get();
+    }
+
+    /** Ticks between per-player heart spawn rolls. */
+    public static int microbiomeSpawnIntervalTicks() {
+        return MICROBIOME_SPAWN_INTERVAL.get();
+    }
+
+    /** Chance each interval roll tries to seed a heart. */
+    public static double microbiomeSpawnChance() {
+        return MICROBIOME_SPAWN_CHANCE.get();
+    }
+
+    /** Minimum spawn distance from the player. */
+    public static int microbiomeSpawnRadiusMin() {
+        return MICROBIOME_SPAWN_MIN.get();
+    }
+
+    /** Maximum spawn distance from the player. */
+    public static int microbiomeSpawnRadiusMax() {
+        return MICROBIOME_SPAWN_MAX.get();
+    }
+
+    /** Ticks between a heart's growth pulses. */
+    public static int microbiomeGrowthIntervalTicks() {
+        return MICROBIOME_GROWTH_TICKS.get();
+    }
+
+    /** Maximum layers one heart sustains. */
+    public static int microbiomeMaxColonySize() {
+        return MICROBIOME_MAX_COLONY.get();
     }
 
     /** Whether completion grants bonus item drops alongside tokens. */

@@ -54,7 +54,7 @@ covers direction.
 | M12 | Terminal progression + dimensional campaign | **Partial** — unlock infra landed | Slice a done: per-player unlock keys in the ledger (persisted), definitions gain `requires`/`grants`/`cost_tokens`, `startRun` gates with a named-explanation refusal, charges cost post-validation, grants keys party-wide on completion; menu shows locked expeditions with missing-requirement lore; `/expeditions unlocks`. Remaining: trophies, dimensional campaign states, crafted progression artifact |
 | M13 | Dimension compatibility | **Mostly complete** | Adapters, bounded safe search, natural mob pools, fail-safe refusals done. New scope fits: threat behavior must route through `ExpeditionDimensionAdapter`/`HordePools` (dimension-scoped state, per-dimension spawn pools), not a parallel system. Untested against a real third-party modded dimension |
 | M14 | Configuration & expansion | **Partial** | TOML + datapack + tags + options cover most parameters. New scope: threat tuning knobs (pressure growth, caps, per-dimension overrides). Structure archetypes deferred by design |
-| M15 | Global dimensional threat + Big Bad event | **Partial** — visual prototype landed | Smallest necessary addition — doesn't fit M12 (progression infra) or M13 (compat plumbing). A persistent per-dimension pressure level that escalates horde pressure (size, effects, spawn presence) across *all* expeditions in that dimension, culminating in an unlockable Big Bad event. Depends: M12 (unlock chain gates it), M13 (dimension-scoped behavior), M14 (tuning surface). Landed: the Big Bad's **assimilation layer** block + grayscale skin renderer (prototype below). Remaining: pressure level, spread/exposure logic, boss event |
+| M15 | Global dimensional threat + Big Bad event | **Partial** — microbiome landed | Smallest necessary addition — doesn't fit M12 (progression infra) or M13 (compat plumbing). A persistent per-dimension pressure level that escalates horde pressure (size, effects, spawn presence) across *all* expeditions in that dimension, culminating in an unlockable Big Bad event. Depends: M12 (unlock chain gates it), M13 (dimension-scoped behavior), M14 (tuning surface). Landed: the **microbiome** — traversal-seeded heart colonies that grow the assimilation layer under a bounded cap, silenced per-dimension by the cleared seam (below). Remaining: pressure level, boss event |
 
 ### Foundation audit — what supports the new requirements
 
@@ -257,6 +257,33 @@ Definitions can now chain expeditions into sequences:
   lore and the start refusal read the same data.
 - Old saves: no unlock records → players hold no keys; runs without the
   new def fields restore empty/no-cost.
+
+## Microbiome — heart-driven colonies (implemented)
+
+The assimilation layer's growth organ: `expeditions:assimilation_heart`,
+a solid amber node — the *only* thing that grows the layer. Discovered
+while moving through a dimension, killable to stop the spread.
+
+- **Traversal seeding** — a throttled `PlayerTickEvent` hook rolls
+  `microbiome.spawnChance` and calls `Microbiome.trySpawnHeart`: a heart
+  lands on a standable column in a ring around the player (config radii
+  `spawnRadiusMin/Max`), using the same bounded elevation-window column
+  scan as `MobSpawns` — so a heart never seeds onto an enclosed
+  dimension's roof. `microbiome.enabled` is the runtime kill-switch for
+  both spawning and growth.
+- **Heart pulses** — every `microbiome.growthIntervalTicks` the block
+  entity applies one uniformly chosen legal move: seed a layer on one of
+  its own sturdy faces when the colony is empty, else extend a member
+  along its wall or wrap over the support's edge. The colony's positions
+  persist in the block entity so a chunk unload never forgets; dead
+  members are pruned each pulse so broken layers free their slot.
+- **Bounded colony** — `microbiome.maxColonySize` caps members: a local
+  blob, never a world takeover. Removing the heart is the counterplay —
+  no ticker, no growth; surviving layers die only with their supports.
+- **Cleared seam** — `ExpeditionSavedData.clearedDimensions` silences
+  hearts and traversal spawning per dimension (`Microbiome.enabled`
+  consults it first). The "won the dimension" transition lands with M12b;
+  the shutoff is already enforced.
 
 ## Next recommended milestone
 

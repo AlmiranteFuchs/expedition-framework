@@ -35,6 +35,10 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> ASSIMILATION_LAYER_ITEM = ITEMS.registerSimpleBlockItem(
             "assimilation_layer", ModBlocks.ASSIMILATION_LAYER);
 
+    /** Places the microbiome's growth organ — the colony's killable core. */
+    public static final DeferredItem<BlockItem> ASSIMILATION_HEART_ITEM = ITEMS.registerSimpleBlockItem(
+            "assimilation_heart", ModBlocks.ASSIMILATION_HEART);
+
     /** Harvest drop from the assimilation layer — progression placeholder. */
     public static final DeferredItem<Item> ASSIMILATION_ESSENCE = ITEMS.registerSimpleItem(
             "assimilation_essence");

@@ -122,11 +122,13 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_REQUIRES = "Requires";
     private static final String TAG_GRANTS = "Grants";
     private static final String TAG_COST_TOKENS = "CostTokens";
+    private static final String TAG_CLEARED_DIMENSIONS = "ClearedDimensions";
 
     private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
     private final ExpeditionLedger ledger = new ExpeditionLedger();
     private final Map<String, Set<BlockPos>> liveMarkers = new HashMap<>();
+    private final Set<String> clearedDimensions = new HashSet<>();
 
     public static ExpeditionSavedData create() {
         return new ExpeditionSavedData();
@@ -157,6 +159,13 @@ public class ExpeditionSavedData extends SavedData {
                         readPos(markerTag));
             } catch (RuntimeException e) {
                 LOGGER.warn("Skipping malformed marker record: {}", e.getMessage());
+            }
+        }
+        for (Tag t : tag.getList(TAG_CLEARED_DIMENSIONS, Tag.TAG_STRING)) {
+            try {
+                data.clearedDimensions.add(((StringTag) t).getAsString());
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping malformed cleared-dimension record: {}", e.getMessage());
             }
         }
         for (Tag t : tag.getList(TAG_UNLOCKS, Tag.TAG_COMPOUND)) {
@@ -500,6 +509,11 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_MARKERS, markers);
+        ListTag cleared = new ListTag();
+        for (String dimension : clearedDimensions) {
+            cleared.add(StringTag.valueOf(dimension));
+        }
+        tag.put(TAG_CLEARED_DIMENSIONS, cleared);
         return tag;
     }
 
@@ -525,6 +539,28 @@ public class ExpeditionSavedData extends SavedData {
     /** Tracked marker positions per dimension id (unmodifiable). */
     public Map<String, Set<BlockPos>> liveMarkers() {
         return Collections.unmodifiableMap(liveMarkers);
+    }
+
+    /**
+     * Whether {@code dimension} (e.g. {@code "minecraft:the_nether"}) has
+     * been cleared by the campaign. A cleared dimension's microbiome goes
+     * silent — hearts stop pulsing and no new ones spawn.
+     */
+    public boolean isDimensionCleared(String dimension) {
+        return clearedDimensions.contains(dimension);
+    }
+
+    public void setDimensionCleared(String dimension) {
+        if (clearedDimensions.add(dimension)) {
+            setDirty();
+        }
+    }
+
+    /** Removes the cleared mark — admin path and test cleanup. */
+    public void unclearDimension(String dimension) {
+        if (clearedDimensions.remove(dimension)) {
+            setDirty();
+        }
     }
 
     private static Waypoint readWaypoint(CompoundTag tag) {

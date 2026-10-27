@@ -1,6 +1,7 @@
 package com.expeditions.registry;
 
 import com.expeditions.ExpeditionsMod;
+import com.expeditions.block.entity.AssimilationHeartBlockEntity;
 import com.expeditions.block.entity.AssimilationLayerBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -17,6 +18,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("assimilation_layer",
                     () -> BlockEntityType.Builder.of(AssimilationLayerBlockEntity::new,
                             ModBlocks.ASSIMILATION_LAYER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>,
+            BlockEntityType<AssimilationHeartBlockEntity>> ASSIMILATION_HEART =
+            BLOCK_ENTITIES.register("assimilation_heart",
+                    () -> BlockEntityType.Builder.of(AssimilationHeartBlockEntity::new,
+                            ModBlocks.ASSIMILATION_HEART.get()).build(null));
 
     private ModBlockEntities() {
     }

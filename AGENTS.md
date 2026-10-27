@@ -32,6 +32,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - `com.expeditions.server` — server-authoritative coordination
   (`ExpeditionManager`), persistence (`ExpeditionSavedData`, overworld
   `DimensionDataStorage`), game-bus hooks (`ExpeditionEventHandler`).
+  `MobSpawns` is the shared horde/wave placement (bounded column scan
+  around the event's elevation — never the heightmap, which names the
+  roof in enclosed dimensions — plus a bounding-box `noCollision` check
+  and a deterministic ring sweep fallback). `Microbiome` gates and seeds
+  the assimilation-heart spread; `clearedDimensions` in the same
+  SavedData file is the per-dimension kill seam (M12b flips it).
 - `com.expeditions.registry` — `DeferredRegister` wiring (blocks, items, tabs).
 - `com.expeditions.block` — blocks; interactions delegate to the server layer.
 - Lifecycle is explicit and validated in the domain: `ACTIVE → COMPLETED | FAILED`,

@@ -1,5 +1,6 @@
 package com.expeditions.server;
 
+import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
@@ -19,6 +20,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
@@ -86,6 +88,20 @@ public final class ExpeditionEventHandler {
             ExpeditionManager manager = ExpeditionManager.get(event.getServer());
             manager.tickDefenses();
             manager.sweepChallengeEntities();
+        }
+    }
+
+    /**
+     * Traversal seeding: on a throttled per-player cadence, rolls whether
+     * the microbiome tries to plant a heart in a ring around the player.
+     * The chance and interval live in config; cleared or disabled
+     * dimensions refuse inside {@link Microbiome#onPlayerTick}.
+     */
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player
+                && player.tickCount % ExpeditionsConfig.microbiomeSpawnIntervalTicks() == 0
+                && Microbiome.enabled(player.serverLevel())) {
+            Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
         }
     }
 

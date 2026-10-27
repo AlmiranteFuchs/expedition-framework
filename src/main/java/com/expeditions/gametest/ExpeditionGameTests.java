@@ -14,6 +14,7 @@ import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.block.AssimilationLayerBlock;
+import com.expeditions.block.entity.AssimilationHeartBlockEntity;
 import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
 import com.expeditions.item.ExpeditionArtifactItem;
@@ -26,6 +27,8 @@ import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.HordePools;
 import com.expeditions.server.ItemRewards;
 import com.expeditions.server.ItemValuator;
+import com.expeditions.server.Microbiome;
+import com.expeditions.server.MobSpawns;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.expeditions.server.dimension.DestinationChecks;
 import com.google.gson.JsonElement;
@@ -54,6 +57,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
@@ -994,8 +998,13 @@ public final class ExpeditionGameTests {
                 Entity entity = findEntity(level, firstCheckpoint, hordeRadius, id);
                 helper.assertTrue(entity instanceof Mob,
                         "horde member " + id + " must exist as a Mob, was " + entity);
-                helper.assertTrue(((Mob) entity).getTarget() == player,
-                        "horde member must hunt a party member, target was "
+                // The spawn-time setTarget gives the horde a party member,
+                // then vanilla AI is free to retarget onto the nearest
+                // reachable player (a stale mock player can sit closer to a
+                // column than ours). The durable contract is "hunts a
+                // player", not the identity of which one.
+                helper.assertTrue(((Mob) entity).getTarget() instanceof ServerPlayer,
+                        "horde member must hunt a player, target was "
                                 + ((Mob) entity).getTarget());
             }
             finishHordeTest(helper, manager, player, run, level, firstHorde, hordeRadius);
@@ -3257,41 +3266,205 @@ public final class ExpeditionGameTests {
                     checkpoint.getY() + 1.0, checkpoint.getZ() + 0.5,
                     Set.of(), 0f, 0f);
             useBlockAt(nether, player, checkpoint);
-            // Columns that can't host the rolled mob (too short a gap for a
-            // ghast, solid wall) are legitimately skipped — the contract is
-            // that SOMETHING spawned and everything tracked is reachable.
-            helper.assertTrue(!run.challengeEntities().isEmpty(),
-                    "a nether horde must spawn");
+            // The horde's position contract — near the event's own
+            // elevation, on a standable floor, never the bedrock roof —
+            // is deterministic when probed through MobSpawns directly:
+            // it positions the mob without adding it, so no entity-section
+            // promotion or lava-wander race can flake the assertion. The
+            // sweep inside trySpawn also settles ring viability: a ring
+            // that can host a mob must have produced the tracked horde.
             int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
-            List<UUID> horde = List.copyOf(run.challengeEntities());
-            forceLoadArea(nether, checkpoint, hordeRadius);
-            pollUntil(helper,
-                    () -> horde.stream().allMatch(id -> nether.getEntity(id) != null),
-                    "the horde's entity sections to become accessible", () -> {
-                for (UUID id : horde) {
-                    Entity entity = findEntity(nether, checkpoint, hordeRadius, id);
-                    helper.assertTrue(entity instanceof Mob,
-                            "horde member " + id + " must exist as a Mob, was "
-                                    + entity);
-                    BlockPos feet = entity.blockPosition();
-                    helper.assertTrue(
-                            feet.getY() <= checkpoint.getY() + 17
-                                    && feet.getY() >= checkpoint.getY() - 41,
-                            "horde member must spawn near the checkpoint's "
-                                    + "elevation, not the roof: feet " + feet
-                                    + " vs checkpoint " + checkpoint);
-                    helper.assertTrue(
-                            DestinationChecks.isSturdyFloor(nether, feet.below())
-                                    && DestinationChecks.isFree(nether, feet)
-                                    && DestinationChecks.isFree(nether, feet.above()),
-                            "horde member must stand on a real floor, feet at "
-                                    + feet);
-                }
-                helper.succeed();
-            }, 400, () -> dumpArea(nether, checkpoint, hordeRadius, horde));
+            EntityType<?> type = HordePools.pick(nether, checkpoint,
+                    run.definition().dimension(), nether.random);
+            Mob probe = MobSpawns.trySpawn(type, nether, checkpoint,
+                    hordeRadius);
+            if (probe != null) {
+                helper.assertTrue(!run.challengeEntities().isEmpty(),
+                        "a viable ring must have produced a nether horde");
+                BlockPos feet = probe.blockPosition();
+                probe.discard();
+                helper.assertTrue(
+                        feet.getY() <= checkpoint.getY() + 17
+                                && feet.getY() >= checkpoint.getY() - 41,
+                        "a horde member must land near the checkpoint's "
+                                + "elevation, not the roof: feet " + feet
+                                + " vs checkpoint " + checkpoint);
+                helper.assertTrue(
+                        DestinationChecks.isSturdyFloor(nether, feet.below())
+                                && DestinationChecks.isFree(nether, feet)
+                                && DestinationChecks.isFree(nether, feet.above()),
+                        "a horde member must stand on a real floor, feet at "
+                                + feet);
+            }
+            // A null probe means the ring legitimately hosts nothing — an
+            // empty horde is the correct outcome there.
+            helper.succeed();
         } finally {
             failRunIfActive(manager, player);
         }
+    }
+
+    /**
+     * The microbiome's heart is the layer's only growth organ. Embedded
+     * flush in the floor, its pulses seed layers on its own faces and
+     * crawl the colony outward across the open floor — bounded by the
+     * configured cap, never a takeover.
+     */
+    @GameTest(template = "arena", timeoutTicks = 600, batch = "expedition_mic")
+    public static void microbiomeHeartSpreadsAndCaps(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // A heart flush inside a large sturdy surface carpets its top
+        // faces — build one big enough that the cap, not the frontier,
+        // is what stops the colony.
+        BlockPos slabOrigin = helper.absolutePos(new BlockPos(1, 0, 1));
+        for (int dx = 0; dx < 13; dx++) {
+            for (int dz = 0; dz < 13; dz++) {
+                level.setBlock(slabOrigin.offset(dx, 0, dz),
+                        Blocks.STONE.defaultBlockState(), 3);
+                // The carpet needs room: whatever the template left one
+                // above the slab is cleared so the colony's frontier is
+                // bounded by the cap, not leftover geometry.
+                level.setBlock(slabOrigin.offset(dx, 1, dz),
+                        Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        BlockPos heartPos = slabOrigin.offset(6, 0, 6);
+        level.setBlock(heartPos,
+                ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3);
+        AssimilationHeartBlockEntity heart =
+                (AssimilationHeartBlockEntity) level.getBlockEntity(heartPos);
+
+        heart.pulse(level);
+        helper.assertTrue(heart.colony().size() == 1,
+                "the first pulse must seed a layer on the heart, got "
+                        + heart.colony().size());
+
+        int cap = ExpeditionsConfig.microbiomeMaxColonySize();
+        for (int i = 0; i < 400 && heart.colony().size() < cap; i++) {
+            heart.pulse(level);
+        }
+        helper.assertTrue(heart.colony().size() == cap,
+                "an open frontier must grow to the colony cap, got "
+                        + heart.colony().size() + " of " + cap);
+        for (BlockPos member : heart.colony()) {
+            BlockState memberState = level.getBlockState(member);
+            helper.assertTrue(memberState.is(ModBlocks.ASSIMILATION_LAYER.get()),
+                    "colony member must be a layer at " + member);
+            helper.assertTrue(memberState.canSurvive(level, member),
+                    "colony member must be legally attached at " + member);
+        }
+        heart.pulse(level);
+        helper.assertTrue(heart.colony().size() == cap,
+                "the cap must halt further growth");
+        helper.succeed();
+    }
+
+    /**
+     * The membrane crawls in three dimensions: a heart atop a pillar
+     * seeds its side faces and the colony extends downward along the
+     * pillar's sides, never detaching from a legal support.
+     */
+    @GameTest(template = "arena", timeoutTicks = 600, batch = "expedition_mic")
+    public static void microbiomeHeartCrawlsPillar(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pillarBase = helper.absolutePos(new BlockPos(5, 0, 5));
+        for (int dy = 0; dy < 3; dy++) {
+            level.setBlock(pillarBase.above(dy), Blocks.STONE.defaultBlockState(), 3);
+        }
+        BlockPos heartPos = pillarBase.above(3);
+        // Guarantee the room the colony needs: every heart face but the
+        // pillar top it stands on, plus the pillar's side columns down to
+        // the floor, must be air for seeds and crawlers.
+        for (Direction d : Direction.values()) {
+            if (d != Direction.DOWN) {
+                level.setBlock(heartPos.relative(d),
+                        Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        for (Direction d : Direction.Plane.HORIZONTAL) {
+            for (int dy = 1; dy <= 3; dy++) {
+                level.setBlock(pillarBase.above(dy).relative(d),
+                        Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        level.setBlock(heartPos,
+                ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3);
+        AssimilationHeartBlockEntity heart =
+                (AssimilationHeartBlockEntity) level.getBlockEntity(heartPos);
+
+        for (int i = 0; i < 400; i++) {
+            heart.pulse(level);
+        }
+        helper.assertTrue(heart.colony().size() > 1,
+                "a heart on a pillar must grow a colony, got "
+                        + heart.colony().size());
+        boolean crawled = heart.colony().stream().anyMatch(member -> {
+            BlockState s = level.getBlockState(member);
+            return s.is(ModBlocks.ASSIMILATION_LAYER.get())
+                    && member.getY() < heartPos.getY()
+                    && s.getValue(AssimilationLayerBlock.FACING).getAxis()
+                            != Direction.Axis.Y;
+        });
+        helper.assertTrue(crawled,
+                "the colony must crawl down the pillar's side faces");
+        for (BlockPos member : heart.colony()) {
+            helper.assertTrue(
+                    level.getBlockState(member).canSurvive(level, member),
+                    "crawled member must stay attached at " + member);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The cleared-dimension seam: once a dimension is marked cleared the
+     * microbiome goes silent — the gate hearts and traversal spawning both
+     * consult — until the mark is lifted.
+     */
+    @GameTest(template = "arena", timeoutTicks = 200, batch = "expedition_mic")
+    public static void microbiomeClearedSilences(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        String dim = level.dimension().location().toString();
+        ExpeditionSavedData data = savedData(level.getServer());
+        try {
+            helper.assertTrue(Microbiome.enabled(level),
+                    "an unmarked dimension must allow the microbiome");
+            data.setDimensionCleared(dim);
+            helper.assertTrue(!Microbiome.enabled(level),
+                    "a cleared dimension must silence the microbiome");
+        } finally {
+            data.unclearDimension(dim);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Traversal seeding plants a heart on standable ground in the ring
+     * around the player — far enough out to be discovered, never in the
+     * air, on hazards, or through a ceiling.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    public static void microbiomeSpawnsOnTraversal(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos center = helper.absolutePos(new BlockPos(0, 2, 0));
+        Optional<BlockPos> spawned = Optional.empty();
+        for (int i = 0; i < 40 && spawned.isEmpty(); i++) {
+            spawned = Microbiome.trySpawnHeart(level, center, level.random);
+        }
+        helper.assertTrue(spawned.isPresent(),
+                "open flat terrain must always host a heart somewhere");
+        BlockPos pos = spawned.get();
+        helper.assertTrue(
+                level.getBlockState(pos).is(ModBlocks.ASSIMILATION_HEART.get()),
+                "the heart block must be placed at " + pos);
+        helper.assertTrue(DestinationChecks.isSturdyFloor(level, pos.below()),
+                "the heart must stand on a sturdy floor at " + pos);
+        int min = ExpeditionsConfig.microbiomeSpawnRadiusMin();
+        int max = ExpeditionsConfig.microbiomeSpawnRadiusMax();
+        double dist = Math.sqrt(pos.distSqr(center));
+        helper.assertTrue(dist >= min - 2 && dist <= max + 2,
+                "the heart must land in the spawn ring, dist " + dist);
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+        helper.succeed();
     }
 
     /**

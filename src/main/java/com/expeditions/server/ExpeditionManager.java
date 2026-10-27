@@ -6,7 +6,6 @@ import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionLedger;
-import com.expeditions.core.SafeColumnSearch;
 import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.ExpeditionRun;
@@ -28,7 +27,6 @@ import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.data.ExpeditionDefinitions;
-import com.expeditions.server.dimension.DestinationChecks;
 import com.expeditions.server.dimension.ExpeditionAdapters;
 import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import java.util.ArrayList;
@@ -37,7 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -985,7 +982,7 @@ public final class ExpeditionManager {
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            Mob mob = trySpawnMob(type, level, center, radius);
+            Mob mob = MobSpawns.trySpawn(type, level, center, radius);
             if (mob == null) {
                 continue;
             }
@@ -1198,7 +1195,7 @@ public final class ExpeditionManager {
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Mob mob = trySpawnMob(type, level, devicePos, radius);
+            Mob mob = MobSpawns.trySpawn(type, level, devicePos, radius);
             if (mob == null) {
                 continue;
             }
@@ -1220,77 +1217,6 @@ public final class ExpeditionManager {
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
         }
-    }
-
-    /** How far above an event's elevation a spawn column is scanned. */
-    private static final int MOB_SPAWN_SCAN_UP = 16;
-    /** How far below — deep enough to reach floors in enclosed dimensions. */
-    private static final int MOB_SPAWN_SCAN_DOWN = 40;
-
-    /** Random columns a single mob gets to find a home in, like vanilla's
-     * per-mob spawn retries — a lone ledge or a tall mob shouldn't empty
-     * the whole event. */
-    private static final int MOB_SPAWN_ATTEMPTS = 8;
-
-    /**
-     * Places a positioned, collision-free {@link Mob} of {@code type} in a
-     * random column of the ring around {@code center}, or null when no
-     * attempted column works. Not yet finalized or added to the level.
-     */
-    private static Mob trySpawnMob(EntityType<?> type, ServerLevel level,
-            BlockPos center, int radius) {
-        for (int attempt = 0; attempt < MOB_SPAWN_ATTEMPTS; attempt++) {
-            double angle = level.getRandom().nextDouble() * Math.PI * 2;
-            int distance = 2 + level.getRandom().nextInt(radius - 1);
-            BlockPos column = center.offset(
-                    (int) Math.round(Math.cos(angle) * distance), 0,
-                    (int) Math.round(Math.sin(angle) * distance));
-            // Force-load the spawn column (bounded by the configured radius)
-            // before reading its blocks — an ungenerated column reports
-            // stale state — and so the mob is actually live.
-            level.getChunk(column);
-            Optional<BlockPos> surface = findMobSpawn(level, column,
-                    center.getY());
-            if (surface.isEmpty() || !(type.create(level) instanceof Mob mob)) {
-                continue;
-            }
-            mob.moveTo(surface.get().getX() + 0.5, surface.get().getY(),
-                    surface.get().getZ() + 0.5,
-                    level.getRandom().nextFloat() * 360f, 0f);
-            // The standing contract guarantees two free blocks; a mob taller
-            // or wider than that would suffocate in the wall — keep looking.
-            if (level.noCollision(mob)) {
-                return mob;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * A standable spot in {@code column} near {@code nearY}: the same
-     * "two free blocks above a sturdy, non-hazardous floor" contract route
-     * resolution uses, scanned in a bounded window around the event's own
-     * elevation. The heightmap is deliberately not consulted — in enclosed
-     * dimensions it names the ceiling (a horde on the nether roof is a
-     * horde that doesn't exist), and in open ones the window keeps spawns
-     * near the players' own level instead of a far ridge top.
-     */
-    private static Optional<BlockPos> findMobSpawn(ServerLevel level,
-            BlockPos column, int nearY) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(
-                column.getX(), 0, column.getZ());
-        int top = Math.min(level.getMaxBuildHeight() - 1,
-                nearY + MOB_SPAWN_SCAN_UP);
-        int bottom = Math.max(level.getMinBuildHeight() + 1,
-                nearY - MOB_SPAWN_SCAN_DOWN);
-        OptionalInt y = SafeColumnSearch.findStandingY(
-                yy -> DestinationChecks.isFree(level, pos.setY(yy)),
-                yy -> DestinationChecks.isSturdyFloor(level, pos.setY(yy)),
-                yy -> DestinationChecks.isHazard(level, pos.setY(yy)),
-                top, bottom);
-        return y.isPresent()
-                ? Optional.of(pos.setY(y.getAsInt()).immutable())
-                : Optional.empty();
     }
 
     /** The online, living party member nearest to {@code pos}, if any. */

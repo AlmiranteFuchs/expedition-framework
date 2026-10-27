@@ -1,6 +1,7 @@
 package com.expeditions.registry;
 
 import com.expeditions.ExpeditionsMod;
+import com.expeditions.block.AssimilationHeartBlock;
 import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.block.ExpeditionCheckpointBlock;
 import com.expeditions.block.ExpeditionDeviceBlock;
@@ -78,6 +79,20 @@ public final class ModBlocks {
                     .noOcclusion()
                     .lightLevel(state -> 3)
                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
+
+    /**
+     * The microbiome's nucleus: a solid amber node that is the layer's
+     * only growth organ — sturdy faces let the membrane seed directly
+     * onto it, a block-entity ticker pulses the colony outward up to a
+     * config cap, and breaking it silences the spread for good.
+     */
+    public static final DeferredHolder<Block, AssimilationHeartBlock> ASSIMILATION_HEART = BLOCKS.register(
+            "assimilation_heart",
+            () -> new AssimilationHeartBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_YELLOW)
+                    .strength(1.5f, 6.0f)
+                    .sound(SoundType.HONEY_BLOCK)
+                    .lightLevel(state -> 7)));
 
     /**
      * Temporary teleport marker spawned above a terminal while a run is open

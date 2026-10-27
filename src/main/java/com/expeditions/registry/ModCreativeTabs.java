@@ -28,6 +28,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.EXPEDITION_COMPASS.get());
                         output.accept(ModItems.EXPEDITION_ARTIFACT.get());
                         output.accept(ModItems.ASSIMILATION_LAYER_ITEM.get());
+                        output.accept(ModItems.ASSIMILATION_HEART_ITEM.get());
                         output.accept(ModItems.ASSIMILATION_ESSENCE.get());
                     })
                     .build());
