@@ -51,7 +51,7 @@ covers direction.
 | M9 | Checkpoint economy / reward reliability | **Complete** | Guaranteed `tokens` bank per activation (`checkpointTokenPortion`, balanced split over resolved route); `securedTokens` per member persisted on the run; completion tops members up to the full share (`max(0, share − secured)`) — bonuses/objectives stay at-risk until extraction; credits survive failure/death/restart; 5 unit + 4 game tests |
 | M10 | First complete expedition (mandatory checkpoint route + existing objective handlers) | Not started | Blocked on M8. Composition only — beacon activation, artifact recovery, collection, defense, extraction all reuse existing handlers |
 | M11 | Structured feedback + expedition summary | **Complete** | `broadcastSummary` at `endRun`: per-member breakdown — checkpoints/objectives done, banked, extraction top-up, total, balance (complete); cause + kept credits + at-risk estimate (failed). `run.fail(reasonKey)` records the cause at every fail site (died/abandoned/device_destroyed/site_lost/dimension_lost) |
-| M12 | Terminal progression + dimensional campaign | Not started | Expanded scope (see below): permanent keys, consumable costs, trophies, mission prerequisites with explanations, dimensional campaign states, crafted progression artifact, Big Bad event unlock, subsequent operation unlocks. No unlock/trophy concepts exist; menu is selection-only |
+| M12 | Terminal progression + dimensional campaign | **Partial** — unlock infra landed | Slice a done: per-player unlock keys in the ledger (persisted), definitions gain `requires`/`grants`/`cost_tokens`, `startRun` gates with a named-explanation refusal, charges cost post-validation, grants keys party-wide on completion; menu shows locked expeditions with missing-requirement lore; `/expeditions unlocks`. Remaining: trophies, dimensional campaign states, crafted progression artifact |
 | M13 | Dimension compatibility | **Mostly complete** | Adapters, bounded safe search, natural mob pools, fail-safe refusals done. New scope fits: threat behavior must route through `ExpeditionDimensionAdapter`/`HordePools` (dimension-scoped state, per-dimension spawn pools), not a parallel system. Untested against a real third-party modded dimension |
 | M14 | Configuration & expansion | **Partial** | TOML + datapack + tags + options cover most parameters. New scope: threat tuning knobs (pressure growth, caps, per-dimension overrides). Structure archetypes deferred by design |
 | M15 | Global dimensional threat + Big Bad event | **Partial** — visual prototype landed | Smallest necessary addition — doesn't fit M12 (progression infra) or M13 (compat plumbing). A persistent per-dimension pressure level that escalates horde pressure (size, effects, spawn presence) across *all* expeditions in that dimension, culminating in an unlockable Big Bad event. Depends: M12 (unlock chain gates it), M13 (dimension-scoped behavior), M14 (tuning surface). Landed: the Big Bad's **assimilation layer** block + grayscale skin renderer (prototype below). Remaining: pressure level, spread/exposure logic, boss event |
@@ -231,11 +231,38 @@ None added for M7 or M8 — run binding lives in a vanilla
 `DeferredRegister` block. No new dependencies exist anywhere in the
 project so far, per `AGENTS.md` rules.
 
+## M12a — progression keys and prerequisites (implemented)
+
+Definitions can now chain expeditions into sequences:
+
+```json
+{"id": "second_op", "requires": ["expeditions:first_op_clear"],
+ "grants": ["expeditions:second_op_clear"], "cost_tokens": 25}
+```
+
+- **`requires`** — unlock keys the player must hold. `startRun` refuses
+  with a named explanation ("requires x, costs y more tokens") before any
+  world changes; the terminal menu keeps locked expeditions listed and
+  shows what's missing in the button lore (key icon instead of the
+  compass).
+- **`cost_tokens`** — charged to the starting player only after every
+  other validation passed (route resolved, markers placed), so a refused
+  or unresolvable start never eats the fee.
+- **`grants`** — awarded party-wide on completion: every member earns the
+  permanent key, online or not, in the same atomic ledger save as
+  balances. `/expeditions unlocks` lists held keys.
+- Unlocks live in `ExpeditionLedger` (per-player `Set<String>`), persist
+  in the same SavedData file as runs/balances with the same per-record
+  fault isolation. `RequirementCheck` is the domain rule — the menu's
+  lore and the start refusal read the same data.
+- Old saves: no unlock records → players hold no keys; runs without the
+  new def fields restore empty/no-cost.
+
 ## Next recommended milestone
 
-**M12 (terminal progression + dimensional campaign)** — the earliest
-remaining incomplete milestone now that the economy (M9) and feedback
-loop (M11) are settled. Largest chunk left: permanent keys, consumable
-costs, trophies, mission prerequisites, dimensional campaign states,
-crafted progression artifact, Big Bad unlock chain. Then M15 (threat +
-Big Bad, needs M12+M13) → M10 (composes everything).
+**M12b (dimensional campaign states + trophies)** — unlocks and
+prerequisites are in; the remaining M12 scope is per-dimension campaign
+progression (frontier → established → cleared gating which expeditions
+terminals offer), trophy records, and the crafted progression artifact
+that grants a key at the terminal. Then M15 (threat + Big Bad, needs
+M12+M13) → M10 (composes everything).

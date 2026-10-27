@@ -3020,6 +3020,190 @@ public final class ExpeditionGameTests {
     }
 
     /**
+     * Progression gating: a definition's {@code requires} keys refuse the
+     * start with an explanation — no markers placed — until the player holds
+     * the key, then the same expedition starts normally.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    public static void lockedExpeditionRefusesStartUntilKeyHeld(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88], [96, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5,
+                  "requires": ["test:key"]
+                }
+                """;
+        ExpeditionRun run = null;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "gated"),
+                    JsonParser.parseString(json)));
+            try {
+                manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                        new ExpeditionOptions("test:gated", Difficulty.STANDARD, 0, 0));
+                helper.fail("a locked expedition must refuse to start");
+            } catch (IllegalStateException refused) {
+                helper.assertTrue(refused.getMessage().contains("test:key"),
+                        "the refusal must name the missing key, was: "
+                                + refused.getMessage());
+            }
+            helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
+                    "a refused start must leave no run");
+
+            savedData(server).ledger().grantUnlock(player.getUUID(), "test:key");
+            run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:gated", Difficulty.STANDARD, 0, 0));
+            helper.assertTrue(run.isActive(), "the unlocked expedition must start");
+        } finally {
+            failRunIfActive(manager, player);
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Progression grants: a definition's {@code grants} keys land on every
+     * party member at completion — the party-wide award, not just the
+     * clicking player.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    public static void completionGrantsUnlocksPartyWide(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer owner = helper.makeMockServerPlayerInLevel();
+        ServerPlayer member = helper.makeMockServerPlayerInLevel();
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5,
+                  "grants": ["test:clear"]
+                }
+                """;
+        ExpeditionRun run = null;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "granting"),
+                    JsonParser.parseString(json)));
+            run = manager.startRun(owner, helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:granting", Difficulty.STANDARD, 0, 0));
+            manager.enterPortal(owner, ExpeditionManager.toPos(run.portal()));
+            manager.enterPortal(member, ExpeditionManager.toPos(run.portal()));
+            for (Waypoint w : run.checkpoints()) {
+                manager.activateCheckpoint(owner, ExpeditionManager.toPos(w));
+            }
+            manager.completeRun(owner);
+            helper.assertTrue(manager.unlocks(owner.getUUID()).contains("test:clear"),
+                    "the owner must hold the granted key");
+            helper.assertTrue(manager.unlocks(member.getUUID()).contains("test:clear"),
+                    "the party member must hold the granted key");
+        } finally {
+            failRunIfActive(manager, owner);
+            failRunIfActive(manager, member);
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Token costs: a definition's {@code cost_tokens} refuses a start the
+     * balance can't cover, and is charged exactly when an affordable start
+     * goes through.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    public static void costTokensChargedOnlyOnSuccessfulStart(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5,
+                  "cost_tokens": 30
+                }
+                """;
+        ExpeditionRun run = null;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "costly"),
+                    JsonParser.parseString(json)));
+            try {
+                manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                        new ExpeditionOptions("test:costly", Difficulty.STANDARD, 0, 0));
+                helper.fail("an unaffordable expedition must refuse to start");
+            } catch (IllegalStateException refused) {
+                helper.assertTrue(refused.getMessage().contains("30"),
+                        "the refusal must name the shortfall, was: "
+                                + refused.getMessage());
+            }
+
+            savedData(server).ledger().addTokens(player.getUUID(), 35);
+            run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:costly", Difficulty.STANDARD, 0, 0));
+            helper.assertTrue(manager.tokenBalance(player.getUUID()) == 5,
+                    "the cost must be charged once, balance was "
+                            + manager.tokenBalance(player.getUUID()));
+        } finally {
+            failRunIfActive(manager, player);
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Unlocks and the run's progression fields survive save/load — a resumed
+     * run keeps the {@code grants} it will award at completion.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    public static void unlocksAndProgressionFieldsPersist(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5,
+                  "requires": ["test:key"],
+                  "grants": ["test:clear"]
+                }
+                """;
+        ExpeditionRun run = null;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "chained"),
+                    JsonParser.parseString(json)));
+            savedData(server).ledger().grantUnlock(player.getUUID(), "test:key");
+            run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:chained", Difficulty.STANDARD, 0, 0));
+
+            ExpeditionSavedData restored = roundTrip(helper, server);
+            helper.assertTrue(restored.ledger().unlocks(player.getUUID())
+                            .contains("test:key"),
+                    "the unlock must round-trip");
+            ExpeditionRun reloaded = restored.ledger().run(player.getUUID())
+                    .orElseThrow(() -> new IllegalStateException("run must round-trip"));
+            helper.assertTrue(reloaded.definition().grants().contains("test:clear"),
+                    "the run's grants must survive, got " + reloaded.definition().grants());
+            helper.assertTrue(reloaded.definition().requires().contains("test:key"),
+                    "the run's requires must survive");
+        } finally {
+            failRunIfActive(manager, player);
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
      * Fails the player's run if one is still active — test cleanup that can
      * never leak a run (and its authored-anchor markers) into later tests.
      */

@@ -124,4 +124,61 @@ class ExpeditionLedgerTest {
         assertEquals(run, ledger.run(player).orElseThrow());
         assertEquals(5, ledger.tokenBalance(player));
     }
+
+    @Test
+    void unlocksAreGrantedIdempotently() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        assertFalse(ledger.hasUnlock(player, "expeditions:nether_clear"));
+        assertTrue(ledger.grantUnlock(player, "expeditions:nether_clear"));
+        assertTrue(ledger.hasUnlock(player, "expeditions:nether_clear"));
+        assertFalse(ledger.grantUnlock(player, "expeditions:nether_clear"));
+        assertEquals(java.util.Set.of("expeditions:nether_clear"), ledger.unlocks(player));
+        assertThrows(IllegalArgumentException.class,
+                () -> ledger.grantUnlock(player, "  "));
+    }
+
+    @Test
+    void restoredUnlocksRoundTrip() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        ledger.restoreUnlocks(player,
+                java.util.Set.of("a", "b"));
+        assertEquals(java.util.Set.of("a", "b"), ledger.unlocks(player));
+        assertEquals(java.util.Set.of("a", "b"), ledger.unlockRecords().get(player));
+        assertThrows(IllegalArgumentException.class,
+                () -> ledger.restoreUnlocks(player, java.util.Set.of("")));
+    }
+
+    @Test
+    void checkRequirementsReportsMissingKeysAndTokens() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        ExpeditionDefinition gated = new ExpeditionDefinition(
+                "expeditions:big_bad", "Big Bad", 5, "minecraft:overworld",
+                new ExpeditionRoute(List.of(new RouteAnchor(0, 0)),
+                        new RouteAnchor(10, 0)),
+                50, 0, 0, List.of(), ExpeditionModifiers.NONE,
+                java.util.Set.of("k1", "k2"), java.util.Set.of(), 40);
+        RequirementCheck check = ledger.checkRequirements(player, gated);
+        assertFalse(check.isSatisfied());
+        assertEquals(java.util.Set.of("k1", "k2"), check.missingKeys());
+        assertEquals(40, check.missingTokens());
+
+        ledger.grantUnlock(player, "k1");
+        ledger.addTokens(player, 40);
+        check = ledger.checkRequirements(player, gated);
+        assertFalse(check.isSatisfied());
+        assertEquals(java.util.Set.of("k2"), check.missingKeys());
+        assertEquals(0, check.missingTokens());
+
+        ledger.grantUnlock(player, "k2");
+        assertTrue(ledger.checkRequirements(player, gated).isSatisfied());
+    }
+
+    @Test
+    void checkRequirementsSatisfiedWhenNothingDemanded() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        assertTrue(ledger.checkRequirements(UUID.randomUUID(), DEFINITION).isSatisfied());
+    }
 }

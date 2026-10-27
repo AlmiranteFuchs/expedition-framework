@@ -83,4 +83,29 @@ class ExpeditionDefinitionTest {
         assertEquals(12, def.totalReward(6000, List.of(), 0));
         assertEquals(8, def.totalReward(6001, List.of(), 0));
     }
+
+    @Test
+    void progressionFieldsDefaultAndValidate() {
+        ExpeditionDefinition plain = new ExpeditionDefinition("id", "x", 0,
+                "minecraft:overworld", route(), 8, 0, 0);
+        assertEquals(java.util.Set.of(), plain.requires());
+        assertEquals(java.util.Set.of(), plain.grants());
+        assertEquals(0, plain.costTokens());
+
+        ExpeditionDefinition gated = new ExpeditionDefinition("id", "x", 0,
+                "minecraft:overworld", route(), 8, 0, 0, List.of(),
+                ExpeditionModifiers.NONE, java.util.Set.of("k"), java.util.Set.of("g"), 30);
+        assertEquals(java.util.Set.of("k"), gated.requires());
+        assertEquals(java.util.Set.of("g"), gated.grants());
+        assertEquals(30, gated.costTokens());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new ExpeditionDefinition("id", "x", 0, "minecraft:overworld",
+                        route(), 8, 0, 0, List.of(), ExpeditionModifiers.NONE,
+                        java.util.Set.of(""), java.util.Set.of(), 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ExpeditionDefinition("id", "x", 0, "minecraft:overworld",
+                        route(), 8, 0, 0, List.of(), ExpeditionModifiers.NONE,
+                        java.util.Set.of(), java.util.Set.of(), -1));
+    }
 }

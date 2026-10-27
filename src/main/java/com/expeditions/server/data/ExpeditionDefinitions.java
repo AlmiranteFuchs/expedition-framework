@@ -128,7 +128,33 @@ public final class ExpeditionDefinitions {
                 optionalInt(json, "bonus_tokens", 0),
                 optionalInt(json, "bonus_time_seconds", 0) * TICKS_PER_SECOND,
                 parseObjectives(json.get("objectives")),
-                parseModifiers(json.get("modifiers")));
+                parseModifiers(json.get("modifiers")),
+                parseKeys(json.get("requires")),
+                parseKeys(json.get("grants")),
+                optionalInt(json, "cost_tokens", 0));
+    }
+
+    /**
+     * Parses the optional {@code "requires"}/{@code "grants"} string arrays:
+     * unlock keys gating the expedition and keys it awards on completion.
+     * Blank entries fail the definition loudly.
+     */
+    private static java.util.Set<String> parseKeys(JsonElement element) {
+        if (element == null) {
+            return java.util.Set.of();
+        }
+        if (!element.isJsonArray()) {
+            throw new IllegalArgumentException(
+                    "\"requires\"/\"grants\" must be arrays of key strings");
+        }
+        java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+        for (JsonElement e : element.getAsJsonArray()) {
+            if (!e.isJsonPrimitive() || e.getAsString().isBlank()) {
+                throw new IllegalArgumentException("unlock keys must be non-blank strings");
+            }
+            keys.add(e.getAsString());
+        }
+        return keys;
     }
 
     /**

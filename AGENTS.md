@@ -321,11 +321,13 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-M11 (structured summary) verified: `build` + 106 unit tests + 70/70
-GameTest in-game tests pass (all prior coverage plus failure-cause
-recording on every fail path). `run.fail(reasonKey)` carries a
-`fail_reason.*` lang suffix to `broadcastSummary` — transient by design,
-terminal runs never resume. Mock players are not in `getPlayerList`, so
-the summary broadcast itself is not exercised in tests (same limitation
-as member teleports). Human client click-through and real disconnect not
+M12a (progression keys) verified: `build` + 111 unit tests + 74/74
+GameTest in-game tests pass. Unlock keys are per-player `Set<String>` in
+`ExpeditionLedger` — granted party-wide at `completeRun`, checked by
+`ledger.checkRequirements` at `startRun` before any world changes;
+`cost_tokens` is charged only after route+markers succeed. Locked
+expeditions stay in the terminal list (lore explains the gap);
+`/expeditions unlocks` is the player-facing view. Menu mock players keep
+the locked-lore path unverified visually (same as the summary
+broadcast). Human client click-through and real disconnect not
 simulated.

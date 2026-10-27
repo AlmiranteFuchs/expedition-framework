@@ -119,6 +119,7 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("status").executes(ExpeditionEventHandler::status))
                 .then(Commands.literal("abandon").executes(ExpeditionEventHandler::abandon))
                 .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem))
+                .then(Commands.literal("unlocks").executes(ExpeditionEventHandler::unlocks))
                 .then(Commands.literal("start")
                         .then(Commands.argument("expedition", ResourceLocationArgument.id())
                                 .suggests(EXPEDITION_SUGGESTIONS)
@@ -153,6 +154,24 @@ public final class ExpeditionEventHandler {
         }
         int balance = ExpeditionManager.get(player.server).tokenBalance(player.getUUID());
         player.sendSystemMessage(Component.translatable("message.expeditions.balance", balance));
+        return 1;
+    }
+
+    /**
+     * `/expeditions unlocks` — lists the progression keys the player holds;
+     * definitions gate on these via their {@code requires} field.
+     */
+    private static int unlocks(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player == null) {
+            return 0;
+        }
+        java.util.Set<String> keys = ExpeditionManager.get(player.server)
+                .unlocks(player.getUUID());
+        player.sendSystemMessage(keys.isEmpty()
+                ? Component.translatable("message.expeditions.unlocks_none")
+                : Component.translatable("message.expeditions.unlocks",
+                        String.join(", ", keys)));
         return 1;
     }
 

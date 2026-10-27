@@ -49,6 +49,9 @@
   "message.expeditions.fail_reason.dimension_lost": "the destination is unreachable",
   "message.expeditions.fail_reason.ended": "the expedition ended",
   "message.expeditions.no_expeditions": "No expeditions are available right now.",
+  "message.expeditions.unlocked": "Progression unlocked: %1$s",
+  "message.expeditions.unlocks": "Unlocked: %1$s",
+  "message.expeditions.unlocks_none": "No progression unlocks yet.",
   "message.expeditions.unknown_difficulty": "Unknown difficulty — use relaxed, standard, hard or brutal.",
   "gui.expeditions.terminal": "Expedition Terminal",
   "gui.expeditions.no_expeditions": "No expeditions available",
@@ -59,5 +62,8 @@
   "gui.expeditions.time": "Bonus time window",
   "gui.expeditions.default": "Expedition default",
   "gui.expeditions.start": "Start Expedition",
+  "gui.expeditions.locked": "LOCKED",
+  "gui.expeditions.locked_key": "Requires unlock: %1$s",
+  "gui.expeditions.locked_cost": "Short %1$s tokens",
   "gui.expeditions.click_cycle": "Click to change"
 }

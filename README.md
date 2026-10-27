@@ -75,7 +75,8 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
    same way. Disconnecting does not end a run — it resumes on rejoin (use the
    portal again if you never entered).
 
-Commands: `/expeditions status`, `/expeditions balance`, `/expeditions abandon`.
+Commands: `/expeditions status`, `/expeditions balance`, `/expeditions abandon`,
+`/expeditions unlocks`.
 
 ## Route configuration
 
@@ -190,7 +191,23 @@ Modpacks can define expeditions in datapacks at
 Required: `dimension`, `checkpoints` (non-empty `[x,z]` pairs), `exit`.
 Optional: `display_name` (defaults to the file path), `difficulty`, `tokens`,
 `bonus_tokens`, `bonus_time_seconds` (all default 0), `objectives`,
-`modifiers`.
+`modifiers`, `requires`, `grants`, `cost_tokens`.
+
+**Progression** — expeditions can chain into sequences:
+
+```json
+"requires": ["expeditions:first_op_clear"],
+"grants": ["expeditions:second_op_clear"],
+"cost_tokens": 25
+```
+
+`requires` lists permanent unlock keys the player must hold — the start
+refuses with a named explanation, and the terminal keeps the locked
+expedition listed with its missing requirements in the lore. `grants`
+awards keys to every party member on completion (online or not).
+`cost_tokens` is charged to the starting player once the run is fully
+validated, so a refused start never eats the fee. `/expeditions unlocks`
+lists held keys.
 
 **Objectives** — an optional `objectives` array adds goals that pay their own
 `bonus_tokens` on successful completion (each at most once per run; a
@@ -500,7 +517,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   extraction top-up and total on success; on failure the recorded cause
   (death, abandon, device destroyed, site or dimension lost) plus credits
   kept and what was still at risk.
-- **Commands** — `/expeditions balance|status|abandon|redeem|start`.
+- **Progression** — permanent per-player unlock keys gate expeditions
+  (`requires`), are awarded party-wide on completion (`grants`), and
+  expeditions can charge tokens at start (`cost_tokens`); the terminal
+  explains what a locked expedition still needs.
+- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that attaches to any sturdy face of a solid
   block (all six directions) and renders the covered face grayscale: the
@@ -512,13 +533,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
-- **Tests** — 106 unit tests + 70 GameTest in-game tests.
+- **Tests** — 111 unit tests + 74 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.3.0.jar` assembled.
-- `./gradlew test` — 106 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **70/70 game tests passed** on a real dedicated
+- `./gradlew test` — 111 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **74/74 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,

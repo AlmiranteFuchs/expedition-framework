@@ -117,6 +117,11 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_DEF_WAVE = "NextWaveTick";
     private static final String TAG_FAILED_OBJECTIVES = "FailedObjectives";
     private static final String TAG_SECURED = "SecuredTokens";
+    private static final String TAG_UNLOCKS = "Unlocks";
+    private static final String TAG_KEYS = "Keys";
+    private static final String TAG_REQUIRES = "Requires";
+    private static final String TAG_GRANTS = "Grants";
+    private static final String TAG_COST_TOKENS = "CostTokens";
 
     private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
@@ -152,6 +157,18 @@ public class ExpeditionSavedData extends SavedData {
                         readPos(markerTag));
             } catch (RuntimeException e) {
                 LOGGER.warn("Skipping malformed marker record: {}", e.getMessage());
+            }
+        }
+        for (Tag t : tag.getList(TAG_UNLOCKS, Tag.TAG_COMPOUND)) {
+            try {
+                CompoundTag unlockTag = (CompoundTag) t;
+                Set<String> keys = new HashSet<>();
+                for (Tag k : unlockTag.getList(TAG_KEYS, Tag.TAG_STRING)) {
+                    keys.add(((StringTag) k).getAsString());
+                }
+                data.ledger.restoreUnlocks(unlockTag.getUUID(TAG_PLAYER), keys);
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping malformed unlock record: {}", e.getMessage());
             }
         }
         return data;
@@ -224,7 +241,10 @@ public class ExpeditionSavedData extends SavedData {
                 runTag.getInt(TAG_BONUS_TOKENS),
                 runTag.getInt(TAG_BONUS_TICKS),
                 objectives,
-                readModifiers(runTag));
+                readModifiers(runTag),
+                readKeys(runTag, TAG_REQUIRES),
+                readKeys(runTag, TAG_GRANTS),
+                runTag.getInt(TAG_COST_TOKENS));
         return ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
@@ -249,6 +269,15 @@ public class ExpeditionSavedData extends SavedData {
                 readDefense(runTag),
                 readFailedObjectives(runTag),
                 readSecuredTokens(runTag));
+    }
+
+    /** A string-list tag, absent in saves from before the field existed. */
+    private static Set<String> readKeys(CompoundTag tag, String key) {
+        Set<String> keys = new HashSet<>();
+        for (Tag t : tag.getList(key, Tag.TAG_STRING)) {
+            keys.add(((StringTag) t).getAsString());
+        }
+        return keys;
     }
 
     /**
@@ -392,6 +421,9 @@ public class ExpeditionSavedData extends SavedData {
                     writeEffects(run.definition().modifiers().playerEffects()));
             runTag.put(TAG_HORDE_EFFECTS,
                     writeEffects(run.definition().modifiers().hordeEffects()));
+            runTag.put(TAG_REQUIRES, writeKeys(run.definition().requires()));
+            runTag.put(TAG_GRANTS, writeKeys(run.definition().grants()));
+            runTag.putInt(TAG_COST_TOKENS, run.definition().costTokens());
             ListTag entities = new ListTag();
             for (UUID entityId : run.challengeEntities()) {
                 CompoundTag entityTag = new CompoundTag();
@@ -449,6 +481,16 @@ public class ExpeditionSavedData extends SavedData {
             tokens.add(tokenTag);
         });
         tag.put(TAG_TOKENS, tokens);
+        ListTag unlocks = new ListTag();
+        ledger.unlockRecords().forEach((player, keys) -> {
+            if (!keys.isEmpty()) {
+                CompoundTag unlockTag = new CompoundTag();
+                unlockTag.putUUID(TAG_PLAYER, player);
+                unlockTag.put(TAG_KEYS, writeKeys(keys));
+                unlocks.add(unlockTag);
+            }
+        });
+        tag.put(TAG_UNLOCKS, unlocks);
         ListTag markers = new ListTag();
         liveMarkers.forEach((dimension, positions) -> {
             for (BlockPos pos : positions) {
@@ -499,6 +541,14 @@ public class ExpeditionSavedData extends SavedData {
         tag.putInt(TAG_Y, w.y());
         tag.putInt(TAG_Z, w.z());
         return tag;
+    }
+
+    private static ListTag writeKeys(Set<String> keys) {
+        ListTag list = new ListTag();
+        for (String key : keys) {
+            list.add(StringTag.valueOf(key));
+        }
+        return list;
     }
 
     private static ListTag writeEffects(List<EffectSpec> effects) {

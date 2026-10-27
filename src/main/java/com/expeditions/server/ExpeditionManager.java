@@ -13,6 +13,7 @@ import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.ObjectiveKind;
 import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.PartyScaling;
+import com.expeditions.core.RequirementCheck;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.core.RoutePlanner;
@@ -130,6 +131,11 @@ public final class ExpeditionManager {
         return ledger.runs();
     }
 
+    /** The player's held progression keys, for diagnostics and commands. */
+    public Set<String> unlocks(UUID playerId) {
+        return ledger.unlocks(playerId);
+    }
+
     /**
      * Starts a run at the terminal the player clicked: resolves the full
      * route at a remote landing spot, places markers, and spawns the join
@@ -168,6 +174,12 @@ public final class ExpeditionManager {
                         .findFirst()
                         .orElseThrow(() -> new IllegalStateException(
                                 "Unknown or unavailable expedition: " + options.expeditionId()));
+        RequirementCheck requirements = ledger.checkRequirements(
+                player.getUUID(), definition);
+        if (!requirements.isSatisfied()) {
+            throw new IllegalStateException(
+                    "Expedition locked: " + describeMissing(requirements));
+        }
         ServerLevel level = levelFor(definition.dimension());
         if (level == null) {
             throw new IllegalStateException(
@@ -261,11 +273,41 @@ public final class ExpeditionManager {
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
                 toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
                 toWaypoint(entryPos), level.getGameTime(), options, portalDimension);
+        // Charged last — after every validation and world change, when the
+        // requirements check above guarantees the balance suffices. A spend
+        // that still fails leaves orphan markers for start-up pruning.
+        if (definition.costTokens() > 0
+                && !ledger.spendTokens(player.getUUID(), definition.costTokens())) {
+            throw new IllegalStateException(
+                    "Not enough tokens — this expedition costs "
+                            + definition.costTokens());
+        }
         ledger.startRun(run);
         applyMemberEffects(run, player);
         applyWeather(run, level);
         data.setDirty();
         return run;
+    }
+
+    /**
+     * What blocks {@code playerId} from starting {@code definition} — the
+     * data behind the menu's locked-expedition lore and {@link #startRun}'s
+     * refusal. Pure read; the authoritative gate is in {@code startRun}.
+     */
+    public RequirementCheck missingRequirements(UUID playerId,
+            ExpeditionDefinition definition) {
+        return ledger.checkRequirements(playerId, definition);
+    }
+
+    private static String describeMissing(RequirementCheck check) {
+        List<String> parts = new ArrayList<>();
+        if (!check.missingKeys().isEmpty()) {
+            parts.add("requires " + String.join(", ", check.missingKeys()));
+        }
+        if (check.missingTokens() > 0) {
+            parts.add("costs " + check.missingTokens() + " more tokens");
+        }
+        return String.join(" and ", parts);
     }
 
     /**
@@ -474,6 +516,23 @@ public final class ExpeditionManager {
             }
             run.markRewarded(share);
             grantBonusDrops(run);
+        }
+        // Unlock keys are party-wide progression — every member earns proof
+        // of the completion, online or not, in the same atomic save.
+        for (String key : run.definition().grants()) {
+            for (UUID member : run.party()) {
+                ledger.grantUnlock(member, key);
+            }
+        }
+        if (!run.definition().grants().isEmpty()) {
+            for (UUID member : run.party()) {
+                ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+                if (memberPlayer != null) {
+                    memberPlayer.sendSystemMessage(Component.translatable(
+                            "message.expeditions.unlocked",
+                            String.join(", ", run.definition().grants())));
+                }
+            }
         }
         endRun(run);
         return run;

@@ -4,9 +4,12 @@ import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
+import com.expeditions.core.RequirementCheck;
 import com.expeditions.core.Waypoint;
 import com.mojang.logging.LogUtils;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -47,6 +50,7 @@ public class ExpeditionMenu extends ChestMenu {
     private final ExpeditionManager manager;
     private final BlockPos terminalPos;
     private final List<ExpeditionDefinition> startable;
+    private final UUID playerId;
     private int expeditionIndex;
     private int difficultyIndex = Difficulty.STANDARD.ordinal();
     private int checkpointsIndex;
@@ -59,6 +63,7 @@ public class ExpeditionMenu extends ChestMenu {
         this.container = (SimpleContainer) this.getContainer();
         this.manager = manager;
         this.terminalPos = terminalPos;
+        this.playerId = playerInventory.player.getUUID();
         this.startable = manager.listStartable();
         // Preselect the expedition of the terminal's own dimension — the
         // historical default — so clicking start without cycling behaves
@@ -158,11 +163,31 @@ public class ExpeditionMenu extends ChestMenu {
                     "gui.expeditions.no_expeditions", List.of()));
         } else {
             ExpeditionDefinition selected = startable.get(expeditionIndex);
-            container.setItem(SLOT_EXPEDITION, button(Items.COMPASS,
-                    "gui.expeditions.expedition",
-                    List.of(Component.literal(selected.displayName()),
-                            Component.literal(selected.dimension()),
-                            Component.translatable("gui.expeditions.click_cycle"))));
+            RequirementCheck check = manager.missingRequirements(playerId, selected);
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.literal(selected.displayName()));
+            lore.add(Component.literal(selected.dimension()));
+            if (check.isSatisfied()) {
+                lore.add(Component.translatable("gui.expeditions.click_cycle"));
+                container.setItem(SLOT_EXPEDITION, button(Items.COMPASS,
+                        "gui.expeditions.expedition", lore));
+            } else {
+                // Locked expeditions stay listed — the lore says what opens
+                // them, and clicking start repeats the refusal in chat.
+                lore.add(Component.translatable("gui.expeditions.locked"));
+                for (String key : check.missingKeys()) {
+                    lore.add(Component.translatable(
+                            "gui.expeditions.locked_key", key));
+                }
+                if (check.missingTokens() > 0) {
+                    lore.add(Component.translatable(
+                            "gui.expeditions.locked_cost",
+                            check.missingTokens()));
+                }
+                lore.add(Component.translatable("gui.expeditions.click_cycle"));
+                container.setItem(SLOT_EXPEDITION, button(Items.TRIAL_KEY,
+                        "gui.expeditions.expedition", lore));
+            }
         }
         Difficulty difficulty = Difficulty.values()[difficultyIndex];
         container.setItem(SLOT_DIFFICULTY, button(Items.IRON_SWORD,

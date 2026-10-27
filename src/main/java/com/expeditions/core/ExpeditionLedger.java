@@ -3,9 +3,11 @@ package com.expeditions.core;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -20,6 +22,7 @@ import java.util.UUID;
 public final class ExpeditionLedger {
     private final Map<UUID, ExpeditionRun> runs = new LinkedHashMap<>();
     private final Map<UUID, Integer> tokens = new LinkedHashMap<>();
+    private final Map<UUID, Set<String>> unlocks = new LinkedHashMap<>();
 
     /**
      * The player's current or most recent run. Membership-aware: returns the
@@ -128,6 +131,66 @@ public final class ExpeditionLedger {
     /** All token balances, for persistence. */
     public Map<UUID, Integer> tokenBalances() {
         return Collections.unmodifiableMap(tokens);
+    }
+
+    /**
+     * Grants {@code key} to the player — the permanent progression record.
+     * Idempotent: re-granting a held key is a no-op returning false.
+     *
+     * @return whether the key was newly granted
+     * @throws IllegalArgumentException if {@code key} is blank
+     */
+    public boolean grantUnlock(UUID playerId, String key) {
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("Unlock key must not be blank");
+        }
+        return unlocks.computeIfAbsent(playerId, id -> new LinkedHashSet<>()).add(key);
+    }
+
+    /** Whether the player holds {@code key}. */
+    public boolean hasUnlock(UUID playerId, String key) {
+        return unlocks.getOrDefault(playerId, Set.of()).contains(key);
+    }
+
+    /** The player's held keys, in grant order. */
+    public Set<String> unlocks(UUID playerId) {
+        return Collections.unmodifiableSet(unlocks.getOrDefault(playerId, Set.of()));
+    }
+
+    /** All players' unlock sets, for persistence. */
+    public Map<UUID, Set<String>> unlockRecords() {
+        Map<UUID, Set<String>> copy = new LinkedHashMap<>();
+        unlocks.forEach((id, keys) -> copy.put(id, Collections.unmodifiableSet(keys)));
+        return Collections.unmodifiableMap(copy);
+    }
+
+    /**
+     * Restores an unlock set loaded from persistence.
+     *
+     * @throws IllegalArgumentException if any key is blank — a corrupt
+     *         record; callers skip it rather than trusting the value
+     */
+    public void restoreUnlocks(UUID playerId, Set<String> keys) {
+        for (String key : keys) {
+            grantUnlock(playerId, key);
+        }
+    }
+
+    /**
+     * Everything {@code definition} still demands of the player: unlock keys
+     * they don't hold and the token shortfall against its start cost. An
+     * {@link RequirementCheck#isSatisfied satisfied} result means the run
+     * may start.
+     */
+    public RequirementCheck checkRequirements(UUID playerId, ExpeditionDefinition definition) {
+        Set<String> missing = new LinkedHashSet<>();
+        for (String key : definition.requires()) {
+            if (!hasUnlock(playerId, key)) {
+                missing.add(key);
+            }
+        }
+        int shortfall = Math.max(0, definition.costTokens() - tokenBalance(playerId));
+        return new RequirementCheck(Set.copyOf(missing), shortfall);
     }
 
     /** Restores a run record loaded from persistence. */
