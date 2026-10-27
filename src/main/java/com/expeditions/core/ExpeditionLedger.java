@@ -23,6 +23,7 @@ public final class ExpeditionLedger {
     private final Map<UUID, ExpeditionRun> runs = new LinkedHashMap<>();
     private final Map<UUID, Integer> tokens = new LinkedHashMap<>();
     private final Map<UUID, Set<String>> unlocks = new LinkedHashMap<>();
+    private final Map<UUID, Set<String>> trophies = new LinkedHashMap<>();
 
     /**
      * The player's current or most recent run. Membership-aware: returns the
@@ -177,12 +178,70 @@ public final class ExpeditionLedger {
     }
 
     /**
+     * Records {@code trophy} on the player — a permanent accomplishment
+     * record (unlike an unlock key, it never gates anything; it only
+     * proves the feat happened). Idempotent like {@link #grantUnlock}.
+     *
+     * @return whether the trophy was newly recorded
+     * @throws IllegalArgumentException if {@code trophy} is blank
+     */
+    public boolean addTrophy(UUID playerId, String trophy) {
+        if (trophy == null || trophy.isBlank()) {
+            throw new IllegalArgumentException("Trophy id must not be blank");
+        }
+        return trophies.computeIfAbsent(playerId, id -> new LinkedHashSet<>())
+                .add(trophy);
+    }
+
+    /** Whether the player holds {@code trophy}. */
+    public boolean hasTrophy(UUID playerId, String trophy) {
+        return trophies.getOrDefault(playerId, Set.of()).contains(trophy);
+    }
+
+    /** The player's trophies, in award order. */
+    public Set<String> trophies(UUID playerId) {
+        return Collections.unmodifiableSet(trophies.getOrDefault(playerId, Set.of()));
+    }
+
+    /** All players' trophy sets, for persistence. */
+    public Map<UUID, Set<String>> trophyRecords() {
+        Map<UUID, Set<String>> copy = new LinkedHashMap<>();
+        trophies.forEach((id, ts) -> copy.put(id, Collections.unmodifiableSet(ts)));
+        return Collections.unmodifiableMap(copy);
+    }
+
+    /**
+     * Restores a trophy set loaded from persistence.
+     *
+     * @throws IllegalArgumentException if any id is blank — a corrupt
+     *         record; callers skip it rather than trusting the value
+     */
+    public void restoreTrophies(UUID playerId, Set<String> trophyIds) {
+        for (String trophy : trophyIds) {
+            addTrophy(playerId, trophy);
+        }
+    }
+
+    /**
      * Everything {@code definition} still demands of the player: unlock keys
      * they don't hold and the token shortfall against its start cost. An
      * {@link RequirementCheck#isSatisfied satisfied} result means the run
-     * may start.
+     * may start. The campaign gate is checked against
+     * {@link CampaignState#FRONTIER} — callers who know the dimension's
+     * state use {@link #checkRequirements(UUID, ExpeditionDefinition,
+     * CampaignState)}.
      */
     public RequirementCheck checkRequirements(UUID playerId, ExpeditionDefinition definition) {
+        return checkRequirements(playerId, definition, CampaignState.FRONTIER);
+    }
+
+    /**
+     * {@link #checkRequirements(UUID, ExpeditionDefinition)} with the
+     * dimension's actual campaign state — the caller owns that lookup
+     * (it lives in saved data, outside the ledger's domain).
+     */
+    public RequirementCheck checkRequirements(UUID playerId,
+            ExpeditionDefinition definition, CampaignState currentState) {
         Set<String> missing = new LinkedHashSet<>();
         for (String key : definition.requires()) {
             if (!hasUnlock(playerId, key)) {
@@ -190,7 +249,8 @@ public final class ExpeditionLedger {
             }
         }
         int shortfall = Math.max(0, definition.costTokens() - tokenBalance(playerId));
-        return new RequirementCheck(Set.copyOf(missing), shortfall);
+        return new RequirementCheck(Set.copyOf(missing), shortfall,
+                definition.minCampaignState(), currentState);
     }
 
     /** Restores a run record loaded from persistence. */

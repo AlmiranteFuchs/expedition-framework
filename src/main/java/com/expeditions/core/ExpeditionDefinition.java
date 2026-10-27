@@ -29,12 +29,17 @@ import java.util.Set;
  * @param requires       unlock keys the player must hold to start
  * @param grants         unlock keys awarded to every member on completion
  * @param costTokens     tokens charged to the starting player at run start
+ * @param minCampaignState minimum campaign state the expedition's dimension
+ *                       must have reached for the start gate to open
+ * @param bigBad         whether this expedition is the dimension's Big Bad —
+ *                       its final checkpoint spawns the boss assault and
+ *                       completing it wins the dimension's campaign
  */
 public record ExpeditionDefinition(String id, String displayName, int difficulty,
         String dimension, RouteSpec route, int tokenReward,
         int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives,
         ExpeditionModifiers modifiers, Set<String> requires, Set<String> grants,
-        int costTokens) {
+        int costTokens, CampaignState minCampaignState, boolean bigBad) {
 
     /** Definition without progression fields (config defaults, older saves). */
     public ExpeditionDefinition(String id, String displayName, int difficulty,
@@ -44,6 +49,28 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
         this(id, displayName, difficulty, dimension, route, tokenReward,
                 bonusTokens, bonusTimeTicks, objectives, modifiers,
                 Set.of(), Set.of(), 0);
+    }
+
+    /** Definition without a campaign gate or boss flag (progression only). */
+    public ExpeditionDefinition(String id, String displayName, int difficulty,
+            String dimension, RouteSpec route, int tokenReward,
+            int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives,
+            ExpeditionModifiers modifiers, Set<String> requires, Set<String> grants,
+            int costTokens) {
+        this(id, displayName, difficulty, dimension, route, tokenReward,
+                bonusTokens, bonusTimeTicks, objectives, modifiers,
+                requires, grants, costTokens, CampaignState.FRONTIER);
+    }
+
+    /** Definition without a boss flag (campaign-gated progression). */
+    public ExpeditionDefinition(String id, String displayName, int difficulty,
+            String dimension, RouteSpec route, int tokenReward,
+            int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives,
+            ExpeditionModifiers modifiers, Set<String> requires, Set<String> grants,
+            int costTokens, CampaignState minCampaignState) {
+        this(id, displayName, difficulty, dimension, route, tokenReward,
+                bonusTokens, bonusTimeTicks, objectives, modifiers,
+                requires, grants, costTokens, minCampaignState, false);
     }
 
     /** Definition without modifiers (config defaults, older saves). */
@@ -93,6 +120,7 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
         if (costTokens < 0) {
             throw new IllegalArgumentException("Cost must be >= 0");
         }
+        Objects.requireNonNull(minCampaignState, "minCampaignState");
         requires = validateKeys(requires, "requires");
         grants = validateKeys(grants, "grants");
         Set<String> seen = new HashSet<>();

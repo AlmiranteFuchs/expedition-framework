@@ -1,5 +1,7 @@
 package com.expeditions.server;
 
+import com.expeditions.ExpeditionsConfig;
+import com.expeditions.core.CampaignState;
 import com.expeditions.core.DefenseState;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.EffectSpec;
@@ -123,12 +125,21 @@ public class ExpeditionSavedData extends SavedData {
     private static final String TAG_GRANTS = "Grants";
     private static final String TAG_COST_TOKENS = "CostTokens";
     private static final String TAG_CLEARED_DIMENSIONS = "ClearedDimensions";
+    private static final String TAG_CAMPAIGN = "Campaign";
+    private static final String TAG_COMPLETIONS = "Completions";
+    private static final String TAG_TROPHIES = "Trophies";
+    private static final String TAG_MIN_STATE = "MinCampaignState";
+    private static final String TAG_PRESSURE = "Pressure";
+    private static final String TAG_PRESSURE_VALUE = "Level";
+    private static final String TAG_BIG_BAD = "BigBad";
 
     private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
     private final ExpeditionLedger ledger = new ExpeditionLedger();
     private final Map<String, Set<BlockPos>> liveMarkers = new HashMap<>();
     private final Set<String> clearedDimensions = new HashSet<>();
+    private final Map<String, Integer> campaignProgress = new HashMap<>();
+    private final Map<String, Integer> dimensionPressure = new HashMap<>();
 
     public static ExpeditionSavedData create() {
         return new ExpeditionSavedData();
@@ -178,6 +189,42 @@ public class ExpeditionSavedData extends SavedData {
                 data.ledger.restoreUnlocks(unlockTag.getUUID(TAG_PLAYER), keys);
             } catch (RuntimeException e) {
                 LOGGER.warn("Skipping malformed unlock record: {}", e.getMessage());
+            }
+        }
+        for (Tag t : tag.getList(TAG_TROPHIES, Tag.TAG_COMPOUND)) {
+            try {
+                CompoundTag trophyTag = (CompoundTag) t;
+                Set<String> trophyIds = new HashSet<>();
+                for (Tag k : trophyTag.getList(TAG_KEYS, Tag.TAG_STRING)) {
+                    trophyIds.add(((StringTag) k).getAsString());
+                }
+                data.ledger.restoreTrophies(trophyTag.getUUID(TAG_PLAYER), trophyIds);
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping malformed trophy record: {}", e.getMessage());
+            }
+        }
+        for (Tag t : tag.getList(TAG_CAMPAIGN, Tag.TAG_COMPOUND)) {
+            try {
+                CompoundTag campaignTag = (CompoundTag) t;
+                String dimension = campaignTag.getString(TAG_DIMENSION);
+                if (!dimension.isBlank()) {
+                    data.campaignProgress.put(dimension,
+                            Math.max(0, campaignTag.getInt(TAG_COMPLETIONS)));
+                }
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping malformed campaign record: {}", e.getMessage());
+            }
+        }
+        for (Tag t : tag.getList(TAG_PRESSURE, Tag.TAG_COMPOUND)) {
+            try {
+                CompoundTag pressureTag = (CompoundTag) t;
+                String dimension = pressureTag.getString(TAG_DIMENSION);
+                if (!dimension.isBlank()) {
+                    data.dimensionPressure.put(dimension,
+                            Math.max(0, pressureTag.getInt(TAG_PRESSURE_VALUE)));
+                }
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping malformed pressure record: {}", e.getMessage());
             }
         }
         return data;
@@ -253,7 +300,11 @@ public class ExpeditionSavedData extends SavedData {
                 readModifiers(runTag),
                 readKeys(runTag, TAG_REQUIRES),
                 readKeys(runTag, TAG_GRANTS),
-                runTag.getInt(TAG_COST_TOKENS));
+                runTag.getInt(TAG_COST_TOKENS),
+                CampaignState.byId(runTag.getString(TAG_MIN_STATE)) != null
+                        ? CampaignState.byId(runTag.getString(TAG_MIN_STATE))
+                        : CampaignState.FRONTIER,
+                runTag.getBoolean(TAG_BIG_BAD));
         return ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
@@ -432,6 +483,9 @@ public class ExpeditionSavedData extends SavedData {
                     writeEffects(run.definition().modifiers().hordeEffects()));
             runTag.put(TAG_REQUIRES, writeKeys(run.definition().requires()));
             runTag.put(TAG_GRANTS, writeKeys(run.definition().grants()));
+            runTag.putString(TAG_MIN_STATE,
+                    run.definition().minCampaignState().id());
+            runTag.putBoolean(TAG_BIG_BAD, run.definition().bigBad());
             runTag.putInt(TAG_COST_TOKENS, run.definition().costTokens());
             ListTag entities = new ListTag();
             for (UUID entityId : run.challengeEntities()) {
@@ -500,6 +554,36 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_UNLOCKS, unlocks);
+        ListTag trophies = new ListTag();
+        ledger.trophyRecords().forEach((player, trophyIds) -> {
+            if (!trophyIds.isEmpty()) {
+                CompoundTag trophyTag = new CompoundTag();
+                trophyTag.putUUID(TAG_PLAYER, player);
+                trophyTag.put(TAG_KEYS, writeKeys(trophyIds));
+                trophies.add(trophyTag);
+            }
+        });
+        tag.put(TAG_TROPHIES, trophies);
+        ListTag campaign = new ListTag();
+        campaignProgress.forEach((dimension, completions) -> {
+            if (completions > 0) {
+                CompoundTag campaignTag = new CompoundTag();
+                campaignTag.putString(TAG_DIMENSION, dimension);
+                campaignTag.putInt(TAG_COMPLETIONS, completions);
+                campaign.add(campaignTag);
+            }
+        });
+        tag.put(TAG_CAMPAIGN, campaign);
+        ListTag pressure = new ListTag();
+        dimensionPressure.forEach((dimension, level) -> {
+            if (level > 0) {
+                CompoundTag pressureTag = new CompoundTag();
+                pressureTag.putString(TAG_DIMENSION, dimension);
+                pressureTag.putInt(TAG_PRESSURE_VALUE, level);
+                pressure.add(pressureTag);
+            }
+        });
+        tag.put(TAG_PRESSURE, pressure);
         ListTag markers = new ListTag();
         liveMarkers.forEach((dimension, positions) -> {
             for (BlockPos pos : positions) {
@@ -559,6 +643,78 @@ public class ExpeditionSavedData extends SavedData {
     /** Removes the cleared mark — admin path and test cleanup. */
     public void unclearDimension(String dimension) {
         if (clearedDimensions.remove(dimension)) {
+            setDirty();
+        }
+    }
+
+    /**
+     * The dimension's campaign state: an explicitly {@code CLEARED}
+     * dimension reports cleared regardless of its completion count;
+     * otherwise the count alone decides {@code FRONTIER} vs
+     * {@code ESTABLISHED}. The completion-driven {@code CLEARED}
+     * transition happens in {@link #recordCampaignCompletion} — it writes
+     * the same cleared mark the microbiome's seam reads, so every path to
+     * "won the dimension" silences the spread identically.
+     */
+    public CampaignState campaignState(String dimension) {
+        if (clearedDimensions.contains(dimension)) {
+            return CampaignState.CLEARED;
+        }
+        return campaignProgress.getOrDefault(dimension, 0)
+                >= ExpeditionsConfig.campaignEstablishedAtCompletions()
+                ? CampaignState.ESTABLISHED : CampaignState.FRONTIER;
+    }
+
+    /** Completed expeditions recorded in {@code dimension}. */
+    public int campaignCompletions(String dimension) {
+        return campaignProgress.getOrDefault(dimension, 0);
+    }
+
+    /**
+     * Records one completed expedition in {@code dimension}: increments
+     * the count and flips the cleared mark when the count reaches the
+     * configured "won" threshold — the same mark a Big Bad victory sets.
+     */
+    public void recordCampaignCompletion(String dimension) {
+        int completions = campaignProgress.merge(dimension, 1, Integer::sum);
+        if (completions >= ExpeditionsConfig.campaignClearedAtCompletions()) {
+            setDimensionCleared(dimension);
+        }
+        setDirty();
+    }
+
+    /** Wipes a dimension's campaign — admin path and test cleanup. */
+    public void resetCampaign(String dimension) {
+        campaignProgress.remove(dimension);
+        clearedDimensions.remove(dimension);
+        setDirty();
+    }
+
+    /** The dimension's current threat pressure (0 when unstirred). */
+    public int pressure(String dimension) {
+        return dimensionPressure.getOrDefault(dimension, 0);
+    }
+
+    /**
+     * Raises {@code dimension}'s pressure by {@code amount}, clamped to the
+     * configured cap. Every expedition that runs there stirs the organism a
+     * little — this is the counter the threat reads.
+     */
+    public void raisePressure(String dimension, int amount) {
+        if (amount <= 0) {
+            return;
+        }
+        int next = Math.min(ExpeditionsConfig.pressureMax(),
+                pressure(dimension) + amount);
+        if (next != pressure(dimension)) {
+            dimensionPressure.put(dimension, next);
+            setDirty();
+        }
+    }
+
+    /** Wipes a dimension's pressure — admin path and test cleanup. */
+    public void resetPressure(String dimension) {
+        if (dimensionPressure.remove(dimension) != null) {
             setDirty();
         }
     }

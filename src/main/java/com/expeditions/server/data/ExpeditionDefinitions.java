@@ -131,7 +131,32 @@ public final class ExpeditionDefinitions {
                 parseModifiers(json.get("modifiers")),
                 parseKeys(json.get("requires")),
                 parseKeys(json.get("grants")),
-                optionalInt(json, "cost_tokens", 0));
+                optionalInt(json, "cost_tokens", 0),
+                parseCampaignState(json.get("min_campaign_state")),
+                optionalBool(json, "big_bad", false));
+    }
+
+    /**
+     * Parses the optional {@code "min_campaign_state"} campaign gate —
+     * {@code frontier} (default), {@code established} or {@code cleared};
+     * unknown ids fail the definition loudly like other enum fields.
+     */
+    private static com.expeditions.core.CampaignState parseCampaignState(
+            JsonElement element) {
+        if (element == null) {
+            return com.expeditions.core.CampaignState.FRONTIER;
+        }
+        if (!element.isJsonPrimitive()) {
+            throw new IllegalArgumentException(
+                    "\"min_campaign_state\" must be a string");
+        }
+        com.expeditions.core.CampaignState state =
+                com.expeditions.core.CampaignState.byId(element.getAsString());
+        if (state == null) {
+            throw new IllegalArgumentException(
+                    "unknown min_campaign_state \"" + element.getAsString() + "\"");
+        }
+        return state;
     }
 
     /**

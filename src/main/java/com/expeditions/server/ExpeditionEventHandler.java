@@ -136,6 +136,8 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("abandon").executes(ExpeditionEventHandler::abandon))
                 .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem))
                 .then(Commands.literal("unlocks").executes(ExpeditionEventHandler::unlocks))
+                .then(Commands.literal("trophies").executes(ExpeditionEventHandler::trophies))
+                .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign))
                 .then(Commands.literal("start")
                         .then(Commands.argument("expedition", ResourceLocationArgument.id())
                                 .suggests(EXPEDITION_SUGGESTIONS)
@@ -188,6 +190,42 @@ public final class ExpeditionEventHandler {
                 ? Component.translatable("message.expeditions.unlocks_none")
                 : Component.translatable("message.expeditions.unlocks",
                         String.join(", ", keys)));
+        return 1;
+    }
+
+    /**
+     * `/expeditions trophies` — lists the expedition ids the player has
+     * completed: permanent accomplishment records, one per finished run.
+     */
+    private static int trophies(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player == null) {
+            return 0;
+        }
+        java.util.Set<String> trophyIds = ExpeditionManager.get(player.server)
+                .trophies(player.getUUID());
+        player.sendSystemMessage(trophyIds.isEmpty()
+                ? Component.translatable("message.expeditions.trophies_none")
+                : Component.translatable("message.expeditions.trophies",
+                        String.join(", ", trophyIds)));
+        return 1;
+    }
+
+    /**
+     * `/expeditions campaign` — reports the campaign state of the
+     * dimension the player stands in (completions + derived state).
+     */
+    private static int campaign(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player == null) {
+            return 0;
+        }
+        String dimension = player.serverLevel().dimension().location().toString();
+        ExpeditionSavedData data = ExpeditionManager.get(player.server).savedData();
+        player.sendSystemMessage(Component.translatable(
+                "message.expeditions.campaign", dimension,
+                data.campaignState(dimension).id(),
+                data.campaignCompletions(dimension)));
         return 1;
     }
 

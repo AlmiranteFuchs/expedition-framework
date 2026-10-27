@@ -85,6 +85,16 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @GameTestHolder("expeditions")
 @PrefixGameTestTemplate(false)
 public final class ExpeditionGameTests {
+    static {
+        // Ambient seeding puts real blocks around the shared authored-anchor
+        // region near the world origin: marker colonies are suppressed
+        // suite-wide (microbiomeColonizesMarkers lifts it inside its own
+        // batch) and traversal spawning is suppressed permanently — mock
+        // players tick once at the world spawn before teleporting.
+        Microbiome.suppressSeedingForTests(true);
+        Microbiome.suppressTraversalForTests(true);
+    }
+
     private ExpeditionGameTests() {
     }
 
@@ -973,6 +983,9 @@ public final class ExpeditionGameTests {
         // take a while — creative so the zombies can't kill the player and
         // cascade-fail the run mid-test.
         player.setGameMode(GameType.CREATIVE);
+        // Ambient pressure from earlier tests would legitimately enlarge
+        // the horde — the size contract is measured from zero.
+        savedData(level.getServer()).resetPressure("minecraft:overworld");
 
         ExpeditionRun run = startExpedition(helper, manager, player);
         manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
@@ -3233,6 +3246,278 @@ public final class ExpeditionGameTests {
     }
 
     /**
+     * The dimensional campaign: each completion advances the dimension's
+     * counter, thresholds derive the state, and reaching "cleared" flips
+     * the mark the microbiome reads — plus the expedition's id lands as a
+     * trophy on the completing player.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    public static void campaignAdvancesOnCompletion(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ExpeditionSavedData data = savedData(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String dim = "minecraft:overworld";
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "campaign_op"),
+                    JsonParser.parseString(json)));
+            // Baseline: earlier tests in the suite complete real overworld
+            // runs, and the campaign counter is shared world state.
+            data.resetCampaign(dim);
+            ExpeditionRun run = manager.startRun(player,
+                    helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:campaign_op", Difficulty.STANDARD, 0, 0));
+            for (Waypoint w : run.checkpoints()) {
+                manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
+            }
+            manager.completeRun(player);
+            helper.assertTrue(data.campaignCompletions(dim) == 1,
+                    "a completion must advance the campaign, got "
+                            + data.campaignCompletions(dim));
+            helper.assertTrue(manager.trophies(player.getUUID())
+                            .contains("test:campaign_op"),
+                    "the expedition's id must land as a trophy");
+            helper.assertTrue(data.campaignState(dim)
+                            == com.expeditions.core.CampaignState.FRONTIER,
+                    "one completion must leave the dimension at frontier");
+
+            // The threshold path: completions alone take the dimension to
+            // established, and reaching "won" flips the cleared mark the
+            // microbiome's seam reads.
+            for (int i = 1; i < ExpeditionsConfig.campaignClearedAtCompletions(); i++) {
+                data.recordCampaignCompletion(dim);
+            }
+            helper.assertTrue(data.campaignState(dim)
+                            == com.expeditions.core.CampaignState.CLEARED
+                            && data.isDimensionCleared(dim),
+                    "the cleared threshold must mark the dimension won");
+            helper.assertTrue(!Microbiome.enabled(helper.getLevel()),
+                    "a won dimension must silence the microbiome");
+
+            ExpeditionSavedData restored = roundTrip(helper, server);
+            helper.assertTrue(restored.campaignCompletions(dim)
+                            == data.campaignCompletions(dim)
+                            && restored.isDimensionCleared(dim)
+                            && restored.ledger().trophies(player.getUUID())
+                                    .contains("test:campaign_op"),
+                    "campaign progress and trophies must survive save/load");
+        } finally {
+            data.resetCampaign(dim);
+            failRunIfActive(manager, player);
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Campaign gating: a definition's {@code min_campaign_state} refuses a
+     * start until the dimension's campaign reaches it — and the refusal
+     * names the state the dimension still needs.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    public static void campaignGateRefusesStart(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ExpeditionSavedData data = savedData(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String dim = "minecraft:overworld";
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5,
+                  "min_campaign_state": "established"
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "staged_op"),
+                    JsonParser.parseString(json)));
+            // Baseline: earlier tests may have already pushed the
+            // shared overworld campaign past frontier.
+            data.resetCampaign(dim);
+            try {
+                manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                        new ExpeditionOptions("test:staged_op",
+                                Difficulty.STANDARD, 0, 0));
+                helper.fail("a frontier dimension must refuse an "
+                        + "established-gated expedition");
+            } catch (IllegalStateException refused) {
+                helper.assertTrue(refused.getMessage().contains("established"),
+                        "the refusal must name the missing state, was: "
+                                + refused.getMessage());
+            }
+            for (int i = 0; i < ExpeditionsConfig.campaignEstablishedAtCompletions(); i++) {
+                data.recordCampaignCompletion(dim);
+            }
+            manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:staged_op",
+                            Difficulty.STANDARD, 0, 0));
+            helper.assertTrue(manager.activeRun(player.getUUID()).isPresent(),
+                    "an established dimension must allow the gated start");
+        } finally {
+            data.resetCampaign(dim);
+            failRunIfActive(manager, player);
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The crafted progression artifact: an attunement sigil used at the
+     * terminal grants the key its component carries — permanently,
+     * idempotently, and without consuming the artifact.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_prog")
+    public static void attunementSigilGrantsKeyAtTerminal(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        BlockPos terminalPos = helper.absolutePos(new BlockPos(1, 1, 1));
+        helper.setBlock(new BlockPos(1, 1, 1),
+                ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
+
+        ItemStack sigil = new ItemStack(ModItems.ATTUNEMENT_SIGIL.get());
+        sigil.set(ModDataComponents.ATTUNEMENT_KEY.get(), "test:sigil_key");
+        player.setItemInHand(InteractionHand.MAIN_HAND, sigil);
+        useBlockAt(level, player, terminalPos);
+        helper.assertTrue(manager.unlocks(player.getUUID()).contains("test:sigil_key"),
+                "the sigil's key must be granted at the terminal");
+        helper.assertTrue(player.getItemInHand(InteractionHand.MAIN_HAND)
+                        .is(ModItems.ATTUNEMENT_SIGIL.get()),
+                "the artifact is proof — it must not be consumed");
+
+        useBlockAt(level, player, terminalPos);
+        helper.assertTrue(manager.unlocks(player.getUUID()).size() == 1,
+                "re-attuning must be idempotent");
+
+        // An inert sigil — no key component — grants nothing.
+        player.setItemInHand(InteractionHand.MAIN_HAND,
+                new ItemStack(ModItems.ATTUNEMENT_SIGIL.get()));
+        useBlockAt(level, player, terminalPos);
+        helper.assertTrue(manager.unlocks(player.getUUID()).size() == 1,
+                "an inert sigil must grant nothing");
+        helper.succeed();
+    }
+
+    /**
+     * Dimensional pressure: running expeditions stirs the dimension, and
+     * past thresholds the organism fights back — more horde bodies, and
+     * empowered ones. The counter persists in the shared saved data.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    public static void pressureEscalatesHordes(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ExpeditionSavedData data = savedData(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String dim = "minecraft:overworld";
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5
+                }
+                """;
+        ExpeditionRun run = null;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "pressured"),
+                    JsonParser.parseString(json)));
+            data.resetPressure(dim);
+            // Past the buff threshold every spawned mob should be empowered
+            // — the count itself is the observable contract here.
+            data.raisePressure(dim, ExpeditionsConfig.pressureBuffThreshold());
+            int baseline = data.pressure(dim);
+            run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:pressured", Difficulty.STANDARD, 0, 0));
+            helper.assertTrue(data.pressure(dim) > baseline,
+                    "starting a run must stir the dimension");
+            manager.activateCheckpoint(player,
+                    ExpeditionManager.toPos(run.checkpoints().get(0)));
+            int expected = ExpeditionsConfig.challengeHordeSize()
+                    + data.pressure(dim) / ExpeditionsConfig.pressureHordeBonusPer();
+            helper.assertTrue(run.challengeEntities().size() >= expected,
+                    "a pressured dimension must field a bigger horde, got "
+                            + run.challengeEntities().size() + " of " + expected);
+            ExpeditionSavedData restored = roundTrip(helper, server);
+            helper.assertTrue(restored.pressure(dim) == data.pressure(dim),
+                    "pressure must survive save/load");
+        } finally {
+            data.resetPressure(dim);
+            if (run != null) {
+                failRunIfActive(manager, player);
+            }
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The Big Bad: a flagged expedition turns its final checkpoint into the
+     * boss assault — a buffed pack — and completing the run wins the whole
+     * dimension (the cleared mark the microbiome reads).
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    public static void bigBadAssaultAndDimensionClear(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionManager manager = ExpeditionManager.get(server);
+        ExpeditionSavedData data = savedData(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String dim = "minecraft:overworld";
+        String json = """
+                {
+                  "dimension": "minecraft:overworld",
+                  "checkpoints": [[88, 88]],
+                  "exit": [120, 120],
+                  "tokens": 5,
+                  "big_bad": true
+                }
+                """;
+        ExpeditionRun run = null;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "big_bad"),
+                    JsonParser.parseString(json)));
+            data.resetCampaign(dim);
+            run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
+                    new ExpeditionOptions("test:big_bad", Difficulty.STANDARD, 0, 0));
+            // The run's only checkpoint IS its final one — activating it
+            // must field the boss pack, not a standard horde.
+            manager.activateCheckpoint(player,
+                    ExpeditionManager.toPos(run.checkpoints().get(0)));
+            helper.assertTrue(run.challengeEntities().size()
+                            >= ExpeditionsConfig.bossPackSize(),
+                    "the final checkpoint must field the boss pack, got "
+                            + run.challengeEntities().size());
+            manager.completeRun(player);
+            helper.assertTrue(data.isDimensionCleared(dim),
+                    "beating the Big Bad must win the dimension");
+            helper.assertTrue(data.campaignState(dim)
+                            == com.expeditions.core.CampaignState.CLEARED,
+                    "a won dimension reports cleared");
+        } finally {
+            data.resetCampaign(dim);
+            if (run != null) {
+                failRunIfActive(manager, player);
+            }
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
      * Enclosed dimensions have no heightmap floor — a Nether column's top
      * is the bedrock roof, so heightmap-based spawning puts the horde on
      * top of the world where no player can reach it. Every horde member
@@ -3473,14 +3758,21 @@ public final class ExpeditionGameTests {
      * route's visible landmark. The starter pulses give the patch
      * immediate presence; the heart's own ticker takes over after.
      */
-    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mic")
+    @GameTest(template = "arena", timeoutTicks = 400, batch = "expedition_mcol")
     public static void microbiomeColonizesMarkers(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ExpeditionManager manager = ExpeditionManager.get(level.getServer());
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         player.setGameMode(GameType.CREATIVE);
-        ExpeditionRun run = startExpedition(helper, manager, player);
+        ExpeditionRun run = null;
         try {
+            // Own batch: while seeding is un-suppressed no other test may
+            // start a run in parallel and pollute the shared anchor region.
+            Microbiome.suppressSeedingForTests(false);
+            // Ambient campaign progress can have won the overworld already
+            // — a cleared dimension silences the microbiome entirely.
+            savedData(level.getServer()).resetCampaign("minecraft:overworld");
+            run = startExpedition(helper, manager, player);
             int r = ExpeditionsConfig.microbiomeMarkerColonyRadius() + 2;
             for (Waypoint waypoint : run.checkpoints()) {
                 BlockPos cp = ExpeditionManager.toPos(waypoint);
@@ -3499,9 +3791,35 @@ public final class ExpeditionGameTests {
                 }
             }
         } finally {
-            failRunIfActive(manager, player);
+            Microbiome.suppressSeedingForTests(true);
+            if (run != null) {
+                // Colonies aren't tracked markers — remove them so the
+                // shared anchor region stays clean for later tests.
+                clearColoniesNear(level, run);
+                failRunIfActive(manager, player);
+            }
         }
         helper.succeed();
+    }
+
+    /** Removes every heart + colony layer in the ring around a run's markers. */
+    private static void clearColoniesNear(ServerLevel level, ExpeditionRun run) {
+        int r = ExpeditionsConfig.microbiomeMarkerColonyRadius() + 4;
+        List<BlockPos> centers = new java.util.ArrayList<>(run.checkpoints()
+                .stream().map(ExpeditionManager::toPos).toList());
+        centers.add(ExpeditionManager.toPos(run.exit()));
+        for (BlockPos center : centers) {
+            BlockPos heartPos;
+            while ((heartPos = findHeartNear(level, center, r)) != null) {
+                if (level.getBlockEntity(heartPos)
+                        instanceof AssimilationHeartBlockEntity heart) {
+                    for (BlockPos member : heart.colony()) {
+                        level.setBlock(member, Blocks.AIR.defaultBlockState(), 3);
+                    }
+                }
+                level.setBlock(heartPos, Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
     }
 
     /** The first heart block in the box around {@code center}, if any. */
@@ -3524,7 +3842,7 @@ public final class ExpeditionGameTests {
      * Fails the player's run if one is still active — test cleanup that can
      * never leak a run (and its authored-anchor markers) into later tests.
      */
-    private static void failRunIfActive(ExpeditionManager manager, ServerPlayer player) {
+    static void failRunIfActive(ExpeditionManager manager, ServerPlayer player) {
         if (manager.activeRun(player.getUUID()).isPresent()) {
             manager.failRun(player);
         }
@@ -3537,7 +3855,7 @@ public final class ExpeditionGameTests {
      * positions disjoint from ours cannot pin our markers and must never be
      * touched: failing it would murder a concurrent in-flight test.
      */
-    private static void failLeakedForeignRuns(ServerPlayer player) {
+    static void failLeakedForeignRuns(ServerPlayer player) {
         ExpeditionManager manager = ExpeditionManager.get(player.server);
         Optional<ExpeditionRun> own = manager.activeRun(player.getUUID());
         if (own.isEmpty()) {
@@ -3570,7 +3888,7 @@ public final class ExpeditionGameTests {
         return -1;
     }
 
-    private static ExpeditionSavedData savedData(MinecraftServer server) {
+    static ExpeditionSavedData savedData(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
                 ExpeditionSavedData.FACTORY, ExpeditionSavedData.DATA_NAME);
     }
@@ -3592,7 +3910,7 @@ public final class ExpeditionGameTests {
         }
     }
 
-    private static ExpeditionRun startExpedition(GameTestHelper helper, ExpeditionManager manager,
+    static ExpeditionRun startExpedition(GameTestHelper helper, ExpeditionManager manager,
             ServerPlayer player) {
         // Interact with a real terminal block via the same useWithoutItem path a
         // player click would take — the terminal opens its options menu and the
@@ -3618,7 +3936,7 @@ public final class ExpeditionGameTests {
      * the server interaction path ({@code ServerPlayerGameMode.useItemOn}) that
      * handles genuine player input, including reach checks.
      */
-    private static void useBlockAt(GameTestHelper helper, ServerPlayer player, BlockPos absolute) {
+    static void useBlockAt(GameTestHelper helper, ServerPlayer player, BlockPos absolute) {
         useBlockAt(helper.getLevel(), player, absolute);
     }
 

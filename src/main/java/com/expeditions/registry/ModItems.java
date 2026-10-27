@@ -43,6 +43,14 @@ public final class ModItems {
     public static final DeferredItem<Item> ASSIMILATION_ESSENCE = ITEMS.registerSimpleItem(
             "assimilation_essence");
 
+    /**
+     * The crafted progression artifact: carries an {@code attunement_key}
+     * component; used at the terminal it grants that key permanently and
+     * is never consumed — the artifact itself is the proof of attunement.
+     */
+    public static final DeferredItem<Item> ATTUNEMENT_SIGIL = ITEMS.registerSimpleItem(
+            "attunement_sigil", new Item.Properties().stacksTo(1));
+
     private ModItems() {
     }
 }

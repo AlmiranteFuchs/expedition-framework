@@ -54,6 +54,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -135,6 +136,31 @@ public final class ExpeditionManager {
         return ledger.unlocks(playerId);
     }
 
+    /** The player's trophies, for diagnostics and commands. */
+    public Set<String> trophies(UUID playerId) {
+        return ledger.trophies(playerId);
+    }
+
+    /** The shared world state — campaign records, markers, cleared dims. */
+    public ExpeditionSavedData savedData() {
+        return data;
+    }
+
+    /**
+     * Grants {@code key} to the player — the progression write behind the
+     * attunement sigil's terminal use. Idempotent like the ledger's own
+     * rule; a fresh grant marks the shared state dirty.
+     *
+     * @return whether the key was newly granted
+     */
+    public boolean grantUnlock(UUID playerId, String key) {
+        if (ledger.grantUnlock(playerId, key)) {
+            data.setDirty();
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Starts a run at the terminal the player clicked: resolves the full
      * route at a remote landing spot, places markers, and spawns the join
@@ -174,7 +200,8 @@ public final class ExpeditionManager {
                         .orElseThrow(() -> new IllegalStateException(
                                 "Unknown or unavailable expedition: " + options.expeditionId()));
         RequirementCheck requirements = ledger.checkRequirements(
-                player.getUUID(), definition);
+                player.getUUID(), definition,
+                data.campaignState(definition.dimension()));
         if (!requirements.isSatisfied()) {
             throw new IllegalStateException(
                     "Expedition locked: " + describeMissing(requirements));
@@ -287,6 +314,10 @@ public final class ExpeditionManager {
                             + definition.costTokens());
         }
         ledger.startRun(run);
+        // Every expedition stirs the organism a little — pressure is the
+        // dimension-wide threat counter hordes and waves read.
+        data.raisePressure(definition.dimension(),
+                ExpeditionsConfig.pressurePerRunStart());
         applyMemberEffects(run, player);
         applyWeather(run, level);
         data.setDirty();
@@ -300,7 +331,8 @@ public final class ExpeditionManager {
      */
     public RequirementCheck missingRequirements(UUID playerId,
             ExpeditionDefinition definition) {
-        return ledger.checkRequirements(playerId, definition);
+        return ledger.checkRequirements(playerId, definition,
+                data.campaignState(definition.dimension()));
     }
 
     private static String describeMissing(RequirementCheck check) {
@@ -310,6 +342,11 @@ public final class ExpeditionManager {
         }
         if (check.missingTokens() > 0) {
             parts.add("costs " + check.missingTokens() + " more tokens");
+        }
+        if (!check.currentState().atLeast(check.requiredState())) {
+            parts.add("requires the dimension to reach \""
+                    + check.requiredState().id() + "\" (currently \""
+                    + check.currentState().id() + "\")");
         }
         return String.join(" and ", parts);
     }
@@ -522,10 +559,31 @@ public final class ExpeditionManager {
             grantBonusDrops(run);
         }
         // Unlock keys are party-wide progression — every member earns proof
-        // of the completion, online or not, in the same atomic save.
+        // of the completion, online or not, in the same atomic save. The
+        // expedition's id is the trophy record; the dimension's campaign
+        // counter advances in the same write.
         for (String key : run.definition().grants()) {
             for (UUID member : run.party()) {
                 ledger.grantUnlock(member, key);
+            }
+        }
+        for (UUID member : run.party()) {
+            ledger.addTrophy(member, run.definition().id());
+        }
+        data.recordCampaignCompletion(run.definition().dimension());
+        data.raisePressure(run.definition().dimension(),
+                ExpeditionsConfig.pressurePerRunCompletion());
+        // The Big Bad is the campaign's payoff: beating it wins the
+        // dimension — the same cleared mark the grind threshold sets.
+        if (run.definition().bigBad()) {
+            data.setDimensionCleared(run.definition().dimension());
+            for (UUID member : run.party()) {
+                ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+                if (memberPlayer != null) {
+                    memberPlayer.sendSystemMessage(Component.translatable(
+                            "message.expeditions.dimension_won",
+                            run.definition().dimension()));
+                }
             }
         }
         if (!run.definition().grants().isEmpty()) {
@@ -955,8 +1013,18 @@ public final class ExpeditionManager {
         if (kind != CheckpointChallenge.HORDE) {
             return;
         }
-        spawnHorde(run, level,
-                toPos(run.checkpoints().get(run.completedCheckpoints() - 1)));
+        BlockPos checkpoint = toPos(run.checkpoints()
+                .get(run.completedCheckpoints() - 1));
+        // The Big Bad's signature: the expedition's last checkpoint is the
+        // fight itself — a buffed pack with a named, glowing alpha. The
+        // win still runs through the normal completion path.
+        boolean bossFight = run.definition().bigBad()
+                && run.completedCheckpoints() == run.totalCheckpoints();
+        if (bossFight) {
+            spawnBoss(run, level, checkpoint);
+        } else {
+            spawnHorde(run, level, checkpoint);
+        }
         if (run.challengeEntities().isEmpty()) {
             return;
         }
@@ -984,6 +1052,11 @@ public final class ExpeditionManager {
                 + ExpeditionsConfig.challengeHordeSizePerExtraMember()
                         * (run.party().size() - 1))
                 * run.options().difficulty().hordePercent() / 100;
+        // Dimensional pressure escalates the horde dimension-wide: more
+        // bodies, and past the buff threshold they arrive empowered.
+        int pressure = data.pressure(run.definition().dimension());
+        size += pressure / ExpeditionsConfig.pressureHordeBonusPer();
+        boolean buffed = pressure >= ExpeditionsConfig.pressureBuffThreshold();
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -999,6 +1072,9 @@ public final class ExpeditionManager {
                         effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),
                         false, false)));
             }
+            if (buffed) {
+                pressureBuffs(mob);
+            }
             mob.setTarget(nearestMember(run, level, mob.blockPosition()));
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
@@ -1007,6 +1083,59 @@ public final class ExpeditionManager {
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
         }
+    }
+
+    /**
+     * The Big Bad's assault: a fixed pack of the site's own mob pool, every
+     * member pressure-empowered, and the last one crowned — a named,
+     * glowing, hardened alpha that reads as the organism's champion. Same
+     * spawn machinery and tracking as any horde; only the dressing is new.
+     */
+    private void spawnBoss(ExpeditionRun run, ServerLevel level, BlockPos center) {
+        EntityType<?> type = HordePools.pick(level, center,
+                run.definition().dimension(), level.getRandom());
+        int size = ExpeditionsConfig.bossPackSize();
+        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        List<UUID> spawned = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            Mob mob = MobSpawns.trySpawn(type, level, center, radius);
+            if (mob == null) {
+                continue;
+            }
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
+                    MobSpawnType.EVENT, null);
+            mob.setPersistenceRequired();
+            pressureBuffs(mob);
+            if (i == size - 1) {
+                mob.setCustomName(Component.translatable(
+                        "entity.expeditions.big_bad"));
+                mob.setCustomNameVisible(true);
+                mob.setGlowingTag(true);
+                mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST,
+                        MobEffectInstance.INFINITE_DURATION, 1, false, false));
+                mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST,
+                        MobEffectInstance.INFINITE_DURATION, 4, false, false));
+            }
+            mob.setTarget(nearestMember(run, level, mob.blockPosition()));
+            if (level.addFreshEntity(mob)) {
+                spawned.add(mob.getUUID());
+            }
+        }
+        if (!spawned.isEmpty()) {
+            run.trackChallengeEntities(spawned);
+        }
+    }
+
+    /**
+     * The pressure empowerment: at or above the configured threshold,
+     * spawned mobs carry strength and speed — the dimension visibly
+     * fighting back, no datapack needed.
+     */
+    private static void pressureBuffs(Mob mob) {
+        mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST,
+                MobEffectInstance.INFINITE_DURATION, 0, false, false));
+        mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,
+                MobEffectInstance.INFINITE_DURATION, 0, false, false));
     }
 
     // ---- Defense events ----------------------------------------------------
@@ -1191,10 +1320,14 @@ public final class ExpeditionManager {
             }
         }
         int room = ExpeditionsConfig.defenseMobCap() - alive;
-        int count = Math.min(room, ExpeditionsConfig.defenseWaveSize());
+        int count = Math.min(room, ExpeditionsConfig.defenseWaveSize()
+                + data.pressure(run.definition().dimension())
+                        / ExpeditionsConfig.pressureHordeBonusPer());
         if (count <= 0) {
             return;
         }
+        boolean buffed = data.pressure(run.definition().dimension())
+                >= ExpeditionsConfig.pressureBuffThreshold();
         EntityType<?> type = HordePools.pick(level, devicePos,
                 run.definition().dimension(), level.getRandom());
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
@@ -1211,6 +1344,9 @@ public final class ExpeditionManager {
                 effectOf(spec).ifPresent(effect -> mob.addEffect(new MobEffectInstance(
                         effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),
                         false, false)));
+            }
+            if (buffed) {
+                pressureBuffs(mob);
             }
             mob.goalSelector.addGoal(1, new AttackDeviceGoal(mob, devicePos,
                     ExpeditionsConfig.defenseMobDamage(),

@@ -190,6 +190,45 @@ public final class ExpeditionsConfig {
                     "growing in over minutes.")
             .defineInRange("expeditions.microbiome.markerColonyStarterPulses", 6, 0, 64);
 
+    private static final ModConfigSpec.IntValue CAMPAIGN_ESTABLISHED = BUILDER
+            .comment("Completed expeditions in a dimension before its",
+                    "campaign state becomes \"established\".")
+            .defineInRange("expeditions.campaign.establishedAtCompletions", 2, 1, 1000);
+
+    private static final ModConfigSpec.IntValue CAMPAIGN_CLEARED = BUILDER
+            .comment("Completed expeditions in a dimension before the",
+                    "campaign is won — the dimension flips to \"cleared\"",
+                    "and the microbiome goes silent there.")
+            .defineInRange("expeditions.campaign.clearedAtCompletions", 5, 1, 1000);
+
+    private static final ModConfigSpec.IntValue PRESSURE_START = BUILDER
+            .comment("Dimensional pressure gained when a run starts in the",
+                    "dimension — every expedition stirs the organism.")
+            .defineInRange("expeditions.pressure.perRunStart", 5, 0, 1000);
+
+    private static final ModConfigSpec.IntValue PRESSURE_COMPLETE = BUILDER
+            .comment("Dimensional pressure gained when a run completes.")
+            .defineInRange("expeditions.pressure.perRunCompletion", 10, 0, 1000);
+
+    private static final ModConfigSpec.IntValue PRESSURE_MAX = BUILDER
+            .comment("Pressure cap per dimension.")
+            .defineInRange("expeditions.pressure.max", 100, 1, 10000);
+
+    private static final ModConfigSpec.IntValue PRESSURE_HORDE_PER = BUILDER
+            .comment("One extra horde/wave mob per this much pressure.")
+            .defineInRange("expeditions.pressure.hordeBonusPer", 25, 1, 1000);
+
+    private static final ModConfigSpec.IntValue PRESSURE_BUFF_AT = BUILDER
+            .comment("Pressure at which spawned mobs carry strength and",
+                    "speed — the dimension visibly fighting back.")
+            .defineInRange("expeditions.pressure.buffThreshold", 60, 1, 1000);
+
+    private static final ModConfigSpec.IntValue BOSS_PACK = BUILDER
+            .comment("Mobs the Big Bad's assault spawns at the final",
+                    "checkpoint of a big_bad expedition — the last one is",
+                    "the named, glowing boss itself.")
+            .defineInRange("expeditions.boss.packSize", 5, 1, 64);
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> OVERWORLD_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Overworld expedition.",
@@ -487,6 +526,46 @@ public final class ExpeditionsConfig {
     /** Growth pulses applied to a marker colony at seed time. */
     public static int microbiomeMarkerColonyStarterPulses() {
         return MICROBIOME_MARKER_STARTER.get();
+    }
+
+    /** Completions before a dimension's campaign becomes "established". */
+    public static int campaignEstablishedAtCompletions() {
+        return CAMPAIGN_ESTABLISHED.get();
+    }
+
+    /** Completions before a dimension's campaign is won ("cleared"). */
+    public static int campaignClearedAtCompletions() {
+        return CAMPAIGN_CLEARED.get();
+    }
+
+    /** Pressure gained per run started in a dimension. */
+    public static int pressurePerRunStart() {
+        return PRESSURE_START.get();
+    }
+
+    /** Pressure gained per run completed in a dimension. */
+    public static int pressurePerRunCompletion() {
+        return PRESSURE_COMPLETE.get();
+    }
+
+    /** Pressure cap per dimension. */
+    public static int pressureMax() {
+        return PRESSURE_MAX.get();
+    }
+
+    /** Pressure per extra horde/wave mob. */
+    public static int pressureHordeBonusPer() {
+        return PRESSURE_HORDE_PER.get();
+    }
+
+    /** Pressure at which mobs spawn buffed. */
+    public static int pressureBuffThreshold() {
+        return PRESSURE_BUFF_AT.get();
+    }
+
+    /** Mobs in the Big Bad's final-checkpoint assault. */
+    public static int bossPackSize() {
+        return BOSS_PACK.get();
     }
 
     /** Whether completion grants bonus item drops alongside tokens. */

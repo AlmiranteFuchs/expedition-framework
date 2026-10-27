@@ -184,6 +184,12 @@ public class ExpeditionMenu extends ChestMenu {
                             "gui.expeditions.locked_cost",
                             check.missingTokens()));
                 }
+                if (!check.currentState().atLeast(check.requiredState())) {
+                    lore.add(Component.translatable(
+                            "gui.expeditions.locked_campaign",
+                            check.requiredState().id(),
+                            check.currentState().id()));
+                }
                 lore.add(Component.translatable("gui.expeditions.click_cycle"));
                 container.setItem(SLOT_EXPEDITION, button(Items.TRIAL_KEY,
                         "gui.expeditions.expedition", lore));

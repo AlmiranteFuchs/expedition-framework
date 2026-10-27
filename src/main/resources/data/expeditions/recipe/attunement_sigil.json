@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "expeditions:assimilation_essence"},
+    {"item": "expeditions:assimilation_essence"},
+    {"item": "expeditions:assimilation_essence"},
+    {"item": "minecraft:amethyst_shard"}
+  ],
+  "result": {
+    "id": "expeditions:attunement_sigil",
+    "count": 1,
+    "components": {
+      "expeditions:attunement_key": "expeditions:attuned"
+    }
+  }
+}

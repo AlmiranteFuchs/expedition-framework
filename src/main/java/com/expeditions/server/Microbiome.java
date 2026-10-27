@@ -23,6 +23,28 @@ import net.minecraft.util.RandomSource;
  * is already enforced.
  */
 public final class Microbiome {
+    /**
+     * Test seams: the game-test suite suppresses ambient seeding. Mock
+     * players tick once at the world spawn before teleporting, so the
+     * traversal roll would seed hearts around the origin — right where the
+     * authored-route anchors every datapack test shares live — and colonies
+     * would carpet those columns with non-sturdy membranes until route
+     * resolution fails. {@code traversalSuppressed} is set once for the
+     * whole suite and never lifted; {@code seedingSuppressed} gates marker
+     * colonies, which only the dedicated colony test lifts inside its own
+     * batch. Tests exercise {@code trySpawnHeart} directly.
+     */
+    private static volatile boolean seedingSuppressed;
+    private static volatile boolean traversalSuppressed;
+
+    public static void suppressSeedingForTests(boolean suppressed) {
+        seedingSuppressed = suppressed;
+    }
+
+    public static void suppressTraversalForTests(boolean suppressed) {
+        traversalSuppressed = suppressed;
+    }
+
     private Microbiome() {
     }
 
@@ -71,7 +93,8 @@ public final class Microbiome {
 
     /** Per-player traversal roll: called on a throttled player tick. */
     public static void onPlayerTick(ServerLevel level, BlockPos playerPos) {
-        if (level.random.nextDouble() < ExpeditionsConfig.microbiomeSpawnChance()) {
+        if (!traversalSuppressed
+                && level.random.nextDouble() < ExpeditionsConfig.microbiomeSpawnChance()) {
             trySpawnHeart(level, playerPos, level.random);
         }
     }
@@ -87,7 +110,8 @@ public final class Microbiome {
      */
     public static Optional<BlockPos> seedColonyNear(ServerLevel level,
             BlockPos marker, RandomSource random) {
-        if (!enabled(level) || !ExpeditionsConfig.microbiomeMarkerColonies()) {
+        if (seedingSuppressed || !enabled(level)
+                || !ExpeditionsConfig.microbiomeMarkerColonies()) {
             return Optional.empty();
         }
         int radius = ExpeditionsConfig.microbiomeMarkerColonyRadius();

@@ -181,4 +181,45 @@ class ExpeditionLedgerTest {
         ExpeditionLedger ledger = new ExpeditionLedger();
         assertTrue(ledger.checkRequirements(UUID.randomUUID(), DEFINITION).isSatisfied());
     }
+
+    @Test
+    void checkRequirementsReportsCampaignGap() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        ExpeditionDefinition staged = new ExpeditionDefinition(
+                "expeditions:late_op", "Late Op", 3, "minecraft:overworld",
+                new ExpeditionRoute(List.of(new RouteAnchor(0, 0)),
+                        new RouteAnchor(10, 0)),
+                50, 0, 0, List.of(), ExpeditionModifiers.NONE,
+                java.util.Set.of(), java.util.Set.of(), 0,
+                com.expeditions.core.CampaignState.ESTABLISHED);
+        assertFalse(ledger.checkRequirements(player, staged).isSatisfied(),
+                "the no-state overload must treat the dimension as frontier");
+        assertFalse(ledger.checkRequirements(player, staged,
+                com.expeditions.core.CampaignState.FRONTIER).isSatisfied());
+        assertTrue(ledger.checkRequirements(player, staged,
+                com.expeditions.core.CampaignState.ESTABLISHED).isSatisfied());
+        assertTrue(ledger.checkRequirements(player, staged,
+                com.expeditions.core.CampaignState.CLEARED).isSatisfied(),
+                "a cleared dimension satisfies every lower gate");
+    }
+
+    @Test
+    void trophiesAccumulateIdempotentlyAndRoundTrip() {
+        ExpeditionLedger ledger = new ExpeditionLedger();
+        UUID player = UUID.randomUUID();
+        assertTrue(ledger.addTrophy(player, "expeditions:trial"));
+        assertFalse(ledger.addTrophy(player, "expeditions:trial"),
+                "recording a held trophy is a no-op");
+        assertTrue(ledger.hasTrophy(player, "expeditions:trial"));
+        assertEquals(java.util.Set.of("expeditions:trial"), ledger.trophies(player));
+        assertThrows(IllegalArgumentException.class,
+                () -> ledger.addTrophy(player, ""));
+
+        ExpeditionLedger restored = new ExpeditionLedger();
+        restored.restoreTrophies(player, ledger.trophyRecords().get(player));
+        assertEquals(ledger.trophies(player), restored.trophies(player));
+        assertThrows(IllegalArgumentException.class,
+                () -> restored.restoreTrophies(player, java.util.Set.of(" ")));
+    }
 }

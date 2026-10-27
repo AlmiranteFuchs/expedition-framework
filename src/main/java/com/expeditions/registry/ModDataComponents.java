@@ -26,6 +26,18 @@ public final class ModDataComponents {
                             .persistent(Codec.STRING)
                             .build());
 
+    /**
+     * The progression key an attunement sigil grants at the terminal.
+     * Unlike {@link #RUN_ID} this binds nothing to a run — the sigil is a
+     * permanent artifact, and the key it carries is a player's permanent
+     * unlock once attuned.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> ATTUNEMENT_KEY =
+            DATA_COMPONENTS.register("attunement_key",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .build());
+
     private ModDataComponents() {
     }
 }
