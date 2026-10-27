@@ -69,7 +69,10 @@ neoForge {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // -PgtNamespaces=expeditions_smoke runs only the smoke suite
+            // (a few tests) — the full suite runs without the property.
+            systemProperty 'neoforge.enabledGameTestNamespaces',
+                project.findProperty('gtNamespaces') ?: project.mod_id
         }
 
         data {
@@ -183,6 +186,17 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+// The game-test world persists between runs — stale blocks from earlier
+// runs corrupt later results (authored-route anchors sit on shared absolute
+// columns near the origin). Always start from a clean world.
+def cleanGameTestWorld = tasks.register('cleanGameTestWorld', Delete) {
+    delete layout.projectDirectory.dir('run/world')
+    mustRunAfter 'prepareGameTestServerRun'
+}
+tasks.named('runGameTestServer') {
+    dependsOn cleanGameTestWorld
 }
 
 tasks.named('test', Test).configure {

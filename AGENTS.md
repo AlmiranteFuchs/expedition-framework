@@ -13,7 +13,12 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
 - Build: `./gradlew build`
 - Unit tests: `./gradlew test` (JUnit 5, `src/test/java`, no Minecraft deps)
 - In-game tests: `./gradlew runGameTestServer` (flat-world server, exits; tests in
-  `com.expeditions.gametest`, template `data/expeditions/structure/arena.nbt`)
+  `com.expeditions.gametest`, template `data/expeditions/structure/arena.nbt`).
+  The task first deletes `run/world` — the world otherwise persists between
+  runs and stale blocks corrupt later results.
+- Smoke iteration: `./gradlew runGameTestServer -PgtNamespaces=expeditions_smoke`
+  runs only `ExpeditionSmokeTests` (~20s vs ~90s full). Use it mid-change;
+  run the full suite before committing.
 - Dev server: `./gradlew runServer`; dev client: `./gradlew runClient`
 - Datagen: `./gradlew runData` → `src/generated/resources`
 
@@ -290,6 +295,20 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Datapack tests: simulate reloads via `ExpeditionDefinitions.reload(map)` and
   ALWAYS reset with `reload(Map.of())` in a finally block — the snapshot is a
   shared static and leaks between tests otherwise.
+- Ambient world writes are suppressed for the suite: authored-route anchors
+  from every datapack test resolve to shared absolute columns near the world
+  origin, and microbiome colonies/hearts there would make later route
+  resolutions fail. `Microbiome.suppressSeedingForTests(true)` gates marker
+  colonies (lifted only inside `microbiomeColonizesMarkers`'s own batch);
+  `suppressTraversalForTests(true)` gates the player-tick spawn path
+  permanently — mock players tick once at the world spawn before
+  teleporting, so an unguarded roll seeds hearts at the origin. Tests
+  exercise `trySpawnHeart`/`seedColonyNear` directly.
+- Cross-test shared state that needs baseline resets: `campaignProgress`
+  accumulates completions across the whole suite (eventually flipping
+  `clearedDimensions`, which silences the microbiome) and `dimensionPressure`
+  enlarges hordes. Tests asserting baseline behavior reset via
+  `resetCampaign`/`resetPressure` first.
 - Tests that start a run MUST wrap post-start work in `try/finally
   failRunIfActive(manager, player)` — authored anchors are absolute world
   coordinates, so a leaked active run keeps its markers at the shared
