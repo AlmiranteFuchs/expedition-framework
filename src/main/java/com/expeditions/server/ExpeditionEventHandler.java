@@ -107,6 +107,40 @@ public final class ExpeditionEventHandler {
                 Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
             }
             CompassPing.onPlayerTick(player);
+            dwellPressure(player);
+        }
+    }
+
+    /**
+     * Dwell pressure: presence itself stirs the organism. Every
+     * {@code pressure.dwell_interval_ticks} a player spends in an
+     * unliberated dimension adds {@code pressure.dwell_amount} — stalling
+     * between checkpoints or lingering after a run slowly raises the threat
+     * every horde and siege wave reads. Cleared dimensions stop noticing
+     * (the organism is dead there) and spectators don't count as presence.
+     * Per-dimension tunable; public so game tests can drive the accrual
+     * without fabricating a tick event.
+     */
+    public static void dwellPressure(ServerPlayer player) {
+        int interval = ExpeditionTuning.integer(player.level().dimension(),
+                "pressure.dwell_interval_ticks",
+                ExpeditionsConfig.pressureDwellIntervalTicks());
+        // tickCount 0 is the join tick — presence must age, not just begin.
+        if (player.tickCount == 0 || player.tickCount % interval != 0
+                || player.isSpectator()) {
+            return;
+        }
+        int amount = ExpeditionTuning.integer(player.level().dimension(),
+                "pressure.dwell_amount", ExpeditionsConfig.pressureDwellAmount());
+        if (amount <= 0) {
+            return;
+        }
+        ExpeditionSavedData data = player.server.overworld().getDataStorage()
+                .computeIfAbsent(ExpeditionSavedData.FACTORY,
+                        ExpeditionSavedData.DATA_NAME);
+        String dimensionId = player.level().dimension().location().toString();
+        if (!data.isDimensionCleared(dimensionId)) {
+            data.raisePressure(dimensionId, amount);
         }
     }
 

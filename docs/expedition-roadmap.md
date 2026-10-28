@@ -336,7 +336,12 @@ own key ids via the component.
 - **Pressure** — `dimensionPressure` per dimension in the SavedData:
   `raisePressure` on run starts and completions (config
   `pressurePerRunStart`/`pressurePerRunCompletion`, capped by
-  `pressureMax`), `resetPressure` as the test/admin path.
+  `pressureMax`), plus **dwell accrual** — every
+  `pressure.dwellIntervalTicks` a player spends in an unliberated
+  dimension adds `pressure.dwellAmount` (join tick excluded, spectators
+  don't count, cleared dimensions stop accruing) — stalling between
+  checkpoints or lingering slowly raises the threat.
+  `resetPressure` as the test/admin path.
   Escalation reads the counter in `spawnHorde`/`spawnSiegeWave`: horde
   size grows by `pressureHordeBonusPer` steps, and past
   `pressureBuffThreshold` spawned mobs get empowered buffs.
@@ -382,7 +387,8 @@ The file is sparse — only the knobs it changes:
   "microbiome": { "enabled": true, "heart_spawn_chance": 0.5,
                   "growth_interval_ticks": 30, "max_colony_size": 64, ... },
   "pressure":   { "per_run_start": 8, "per_run_completion": 15,
-                  "max": 100, "horde_bonus_per": 25, "buff_threshold": 50 }
+                  "max": 100, "horde_bonus_per": 25, "buff_threshold": 50,
+                  "dwell_amount": 2, "dwell_interval_ticks": 2400 }
 }
 ```
 

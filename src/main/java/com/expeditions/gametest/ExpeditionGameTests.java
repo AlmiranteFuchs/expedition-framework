@@ -27,6 +27,7 @@ import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionMenu;
+import com.expeditions.server.ExpeditionEventHandler;
 import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.HordePools;
 import com.expeditions.server.ItemRewards;
@@ -3735,6 +3736,45 @@ public final class ExpeditionGameTests {
                 failRunIfActive(manager, player);
             }
             ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Dwell pressure: presence alone stirs the organism. Each dwell interval
+     * a player spends in the dimension adds pressure, on cadence only — and
+     * a liberated dimension's dead organism stops noticing entirely. (The
+     * spectator gate can't be exercised: mock players hardcode
+     * {@code isSpectator() → false}.)
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mic", batch = "expedition_mic")
+    public static void dwellPressureAccruesOnPresence(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ExpeditionSavedData data = savedData(server);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        String dim = helper.getLevel().dimension().location().toString();
+        int interval = ExpeditionsConfig.pressureDwellIntervalTicks();
+        int amount = ExpeditionsConfig.pressureDwellAmount();
+        data.resetPressure(dim);
+        try {
+            player.tickCount = interval;
+            ExpeditionEventHandler.dwellPressure(player);
+            helper.assertTrue(data.pressure(dim) == amount,
+                    "a dwell interval of presence must accrue pressure, got "
+                            + data.pressure(dim));
+            player.tickCount = interval + 1;
+            ExpeditionEventHandler.dwellPressure(player);
+            helper.assertTrue(data.pressure(dim) == amount,
+                    "off-cadence ticks must not accrue");
+            player.tickCount = interval * 2;
+            data.setDimensionCleared(dim);
+            ExpeditionEventHandler.dwellPressure(player);
+            helper.assertTrue(data.pressure(dim) == amount,
+                    "a cleared dimension must not accrue pressure");
+            data.unclearDimension(dim);
+        } finally {
+            data.resetPressure(dim);
+            data.unclearDimension(dim);
         }
         helper.succeed();
     }

@@ -223,6 +223,17 @@ public final class ExpeditionsConfig {
                     "speed — the dimension visibly fighting back.")
             .defineInRange("expeditions.pressure.buffThreshold", 60, 1, 1000);
 
+    private static final ModConfigSpec.IntValue PRESSURE_DWELL_AMOUNT = BUILDER
+            .comment("Pressure gained each time a player's presence ages one",
+                    "dwell interval in an unliberated dimension — merely",
+                    "staying stirs the organism. 0 disables dwell pressure.")
+            .defineInRange("expeditions.pressure.dwellAmount", 1, 0, 1000);
+
+    private static final ModConfigSpec.IntValue PRESSURE_DWELL_INTERVAL = BUILDER
+            .comment("Ticks of player presence per dwell-pressure tick",
+                    "(2400 = two minutes).")
+            .defineInRange("expeditions.pressure.dwellIntervalTicks", 2400, 20, 72000);
+
     private static final ModConfigSpec.IntValue BOSS_PACK = BUILDER
             .comment("Mobs the Big Bad's assault spawns at the final",
                     "checkpoint of a big_bad expedition — the last one is",
@@ -567,6 +578,16 @@ public final class ExpeditionsConfig {
     /** Pressure at which mobs spawn buffed. */
     public static int pressureBuffThreshold() {
         return PRESSURE_BUFF_AT.get();
+    }
+
+    /** Pressure gained per dwell interval of presence. */
+    public static int pressureDwellAmount() {
+        return PRESSURE_DWELL_AMOUNT.get();
+    }
+
+    /** Ticks of presence per dwell-pressure accrual. */
+    public static int pressureDwellIntervalTicks() {
+        return PRESSURE_DWELL_INTERVAL.get();
     }
 
     public static int compassPingRange() {

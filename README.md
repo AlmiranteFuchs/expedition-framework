@@ -381,7 +381,9 @@ dimension — the file's resource id IS the dimension it tunes
     "per_run_completion": 15,
     "max": 100,
     "horde_bonus_per": 25,
-    "buff_threshold": 50
+    "buff_threshold": 50,
+    "dwell_amount": 2,
+    "dwell_interval_ticks": 2400
   }
 }
 ```
@@ -569,9 +571,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   `deep_salvage` (key + token + established-campaign gated, composing
   artifact recovery and a device siege under rain modifiers).
 - **Dimensional pressure + Big Bad** — runs raise a per-dimension pressure
-  counter that enlarges hordes and empowers spawns past thresholds;
-  `big_bad` expeditions turn their final checkpoint into a boss assault
-  and clear the dimension on completion.
+  counter that enlarges hordes and empowers spawns past thresholds, and
+  **presence itself stirs the organism**: every dwell interval spent in an
+  unliberated dimension accrues pressure, so stalling between checkpoints
+  or lingering is dangerous. `big_bad` expeditions turn their final
+  checkpoint into a boss assault and clear the dimension on completion.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —
