@@ -272,9 +272,11 @@ while moving through a dimension, killable to stop the spread.
   dimension's roof. `microbiome.enabled` is the runtime kill-switch for
   both spawning and growth.
 - **Heart pulses** — every `microbiome.growthIntervalTicks` the block
-  entity applies one uniformly chosen legal move: seed a layer on one of
-  its own sturdy faces when the colony is empty, else extend a member
-  along its wall or wrap over the support's edge. The colony's positions
+  entity applies one uniformly chosen legal move: seed the floor ring
+  beside it when the colony is empty (side faces only where no floor
+  exists — covering them would block the ring's cells), else extend a
+  member along its wall, wrap over the support's edge, climb a wall one
+  level up, or roll over a one-block obstacle. The colony's positions
   persist in the block entity so a chunk unload never forgets; dead
   members are pruned each pulse so broken layers free their slot.
 - **Bounded colony** — `microbiome.maxColonySize` caps members: a local

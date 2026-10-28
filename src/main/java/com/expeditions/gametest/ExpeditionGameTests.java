@@ -3667,8 +3667,8 @@ public final class ExpeditionGameTests {
 
     /**
      * The microbiome's heart is the layer's only growth organ. Embedded
-     * flush in the floor, its pulses seed layers on its own faces and
-     * crawl the colony outward across the open floor — bounded by the
+     * flush in the floor, its pulses seed the carpet ring around its base
+     * and crawl the colony outward across the open floor — bounded by the
      * configured cap, never a takeover.
      */
     @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_mic", batch = "expedition_mic")
@@ -3772,6 +3772,72 @@ public final class ExpeditionGameTests {
             helper.assertTrue(
                     level.getBlockState(member).canSurvive(level, member),
                     "crawled member must stay attached at " + member);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The carpet does not stop at walls: a colony spreading across a floor
+     * meets a rising wall and climbs it — covering the face one level up
+     * (the ground-level face shares the carpet's own cell) and rolling
+     * onto the summit.
+     */
+    @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_mic", batch = "expedition_mic")
+    public static void microbiomeCarpetClimbsWall(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos slabOrigin = helper.absolutePos(new BlockPos(2, 0, 2));
+        for (int dx = 0; dx < 9; dx++) {
+            for (int dz = 0; dz < 9; dz++) {
+                level.setBlock(slabOrigin.offset(dx, 0, dz),
+                        Blocks.STONE.defaultBlockState(), 3);
+                level.setBlock(slabOrigin.offset(dx, 1, dz),
+                        Blocks.AIR.defaultBlockState(), 3);
+                level.setBlock(slabOrigin.offset(dx, 2, dz),
+                        Blocks.AIR.defaultBlockState(), 3);
+                level.setBlock(slabOrigin.offset(dx, 3, dz),
+                        Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        // A 2-high wall directly beside the embedded heart: the climb is
+        // available from the colony's second pulse and the summit takes
+        // only the climb→wrap pair, so the sequence lands well before the
+        // arena-floor frontier could spend the colony cap.
+        BlockPos wallBase = slabOrigin.offset(5, 1, 4);
+        for (int dy = 0; dy < 2; dy++) {
+            level.setBlock(wallBase.above(dy),
+                    Blocks.STONE.defaultBlockState(), 3);
+        }
+        BlockPos heartPos = slabOrigin.offset(4, 0, 4);
+        level.setBlock(heartPos,
+                ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3);
+        AssimilationHeartBlockEntity heart =
+                (AssimilationHeartBlockEntity) level.getBlockEntity(heartPos);
+
+        for (int i = 0; i < 300 && heart.colony().size()
+                < ExpeditionsConfig.microbiomeMaxColonySize(); i++) {
+            heart.pulse(level);
+        }
+        boolean climbed = heart.colony().stream().anyMatch(member -> {
+            BlockState s = level.getBlockState(member);
+            return s.is(ModBlocks.ASSIMILATION_LAYER.get())
+                    && member.getY() == wallBase.getY() + 1
+                    && s.getValue(AssimilationLayerBlock.FACING).getAxis()
+                            != Direction.Axis.Y;
+        });
+        helper.assertTrue(climbed,
+                "the carpet must climb the wall's upper face above the floor plane");
+        boolean summit = heart.colony().stream().anyMatch(member -> {
+            BlockState s = level.getBlockState(member);
+            return s.is(ModBlocks.ASSIMILATION_LAYER.get())
+                    && member.getY() == wallBase.getY() + 2
+                    && s.getValue(AssimilationLayerBlock.FACING) == Direction.UP;
+        });
+        helper.assertTrue(summit,
+                "the carpet must roll onto the wall's top face");
+        for (BlockPos member : heart.colony()) {
+            helper.assertTrue(
+                    level.getBlockState(member).canSurvive(level, member),
+                    "climbed member must stay attached at " + member);
         }
         helper.succeed();
     }
