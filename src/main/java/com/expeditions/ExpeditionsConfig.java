@@ -190,6 +190,54 @@ public final class ExpeditionsConfig {
                     "growing in over minutes.")
             .defineInRange("expeditions.microbiome.markerColonyStarterPulses", 6, 0, 64);
 
+    private static final ModConfigSpec.IntValue INFECTION_RADIUS = BUILDER
+            .comment("How close to an assimilation heart the infection",
+                    "reaches — within this distance the organism takes hold.")
+            .defineInRange("expeditions.microbiome.infectionRadius", 12, 1, 64);
+
+    private static final ModConfigSpec.IntValue INFECTION_INTERVAL = BUILDER
+            .comment("Ticks between infection accrual/decay steps.")
+            .defineInRange("expeditions.microbiome.infectionIntervalTicks", 20, 1, 600);
+
+    private static final ModConfigSpec.IntValue INFECTION_ACCRUAL = BUILDER
+            .comment("Infection gained per interval while near a heart.")
+            .defineInRange("expeditions.microbiome.infectionAccrual", 1, 0, 1000);
+
+    private static final ModConfigSpec.IntValue INFECTION_DECAY = BUILDER
+            .comment("Infection shed per interval while away from hearts.")
+            .defineInRange("expeditions.microbiome.infectionDecay", 1, 0, 1000);
+
+    private static final ModConfigSpec.IntValue INFECTION_MAX = BUILDER
+            .comment("Infection at which the organism finishes taking the",
+                    "player — total assimilation.")
+            .defineInRange("expeditions.microbiome.infectionMax", 100, 10, 10000);
+
+    private static final ModConfigSpec.IntValue INFECTION_STAGE1 = BUILDER
+            .comment("Infection thresholds for the debuff stages — at each",
+                    "the organism's grip visibly tightens.")
+            .defineInRange("expeditions.microbiome.infectionStage1At", 25, 0, 10000);
+
+    private static final ModConfigSpec.IntValue INFECTION_STAGE2 = BUILDER
+            .defineInRange("expeditions.microbiome.infectionStage2At", 50, 0, 10000);
+
+    private static final ModConfigSpec.IntValue INFECTION_STAGE3 = BUILDER
+            .defineInRange("expeditions.microbiome.infectionStage3At", 75, 0, 10000);
+
+    private static final ModConfigSpec.DoubleValue INFECTION_WARD_PIECE = BUILDER
+            .comment("Infection-rate reduction per enchanted armor piece —",
+                    "imbued gear delays assimilation.")
+            .defineInRange("expeditions.microbiome.infectionWardPerEnchantedPiece", 0.10, 0.0, 1.0);
+
+    private static final ModConfigSpec.DoubleValue INFECTION_WARD_SIGIL = BUILDER
+            .comment("Infection-rate reduction while carrying an attunement",
+                    "sigil — the Bloom is slower to claim its marked.")
+            .defineInRange("expeditions.microbiome.infectionWardSigil", 0.25, 0.0, 1.0);
+
+    private static final ModConfigSpec.DoubleValue INFECTION_WARD_MAX = BUILDER
+            .comment("Cap on combined warding — you can delay the organism,",
+                    "never be immune to it.")
+            .defineInRange("expeditions.microbiome.infectionWardMax", 0.8, 0.0, 1.0);
+
     private static final ModConfigSpec.IntValue CAMPAIGN_ESTABLISHED = BUILDER
             .comment("Completed expeditions in a dimension before its",
                     "campaign state becomes \"established\".")
@@ -592,6 +640,57 @@ public final class ExpeditionsConfig {
 
     public static int compassPingRange() {
         return COMPASS_PING_RANGE.get();
+    }
+
+    /** Radius around a heart within which the infection takes hold. */
+    public static int infectionRadius() {
+        return INFECTION_RADIUS.get();
+    }
+
+    /** Ticks between infection accrual/decay steps. */
+    public static int infectionIntervalTicks() {
+        return INFECTION_INTERVAL.get();
+    }
+
+    /** Infection gained per interval near a heart. */
+    public static int infectionAccrual() {
+        return INFECTION_ACCRUAL.get();
+    }
+
+    /** Infection shed per interval away from hearts. */
+    public static int infectionDecay() {
+        return INFECTION_DECAY.get();
+    }
+
+    /** Infection at which assimilation completes. */
+    public static int infectionMax() {
+        return INFECTION_MAX.get();
+    }
+
+    /** Stage thresholds on the infection scale. */
+    public static int infectionStage1At() {
+        return INFECTION_STAGE1.get();
+    }
+
+    public static int infectionStage2At() {
+        return INFECTION_STAGE2.get();
+    }
+
+    public static int infectionStage3At() {
+        return INFECTION_STAGE3.get();
+    }
+
+    /** Warding fractions: per enchanted piece, sigil relic, and the cap. */
+    public static double infectionWardPerEnchantedPiece() {
+        return INFECTION_WARD_PIECE.get();
+    }
+
+    public static double infectionWardSigil() {
+        return INFECTION_WARD_SIGIL.get();
+    }
+
+    public static double infectionWardMax() {
+        return INFECTION_WARD_MAX.get();
     }
 
     /** Mobs in the Big Bad's final-checkpoint assault. */

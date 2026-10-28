@@ -2,7 +2,8 @@
   "microbiome": {
     "heart_spawn_chance": 0.5,
     "growth_interval_ticks": 30,
-    "max_colony_size": 64
+    "max_colony_size": 64,
+    "infection_accrual": 2
   },
   "pressure": {
     "per_run_start": 8,

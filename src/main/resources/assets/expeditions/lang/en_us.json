@@ -10,6 +10,7 @@
   "item.expeditions.expedition_artifact": "Expedition Artifact",
   "item.expeditions.assimilation_essence": "Assimilation Essence",
   "item.expeditions.attunement_sigil": "Attunement Sigil",
+  "death.attack.expeditions.assimilation": "%1$s was assimilated by the Bloom",
   "itemGroup.expeditions": "Expedition Framework",
   "message.expeditions.expedition_started": "Expedition started: %1$s. Follow the markers!",
   "message.expeditions.next_checkpoint": "Next checkpoint %1$s/%2$s at %3$s.",

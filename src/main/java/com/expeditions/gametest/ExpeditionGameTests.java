@@ -32,6 +32,7 @@ import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.HordePools;
 import com.expeditions.server.ItemRewards;
 import com.expeditions.server.ItemValuator;
+import com.expeditions.server.Assimilation;
 import com.expeditions.server.Microbiome;
 import com.expeditions.server.MobSpawns;
 import com.expeditions.server.data.ExpeditionDefinitionLoader;
@@ -60,6 +61,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -73,6 +75,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
@@ -84,6 +88,8 @@ import net.minecraft.world.level.entity.EntitySectionStorage;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.block.Blocks;
@@ -110,6 +116,9 @@ public final class ExpeditionGameTests {
         // players tick once at the world spawn before teleporting.
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
+        // Mock players stand near marker colonies for whole tests — without
+        // this they'd be converted to effigies mid-assertion.
+        Assimilation.suppressForTests(true);
         // Shipped datapack defs would shadow the config defaults these tests
         // resolve routes against; they reload their own defs explicitly.
         ExpeditionDefinitionLoader.suppressLoadingForTests(true);
@@ -3775,6 +3784,89 @@ public final class ExpeditionGameTests {
         } finally {
             data.resetPressure(dim);
             data.unclearDimension(dim);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Infection: presence near a live heart lets the organism take hold —
+     * accrual on cadence, staged debuffs as it deepens, and total
+     * assimilation leaves an effigy wearing the player's face where the
+     * colony claimed them. Imbued armor slows the take but can't stop it.
+     */
+    @GameTest(template = "arena", timeoutTicks = 800, templateNamespace = "expeditions_mic", batch = "expedition_mic")
+    public static void assimilationInfectsNearHeart(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        BlockPos heartPos = helper.absolutePos(new BlockPos(6, 1, 6));
+        int interval = ExpeditionsConfig.infectionIntervalTicks();
+        try {
+            Assimilation.suppressForTests(false);
+            level.setBlock(heartPos,
+                    ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3);
+            // onLoad is deferred to the next block-entity tick; kick it so
+            // the heart publishes itself to the emitter registry now.
+            if (level.getBlockEntity(heartPos)
+                    instanceof AssimilationHeartBlockEntity heart) {
+                heart.onLoad();
+            }
+            player.teleportTo(heartPos.getX() + 2.5, heartPos.getY() + 1,
+                    heartPos.getZ() + 0.5);
+
+            player.tickCount = interval;
+            Assimilation.onPlayerTick(player);
+            helper.assertTrue(Assimilation.infection(player) > 0,
+                    "heart proximity must infect the player (hearts="
+                            + AssimilationHeartBlockEntity.liveHearts(
+                                    level.dimension().location().toString())
+                            + ", microbiomeEnabled=" + Microbiome.enabled(level)
+                            + ", pos=" + player.blockPosition() + ")");
+
+            Assimilation.infect(player, ExpeditionsConfig.infectionStage1At());
+            player.tickCount = interval * 2;
+            Assimilation.onPlayerTick(player);
+            helper.assertTrue(player.hasEffect(MobEffects.DARKNESS),
+                    "stage 1 must whisper in the dark");
+            helper.assertTrue(player.hasEffect(MobEffects.CONFUSION),
+                    "stage 1 must disorient");
+
+            Assimilation.infect(player, ExpeditionsConfig.infectionStage3At());
+            player.tickCount = interval * 3;
+            Assimilation.onPlayerTick(player);
+            helper.assertTrue(player.hasEffect(MobEffects.POISON),
+                    "stage 3 must poison the host");
+            helper.assertTrue(player.getEffect(MobEffects.MOVEMENT_SLOWDOWN)
+                            .getAmplifier() == 1,
+                    "stage 3 must tighten the grip to slowness II");
+
+            ItemStack chest = new ItemStack(Items.DIAMOND_CHESTPLATE);
+            chest.enchant(level.registryAccess()
+                            .registryOrThrow(Registries.ENCHANTMENT)
+                            .getHolderOrThrow(Enchantments.PROTECTION), 1);
+            player.setItemSlot(EquipmentSlot.CHEST, chest);
+            double before = Assimilation.infection(player);
+            player.tickCount = interval * 4;
+            Assimilation.onPlayerTick(player);
+            helper.assertTrue(Assimilation.infection(player) - before
+                            < ExpeditionsConfig.infectionAccrual(),
+                    "imbued armor must delay the take");
+
+            player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
+            Assimilation.infect(player, ExpeditionsConfig.infectionMax() - 0.5);
+            player.tickCount = interval * 5;
+            Assimilation.onPlayerTick(player);
+            helper.assertTrue(!player.isAlive(),
+                    "total infection must consume the player");
+            List<ArmorStand> effigies = level.getEntities(EntityType.ARMOR_STAND,
+                    new AABB(heartPos).inflate(16),
+                    s -> s.getTags().contains(Assimilation.EFFIGY_TAG));
+            helper.assertTrue(!effigies.isEmpty(),
+                    "the effigy must stand where the colony claimed them");
+            effigies.forEach(e -> e.remove(Entity.RemovalReason.DISCARDED));
+        } finally {
+            Assimilation.suppressForTests(true);
+            Assimilation.infect(player, 0);
+            level.removeBlock(heartPos, false);
         }
         helper.succeed();
     }

@@ -374,7 +374,8 @@ dimension — the file's resource id IS the dimension it tunes
     "enabled": true,
     "heart_spawn_chance": 0.5,
     "growth_interval_ticks": 30,
-    "max_colony_size": 64
+    "max_colony_size": 64,
+    "infection_accrual": 2
   },
   "pressure": {
     "per_run_start": 8,
@@ -576,6 +577,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   unliberated dimension accrues pressure, so stalling between checkpoints
   or lingering is dangerous. `big_bad` expeditions turn their final
   checkpoint into a boss assault and clear the dimension on completion.
+- **Infection** — lingering near a live assimilation heart lets the
+  organism take hold: a personal infection counter accrues on cadence,
+  decays away from hearts, and crosses staged thresholds (whispers →
+  grip → takeover) until total assimilation kills the player and leaves
+  an armor-stand effigy wearing their head and armor. Imbued armor and a
+  carried attunement sigil delay the take, capped short of immunity —
+  you can stall the Bloom, never refuse it.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —

@@ -108,6 +108,7 @@ public final class ExpeditionEventHandler {
             }
             CompassPing.onPlayerTick(player);
             dwellPressure(player);
+            Assimilation.onPlayerTick(player);
         }
     }
 

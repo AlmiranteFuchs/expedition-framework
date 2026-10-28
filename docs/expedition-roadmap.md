@@ -345,6 +345,18 @@ own key ids via the component.
   Escalation reads the counter in `spawnHorde`/`spawnSiegeWave`: horde
   size grows by `pressureHordeBonusPer` steps, and past
   `pressureBuffThreshold` spawned mobs get empowered buffs.
+- **Infection** — `Assimilation.onPlayerTick` accrues a per-player
+  infection (persistent NBT, survives death/relog) within
+  `microbiome.infectionRadius` of live, loaded hearts (a registry on
+  `AssimilationHeartBlockEntity.onLoad`/`setRemoved`, no chunk scans).
+  Staged debuffs at `infectionStage*At` thresholds; at `infectionMax`
+  the player dies to `expeditions:assimilation` damage (bypasses
+  invulnerability via the vanilla tag) and an armor-stand effigy —
+  player head, worn armor, "Assimilated <name>" — stands in their
+  place, tagged `expeditions:assimilated` for a future real model.
+  Warding: `infectionWardPerEnchantedPiece` per enchanted armor slot +
+  `infectionWardSigil` for a carried sigil, capped at
+  `infectionWardMax`. All overridable per-dimension via M14 keys.
 - **Big Bad** — a `"big_bad": true` definition turns its final
   checkpoint activation into a boss assault (`triggerCheckpointChallenge`
   picks a bigger, buffed wave). Completing a big_bad run calls
@@ -385,7 +397,8 @@ The file is sparse — only the knobs it changes:
 ```json
 {
   "microbiome": { "enabled": true, "heart_spawn_chance": 0.5,
-                  "growth_interval_ticks": 30, "max_colony_size": 64, ... },
+                  "growth_interval_ticks": 30, "max_colony_size": 64,
+                  "infection_accrual": 2, ... },
   "pressure":   { "per_run_start": 8, "per_run_completion": 15,
                   "max": 100, "horde_bonus_per": 25, "buff_threshold": 50,
                   "dwell_amount": 2, "dwell_interval_ticks": 2400 }

@@ -4,6 +4,7 @@ import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.Waypoint;
 import com.expeditions.server.ExpeditionManager;
+import com.expeditions.server.Assimilation;
 import com.expeditions.server.Microbiome;
 import com.expeditions.server.data.ExpeditionDefinitionLoader;
 import com.expeditions.server.data.ExpeditionTuningLoader;
@@ -31,6 +32,7 @@ public final class ExpeditionSmokeTests {
         // tick once at the world spawn before teleporting.
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
+        Assimilation.suppressForTests(true);
         ExpeditionDefinitionLoader.suppressLoadingForTests(true);
         ExpeditionTuningLoader.suppressLoadingForTests(true);
     }

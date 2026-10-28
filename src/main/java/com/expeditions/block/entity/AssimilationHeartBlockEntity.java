@@ -8,6 +8,7 @@ import com.expeditions.server.Microbiome;
 import com.expeditions.server.data.ExpeditionTuning;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -74,8 +75,47 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     /** Colony members grown by this heart, as {@link BlockPos#asLong}. */
     private final Set<Long> colony = new HashSet<>();
 
+    /**
+     * Live hearts per dimension id — the infection's emitter registry.
+     * Hearts publish themselves on load and unregister on removal, so
+     * {@code Assimilation} finds emitters without scanning chunks. Chunk
+     * unloads keep the entry (the heart still exists); consumers filter
+     * by {@code level.isLoaded} so an unloaded heart emits nothing.
+     */
+    private static final Map<String, Set<BlockPos>> LIVE_HEARTS = new HashMap<>();
+
+    /** All live heart positions in {@code dimensionId} (read-only snapshot). */
+    public static Set<BlockPos> liveHearts(String dimensionId) {
+        return Set.copyOf(LIVE_HEARTS.getOrDefault(dimensionId, Set.of()));
+    }
+
     public AssimilationHeartBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ASSIMILATION_HEART.get(), pos, state);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level instanceof ServerLevel) {
+            LIVE_HEARTS.computeIfAbsent(
+                    level.dimension().location().toString(),
+                    k -> new HashSet<>()).add(getBlockPos());
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        if (level != null) {
+            String dim = level.dimension().location().toString();
+            Set<BlockPos> hearts = LIVE_HEARTS.get(dim);
+            if (hearts != null) {
+                hearts.remove(getBlockPos());
+                if (hearts.isEmpty()) {
+                    LIVE_HEARTS.remove(dim);
+                }
+            }
+        }
     }
 
     /** The heart's colony positions (read-only view, for tests). */
