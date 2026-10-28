@@ -14,6 +14,7 @@ import com.expeditions.core.ExpeditionStatus;
 import com.expeditions.core.ObjectiveKind;
 import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
+import com.expeditions.core.SafeColumnSearch;
 import com.expeditions.core.RouteGeneration;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.block.AssimilationLayerBlock;
@@ -35,6 +36,8 @@ import com.expeditions.server.MobSpawns;
 import com.expeditions.server.data.ExpeditionDefinitionLoader;
 import com.expeditions.server.data.ExpeditionDefinitions;
 import com.expeditions.server.dimension.DestinationChecks;
+import com.expeditions.server.dimension.ExpeditionAdapters;
+import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import java.io.IOException;
@@ -46,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -69,6 +73,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.entity.EntitySection;
 import net.minecraft.world.level.entity.EntitySectionStorage;
@@ -306,6 +311,115 @@ public final class ExpeditionGameTests {
         helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
                 "no run may start in an unsupported dimension");
         helper.succeed();
+    }
+
+    /**
+     * M13's extension point: a third-party-style adapter makes a
+     * vanilla-unsupported dimension expedition-capable. Registered
+     * test-side exactly like a modded-dimension plugin would, it resolves
+     * the run's authored anchors into safe marker spots and the whole
+     * lifecycle — start, marker placement, cleanup — flows through it.
+     */
+    @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_dim13")
+    public static void thirdPartyAdapterHostsEndExpedition(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        ServerLevel end = server.getLevel(Level.END);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        ExpeditionManager manager = ExpeditionManager.get(server);
+
+        // The end offers our probe no usable terrain — lay the only
+        // floor it can resolve, high above any island top.
+        int[][] anchors = {{16, 0}, {32, 0}, {48, 0}};
+        for (int[] a : anchors) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    end.setBlock(new BlockPos(a[0] + dx, 100, a[1] + dz),
+                            Blocks.STONE.defaultBlockState(), 3);
+                }
+            }
+        }
+        BlockPos terminalPos = new BlockPos(0, 60, 0);
+        clearAndFloor(end, terminalPos);
+        end.setBlock(terminalPos,
+                ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState(), 3);
+
+        // What a modded-dimension plugin does: implement, then register.
+        ExpeditionAdapters.register(new EndProbeAdapter());
+        String json = """
+                {
+                  "display_name": "Void Probe",
+                  "dimension": "minecraft:the_end",
+                  "checkpoints": [[16, 0], [32, 0]],
+                  "exit": [48, 0],
+                  "tokens": 10
+                }
+                """;
+        try {
+            ExpeditionDefinitions.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("test", "void_probe"),
+                    JsonParser.parseString(json)));
+            player.teleportTo(end, 1.5, 60.0, 0.5, Set.of(), 0f, 0f);
+            for (int attempt = 0; attempt < 5
+                    && manager.activeRun(player.getUUID()).isEmpty(); attempt++) {
+                useBlockAt(end, player, terminalPos);
+                clickMenuStart(player);
+            }
+            ExpeditionRun run = manager.activeRun(player.getUUID()).orElseThrow(
+                    () -> new IllegalStateException(
+                            "the third-party adapter must host an end run"));
+            helper.assertTrue("minecraft:the_end".equals(
+                    run.definition().dimension()),
+                    "run must target the end, was "
+                            + run.definition().dimension());
+            for (Waypoint w : run.checkpoints()) {
+                helper.assertTrue(w.y() == 101,
+                        "checkpoints must resolve atop the floor the probe "
+                                + "found, was y=" + w.y());
+                helper.assertTrue(end.getBlockState(ExpeditionManager.toPos(w))
+                        .is(ModBlocks.EXPEDITION_CHECKPOINT.get()),
+                        "end checkpoint marker must be placed at " + w);
+            }
+            failLeakedForeignRuns(player);
+            manager.failRun(player);
+            for (Waypoint w : run.checkpoints()) {
+                helper.assertTrue(end.getBlockState(
+                        ExpeditionManager.toPos(w)).isAir(),
+                        "end markers must be removed when the run ends");
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+            failRunIfActive(manager, player);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A third-party-style adapter for the End — no built-in support exists,
+     * so this stands in for a modded dimension's own plugin. It scans a
+     * bounded band for a standable spot: two free blocks above a sturdy,
+     * non-hazardous floor, refusing anything else.
+     */
+    private static final class EndProbeAdapter implements ExpeditionDimensionAdapter {
+        @Override
+        public ResourceKey<Level> dimension() {
+            return Level.END;
+        }
+
+        @Override
+        public Optional<BlockPos> resolveAnchor(ServerLevel level, RouteAnchor anchor) {
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(
+                    anchor.x(), 0, anchor.z());
+            level.getChunk(anchor.x() >> 4, anchor.z() >> 4);
+            OptionalInt y = SafeColumnSearch.findStandingY(
+                    yy -> DestinationChecks.isFree(level, pos.setY(yy)),
+                    yy -> DestinationChecks.isSturdyFloor(level, pos.setY(yy)),
+                    yy -> DestinationChecks.isHazard(level, pos.setY(yy)),
+                    110, 95);
+            return y.isPresent()
+                    ? Optional.of(new BlockPos(anchor.x(), y.getAsInt(), anchor.z()))
+                    : Optional.empty();
+        }
     }
 
     /**
