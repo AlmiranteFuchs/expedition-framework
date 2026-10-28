@@ -607,7 +607,7 @@ chunk, and validate on real block state — not heightmap assumptions.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.3.0.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.4.0.jar` assembled.
 - `./gradlew test` — 124 unit tests, 0 failures.
 - `./gradlew runGameTestServer` — **90/90 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
