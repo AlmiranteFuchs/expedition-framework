@@ -220,6 +220,17 @@ them grayscale — without touching the covered block.
   baked face sprite; BER-only/custom-rendered blocks get the membrane
   fallback. Client-only, zero world data, chunk rebuilds handled
   automatically (the skin lives outside the chunk mesh).
+- **The living signature** — over the skin, an amber capillary-vein trace
+  (procedurally grown in `client/TraceTexture`, rim-weighted, rotated per
+  cell) plus an additive halo. Both ride `core/PulseWave`, a lub-dub
+  heartbeat waveform: the wave originates at the colony's heart (each
+  layer block entity records its heart at growth time, synced in the
+  update tag) and reaches each cell `TICKS_PER_BLOCK` ticks later per
+  block of distance — the colony visibly beats outward from its nucleus,
+  every colony on its own tempo derived from the heart's position. The
+  heart carries its own aura renderer (vein shell + additive halo, first
+  and loudest). A dead heart drops its cells to the resting thrum; the
+  film stays, the life is gone.
 - **Known limits** — desaturation covers only the attached face (full-cube
   desaturation would need per-face layers or a chunk-render hook); the
   desaturated pixel copy does not follow animated sprites (first frame);

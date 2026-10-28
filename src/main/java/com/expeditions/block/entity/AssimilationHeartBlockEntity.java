@@ -139,6 +139,13 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         if (!next.equals(existing)
                 && level.setBlock(move.cell(), next, 3)) {
             colony.add(move.cell().asLong());
+            if (level.getBlockEntity(move.cell())
+                    instanceof AssimilationLayerBlockEntity layer) {
+                // Claim the cell for this colony's wavefront — set after
+                // the block lands, so resync the stamped data to clients.
+                layer.setHeart(getBlockPos());
+                level.sendBlockUpdated(move.cell(), next, next, 3);
+            }
             setChanged();
         }
     }

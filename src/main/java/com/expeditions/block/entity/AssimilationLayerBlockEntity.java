@@ -1,18 +1,71 @@
 package com.expeditions.block.entity;
 
-import com.expeditions.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
+
+import com.expeditions.registry.ModBlockEntities;
 
 /**
- * Marker block entity for the assimilation layer. It stores nothing — the
- * renderer derives everything (attachment direction, covered face, texture)
- * from the block state and its live neighbor, so a support that changes
- * appearance is picked up automatically without synced data.
+ * Marker block entity for the assimilation layer. It stores one thing:
+ * the position of the heart that grew it, so the client renderer can run
+ * the colony's heartbeat wave — each cell's lub-dub is the same waveform
+ * delayed by its distance from the source. Everything else (faces,
+ * supports, texture) is derived live from the block state and neighbors.
  */
 public class AssimilationLayerBlockEntity extends BlockEntity {
+    private static final String TAG_HEART = "Heart";
+
+    @Nullable
+    private BlockPos heart;
+
     public AssimilationLayerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ASSIMILATION_LAYER.get(), pos, state);
+    }
+
+    /** Claims this cell for {@code heartPos}'s colony wavefront. */
+    public void setHeart(BlockPos heartPos) {
+        this.heart = heartPos.immutable();
+        setChanged();
+    }
+
+    /** The heart that grew this cell, or null for hand-placed membrane. */
+    @Nullable
+    public BlockPos heart() {
+        return heart;
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        if (heart != null) {
+            tag.putLong(TAG_HEART, heart.asLong());
+        }
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        heart = tag.contains(TAG_HEART)
+                ? BlockPos.of(tag.getLong(TAG_HEART))
+                : null;
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
+        if (heart != null) {
+            tag.putLong(TAG_HEART, heart.asLong());
+        }
+        return tag;
+    }
+
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 }

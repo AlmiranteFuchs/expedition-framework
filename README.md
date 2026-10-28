@@ -547,7 +547,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   alike — and renders each covered face grayscale: the client renderer
   desaturates the face's real sprite at runtime, so the underlying block
   keeps its detail and shading but loses its color — without modifying,
-  replacing, or storing the covered block's state. Entities pass through
+  replacing, or storing the covered block's state. Amber capillary veins
+  run over the skin and beat like a heart — a lub-dub pulse that
+  originates at the colony's heart and ripples outward through the
+  membrane, each colony on its own tempo; kill the heart and the glow
+  dies to a resting thrum. Entities pass through
   the film (no collision); non-sturdy surfaces (air, fluids, fences,
   slabs, leaves) refuse attachment; each face dies with its own support.
   Breaking it by hand drops exactly one `expeditions:assimilation_essence`

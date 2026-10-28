@@ -1,6 +1,8 @@
 package com.expeditions.client;
 
 import com.expeditions.block.entity.AssimilationLayerBlockEntity;
+import com.expeditions.core.PulseWave;
+import com.expeditions.registry.ModBlocks;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.List;
@@ -25,11 +27,18 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 /**
- * Draws the assimilation skin: the covered face's own sprite, desaturated
+ * Draws the assimilation skin: each covered face's own sprite, desaturated
  * at runtime into a standalone texture, emitted as a quad a hair above the
  * face (inside the layer's cell). The underlying block is untouched — its
  * state, model and any block entity render exactly as before; we simply
  * hide its color under its own grayscale copy.
+ *
+ * <p>Over the skin, two living passes: the amber vein trace (translucent,
+ * alpha riding the colony's heartbeat) and an additive halo that blooms on
+ * the thump. The wave originates at the cell's recorded heart and arrives
+ * later the farther the cell sits from it — the colony visibly beats
+ * outward from its nucleus. A cell whose heart died falls back to the
+ * resting thrum; a hand-placed membrane beats a faint solo rhythm.
  *
  * <p>Blocks whose face exposes no baked sprite (custom renderers, BER-only
  * blocks) get the generic membrane texture instead — the layer still
@@ -37,20 +46,20 @@ import net.neoforged.neoforge.client.model.data.ModelData;
  */
 public class AssimilationLayerRenderer implements BlockEntityRenderer<AssimilationLayerBlockEntity> {
     /** Bundled fallback for faces with no resolvable sprite. */
-    private static final ResourceLocation MEMBRANE =
+    static final ResourceLocation MEMBRANE =
             ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_layer.png");
 
     /** Offset of the skin into the layer cell, off the covered face. */
-    private static final double EPS = 1.0 / 512.0;
+    static final double EPS = 1.0 / 512.0;
 
     /** Overlay light: always bright, regardless of the cell's lighting. */
-    private static final int FULLBRIGHT = 0xF000F0;
+    static final int FULLBRIGHT = 0xF000F0;
 
     /** Directional face shading, lifted from vanilla's factors (down 0.5,
      * sides 0.6/0.8) to offset the translucent membrane plate darkening
      * what shows through it — tuned so each face reads like the block's
      * own, desaturated. */
-    private static final Map<Direction, Float> SHADE = Map.of(
+    static final Map<Direction, Float> SHADE = Map.of(
             Direction.DOWN, 0.75f, Direction.UP, 1.0f,
             Direction.NORTH, 0.8f, Direction.SOUTH, 0.8f,
             Direction.WEST, 0.6f, Direction.EAST, 0.6f);
@@ -71,28 +80,47 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         BlockState state = entity.getBlockState();
         BlockPos pos = entity.getBlockPos();
         int light = LevelRenderer.getLightColor(level, pos);
+        double time = level.getGameTime() + partialTick;
 
-        // The amber trace overlay: the assimilation's living signature —
-        // fullbright so it announces itself in the dark, alpha riding a
-        // slow sine so the layer breathes.
-        float pulse = 0.55f + 0.35f * (float) Math.sin(
-                (level.getGameTime() + partialTick) * 0.05f);
+        // The wave radiates from the colony's heart: same lub-dub
+        // everywhere, delayed per block of distance. A recorded-but-dead
+        // heart leaves only the resting thrum — the film stays, the life
+        // is gone; hand-placed membrane beats a faint solo rhythm.
+        BlockPos heart = entity.heart();
+        float amp;
+        if (heart != null && level.getBlockState(heart)
+                .is(ModBlocks.ASSIMILATION_HEART.get())) {
+            amp = (float) PulseWave.amplitudeAt(
+                    time, pos.distManhattan(heart), heart.asLong());
+        } else if (heart == null) {
+            amp = (float) PulseWave.amplitudeAt(time, 0, pos.asLong()) * 0.5f;
+        } else {
+            amp = (float) PulseWave.THRUM;
+        }
+        float veins = 0.15f + 0.85f * amp;
+        float halo = 0.45f * amp;
 
-        // One skin + trace per covered face — the multiface block can
-        // coat several faces of its cell at once. A face property d means
-        // the support sits at pos+d; the covered face's normal is -d.
+        // One skin + trace + halo per covered face — the multiface block
+        // can coat several faces of its cell at once. A face property d
+        // means the support sits at pos+d; the covered face's normal is -d.
         for (Direction d : MultifaceBlock.availableFaces(state)) {
             Direction facing = d.getOpposite();
             BlockState support = level.getBlockState(pos.relative(d));
-            VertexConsumer consumer = buffers.getBuffer(
+            // Per-cell vein rotation so neighboring membranes never tile.
+            int rot = (int) ((pos.asLong() * 31L + facing.ordinal()) & 7);
+            VertexConsumer skin = buffers.getBuffer(
                     RenderType.entityTranslucent(
                             textureFor(level, pos, support, facing)));
-            emitQuad(consumer, poseStack, facing, SHADE.get(facing), 1.0f,
-                    light, packedOverlay, (float) EPS);
-            VertexConsumer trace = buffers.getBuffer(
+            emitQuad(skin, poseStack, facing, (float) EPS,
+                    SHADE.get(facing), 1.0f, light, packedOverlay, 0);
+            VertexConsumer vein = buffers.getBuffer(
                     RenderType.entityTranslucent(TraceTexture.get()));
-            emitQuad(trace, poseStack, facing, 1.0f, pulse, FULLBRIGHT,
-                    packedOverlay, (float) EPS * 2);
+            emitQuad(vein, poseStack, facing, (float) EPS * 2, 1.0f,
+                    veins, FULLBRIGHT, packedOverlay, rot);
+            VertexConsumer glow = buffers.getBuffer(
+                    RenderType.eyes(TraceTexture.get()));
+            emitQuad(glow, poseStack, facing, (float) EPS * 3, 1.0f,
+                    halo, FULLBRIGHT, packedOverlay, rot);
         }
     }
 
@@ -117,35 +145,34 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     }
 
     /**
-     * Emits one quad on the inner face of the layer cell that touches the
-     * support. Corners follow the vanilla canonical quad order for each
-     * face and UVs the matching per-face mapping, so the skin lines up
-     * exactly with the texture it is desaturating.
+     * Emits one quad on the plane facing the given direction at offset
+     * {@code plane} along the face axis (0..1 inside the cell, &gt;1 sits
+     * outside it — used by the heart's aura). {@code rot} spins the UVs —
+     * bits 0-1 are quarter turns, bit 2 a horizontal mirror — so identical
+     * textures never read as one continuous lattice across cells.
      */
-    private static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
-            Direction facing, float shade, float alpha, int light, int overlay,
-            float e) {
+    static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
+            Direction facing, float plane, float shade, float alpha,
+            int light, int overlay, int rot) {
         PoseStack.Pose pose = poseStack.last();
         float[][] corners = switch (facing) {
             case UP -> new float[][] {
-                    {0, e, 0}, {0, e, 1}, {1, e, 1}, {1, e, 0}};
+                    {0, plane, 0}, {0, plane, 1}, {1, plane, 1}, {1, plane, 0}};
             case DOWN -> new float[][] {
-                    {0, 1 - e, 0}, {1, 1 - e, 0}, {1, 1 - e, 1}, {0, 1 - e, 1}};
+                    {0, 1 - plane, 0}, {1, 1 - plane, 0},
+                    {1, 1 - plane, 1}, {0, 1 - plane, 1}};
             case NORTH -> new float[][] {
-                    {1, 1, 1 - e}, {0, 1, 1 - e}, {0, 0, 1 - e}, {1, 0, 1 - e}};
+                    {1, 1, 1 - plane}, {0, 1, 1 - plane},
+                    {0, 0, 1 - plane}, {1, 0, 1 - plane}};
             case SOUTH -> new float[][] {
-                    {0, 1, e}, {1, 1, e}, {1, 0, e}, {0, 0, e}};
+                    {0, 1, plane}, {1, 1, plane}, {1, 0, plane}, {0, 0, plane}};
             case WEST -> new float[][] {
-                    {1 - e, 1, 1}, {1 - e, 1, 0}, {1 - e, 0, 0}, {1 - e, 0, 1}};
+                    {1 - plane, 1, 1}, {1 - plane, 1, 0},
+                    {1 - plane, 0, 0}, {1 - plane, 0, 1}};
             case EAST -> new float[][] {
-                    {e, 1, 0}, {e, 1, 1}, {e, 0, 1}, {e, 0, 0}};
+                    {plane, 1, 0}, {plane, 1, 1}, {plane, 0, 1}, {plane, 0, 0}};
         };
-        // Canonical quad UVs: corners above run u-major then v, like vanilla.
-        float[][] uv = switch (facing) {
-            case UP -> new float[][] {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
-            case DOWN, NORTH, SOUTH, WEST, EAST -> new float[][] {
-                    {0, 0}, {1, 0}, {1, 1}, {0, 1}};
-        };
+        float[][] uv = rotatedUvs(facing, rot);
         float nx = facing.getStepX();
         float ny = facing.getStepY();
         float nz = facing.getStepZ();
@@ -157,5 +184,26 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
                     .setLight(light)
                     .setNormal(pose, nx, ny, nz);
         }
+    }
+
+    /** Canonical quad UVs for the face, rotated/mirrored by {@code rot}. */
+    private static float[][] rotatedUvs(Direction facing, int rot) {
+        float[][] uv = switch (facing) {
+            case UP -> new float[][] {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
+            default -> new float[][] {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
+        };
+        if ((rot & 4) != 0) {
+            for (float[] p : uv) {
+                p[0] = 1 - p[0];
+            }
+        }
+        for (int i = 0; i < (rot & 3); i++) {
+            for (float[] p : uv) {
+                float u = p[0];
+                p[0] = 1 - p[1];
+                p[1] = u;
+            }
+        }
+        return uv;
     }
 }

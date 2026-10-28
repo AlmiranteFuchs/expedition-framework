@@ -3717,6 +3717,10 @@ public final class ExpeditionGameTests {
                     "colony member must be a layer at " + member);
             helper.assertTrue(memberState.canSurvive(level, member),
                     "colony member must be legally attached at " + member);
+            helper.assertTrue(level.getBlockEntity(member)
+                            instanceof com.expeditions.block.entity.AssimilationLayerBlockEntity layer
+                            && heartPos.equals(layer.heart()),
+                    "colony member must carry its heart's pulse origin at " + member);
         }
         heart.pulse(level);
         helper.assertTrue(heart.coverage(level) == cap,

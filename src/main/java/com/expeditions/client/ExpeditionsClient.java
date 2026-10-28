@@ -53,5 +53,8 @@ public class ExpeditionsClient {
         event.registerBlockEntityRenderer(
                 ModBlockEntities.ASSIMILATION_LAYER.get(),
                 AssimilationLayerRenderer::new);
+        event.registerBlockEntityRenderer(
+                ModBlockEntities.ASSIMILATION_HEART.get(),
+                AssimilationHeartRenderer::new);
     }
 }
