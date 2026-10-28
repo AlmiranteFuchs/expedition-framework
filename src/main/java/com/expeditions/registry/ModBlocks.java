@@ -65,9 +65,10 @@ public final class ModBlocks {
                     .lightLevel(state -> 9)));
 
     /**
-     * The Big Bad's assimilation layer: a thin membrane that attaches to one
-     * face of a solid block and renders it grayscale. Harvestable for
-     * assimilation essence; silently disappears when its support does.
+     * The Big Bad's assimilation layer: a thin membrane that coats sturdy
+     * faces of its cell — several at once, sculk-vein style — and renders
+     * them grayscale. Harvestable for assimilation essence; each face dies
+     * with its own support.
      */
     public static final DeferredHolder<Block, AssimilationLayerBlock> ASSIMILATION_LAYER = BLOCKS.register(
             "assimilation_layer",

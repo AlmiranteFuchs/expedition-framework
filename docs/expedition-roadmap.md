@@ -190,17 +190,20 @@ The guaranteed `tokens` are no longer all-or-nothing at extraction:
 ## M15 prototype — assimilation layer (implemented)
 
 The Big Bad's visual signature: `expeditions:assimilation_layer`, a thin
-harvestable membrane that attaches to one sturdy face of a solid block and
-renders that face grayscale — without touching the covered block.
+harvestable membrane that coats sturdy faces of a solid block and renders
+them grayscale — without touching the covered block.
 
-- **Attachment** — `FACING` is the covered face's outward normal; the
-  support sits at `pos.relative(FACING.getOpposite())` and is re-validated
-  on every neighbor change via `isFaceSturdy`. Air, fluids, fences, slabs,
-  leaves refuse placement; glass and other full faces legitimately accept
-  it (sturdy ≠ stone). Support loss or a non-sturdy swap removes the layer
-  through `updateShape` → air.
-- **Geometry** — 1/16 collision membrane hugging the covered face, 2/16
-  selection outline for forgiving aim; thin plate model, never a cube.
+- **Attachment** — a `MultifaceBlock` (the sculk-vein model): face
+  property `d` means the support at `pos.relative(d)` is covered on its
+  `d.getOpposite()` face, so one cell can coat several faces at once and
+  corner cells hold floor and wall alike — no bare junction seams.
+  Attachment re-validates per face on every neighbor change via
+  `isFaceSturdy` (stricter than vanilla's full-face check: leaves refuse);
+  air, fluids, fences, slabs refuse too. A lost support sheds only its
+  own face through `updateShape`; the block dies with its last face.
+- **Geometry** — thin 1/16 outline plates per covered face for aiming,
+  and no collision at all: entities pass through the film and collide
+  with the support, like sculk veins and lichen.
 - **Drops** — `noLootTable()` by design: the support-loss path goes through
   `updateOrDestroy` → `destroyBlock(drop=true)` which *would* roll loot, so
   a real loot table cannot distinguish harvest from cleanup. Exactly one
@@ -272,16 +275,19 @@ while moving through a dimension, killable to stop the spread.
   dimension's roof. `microbiome.enabled` is the runtime kill-switch for
   both spawning and growth.
 - **Heart pulses** — every `microbiome.growthIntervalTicks` the block
-  entity applies one uniformly chosen legal move: seed the floor ring
-  beside it when the colony is empty (side faces only where no floor
-  exists — covering them would block the ring's cells), else extend a
-  member along its wall, wrap over the support's edge, climb a wall one
-  level up, or roll over a one-block obstacle. The colony's positions
+  entity applies one uniformly chosen covering act: seed a layer against
+  each open face of the heart itself plus the floor face under each
+  horizontal neighbor when the colony is empty, else grow — fillet an
+  uncovered sturdy face of a member's own cell (the junction fix: corner
+  cells coat floor AND wall), walk a covered face sideways along the
+  surface, wrap around the support's edge onto its other faces, or seep
+  through to the far face of a one-block substrate. The colony's cells
   persist in the block entity so a chunk unload never forgets; dead
   members are pruned each pulse so broken layers free their slot.
-- **Bounded colony** — `microbiome.maxColonySize` caps members: a local
-  blob, never a world takeover. Removing the heart is the counterplay —
-  no ticker, no growth; surviving layers die only with their supports.
+- **Bounded colony** — `microbiome.maxColonySize` caps covered faces
+  (surface consumed): a local blob, never a world takeover. Removing the
+  heart is the counterplay — no ticker, no growth; surviving layers die
+  only with their supports.
 - **Cleared seam** — `ExpeditionSavedData.clearedDimensions` silences
   hearts and traversal spawning per dimension (`Microbiome.enabled`
   consults it first). The "won the dimension" transition lands with M12b;

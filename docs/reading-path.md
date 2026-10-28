@@ -38,7 +38,7 @@ assume the vocabulary earlier ones establish.
 | File | Key idea |
 |------|----------|
 | `registry/` | `DeferredRegister` wiring — how mods declare blocks, items, block entities. |
-| `block/AssimilationLayerBlock` | Block lifecycle done right: `FACING` as the covered face's normal, `canSurvive`/`updateShape` as the support contract, drops moved out of the loot table to distinguish harvest from cleanup. |
+| `block/AssimilationLayerBlock` | Block lifecycle done right: multiface face properties as the support contract, `canSurvive`/`updateShape` shedding one face per lost support, drops moved out of the loot table to distinguish harvest from cleanup. |
 | `item/` (compass, artifact) | Vanilla components (`LODESTONE_TRACKER`) doing real work; the artifact's `run_id` binding. |
 | `client/AssimilationLayerRenderer` + `DesaturationTextures` | Client-only rendering: steal the covered face's sprite, desaturate into a `DynamicTexture`, draw a skin a hair above it. Client code is a guest — nothing authoritative lives here. |
 | `server/data/` (`ExpeditionDefinitions`, loader) | Datapack JSON → immutable snapshot; malformed files warn and skip. |

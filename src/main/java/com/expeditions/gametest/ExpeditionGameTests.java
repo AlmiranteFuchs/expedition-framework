@@ -78,6 +78,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -2689,9 +2690,8 @@ public final class ExpeditionGameTests {
             BlockState placed = level.getBlockState(cell);
             helper.assertTrue(placed.is(ModBlocks.ASSIMILATION_LAYER.get()),
                     "layer must place on the " + face + " face, got " + placed);
-            helper.assertTrue(placed.getValue(AssimilationLayerBlock.FACING) == face,
-                    "FACING must record " + face + ", got "
-                            + placed.getValue(AssimilationLayerBlock.FACING));
+            helper.assertTrue(MultifaceBlock.hasFace(placed, face.getOpposite()),
+                    "the layer must cover the " + face + " face, got " + placed);
             helper.assertTrue(level.getBlockState(support).is(Blocks.STONE),
                     "the support must be untouched");
             level.setBlock(cell, Blocks.AIR.defaultBlockState(), 3);
@@ -2723,7 +2723,16 @@ public final class ExpeditionGameTests {
         for (int i = 0; i < supports.length; i++) {
             level.setBlock(supports[i], states[i], 3);
             BlockPos cell = supports[i].above();
+            // Isolate the placement cell: multiface placement tries every
+            // look direction, so a sturdy neighbor of the cell would
+            // legitimately host a face even when the clicked one refuses.
             level.setBlock(cell, Blocks.AIR.defaultBlockState(), 3);
+            for (Direction d : Direction.values()) {
+                if (d != Direction.DOWN) {
+                    level.setBlock(cell.relative(d),
+                            Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
             player.setPos(cell.getX() + 0.5, cell.getY() + 3, cell.getZ() + 0.5);
             player.gameMode.useItemOn(player, level,
                     player.getItemInHand(InteractionHand.MAIN_HAND),
@@ -2828,8 +2837,9 @@ public final class ExpeditionGameTests {
     }
 
     /**
-     * Collision is a 1/16 membrane, the outline a forgiving 2/16, both aligned
-     * to the covered face for all six directions — never a full cube.
+     * Each covered face draws a thin outline plate for aiming, but the
+     * membrane is a film — entities pass through it and collide with the
+     * support, like sculk veins and lichen.
      */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_asm", batch = "expedition_asm")
     public static void assimilationLayerShapesAreThin(GameTestHelper helper) {
@@ -2842,28 +2852,22 @@ public final class ExpeditionGameTests {
             var collision = state.getCollisionShape(level, pos,
                     net.minecraft.world.phys.shapes.CollisionContext.empty());
             double thin = switch (face.getAxis()) {
-                case X -> collision.bounds().getXsize();
-                case Y -> collision.bounds().getYsize();
-                case Z -> collision.bounds().getZsize();
-            };
-            double thinOutline = switch (face.getAxis()) {
                 case X -> outline.bounds().getXsize();
                 case Y -> outline.bounds().getYsize();
                 case Z -> outline.bounds().getZsize();
             };
             helper.assertTrue(thin > 0 && thin <= 0.07,
-                    face + " collision must be a non-empty thin plate, got " + thin);
-            helper.assertTrue(thinOutline > thin && thinOutline <= 0.2,
-                    face + " outline must be forgiving but thin, got " + thinOutline);
-            helper.assertTrue(collision.bounds().getSize() < 1.0,
-                    face + " must not occupy a full cell");
+                    face + " outline must be a non-empty thin plate, got " + thin);
+            helper.assertTrue(collision.isEmpty(),
+                    face + " membrane must not collide with entities");
         }
         helper.succeed();
     }
 
+    /** A layer state covering the support's {@code face}-normal face. */
     private static BlockState layerFacing(Direction face) {
         return ModBlocks.ASSIMILATION_LAYER.get().defaultBlockState()
-                .setValue(AssimilationLayerBlock.FACING, face);
+                .setValue(MultifaceBlock.getFaceProperty(face.getOpposite()), true);
     }
 
     /** Essence item entities within a small box around {@code pos}. */
@@ -3701,12 +3705,12 @@ public final class ExpeditionGameTests {
                         + heart.colony().size());
 
         int cap = ExpeditionsConfig.microbiomeMaxColonySize();
-        for (int i = 0; i < 400 && heart.colony().size() < cap; i++) {
+        for (int i = 0; i < 400 && heart.coverage(level) < cap; i++) {
             heart.pulse(level);
         }
-        helper.assertTrue(heart.colony().size() == cap,
-                "an open frontier must grow to the colony cap, got "
-                        + heart.colony().size() + " of " + cap);
+        helper.assertTrue(heart.coverage(level) == cap,
+                "an open frontier must grow to the coverage cap, got "
+                        + heart.coverage(level) + " of " + cap);
         for (BlockPos member : heart.colony()) {
             BlockState memberState = level.getBlockState(member);
             helper.assertTrue(memberState.is(ModBlocks.ASSIMILATION_LAYER.get()),
@@ -3715,7 +3719,7 @@ public final class ExpeditionGameTests {
                     "colony member must be legally attached at " + member);
         }
         heart.pulse(level);
-        helper.assertTrue(heart.colony().size() == cap,
+        helper.assertTrue(heart.coverage(level) == cap,
                 "the cap must halt further growth");
         helper.succeed();
     }
@@ -3763,8 +3767,8 @@ public final class ExpeditionGameTests {
             BlockState s = level.getBlockState(member);
             return s.is(ModBlocks.ASSIMILATION_LAYER.get())
                     && member.getY() < heartPos.getY()
-                    && s.getValue(AssimilationLayerBlock.FACING).getAxis()
-                            != Direction.Axis.Y;
+                    && MultifaceBlock.availableFaces(s).stream()
+                            .anyMatch(f -> f.getAxis() != Direction.Axis.Y);
         });
         helper.assertTrue(crawled,
                 "the colony must crawl down the pillar's side faces");
@@ -3778,51 +3782,53 @@ public final class ExpeditionGameTests {
 
     /**
      * The carpet does not stop at walls: a colony spreading across a floor
-     * meets a rising wall and climbs it — covering the face one level up
-     * (the ground-level face shares the carpet's own cell) and rolling
-     * onto the summit.
+     * coats a rising pillar's base from the junction cell itself, walks
+     * the face upward and rolls onto the summit. The arena is a sealed
+     * room — two-thick walls and ceiling so the seep-through move cannot
+     * cross — sized so every reachable face fits under the coverage cap:
+     * the colony grows to exhaustion and the summit is covered
+     * deterministically rather than by a lucky frontier draw.
      */
     @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_mic", batch = "expedition_mic")
     public static void microbiomeCarpetClimbsWall(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        BlockPos slabOrigin = helper.absolutePos(new BlockPos(2, 0, 2));
-        for (int dx = 0; dx < 9; dx++) {
-            for (int dz = 0; dz < 9; dz++) {
-                level.setBlock(slabOrigin.offset(dx, 0, dz),
-                        Blocks.STONE.defaultBlockState(), 3);
-                level.setBlock(slabOrigin.offset(dx, 1, dz),
-                        Blocks.AIR.defaultBlockState(), 3);
-                level.setBlock(slabOrigin.offset(dx, 2, dz),
-                        Blocks.AIR.defaultBlockState(), 3);
-                level.setBlock(slabOrigin.offset(dx, 3, dz),
-                        Blocks.AIR.defaultBlockState(), 3);
+        BlockPos room = helper.absolutePos(new BlockPos(2, 0, 2));
+        // Shell: 6x6 floor, 2-thick walls y1-3, 2-thick ceiling y4-5.
+        // Interior is the 2x2x3 air pocket at dx,dz in {2,3}.
+        for (int dx = 0; dx < 6; dx++) {
+            for (int dz = 0; dz < 6; dz++) {
+                for (int dy = 0; dy < 6; dy++) {
+                    boolean shell = dy == 0 || dy >= 4
+                            || dx <= 1 || dx >= 4 || dz <= 1 || dz >= 4;
+                    level.setBlock(room.offset(dx, dy, dz),
+                            shell ? Blocks.STONE.defaultBlockState()
+                                    : Blocks.AIR.defaultBlockState(), 3);
+                }
             }
         }
-        // A 2-high wall directly beside the embedded heart: the climb is
-        // available from the colony's second pulse and the summit takes
-        // only the climb→wrap pair, so the sequence lands well before the
-        // arena-floor frontier could spend the colony cap.
-        BlockPos wallBase = slabOrigin.offset(5, 1, 4);
+        // A 2-high pillar in the interior, beside the embedded heart.
+        BlockPos wallBase = room.offset(2, 1, 2);
         for (int dy = 0; dy < 2; dy++) {
             level.setBlock(wallBase.above(dy),
                     Blocks.STONE.defaultBlockState(), 3);
         }
-        BlockPos heartPos = slabOrigin.offset(4, 0, 4);
+        BlockPos heartPos = room.offset(3, 0, 3);
         level.setBlock(heartPos,
                 ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3);
         AssimilationHeartBlockEntity heart =
                 (AssimilationHeartBlockEntity) level.getBlockEntity(heartPos);
 
-        for (int i = 0; i < 300 && heart.colony().size()
-                < ExpeditionsConfig.microbiomeMaxColonySize(); i++) {
+        for (int i = 0, prev = -1; i < 400
+                && heart.coverage(level) != prev; i++) {
+            prev = heart.coverage(level);
             heart.pulse(level);
         }
         boolean climbed = heart.colony().stream().anyMatch(member -> {
             BlockState s = level.getBlockState(member);
             return s.is(ModBlocks.ASSIMILATION_LAYER.get())
                     && member.getY() == wallBase.getY() + 1
-                    && s.getValue(AssimilationLayerBlock.FACING).getAxis()
-                            != Direction.Axis.Y;
+                    && MultifaceBlock.availableFaces(s).stream()
+                            .anyMatch(f -> f.getAxis() != Direction.Axis.Y);
         });
         helper.assertTrue(climbed,
                 "the carpet must climb the wall's upper face above the floor plane");
@@ -3830,7 +3836,7 @@ public final class ExpeditionGameTests {
             BlockState s = level.getBlockState(member);
             return s.is(ModBlocks.ASSIMILATION_LAYER.get())
                     && member.getY() == wallBase.getY() + 2
-                    && s.getValue(AssimilationLayerBlock.FACING) == Direction.UP;
+                    && MultifaceBlock.hasFace(s, Direction.DOWN);
         });
         helper.assertTrue(summit,
                 "the carpet must roll onto the wall's top face");

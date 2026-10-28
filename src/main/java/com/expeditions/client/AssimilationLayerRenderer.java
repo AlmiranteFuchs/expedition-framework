@@ -1,6 +1,5 @@
 package com.expeditions.client;
 
-import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.block.entity.AssimilationLayerBlockEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -21,6 +20,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
@@ -69,26 +69,31 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
             return;
         }
         BlockState state = entity.getBlockState();
-        Direction facing = state.getValue(AssimilationLayerBlock.FACING);
         BlockPos pos = entity.getBlockPos();
-        BlockState support = level.getBlockState(pos.relative(facing.getOpposite()));
-
-        VertexConsumer consumer = buffers.getBuffer(
-                RenderType.entityTranslucent(textureFor(level, pos, support, facing)));
         int light = LevelRenderer.getLightColor(level, pos);
-        float shade = SHADE.get(facing);
-        emitQuad(consumer, poseStack, facing, shade, 1.0f, light, packedOverlay,
-                (float) EPS);
 
         // The amber trace overlay: the assimilation's living signature —
         // fullbright so it announces itself in the dark, alpha riding a
         // slow sine so the layer breathes.
         float pulse = 0.55f + 0.35f * (float) Math.sin(
                 (level.getGameTime() + partialTick) * 0.05f);
-        VertexConsumer trace = buffers.getBuffer(
-                RenderType.entityTranslucent(TraceTexture.get()));
-        emitQuad(trace, poseStack, facing, 1.0f, pulse, FULLBRIGHT, packedOverlay,
-                (float) EPS * 2);
+
+        // One skin + trace per covered face — the multiface block can
+        // coat several faces of its cell at once. A face property d means
+        // the support sits at pos+d; the covered face's normal is -d.
+        for (Direction d : MultifaceBlock.availableFaces(state)) {
+            Direction facing = d.getOpposite();
+            BlockState support = level.getBlockState(pos.relative(d));
+            VertexConsumer consumer = buffers.getBuffer(
+                    RenderType.entityTranslucent(
+                            textureFor(level, pos, support, facing)));
+            emitQuad(consumer, poseStack, facing, SHADE.get(facing), 1.0f,
+                    light, packedOverlay, (float) EPS);
+            VertexConsumer trace = buffers.getBuffer(
+                    RenderType.entityTranslucent(TraceTexture.get()));
+            emitQuad(trace, poseStack, facing, 1.0f, pulse, FULLBRIGHT,
+                    packedOverlay, (float) EPS * 2);
+        }
     }
 
     /**

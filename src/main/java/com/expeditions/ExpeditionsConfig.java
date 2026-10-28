@@ -167,7 +167,7 @@ public final class ExpeditionsConfig {
             .defineInRange("expeditions.microbiome.growthIntervalTicks", 60, 5, 1200);
 
     private static final ModConfigSpec.IntValue MICROBIOME_MAX_COLONY = BUILDER
-            .comment("Maximum assimilation layers one heart sustains — a",
+            .comment("Maximum covered faces one heart sustains — a",
                     "local blob, never a takeover.")
             .defineInRange("expeditions.microbiome.maxColonySize", 48, 1, 512);
 

@@ -2,13 +2,11 @@ package com.expeditions.block;
 
 import com.expeditions.block.entity.AssimilationLayerBlockEntity;
 import com.expeditions.registry.ModItems;
-import java.util.EnumMap;
-import java.util.Map;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -16,113 +14,114 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.MultifaceBlock;
+import net.minecraft.world.level.block.MultifaceSpreader;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The Big Bad's assimilation layer: a thin membrane that attaches to one
- * face of a solid supporting block and renders that face grayscale. The
- * layer never replaces, mutates or stores the support's state — it only
- * lives in the cell adjacent to the covered face and dies with it.
+ * The Big Bad's assimilation layer: a sculk-vein-style membrane that
+ * covers the faces of solid supporting blocks. One block occupies one
+ * cell but can coat several faces of it at once — the corner cell at a
+ * floor-wall junction holds both the floor-top and wall-side faces, so
+ * growth bends around edges without leaving bare seams. The layer never
+ * replaces, mutates or stores a support's state — each covered face lives
+ * and dies with its own support, and the block dies with its last face.
  *
- * <p>{@link #FACING} is the outward normal of the covered face: the support
- * sits at {@code pos.relative(FACING.getOpposite())} and the membrane hugs
- * the opposite inner face of its own cell. A sturdy full face is required —
- * air, fluids, and non-solid or partial faces refuse placement, and losing
- * support removes the layer with no drops (the block is only harvested for
- * essence by direct breaking).
+ * <p>Face semantics are vanilla multiface: {@code hasFace(state, d)}
+ * means the neighbor at {@code pos.relative(d)} is covered on its
+ * {@code d.getOpposite()} face, and the patch renders on the cell's
+ * {@code d} side. A sturdy full face is required — air, fluids, and
+ * non-solid or partial faces refuse attachment. The block is only
+ * harvested for essence by direct breaking; support loss, piston crush
+ * and world restoration all drop nothing.
  */
-public class AssimilationLayerBlock extends Block implements EntityBlock {
-    /** Which side of the support the layer covers (the covered face's normal). */
-    public static final DirectionProperty FACING = BlockStateProperties.FACING;
+public class AssimilationLayerBlock extends MultifaceBlock implements EntityBlock {
+    public static final MapCodec<AssimilationLayerBlock> CODEC =
+            simpleCodec(AssimilationLayerBlock::new);
 
-    /** Outline is 2/16 of a block so the membrane is easy to aim at. */
-    private static final double OUTLINE_THICK = 2.0 / 16.0;
-
-    private static final Map<Direction, VoxelShape> OUTLINE_SHAPES = shapes(OUTLINE_THICK);
-
-    private static Map<Direction, VoxelShape> shapes(double thick) {
-        Map<Direction, VoxelShape> map = new EnumMap<>(Direction.class);
-        map.put(Direction.UP, Block.box(0, 0, 0, 16, thick * 16, 16));
-        map.put(Direction.DOWN, Block.box(0, 16 - thick * 16, 0, 16, 16, 16));
-        map.put(Direction.NORTH, Block.box(0, 0, 16 - thick * 16, 16, 16, 16));
-        map.put(Direction.SOUTH, Block.box(0, 0, 0, 16, 16, thick * 16));
-        map.put(Direction.WEST, Block.box(16 - thick * 16, 0, 0, 16, 16, 16));
-        map.put(Direction.EAST, Block.box(0, 0, 0, thick * 16, 16, 16));
-        return map;
-    }
+    private final MultifaceSpreader spreader = new MultifaceSpreader(this);
 
     public AssimilationLayerBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.UP));
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+    protected MapCodec<? extends MultifaceBlock> codec() {
+        return CODEC;
+    }
+
+    @Override
+    public MultifaceSpreader getSpreader() {
+        return spreader;
     }
 
     /** Whether {@code face} of the block at {@code supportPos} can hold a layer. */
-    public static boolean canAttachTo(BlockGetter level, BlockPos supportPos, Direction face) {
-        return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, face);
-    }
-
-    @Override
-    @Nullable
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // getClickedPos is the placement cell; the support sits one back.
-        Direction face = context.getClickedFace();
-        BlockPos supportPos = context.getClickedPos().relative(face.getOpposite());
-        return canAttachTo(context.getLevel(), supportPos, face)
-                ? defaultBlockState().setValue(FACING, face)
-                : null;
-    }
-
-    @Override
-    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-        Direction facing = state.getValue(FACING);
-        return canAttachTo(level, pos.relative(facing.getOpposite()), facing);
+    public static boolean canAttachTo(BlockGetter level, BlockPos supportPos,
+            Direction face) {
+        return level.getBlockState(supportPos)
+                .isFaceSturdy(level, supportPos, face);
     }
 
     /**
-     * The canonical survival check: when the supporting block changes, the
-     * layer evaluates itself and returns air. This path goes through
-     * {@code updateOrDestroy} which rolls drops, so the block must have no
-     * loot table — essence is granted by {@link #playerDestroy} instead,
-     * which only a real survival harvest reaches. Support loss, piston
-     * crush and world restoration all drop nothing.
+     * Vanilla's multiface attachment rule accepts any full collision face —
+     * leaves included. The membrane only grips sturdy surfaces, so every
+     * consult point below re-routes through {@link #canAttachTo}.
+     */
+    @Override
+    public boolean isValidStateForPlacement(BlockGetter level, BlockState state,
+            BlockPos pos, Direction face) {
+        return !(state.is(this) && MultifaceBlock.hasFace(state, face))
+                && canAttachTo(level, pos.relative(face), face.getOpposite());
+    }
+
+    @Override
+    protected boolean canSurvive(BlockState state, LevelReader level,
+            BlockPos pos) {
+        boolean any = false;
+        for (Direction d : DIRECTIONS) {
+            if (MultifaceBlock.hasFace(state, d)) {
+                if (!canAttachTo(level, pos.relative(d), d.getOpposite())) {
+                    return false;
+                }
+                any = true;
+            }
+        }
+        return any;
+    }
+
+    /**
+     * The canonical survival check, per face: when a supporting block
+     * changes, only the face it held is shed — the membrane survives a
+     * lost support while any other face still grips. This path goes
+     * through {@code updateOrDestroy} which rolls drops, so the block must
+     * have no loot table — essence is granted by {@link #playerDestroy}
+     * instead, which only a real survival harvest reaches.
      */
     @Override
     protected BlockState updateShape(BlockState state, Direction direction,
             BlockState neighborState, LevelAccessor level, BlockPos pos,
             BlockPos neighborPos) {
-        return direction == state.getValue(FACING).getOpposite()
-                        && !state.canSurvive(level, pos)
-                ? Blocks.AIR.defaultBlockState()
-                : state;
+        if (MultifaceBlock.hasFace(state, direction)
+                && !canAttachTo(level, neighborPos, direction.getOpposite())) {
+            BlockState cleared = state.setValue(
+                    MultifaceBlock.getFaceProperty(direction), false);
+            return MultifaceBlock.hasAnyFace(cleared)
+                    ? cleared
+                    : Blocks.AIR.defaultBlockState();
+        }
+        return state;
     }
 
-    @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos,
-            CollisionContext context) {
-        return OUTLINE_SHAPES.get(state.getValue(FACING));
-    }
-
-    /**
-     * A membrane is a film, not a shelf: entities pass through it like sculk
-     * veins and lichen — they collide with the support, never the 1/16
-     * skin. Without this, wall membranes snag anything hugging the wall.
-     */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level,
             BlockPos pos, CollisionContext context) {
+        // A membrane is a film, not a shelf: entities pass through it like
+        // sculk veins and collide with the support, never the 1/16 skin.
         return Shapes.empty();
     }
 

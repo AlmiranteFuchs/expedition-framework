@@ -542,23 +542,26 @@ chunk, and validate on real block state — not heightmap assumptions.
   and clear the dimension on completion.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
-  a thin harvestable membrane that attaches to any sturdy face of a solid
-  block (all six directions) and renders the covered face grayscale: the
-  client renderer desaturates the face's real sprite at runtime, so the
-  underlying block keeps its detail and shading but loses its color —
-  without modifying, replacing, or storing the covered block's state.
-  Non-sturdy surfaces (air, fluids, fences, slabs, leaves) refuse
-  placement; losing the support removes the layer silently. Breaking it
-  by hand drops exactly one `expeditions:assimilation_essence`
+  a thin harvestable membrane that coats sturdy faces of its cell —
+  several at once, sculk-vein style, so corners hold floor and wall
+  alike — and renders each covered face grayscale: the client renderer
+  desaturates the face's real sprite at runtime, so the underlying block
+  keeps its detail and shading but loses its color — without modifying,
+  replacing, or storing the covered block's state. Entities pass through
+  the film (no collision); non-sturdy surfaces (air, fluids, fences,
+  slabs, leaves) refuse attachment; each face dies with its own support.
+  Breaking it by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
 - **Microbiome** (M15) — `expeditions:assimilation_heart`, an amber node
   seeded on standable ground in a ring around players as they move through
   a dimension (`microbiome.enabled` runtime toggle). The heart is the
   layer's only growth organ: it pulses every
-  `microbiome.growthIntervalTicks`, seeding layers on its own faces then
-  extending members along walls and wrapping them over block edges —
-  bounded by `microbiome.maxColonySize` (a blob, never a takeover).
+  `microbiome.growthIntervalTicks`, seeding layers against its own faces,
+  then filleting new faces onto member cells, walking them along the
+  surface, wrapping over block edges and seeping through thin walls —
+  bounded by `microbiome.maxColonySize` covered faces (a blob, never a
+  takeover).
   Breaking the heart stops the spread; a dimension marked cleared in the
   saved data silences hearts and spawning both. Expedition markers get
   colonized too — a heart seeds in the ring around each checkpoint and
@@ -629,17 +632,19 @@ chunk, and validate on real block state — not heightmap assumptions.
     called off, an optional device's destruction leaves the run completable,
     malformed defense objectives are rejected, and defense state survives
     save→load.
-  - the assimilation layer attaches to all six faces of a solid support and
-    records its direction, refuses non-sturdy supports (fence, slab,
-    leaves), survives a sturdy support swap, is silently removed on support
-    loss with no drops, drops exactly one essence on survival harvest
-    (none in creative), leaves the support block untouched, and exposes a
-    1/16 collision membrane with a 2/16 selection outline per direction.
+  - the assimilation layer attaches to all six faces of a solid support,
+    refuses non-sturdy supports (fence, slab, leaves), survives a sturdy
+    support swap, sheds only the lost face on support loss with no drops,
+    drops exactly one essence on survival harvest (none in creative),
+    leaves the support block untouched, and exposes thin outline plates
+    per covered face with no entity collision.
   - the microbiome seeds a heart on standable ground in the traversal ring,
-    a heart pulses layers onto its own faces then grows the colony along
-    walls and over edges to the configured cap and no further, crawls down
-    a pillar's sides without detaching, and a cleared dimension silences
-    both seeding and growth. Placed checkpoint/exit markers get colonized
+    a heart pulses layers onto its own faces then grows the colony —
+    filleting junction cells, walking surfaces, wrapping edges — to the
+    configured face cap and no further, crawls down a pillar's sides and
+    climbs a wall to its summit without detaching, and a cleared dimension
+    silences both seeding and growth. Placed checkpoint/exit markers get
+    colonized
     with a starter patch — the blob is the route's visible landmark.
   - item valuation ranks tiers correctly (junk < food < gem < equipment),
     completion grants bonus drops from the run's dimension pool, redeem
