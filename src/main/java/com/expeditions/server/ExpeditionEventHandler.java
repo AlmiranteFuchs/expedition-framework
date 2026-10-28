@@ -5,6 +5,7 @@ import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.Waypoint;
+import com.expeditions.server.data.ExpeditionTuning;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -99,7 +100,9 @@ public final class ExpeditionEventHandler {
      */
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (player.tickCount % ExpeditionsConfig.microbiomeSpawnIntervalTicks() == 0
+            if (player.tickCount % ExpeditionTuning.integer(
+                            player.level().dimension(), "microbiome.heart_spawn_interval_ticks",
+                            ExpeditionsConfig.microbiomeSpawnIntervalTicks()) == 0
                     && Microbiome.enabled(player.serverLevel())) {
                 Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
             }
@@ -125,10 +128,11 @@ public final class ExpeditionEventHandler {
         }
     }
 
-    /** Registers the datapack expedition-definition loader. */
+    /** Registers the datapack loaders (expedition defs + dimension tuning). */
     public static void onAddReloadListener(
             net.neoforged.neoforge.event.AddReloadListenerEvent event) {
         event.addListener(new com.expeditions.server.data.ExpeditionDefinitionLoader());
+        event.addListener(new com.expeditions.server.data.ExpeditionTuningLoader());
     }
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {

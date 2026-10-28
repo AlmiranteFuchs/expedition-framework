@@ -35,10 +35,13 @@ import com.expeditions.server.Microbiome;
 import com.expeditions.server.MobSpawns;
 import com.expeditions.server.data.ExpeditionDefinitionLoader;
 import com.expeditions.server.data.ExpeditionDefinitions;
+import com.expeditions.server.data.ExpeditionTuning;
+import com.expeditions.server.data.ExpeditionTuningLoader;
 import com.expeditions.server.dimension.DestinationChecks;
 import com.expeditions.server.dimension.ExpeditionAdapters;
 import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
@@ -109,6 +112,9 @@ public final class ExpeditionGameTests {
         // Shipped datapack defs would shadow the config defaults these tests
         // resolve routes against; they reload their own defs explicitly.
         ExpeditionDefinitionLoader.suppressLoadingForTests(true);
+        // Same for shipped per-dimension tuning — tests inject overrides via
+        // ExpeditionTuning.reload and reset in finally.
+        ExpeditionTuningLoader.suppressLoadingForTests(true);
     }
 
     private ExpeditionGameTests() {
@@ -1010,6 +1016,81 @@ public final class ExpeditionGameTests {
                 "owner keeps the shared run");
 
         manager.failRun(owner); // leave no active run behind for later tests
+        helper.succeed();
+    }
+
+    /**
+     * Per-dimension datapack tuning overrides the global config only for the
+     * dimension the file names. The End is tuned here because no other test
+     * touches its state: its microbiome silences and its pressure cap clamps
+     * while untuned dimensions keep the global {@code expeditions-server.toml}
+     * values.
+     */
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mod", batch = "expedition_s")
+    public static void dimensionTuningOverridesGlobals(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        String endId = Level.END.location().toString();
+        ServerLevel end = level.getServer().getLevel(Level.END);
+        ExpeditionSavedData data = savedData(level.getServer());
+
+        JsonObject tuning = new JsonObject();
+        JsonObject micro = new JsonObject();
+        micro.addProperty("enabled", false);
+        micro.addProperty("max_colony_size", 7);
+        micro.addProperty("heart_spawn_chance", 0.9);
+        JsonObject pressure = new JsonObject();
+        pressure.addProperty("per_run_start", 9);
+        pressure.addProperty("max", 20);
+        tuning.add("microbiome", micro);
+        tuning.add("pressure", pressure);
+
+        try {
+            ExpeditionTuning.reload(Map.of(
+                    ResourceLocation.fromNamespaceAndPath("minecraft", "the_end"),
+                    tuning));
+
+            // The whole consumer chain reads the override: the End's
+            // microbiome is silenced even though the global toggle is on.
+            helper.assertTrue(!Microbiome.enabled(end),
+                    "tuned-off dimension must silence the microbiome");
+            // Untuned dimensions resolve straight to the global config.
+            helper.assertTrue(ExpeditionTuning.bool(Level.NETHER,
+                            "microbiome.enabled", ExpeditionsConfig.microbiomeEnabled())
+                            == ExpeditionsConfig.microbiomeEnabled(),
+                    "untuned dimension must keep the global value");
+
+            // Typed resolution: overrides win in the End, the global falls
+            // through everywhere else and for unnamed keys.
+            helper.assertTrue(ExpeditionTuning.integer(Level.END,
+                            "microbiome.max_colony_size",
+                            ExpeditionsConfig.microbiomeMaxColonySize()) == 7,
+                    "int override must resolve");
+            helper.assertTrue(ExpeditionTuning.integer(Level.NETHER,
+                            "microbiome.max_colony_size",
+                            ExpeditionsConfig.microbiomeMaxColonySize())
+                            == ExpeditionsConfig.microbiomeMaxColonySize(),
+                    "untuned dimension must fall back to the global int");
+            helper.assertTrue(ExpeditionTuning.real(Level.END,
+                            "microbiome.heart_spawn_chance",
+                            ExpeditionsConfig.microbiomeSpawnChance()) == 0.9,
+                    "double override must resolve");
+            helper.assertTrue(ExpeditionTuning.integer(Level.END,
+                            "microbiome.growth_interval_ticks",
+                            ExpeditionsConfig.microbiomeGrowthIntervalTicks())
+                            == ExpeditionsConfig.microbiomeGrowthIntervalTicks(),
+                    "absent key must fall back to the global");
+
+            // The pressure cap override reaches the persisted counter:
+            // raising far past the global cap clamps at the tuned one.
+            data.resetPressure(endId);
+            data.raisePressure(endId, ExpeditionsConfig.pressureMax() + 50);
+            helper.assertTrue(data.pressure(endId) == 20,
+                    "pressure must clamp to the tuned cap, was "
+                            + data.pressure(endId));
+            data.resetPressure(endId);
+        } finally {
+            ExpeditionTuning.reload(Map.of());
+        }
         helper.succeed();
     }
 

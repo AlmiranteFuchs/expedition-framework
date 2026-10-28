@@ -304,14 +304,17 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - Persistence tests: `ExpeditionSavedData.save(tag, registryAccess)` →
   `ExpeditionSavedData.load(tag, ...)` round-trips in game tests; corrupt the
   tag in between to test malformed-data handling.
-- Datapack tests: simulate reloads via `ExpeditionDefinitions.reload(map)` and
-  ALWAYS reset with `reload(Map.of())` in a finally block — the snapshot is a
-  shared static and leaks between tests otherwise.
-- Bundled datapack defs (`data/expeditions/expeditions/`) are suppressed
-  suite-wide via `ExpeditionDefinitionLoader.suppressLoadingForTests` so
-  shipped defs never shadow the config defaults tests resolve against;
-  tests that need them reload the real JSON from the classpath
-  (`shippedDef`).
+- Datapack tests: simulate reloads via `ExpeditionDefinitions.reload(map)` /
+  `ExpeditionTuning.reload(map)` and ALWAYS reset with `reload(Map.of())` in
+  a finally block — both snapshots are shared statics and leak between tests
+  otherwise. Per-dimension tuning files live at
+  `data/*/expedition_dimensions/<dim-path>.json` (resource id = dimension id).
+- Bundled datapack defs (`data/expeditions/expeditions/`) and tuning files
+  (`data/expeditions/expedition_dimensions/`) are suppressed suite-wide via
+  `ExpeditionDefinitionLoader`/`ExpeditionTuningLoader`
+  `.suppressLoadingForTests` so shipped data never shadows the config
+  defaults tests resolve against; tests that need them reload the real
+  JSON from the classpath (`shippedDef`) or inject maps directly.
 - Ambient world writes are suppressed for the suite: authored-route anchors
   from every datapack test resolve to shared absolute columns near the world
   origin, and microbiome colonies/hearts there would make later route
@@ -362,6 +365,16 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - `run/` and `build/` are gitignored; `src/generated/resources` is datagen output.
 
 ## Verification status
+
+M13/M14 verified: `build` + 124 unit tests + 90/90 GameTest in-game
+tests pass. The dimension extension point is proven by
+`thirdPartyAdapterHostsExpedition` (test-side End adapter through the
+real `ExpeditionAdapters.register` path). Per-dimension tuning loads
+from `data/*/expedition_dimensions/<dim>.json` → `ExpeditionTuning`,
+with sparse `microbiome.*`/`pressure.*` overrides resolved at each call
+site against the global TOML fallback; the bundled nether file is
+suppressed in tests like the bundled defs. Human client session still
+unverified (visual layer, compass heartbeat, menu lore).
 
 M12a (progression keys) verified: `build` + 111 unit tests + 74/74
 GameTest in-game tests pass. Unlock keys are per-player `Set<String>` in

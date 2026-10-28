@@ -6,6 +6,7 @@ import com.expeditions.core.Waypoint;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.Microbiome;
 import com.expeditions.server.data.ExpeditionDefinitionLoader;
+import com.expeditions.server.data.ExpeditionTuningLoader;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -31,6 +32,7 @@ public final class ExpeditionSmokeTests {
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
         ExpeditionDefinitionLoader.suppressLoadingForTests(true);
+        ExpeditionTuningLoader.suppressLoadingForTests(true);
     }
 
     private ExpeditionSmokeTests() {

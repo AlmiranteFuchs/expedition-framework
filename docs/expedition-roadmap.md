@@ -52,8 +52,8 @@ covers direction.
 | M10 | First complete expedition (mandatory checkpoint route + existing objective handlers) | **Complete** | Two bundled defs ship in `data/expeditions/expeditions/`: `field_survey` (entry, grants `field_clear`) and `deep_salvage` (the composed flagship — visit + artifact + defense + collect + time objectives, key/cost/campaign gating, modifiers). `bundledExpeditionsCompose` verifies the shipped JSON parses and starts |
 | M11 | Structured feedback + expedition summary | **Complete** | `broadcastSummary` at `endRun`: per-member breakdown — checkpoints/objectives done, banked, extraction top-up, total, balance (complete); cause + kept credits + at-risk estimate (failed). `run.fail(reasonKey)` records the cause at every fail site (died/abandoned/device_destroyed/site_lost/dimension_lost) |
 | M12 | Terminal progression + dimensional campaign | **Complete** | M12a: per-player unlock keys, `requires`/`grants`/`cost_tokens`, menu lore for locked missions, `/expeditions unlocks`. M12b: `CampaignState` (FRONTIER→ESTABLISHED→CLEARED) per dimension, `min_campaign_state` gating, trophies + `/expeditions trophies`. M12c: `attunement_sigil` crafted artifact grants a key at the terminal without being consumed |
-| M13 | Dimension compatibility | **Mostly complete** | Adapters, bounded safe search, natural mob pools, fail-safe refusals done. New scope fits: threat behavior must route through `ExpeditionDimensionAdapter`/`HordePools` (dimension-scoped state, per-dimension spawn pools), not a parallel system. Untested against a real third-party modded dimension |
-| M14 | Configuration & expansion | **Partial** | TOML + datapack + tags + options cover most parameters. Pressure/microbiome tuning knobs landed with M15. Remaining: per-dimension overrides; structure archetypes deferred by design |
+| M13 | Dimension compatibility | **Complete** | Adapters, bounded safe search, natural mob pools, fail-safe refusals done. The extension point is proven: `thirdPartyAdapterHostsExpedition` registers a test-side End adapter exactly as a modded-dimension plugin would and runs a full lifecycle through it. A real third-party modded dim can't be smoke-tested without one installed, but the registration path is verified |
+| M14 | Configuration & expansion | **Complete** | TOML + datapack + tags + options cover most parameters; pressure/microbiome knobs landed with M15. Per-dimension overrides ship as the `expedition_dimensions` datapack layer — `data/*/expedition_dimensions/<dim-path>.json` sparsely overrides `microbiome.*`/`pressure.*` for the named dimension (a bundled `minecraft/the_nether.json` example). Structure archetypes deferred by design |
 | M15 | Global dimensional threat + Big Bad event | **Complete** | Microbiome heart colonies (below) + per-dimension `dimensionPressure` that escalates horde size and adds empowered spawns past thresholds + `big_bad` defs spawn a boss assault at the final checkpoint; completing a big_bad run flips the dimension to CLEARED, silencing the microbiome |
 
 ### Foundation audit — what supports the new requirements
@@ -366,10 +366,40 @@ never shadow the config defaults tests resolve against;
 `bundledExpeditionsCompose` verifies the real shipped JSON parses,
 chains, gates, and starts.
 
+## M14 — per-dimension tuning overrides (implemented)
+
+`data/<namespace>/expedition_dimensions/<path>.json` — the resource id
+IS the dimension id it tunes (`minecraft/the_nether.json` →
+`minecraft:the_nether`; modded ids and sub-paths work the same way).
+Loaded by `ExpeditionTuningLoader` into the `ExpeditionTuning` snapshot
+(same immutable-reload pattern as expedition definitions, with the same
+test suppression seam).
+
+The file is sparse — only the knobs it changes:
+
+```json
+{
+  "microbiome": { "enabled": true, "heart_spawn_chance": 0.5,
+                  "growth_interval_ticks": 30, "max_colony_size": 64, ... },
+  "pressure":   { "per_run_start": 8, "per_run_completion": 15,
+                  "max": 100, "horde_bonus_per": 25, "buff_threshold": 50 }
+}
+```
+
+Every `microbiome.*` and `pressure.*` config knob is overridable; absent
+keys fall back to the global `expeditions-server.toml` value at the call
+site (`ExpeditionTuning.bool/integer/real(dim, path, fallback)`). A
+bundled `minecraft/the_nether.json` ships denser/faster assimilation and
+steeper pressure in the nether — the harder dimension fights back
+harder. `dimensionTuningOverridesGlobals` verifies the resolution, the
+fallbacks, and the clamp flowing into `raisePressure`.
+
 ## Next recommended milestone
 
-Alpha is feature-complete — every roadmap mechanic has a base
-implementation. Remaining work is hardening and feel: client playtest of
-the visual layer (trace pulse, membrane, heart colonies), third-party
-dimension smoke (M13's open gap), per-dimension config overrides (M14),
-and any Big Bad *design* pass beyond the current assault-wave prototype.
+Alpha is feature-complete — every roadmap milestone is now closed,
+including M13's extension-point proof and M14's per-dimension overrides.
+Remaining work is hardening and feel: client playtest of the visual
+layer (trace pulse, membrane, heart colonies, compass heartbeat), a
+smoke run against a real third-party modded dimension if one ever joins
+the pack, and any Big Bad *design* pass beyond the current assault-wave
+prototype.

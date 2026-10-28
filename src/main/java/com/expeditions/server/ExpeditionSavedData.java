@@ -18,6 +18,7 @@ import com.expeditions.core.ObjectiveState;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
+import com.expeditions.server.data.ExpeditionTuning;
 import com.mojang.logging.LogUtils;
 import java.util.Collections;
 import java.util.HashMap;
@@ -704,7 +705,8 @@ public class ExpeditionSavedData extends SavedData {
         if (amount <= 0) {
             return;
         }
-        int next = Math.min(ExpeditionsConfig.pressureMax(),
+        int next = Math.min(ExpeditionTuning.integer(dimension, "pressure.max",
+                ExpeditionsConfig.pressureMax()),
                 pressure(dimension) + amount);
         if (next != pressure(dimension)) {
             dimensionPressure.put(dimension, next);

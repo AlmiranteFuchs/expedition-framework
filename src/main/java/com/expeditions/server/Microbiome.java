@@ -4,6 +4,7 @@ import com.expeditions.ExpeditionsConfig;
 import com.expeditions.block.entity.AssimilationHeartBlockEntity;
 import com.expeditions.core.SafeColumnSearch;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.server.data.ExpeditionTuning;
 import com.expeditions.server.dimension.DestinationChecks;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -50,7 +51,8 @@ public final class Microbiome {
 
     /** Whether the microbiome may grow or spawn in {@code level}. */
     public static boolean enabled(ServerLevel level) {
-        return ExpeditionsConfig.microbiomeEnabled()
+        return ExpeditionTuning.bool(level.dimension(), "microbiome.enabled",
+                ExpeditionsConfig.microbiomeEnabled())
                 && !savedData(level).isDimensionCleared(
                         level.dimension().location().toString());
     }
@@ -64,8 +66,10 @@ public final class Microbiome {
      */
     public static Optional<BlockPos> trySpawnHeart(ServerLevel level,
             BlockPos center, RandomSource random) {
-        int min = ExpeditionsConfig.microbiomeSpawnRadiusMin();
-        int max = ExpeditionsConfig.microbiomeSpawnRadiusMax();
+        int min = ExpeditionTuning.integer(level.dimension(), "microbiome.spawn_radius_min",
+                ExpeditionsConfig.microbiomeSpawnRadiusMin());
+        int max = ExpeditionTuning.integer(level.dimension(), "microbiome.spawn_radius_max",
+                ExpeditionsConfig.microbiomeSpawnRadiusMax());
         double angle = random.nextDouble() * Math.PI * 2;
         int distance = min + random.nextInt(Math.max(1, max - min));
         BlockPos column = center.offset(
@@ -94,7 +98,8 @@ public final class Microbiome {
     /** Per-player traversal roll: called on a throttled player tick. */
     public static void onPlayerTick(ServerLevel level, BlockPos playerPos) {
         if (!traversalSuppressed
-                && level.random.nextDouble() < ExpeditionsConfig.microbiomeSpawnChance()) {
+                && level.random.nextDouble() < ExpeditionTuning.real(level.dimension(),
+                        "microbiome.heart_spawn_chance", ExpeditionsConfig.microbiomeSpawnChance())) {
             trySpawnHeart(level, playerPos, level.random);
         }
     }
@@ -111,10 +116,13 @@ public final class Microbiome {
     public static Optional<BlockPos> seedColonyNear(ServerLevel level,
             BlockPos marker, RandomSource random) {
         if (seedingSuppressed || !enabled(level)
-                || !ExpeditionsConfig.microbiomeMarkerColonies()) {
+                || !ExpeditionTuning.bool(level.dimension(), "microbiome.marker_colonies",
+                        ExpeditionsConfig.microbiomeMarkerColonies())) {
             return Optional.empty();
         }
-        int radius = ExpeditionsConfig.microbiomeMarkerColonyRadius();
+        int radius = ExpeditionTuning.integer(level.dimension(),
+                "microbiome.marker_colony_radius",
+                ExpeditionsConfig.microbiomeMarkerColonyRadius());
         for (int attempt = 0; attempt < 8; attempt++) {
             Optional<BlockPos> spot = columnSpot(level, marker,
                     random.nextDouble() * Math.PI * 2,
@@ -158,7 +166,9 @@ public final class Microbiome {
         }
         if (level.getBlockEntity(heartPos)
                 instanceof AssimilationHeartBlockEntity heart) {
-            int starter = ExpeditionsConfig.microbiomeMarkerColonyStarterPulses();
+            int starter = ExpeditionTuning.integer(level.dimension(),
+                    "microbiome.marker_colony_starter_pulses",
+                    ExpeditionsConfig.microbiomeMarkerColonyStarterPulses());
             for (int i = 0; i < starter; i++) {
                 heart.pulse(level);
             }

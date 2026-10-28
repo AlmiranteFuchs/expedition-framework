@@ -359,6 +359,38 @@ the config `hordeMob` id are used.
 Draw weights come from `ItemValuator`'s stat score, so pool items rank by
 their own components — no per-item rarity table to maintain.
 
+### Per-dimension tuning overrides
+
+`data/<namespace>/expedition_dimensions/<path>.json` sparsely overrides
+the global `microbiome.*` and `pressure.*` config knobs for one
+dimension — the file's resource id IS the dimension it tunes
+(`data/expeditions/expedition_dimensions/minecraft/the_nether.json` →
+`minecraft:the_nether`; modded ids and sub-paths like
+`mymod:planets/mars` work the same way):
+
+```json
+{
+  "microbiome": {
+    "enabled": true,
+    "heart_spawn_chance": 0.5,
+    "growth_interval_ticks": 30,
+    "max_colony_size": 64
+  },
+  "pressure": {
+    "per_run_start": 8,
+    "per_run_completion": 15,
+    "max": 100,
+    "horde_bonus_per": 25,
+    "buff_threshold": 50
+  }
+}
+```
+
+Every key is optional — absent keys fall back to the global
+`expeditions-server.toml` value, so a file only names what changes. A
+bundled `minecraft/the_nether.json` ships with the mod: the nether
+assimilates faster and its pressure escalates harder.
+
 ## Supporting a modded dimension
 
 The expedition lifecycle (markers, checkpoints, portal, challenges, rewards,
@@ -571,13 +603,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 113 unit tests + 87 GameTest in-game tests.
+- **Tests** — 124 unit tests + 90 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.3.0.jar` assembled.
-- `./gradlew test` — 113 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **87/87 game tests passed** on a real dedicated
+- `./gradlew test` — 124 unit tests, 0 failures.
+- `./gradlew runGameTestServer` — **90/90 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -603,6 +635,11 @@ chunk, and validate on real block state — not heightmap assumptions.
     skipped without breaking valid ones,
   - a `"generate"` datapack expedition produces a real route with placed
     markers that clean up on run end,
+  - a third-party dimension adapter (registered exactly as a modded-dimension
+    plugin would) hosts a full lifecycle in the End,
+  - per-dimension tuning overrides silence the microbiome, reshape colony
+    growth, and clamp pressure for the named dimension only, with untuned
+    dimensions and unnamed keys falling back to the global config,
   - the expedition compass is granted on start, retargets to the next
     checkpoint and finally the exit, and is removed on completion or failure,
   - the built-in Overworld expedition generates its route by default with

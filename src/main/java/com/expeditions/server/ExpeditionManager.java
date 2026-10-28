@@ -27,6 +27,7 @@ import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.data.ExpeditionDefinitions;
+import com.expeditions.server.data.ExpeditionTuning;
 import com.expeditions.server.dimension.ExpeditionAdapters;
 import com.expeditions.server.dimension.ExpeditionDimensionAdapter;
 import java.util.ArrayList;
@@ -317,7 +318,8 @@ public final class ExpeditionManager {
         // Every expedition stirs the organism a little — pressure is the
         // dimension-wide threat counter hordes and waves read.
         data.raisePressure(definition.dimension(),
-                ExpeditionsConfig.pressurePerRunStart());
+                ExpeditionTuning.integer(definition.dimension(), "pressure.per_run_start",
+                        ExpeditionsConfig.pressurePerRunStart()));
         applyMemberEffects(run, player);
         applyWeather(run, level);
         data.setDirty();
@@ -572,7 +574,9 @@ public final class ExpeditionManager {
         }
         data.recordCampaignCompletion(run.definition().dimension());
         data.raisePressure(run.definition().dimension(),
-                ExpeditionsConfig.pressurePerRunCompletion());
+                ExpeditionTuning.integer(run.definition().dimension(),
+                        "pressure.per_run_completion",
+                        ExpeditionsConfig.pressurePerRunCompletion()));
         // The Big Bad is the campaign's payoff: beating it wins the
         // dimension — the same cleared mark the grind threshold sets.
         if (run.definition().bigBad()) {
@@ -1055,8 +1059,10 @@ public final class ExpeditionManager {
         // Dimensional pressure escalates the horde dimension-wide: more
         // bodies, and past the buff threshold they arrive empowered.
         int pressure = data.pressure(run.definition().dimension());
-        size += pressure / ExpeditionsConfig.pressureHordeBonusPer();
-        boolean buffed = pressure >= ExpeditionsConfig.pressureBuffThreshold();
+        size += pressure / ExpeditionTuning.integer(run.definition().dimension(),
+                "pressure.horde_bonus_per", ExpeditionsConfig.pressureHordeBonusPer());
+        boolean buffed = pressure >= ExpeditionTuning.integer(run.definition().dimension(),
+                "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -1322,12 +1328,15 @@ public final class ExpeditionManager {
         int room = ExpeditionsConfig.defenseMobCap() - alive;
         int count = Math.min(room, ExpeditionsConfig.defenseWaveSize()
                 + data.pressure(run.definition().dimension())
-                        / ExpeditionsConfig.pressureHordeBonusPer());
+                        / ExpeditionTuning.integer(run.definition().dimension(),
+                                "pressure.horde_bonus_per",
+                                ExpeditionsConfig.pressureHordeBonusPer()));
         if (count <= 0) {
             return;
         }
         boolean buffed = data.pressure(run.definition().dimension())
-                >= ExpeditionsConfig.pressureBuffThreshold();
+                >= ExpeditionTuning.integer(run.definition().dimension(),
+                        "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
         EntityType<?> type = HordePools.pick(level, devicePos,
                 run.definition().dimension(), level.getRandom());
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();

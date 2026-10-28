@@ -5,6 +5,7 @@ import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.Microbiome;
+import com.expeditions.server.data.ExpeditionTuning;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -99,7 +100,9 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     /** Block-entity ticker entry point: rate-limits, gates, then pulses. */
     public static void serverTick(ServerLevel level, BlockPos pos,
             BlockState state, AssimilationHeartBlockEntity heart) {
-        int interval = ExpeditionsConfig.microbiomeGrowthIntervalTicks();
+        int interval = ExpeditionTuning.integer(level.dimension(),
+                "microbiome.growth_interval_ticks",
+                ExpeditionsConfig.microbiomeGrowthIntervalTicks());
         if ((level.getGameTime() + pos.asLong()) % interval != 0
                 || !Microbiome.enabled(level)) {
             return;
@@ -115,7 +118,8 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     public void pulse(ServerLevel level) {
         colony.removeIf(p -> !(level.getBlockState(BlockPos.of(p)).getBlock()
                 instanceof AssimilationLayerBlock));
-        if (coverage(level) >= ExpeditionsConfig.microbiomeMaxColonySize()) {
+        if (coverage(level) >= ExpeditionTuning.integer(level.dimension(),
+                "microbiome.max_colony_size", ExpeditionsConfig.microbiomeMaxColonySize())) {
             return;
         }
         Set<Move> moves = colony.isEmpty()
