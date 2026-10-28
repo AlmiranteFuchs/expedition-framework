@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,12 +43,9 @@ public class AssimilationLayerBlock extends Block implements EntityBlock {
     /** Which side of the support the layer covers (the covered face's normal). */
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
 
-    /** Collision membrane: 1/16 of a block, flush with the covered face. */
-    private static final double COLLISION_THICK = 1.0 / 16.0;
-    /** Outline is a hair thicker so the membrane is easy to aim at. */
+    /** Outline is 2/16 of a block so the membrane is easy to aim at. */
     private static final double OUTLINE_THICK = 2.0 / 16.0;
 
-    private static final Map<Direction, VoxelShape> COLLISION_SHAPES = shapes(COLLISION_THICK);
     private static final Map<Direction, VoxelShape> OUTLINE_SHAPES = shapes(OUTLINE_THICK);
 
     private static Map<Direction, VoxelShape> shapes(double thick) {
@@ -117,10 +115,15 @@ public class AssimilationLayerBlock extends Block implements EntityBlock {
         return OUTLINE_SHAPES.get(state.getValue(FACING));
     }
 
+    /**
+     * A membrane is a film, not a shelf: entities pass through it like sculk
+     * veins and lichen — they collide with the support, never the 1/16
+     * skin. Without this, wall membranes snag anything hugging the wall.
+     */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level,
             BlockPos pos, CollisionContext context) {
-        return COLLISION_SHAPES.get(state.getValue(FACING));
+        return Shapes.empty();
     }
 
     /**
