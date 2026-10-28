@@ -229,6 +229,12 @@ public final class ExpeditionsConfig {
                     "the named, glowing boss itself.")
             .defineInRange("expeditions.boss.packSize", 5, 1, 64);
 
+    private static final ModConfigSpec.IntValue COMPASS_PING_RANGE = BUILDER
+            .comment("Blocks on either axis (horizontal OR vertical) within",
+                    "which the expedition compass pulses like a heartbeat —",
+                    "faster as the target nears. 0 disables the pulse.")
+            .defineInRange("expeditions.compass.pingRange", 10, 0, 256);
+
     private static final ModConfigSpec.ConfigValue<List<? extends String>> OVERWORLD_CHECKPOINTS =
             BUILDER
                     .comment("Ordered checkpoint columns \"x,z\" for the Overworld expedition.",
@@ -561,6 +567,10 @@ public final class ExpeditionsConfig {
     /** Pressure at which mobs spawn buffed. */
     public static int pressureBuffThreshold() {
         return PRESSURE_BUFF_AT.get();
+    }
+
+    public static int compassPingRange() {
+        return COMPASS_PING_RANGE.get();
     }
 
     /** Mobs in the Big Bad's final-checkpoint assault. */

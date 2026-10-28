@@ -465,6 +465,12 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Expedition compass** — granted on portal entry; the server sets its
   `LODESTONE_TRACKER` target so the needle follows the next checkpoint, then
   the exit, and it is removed when the run ends (complete, fail or abandon).
+  Held close to the target it **beats like a heart** — a lub-dub pulse that
+  races as you approach and falls faint when far, triggering when either the
+  horizontal OR vertical gap drops under `expeditions.compass.pingRange`
+  (default 10, felt out to 3×). The 2D needle says "here"; the heartbeat is
+  what says "25 blocks straight down" — the site's heart calling to the
+  compass, and the Nether navigation answer.
 - **Portal entry + parties** — a run starts at the terminal and spawns a
   portal above it; stepping in teleports the player to a remote, validated
   landing spot the route was generated around. Anyone entering while it's

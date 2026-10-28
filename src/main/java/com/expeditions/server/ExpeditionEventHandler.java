@@ -98,10 +98,12 @@ public final class ExpeditionEventHandler {
      * dimensions refuse inside {@link Microbiome#onPlayerTick}.
      */
     public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player
-                && player.tickCount % ExpeditionsConfig.microbiomeSpawnIntervalTicks() == 0
-                && Microbiome.enabled(player.serverLevel())) {
-            Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
+        if (event.getEntity() instanceof ServerPlayer player) {
+            if (player.tickCount % ExpeditionsConfig.microbiomeSpawnIntervalTicks() == 0
+                    && Microbiome.enabled(player.serverLevel())) {
+                Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
+            }
+            CompassPing.onPlayerTick(player);
         }
     }
 
