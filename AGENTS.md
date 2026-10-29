@@ -366,8 +366,15 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-M13/M14 verified: `build` + 124 unit tests + 90/90 GameTest in-game
-tests pass. The dimension extension point is proven by
+Verified: `build` + 124 unit tests + 93/93 GameTest in-game
+tests pass. The field journal writes its report into the stack's own
+`WRITTEN_BOOK_CONTENT` component and opens the vanilla book GUI —
+`broadcastChanges()` MUST precede the `ClientboundOpenBookPacket` so the
+client sees the fresh component (same ordering as `openItemGui`). Its
+`expeditions:blood_letting` damage type rides `bypasses_invulnerability`
+because mock players hardcode `isCreative()→true` — generic damage can
+never cost them blood (and creative players would get free samples).
+The dimension extension point is proven by
 `thirdPartyAdapterHostsExpedition` (test-side End adapter through the
 real `ExpeditionAdapters.register` path). Per-dimension tuning loads
 from `data/*/expedition_dimensions/<dim>.json` → `ExpeditionTuning`,

@@ -64,6 +64,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -92,6 +93,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.component.LodestoneTracker;
+import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -3867,6 +3869,70 @@ public final class ExpeditionGameTests {
             Assimilation.suppressForTests(true);
             Assimilation.infect(player, 0);
             level.removeBlock(heartPos, false);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The field journal: right-click writes a live survey onto its own pages
+     * (dimension pressure is readable as "Awareness"), and the assay page
+     * stays blank until sneak-use spends health on a blood sample — which
+     * must latch on the stack's custom data, not the player.
+     */
+    @GameTest(template = "arena", templateNamespace = "expeditions",
+            timeoutTicks = 200, batch = "expedition_journal")
+    public static void fieldJournalReportsSurveyAndBlood(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        // Mock players report isCreative() true — the journal's bloodletting
+        // damage type bypasses invulnerability, so the sample still costs.
+        String dimension = level.dimension().location().toString();
+        ExpeditionSavedData data = ExpeditionManager.get(player.server).savedData();
+        data.resetPressure(dimension);
+        data.raisePressure(dimension, 37);
+        // Campaign tests may have cleared this dimension earlier in the
+        // suite — the journal's dead-Bloom page is correct then, so force
+        // the dimension back to "unliberated" for the pressure assertions.
+        boolean wasCleared = data.isDimensionCleared(dimension);
+        data.unclearDimension(dimension);
+        Assimilation.infect(player, 40);
+        try {
+            ItemStack journal = new ItemStack(ModItems.EXPEDITION_FIELD_JOURNAL.get());
+            player.setItemInHand(InteractionHand.MAIN_HAND, journal);
+            ModItems.EXPEDITION_FIELD_JOURNAL.get()
+                    .use(level, player, InteractionHand.MAIN_HAND);
+            WrittenBookContent report = journal.get(DataComponents.WRITTEN_BOOK_CONTENT);
+            helper.assertTrue(report != null,
+                    "use must write the survey onto the stack");
+            String all = report.getPages(false).stream()
+                    .map(Component::getString).reduce("", String::concat);
+            helper.assertTrue(all.contains("Awareness: 37"),
+                    "survey must report the dimension's pressure, got: " + all);
+            helper.assertTrue(all.contains("These pages stay blank"),
+                    "the assay must stay blank before blood is given");
+
+            player.setShiftKeyDown(true);
+            float health = player.getHealth();
+            ModItems.EXPEDITION_FIELD_JOURNAL.get()
+                    .use(level, player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(player.getHealth() < health,
+                    "the blood sample must cost blood");
+            player.setShiftKeyDown(false);
+
+            ModItems.EXPEDITION_FIELD_JOURNAL.get()
+                    .use(level, player, InteractionHand.MAIN_HAND);
+            report = journal.get(DataComponents.WRITTEN_BOOK_CONTENT);
+            all = report.getPages(false).stream()
+                    .map(Component::getString).reduce("", String::concat);
+            helper.assertTrue(all.contains("Infection: 40%"),
+                    "a blooded journal must assay infection, got: " + all);
+        } finally {
+            Assimilation.infect(player, 0);
+            data.resetPressure(dimension);
+            if (wasCleared) {
+                data.setDimensionCleared(dimension);
+            }
+            player.setShiftKeyDown(false);
         }
         helper.succeed();
     }

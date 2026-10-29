@@ -3,6 +3,7 @@ package com.expeditions.registry;
 import com.expeditions.ExpeditionsMod;
 import com.expeditions.item.ExpeditionArtifactItem;
 import com.expeditions.item.ExpeditionCompassItem;
+import com.expeditions.item.ExpeditionFieldJournalItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -50,6 +51,15 @@ public final class ModItems {
      */
     public static final DeferredItem<Item> ATTUNEMENT_SIGIL = ITEMS.registerSimpleItem(
             "attunement_sigil", new Item.Properties().stacksTo(1));
+
+    /**
+     * The survey tool: opens as a book carrying a live report — expedition
+     * status, dimension campaign, Bloom pressure; sneak-use spends health on
+     * a blood sample that unlocks the infection assay page.
+     */
+    public static final DeferredItem<ExpeditionFieldJournalItem> EXPEDITION_FIELD_JOURNAL = ITEMS.register(
+            "expedition_field_journal",
+            () -> new ExpeditionFieldJournalItem(new Item.Properties().stacksTo(1)));
 
     private ModItems() {
     }

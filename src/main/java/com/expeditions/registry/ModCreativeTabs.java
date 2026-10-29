@@ -31,6 +31,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ASSIMILATION_HEART_ITEM.get());
                         output.accept(ModItems.ASSIMILATION_ESSENCE.get());
                         output.accept(ModItems.ATTUNEMENT_SIGIL.get());
+                        output.accept(ModItems.EXPEDITION_FIELD_JOURNAL.get());
                     })
                     .build());
 

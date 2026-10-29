@@ -586,6 +586,15 @@ chunk, and validate on real block state — not heightmap assumptions.
   stage threshold, `/expeditions infection` to read the counter. Imbued
   armor and a carried attunement sigil delay the take, capped short of
   immunity — you can stall the Bloom, never refuse it.
+- **Field journal** — `expeditions:expedition_field_journal` (book +
+  assimilation essence). Right-click writes a live survey onto its own
+  pages and opens the book GUI: the active expedition (name, dimension,
+  checkpoint progress, time afield, party), the dimension's campaign and
+  Bloom awareness (pressure band, horde swell, empowered spawns), and a
+  blood assay. Sneak-use lets the journal drink a blood sample —
+  `expeditions:blood_letting` damage that bypasses invulnerability but
+  never kills — and only a blooded journal renders the carrier's
+  infection percentage and stage.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies|campaign|infection`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —
@@ -617,13 +626,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 124 unit tests + 90 GameTest in-game tests.
+- **Tests** — 124 unit tests + 93 GameTest in-game tests.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.5.1.jar` assembled.
 - `./gradlew test` — 124 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **90/90 game tests passed** on a real dedicated
+- `./gradlew runGameTestServer` — **93/93 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -714,6 +723,11 @@ chunk, and validate on real block state — not heightmap assumptions.
     the horde rolls its type from the dimension's entity-tag pool and every
     member carries the declared buffs, modifiers survive save→load, and
     malformed modifier definitions are skipped at reload.
+  - the field journal writes a live survey onto its own book pages —
+    dimension pressure readable as "Awareness" — keeps its assay page
+    blank until a blood sample latches on the stack (costing real health,
+    bypassing creative invulnerability), then reports the carrier's
+    infection percentage.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 
@@ -729,6 +743,9 @@ chunk, and validate on real block state — not heightmap assumptions.
   GameTest server** — verified mechanically (placement, survival, drops,
   shapes), not visually. Manual check: `./gradlew runClient`, place the layer
   on grass/stone/ore faces from all six directions and reload the chunk.
+  The field journal's book GUI is likewise client-only — the game test
+  verifies the report lands on the stack's `WRITTEN_BOOK_CONTENT`; the
+  actual screen open needs a client session.
 - Not yet verified by a **human client session** — game tests drive the real
   server interaction path, but no GUI click-through was performed. Real
   disconnect/reconnect was not simulated either; reconnect behavior is tested
