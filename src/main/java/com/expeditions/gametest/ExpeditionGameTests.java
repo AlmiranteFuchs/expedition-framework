@@ -4259,6 +4259,52 @@ public final class ExpeditionGameTests {
     }
 
     /**
+     * The colony hunts: with a player inside the heart's reach, every
+     * pulse prefers the frontier cells nearest them — the carpet creeps
+     * toward warmth instead of spreading blind. Counted east vs west of
+     * the heart, a hunting colony must lean hard to the player's side
+     * where a blind one splits roughly evenly.
+     */
+    @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_mic", batch = "expedition_mic")
+    public static void microbiomeGrowthHuntsPlayers(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        BlockPos slabOrigin = helper.absolutePos(new BlockPos(1, 0, 1));
+        for (int dx = 0; dx < 13; dx++) {
+            for (int dz = 0; dz < 13; dz++) {
+                level.setBlock(slabOrigin.offset(dx, 0, dz),
+                        Blocks.STONE.defaultBlockState(), 3);
+                level.setBlock(slabOrigin.offset(dx, 1, dz),
+                        Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        BlockPos heartPos = slabOrigin.offset(6, 0, 6);
+        level.setBlock(heartPos,
+                ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3);
+        AssimilationHeartBlockEntity heart =
+                (AssimilationHeartBlockEntity) level.getBlockEntity(heartPos);
+        player.teleportTo(heartPos.getX() + 5.5, heartPos.getY() + 1,
+                heartPos.getZ() + 0.5);
+
+        for (int i = 0; i < 20 && heart.coverage(level) < 14; i++) {
+            heart.pulse(level);
+        }
+        int east = 0, west = 0;
+        for (BlockPos member : heart.colony()) {
+            if (member.getX() > heartPos.getX()) {
+                east++;
+            } else if (member.getX() < heartPos.getX()) {
+                west++;
+            }
+        }
+        helper.assertTrue(east >= west + 3,
+                "the colony must creep toward the player (east=" + east
+                        + ", west=" + west + ", colony=" + heart.colony()
+                        + ")");
+        helper.succeed();
+    }
+
+    /**
      * The cleared-dimension seam: once a dimension is marked cleared the
      * microbiome goes silent — the gate hearts and traversal spawning both
      * consult — until the mark is lifted.

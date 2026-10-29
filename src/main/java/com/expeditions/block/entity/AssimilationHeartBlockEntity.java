@@ -20,6 +20,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -168,9 +169,50 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         if (moves.isEmpty()) {
             return;
         }
-        List<Move> choices = new ArrayList<>(moves);
-        Move move = choices.get(level.random.nextInt(choices.size()));
-        apply(level, move);
+        apply(level, pickMove(level, new ArrayList<>(moves)));
+    }
+
+    /**
+     * The colony hunts: when a player lingers within
+     * {@code microbiome.huntRadius} of the heart, the pulse prefers the
+     * frontier cells nearest them — the carpet visibly creeps toward
+     * warmth rather than spreading blind. Picks uniformly among the
+     * closest candidates so the tendrils still branch; no player in
+     * reach (or hunting disabled) falls back to the uniform pick.
+     */
+    private Move pickMove(ServerLevel level, List<Move> choices) {
+        int radius = ExpeditionTuning.integer(level.dimension(),
+                "microbiome.hunt_radius", ExpeditionsConfig.microbiomeHuntRadius());
+        ServerPlayer nearest = null;
+        int nearestDist = Integer.MAX_VALUE;
+        for (ServerPlayer p : level.players()) {
+            if (p.isSpectator()) {
+                continue;
+            }
+            int d = p.blockPosition().distManhattan(getBlockPos());
+            if (d < nearestDist) {
+                nearestDist = d;
+                nearest = p;
+            }
+        }
+        if (radius > 0 && nearest != null && nearestDist <= radius) {
+            List<Move> closest = new ArrayList<>();
+            int best = Integer.MAX_VALUE;
+            for (Move m : choices) {
+                int d = m.cell().distManhattan(nearest.blockPosition());
+                if (d < best) {
+                    best = d;
+                    closest.clear();
+                }
+                if (d == best) {
+                    closest.add(m);
+                }
+            }
+            if (!closest.isEmpty()) {
+                choices = closest;
+            }
+        }
+        return choices.get(level.random.nextInt(choices.size()));
     }
 
     /** Applies one covering act and registers the cell with the colony. */

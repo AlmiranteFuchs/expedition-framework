@@ -633,13 +633,16 @@ chunk, and validate on real block state — not heightmap assumptions.
   then filleting new faces onto member cells, walking them along the
   surface, wrapping over block edges and seeping through thin walls —
   bounded by `microbiome.maxColonySize` covered faces (a blob, never a
-  takeover).
+  takeover). And it hunts: within `microbiome.huntRadius` (default 24, 0
+  disables) each pulse prefers the frontier cells nearest a player, so
+  the carpet visibly creeps toward warmth — beyond the radius growth is
+  direction-blind again.
   Breaking the heart stops the spread; a dimension marked cleared in the
   saved data silences hearts and spawning both. Expedition markers get
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 124 unit tests + 93 GameTest in-game tests.
+- **Tests** — 124 unit tests + 94 GameTest in-game tests.
 
 ## Verified
 

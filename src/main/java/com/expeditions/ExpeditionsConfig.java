@@ -190,6 +190,13 @@ public final class ExpeditionsConfig {
                     "growing in over minutes.")
             .defineInRange("expeditions.microbiome.markerColonyStarterPulses", 6, 0, 64);
 
+    private static final ModConfigSpec.IntValue HUNT_RADIUS = BUILDER
+            .comment("How far a heart senses players — within this distance",
+                    "each growth pulse prefers the frontier cells nearest a",
+                    "player, so the colony visibly creeps toward warmth.",
+                    "Beyond it (or 0) growth is direction-blind.")
+            .defineInRange("expeditions.microbiome.huntRadius", 24, 0, 128);
+
     private static final ModConfigSpec.IntValue INFECTION_RADIUS = BUILDER
             .comment("How close to an assimilation heart the infection",
                     "reaches — within this distance the organism takes hold.")
@@ -581,6 +588,11 @@ public final class ExpeditionsConfig {
     /** Whether expedition markers get colonized. */
     public static boolean microbiomeMarkerColonies() {
         return MICROBIOME_MARKER_COLONIES.get();
+    }
+
+    /** How far a heart senses players for directional growth (0 = off). */
+    public static int microbiomeHuntRadius() {
+        return HUNT_RADIUS.get();
     }
 
     /** Maximum distance from a marker its colony's heart may land. */
