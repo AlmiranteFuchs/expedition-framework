@@ -581,10 +581,12 @@ chunk, and validate on real block state — not heightmap assumptions.
   organism take hold: a personal infection counter accrues on cadence,
   decays away from hearts, and crosses staged thresholds (whispers →
   grip → takeover) until total assimilation kills the player and leaves
-  an armor-stand effigy wearing their head and armor. Imbued armor and a
-  carried attunement sigil delay the take, capped short of immunity —
-  you can stall the Bloom, never refuse it.
-- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies`.
+  an armor-stand effigy wearing their head and armor. The take announces
+  itself: an internal warden heartbeat while infected, a whisper at each
+  stage threshold, `/expeditions infection` to read the counter. Imbued
+  armor and a carried attunement sigil delay the take, capped short of
+  immunity — you can stall the Bloom, never refuse it.
+- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies|campaign|infection`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —
   several at once, sculk-vein style, so corners hold floor and wall

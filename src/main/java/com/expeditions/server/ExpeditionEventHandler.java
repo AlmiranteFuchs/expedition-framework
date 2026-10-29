@@ -179,6 +179,7 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("unlocks").executes(ExpeditionEventHandler::unlocks))
                 .then(Commands.literal("trophies").executes(ExpeditionEventHandler::trophies))
                 .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign))
+                .then(Commands.literal("infection").executes(ExpeditionEventHandler::infection))
                 .then(Commands.literal("start")
                         .then(Commands.argument("expedition", ResourceLocationArgument.id())
                                 .suggests(EXPEDITION_SUGGESTIONS)
@@ -359,6 +360,20 @@ public final class ExpeditionEventHandler {
             player.sendSystemMessage(Component.translatable("message.expeditions.status_none"));
             return 0;
         }
+    }
+
+    /** Debug/status readout for the infection counter and its stage. */
+    private static int infection(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player != null) {
+            ctx.getSource().sendSystemMessage(Component.literal(String.format(
+                    "Infection: %.1f/%d (stage %d — %s)",
+                    Assimilation.infection(player), ExpeditionsConfig.infectionMax(),
+                    Assimilation.stage(player),
+                    new String[]{"clean", "whispers", "grip", "takeover"}[
+                            Math.min(Assimilation.stage(player), 3)])));
+        }
+        return 1;
     }
 
     private static ServerPlayer player(CommandContext<CommandSourceStack> ctx) {

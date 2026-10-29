@@ -47,6 +47,8 @@ import net.minecraft.core.component.DataComponents;
 public final class Assimilation {
     /** Persistent NBT key holding the infection value (double, 0..max). */
     private static final String TAG_INFECTION = "expeditions:assimilation";
+    /** Last announced stage — transitions whisper the escalation. */
+    private static final String TAG_STAGE = "expeditions:assimilation_stage";
     /** Entity tag marking the armor-stand effigies conversion leaves. */
     public static final String EFFIGY_TAG = "expeditions:assimilated";
 
@@ -124,6 +126,35 @@ public final class Assimilation {
         } else if (infection > 0) {
             applyStageEffects(player, level, infection);
         }
+        announceStage(player, level, infection);
+    }
+
+    /**
+     * The felt layer: crossing a stage threshold whispers the escalation
+     * in chat, and every cadence tick an infected player hears the
+     * organism's heartbeat from the inside — faint at first touch,
+     * pounding by takeover. No feedback is the bug players reported;
+     * the Bloom should never be silent once it has hold.
+     */
+    private static void announceStage(ServerPlayer player, ServerLevel level,
+            double infection) {
+        int stage = stageOf(level, infection);
+        int lastStage = player.getPersistentData().getInt(TAG_STAGE);
+        if (stage != lastStage) {
+            player.getPersistentData().putInt(TAG_STAGE, stage);
+            if (stage > lastStage && stage >= 1) {
+                player.sendSystemMessage(Component.translatable(
+                        "message.expeditions.assimilation_stage" + stage));
+            } else if (stage == 0 && lastStage > 0) {
+                player.sendSystemMessage(Component.translatable(
+                        "message.expeditions.assimilation_fades"));
+            }
+        }
+        if (infection > 0) {
+            player.playNotifySound(net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT,
+                    net.minecraft.sounds.SoundSource.PLAYERS,
+                    0.25f + stage * 0.2f, 1.0f + stage * 0.08f);
+        }
     }
 
     /** Any live, loaded heart within infection radius of {@code pos}. */
@@ -185,6 +216,11 @@ public final class Assimilation {
         }
     }
 
+    /** The player's infection stage: 0 clean, 1 whispers, 2 grip, 3 takeover. */
+    public static int stage(ServerPlayer player) {
+        return stageOf(player.serverLevel(), infection(player));
+    }
+
     /** Infection's stage: 0 clean, 1 whispers, 2 grip, 3 takeover. */
     private static int stageOf(ServerLevel level, double infection) {
         if (infection >= ExpeditionTuning.integer(level.dimension(),
@@ -236,6 +272,7 @@ public final class Assimilation {
             level.addFreshEntity(effigy);
         }
         player.getPersistentData().putDouble(TAG_INFECTION, 0);
+        player.getPersistentData().putInt(TAG_STAGE, 0);
         player.hurt(player.damageSources().source(ASSIMILATION_DAMAGE),
                 Float.MAX_VALUE);
     }
