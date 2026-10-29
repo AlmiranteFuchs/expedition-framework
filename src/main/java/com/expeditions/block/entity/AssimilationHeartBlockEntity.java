@@ -246,8 +246,14 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
                 // Claim the cell for this colony's wavefront — set after
                 // the block lands, so resync the stamped data to clients.
                 layer.setHeart(getBlockPos());
+                layer.markBorn(level.getGameTime());
                 level.sendBlockUpdated(move.cell(), next, next, 3);
             }
+            // Audible creep: every new face lands with a wet sculk
+            // spread — close enough and you hear the colony reaching.
+            level.playSound(null, move.cell(),
+                    SoundEvents.SCULK_BLOCK_SPREAD, SoundSource.BLOCKS,
+                    0.9f, 0.75f);
             setChanged();
         }
     }

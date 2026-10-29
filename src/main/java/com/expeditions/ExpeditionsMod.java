@@ -44,6 +44,7 @@ public class ExpeditionsMod {
         gameBus.addListener(ExpeditionEventHandler::onServerTick);
         gameBus.addListener(ExpeditionEventHandler::onPlayerTick);
         gameBus.addListener(ExpeditionEventHandler::onEntityTick);
+        gameBus.addListener(ExpeditionEventHandler::onLivingHurt);
         gameBus.addListener(ExpeditionEventHandler::onAddReloadListener);
         gameBus.addListener(ExpeditionEventHandler::onRegisterCommands);
         LOGGER.info("Expedition Framework initialized");

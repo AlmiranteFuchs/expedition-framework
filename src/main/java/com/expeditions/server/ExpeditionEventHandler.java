@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -206,6 +207,23 @@ public final class ExpeditionEventHandler {
         level.sendParticles(ParticleTypes.WHITE_ASH,
                 entity.getX(), entity.getY() + entity.getBbHeight() * 0.5,
                 entity.getZ(), 2, 0.45, 0.5, 0.45, 0.004);
+    }
+
+    /**
+     * Taken bodies bleed embers: a flagged entity sheds a puff of flame
+     * scaled by the hit — cutting the organism's tissue reads different
+     * from cutting meat.
+     */
+    public static void onLivingHurt(LivingDamageEvent.Post event) {
+        LivingEntity entity = event.getEntity();
+        if (!(entity.level() instanceof ServerLevel level)
+                || entity.getData(ModAttachments.ASSIMILATED) <= 0) {
+            return;
+        }
+        int count = Math.min(14, 2 + (int) (event.getNewDamage() / 2));
+        level.sendParticles(ParticleTypes.SMALL_FLAME, entity.getX(),
+                entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
+                count, 0.3, 0.4, 0.3, 0.02);
     }
 
     /**

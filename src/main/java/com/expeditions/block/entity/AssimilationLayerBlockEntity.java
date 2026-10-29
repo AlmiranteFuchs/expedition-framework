@@ -19,9 +19,13 @@ import com.expeditions.registry.ModBlockEntities;
  */
 public class AssimilationLayerBlockEntity extends BlockEntity {
     private static final String TAG_HEART = "Heart";
+    private static final String TAG_BORN = "Born";
+    /** Sentinel: no recorded birth — the face renders fully grown. */
+    public static final long BORN_UNKNOWN = Long.MIN_VALUE;
 
     @Nullable
     private BlockPos heart;
+    private long born = BORN_UNKNOWN;
 
     public AssimilationLayerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ASSIMILATION_LAYER.get(), pos, state);
@@ -31,6 +35,23 @@ public class AssimilationLayerBlockEntity extends BlockEntity {
     public void setHeart(BlockPos heartPos) {
         this.heart = heartPos.immutable();
         setChanged();
+    }
+
+    /**
+     * Stamps the cell's birth time once — the renderer uses it to grow
+     * each face in over a few ticks instead of popping. Cells gaining
+     * faces later keep their first stamp (the cell grew once).
+     */
+    public void markBorn(long gameTime) {
+        if (born == BORN_UNKNOWN) {
+            born = gameTime;
+            setChanged();
+        }
+    }
+
+    /** The game-time this cell was colonized, or {@link #BORN_UNKNOWN}. */
+    public long born() {
+        return born;
     }
 
     /** The heart that grew this cell, or null for hand-placed membrane. */
@@ -45,6 +66,9 @@ public class AssimilationLayerBlockEntity extends BlockEntity {
         if (heart != null) {
             tag.putLong(TAG_HEART, heart.asLong());
         }
+        if (born != BORN_UNKNOWN) {
+            tag.putLong(TAG_BORN, born);
+        }
     }
 
     @Override
@@ -53,6 +77,10 @@ public class AssimilationLayerBlockEntity extends BlockEntity {
         heart = tag.contains(TAG_HEART)
                 ? BlockPos.of(tag.getLong(TAG_HEART))
                 : null;
+        born = tag.getLong(TAG_BORN);
+        if (born == 0) {
+            born = BORN_UNKNOWN;
+        }
     }
 
     @Override
@@ -60,6 +88,9 @@ public class AssimilationLayerBlockEntity extends BlockEntity {
         CompoundTag tag = super.getUpdateTag(registries);
         if (heart != null) {
             tag.putLong(TAG_HEART, heart.asLong());
+        }
+        if (born != BORN_UNKNOWN) {
+            tag.putLong(TAG_BORN, born);
         }
         return tag;
     }

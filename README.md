@@ -600,7 +600,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   infection percentage and stage.
 - **Assimilated mobs** — every expedition horde, siege wave and boss pack
   member is the organism's tissue wearing local fauna — they arrive with
-  a tell, souls and embers ringing the site and the Bloom's shriek — a synced
+  a tell, souls and embers ringing the site and the Bloom's shriek, and
+  they bleed embers when cut — a synced
   `expeditions:assimilated` attachment (stage 1–3, dressed by pressure)
   drives a client overlay layer added to every living-entity renderer —
   vanilla or modded — bleaching the model toward bone, tracing pale
@@ -638,7 +639,9 @@ chunk, and validate on real block state — not heightmap assumptions.
   surface, wrapping over block edges and seeping through thin walls —
   bounded by `microbiome.maxColonySize` covered faces (a blob, never a
   takeover). Its lub-dub is audible — the heart thumps on the same
-  PulseWave the membrane glows to. And it hunts: within `microbiome.huntRadius` (default 24, 0
+  PulseWave the membrane glows to — and each new face unfurls over a few
+  ticks with a wet sculk spread, so you see and hear the colony crawl.
+  And it hunts: within `microbiome.huntRadius` (default 24, 0
   disables) each pulse prefers the frontier cells nearest a player, so
   the carpet visibly creeps toward warmth — beyond the radius growth is
   direction-blind again.

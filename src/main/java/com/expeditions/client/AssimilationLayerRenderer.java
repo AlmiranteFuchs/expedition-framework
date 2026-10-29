@@ -105,6 +105,15 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         float veins = 0.15f + 0.85f * amp;
         float halo = 0.45f * amp;
 
+        // Fresh tissue unfurls: a just-grown face scales in over ~10
+        // ticks (ease-out) instead of popping — the colony visibly crawls.
+        long born = entity.born();
+        float grow = 1.0f;
+        if (born != AssimilationLayerBlockEntity.BORN_UNKNOWN) {
+            float t = Math.min(1.0f, (float) (time - born) / 10.0f);
+            grow = t * (2.0f - t);
+        }
+
         // One skin + trace + halo per covered face — the multiface block
         // can coat several faces of its cell at once. A face property d
         // means the support sits at pos+d; the covered face's normal is -d.
@@ -118,16 +127,16 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
                             textureFor(level, pos, support, facing)));
             float shade = SHADE.get(facing);
             emitQuad(skin, poseStack, facing, (float) EPS,
-                    shade, shade, shade, 1.0f, light, packedOverlay, 0);
+                    shade, shade, shade, 1.0f, light, packedOverlay, 0, grow);
             VertexConsumer vein = buffers.getBuffer(
                     RenderType.entityTranslucent(TraceTexture.get()));
             emitQuad(vein, poseStack, facing, (float) EPS * 2, 1.0f, 1.0f,
-                    1.0f, veins, FULLBRIGHT, packedOverlay, rot);
+                    1.0f, veins, FULLBRIGHT, packedOverlay, rot, grow);
             VertexConsumer glow = buffers.getBuffer(
                     RenderType.eyes(TraceTexture.get()));
             emitQuad(glow, poseStack, facing, (float) EPS * 3,
                     EMBER[0], EMBER[1], EMBER[2],
-                    halo, FULLBRIGHT, packedOverlay, rot);
+                    halo, FULLBRIGHT, packedOverlay, rot, grow);
         }
     }
 
@@ -162,7 +171,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
      */
     static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
             Direction facing, float plane, float r, float g, float b,
-            float alpha, int light, int overlay, int rot) {
+            float alpha, int light, int overlay, int rot, float grow) {
         PoseStack.Pose pose = poseStack.last();
         float[][] corners = switch (facing) {
             case UP -> new float[][] {
@@ -185,8 +194,16 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         float nx = facing.getStepX();
         float ny = facing.getStepY();
         float nz = facing.getStepZ();
+        int normalAxis = facing.getAxis().ordinal();
+        alpha *= grow;
         for (int i = 0; i < 4; i++) {
-            consumer.addVertex(pose, corners[i][0], corners[i][1], corners[i][2])
+            float[] c = corners[i];
+            // Grow-in pulls the tangent axes toward the quad's center —
+            // the normal axis keeps its plane offset off the face.
+            float x = normalAxis == 0 ? c[0] : 0.5f + (c[0] - 0.5f) * grow;
+            float y = normalAxis == 1 ? c[1] : 0.5f + (c[1] - 0.5f) * grow;
+            float z = normalAxis == 2 ? c[2] : 0.5f + (c[2] - 0.5f) * grow;
+            consumer.addVertex(pose, x, y, z)
                     .setColor(r, g, b, alpha)
                     .setUv(uv[i][0], uv[i][1])
                     .setOverlay(overlay)

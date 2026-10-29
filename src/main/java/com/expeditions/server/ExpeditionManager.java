@@ -47,7 +47,11 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -438,6 +442,15 @@ public final class ExpeditionManager {
             player.teleportTo(destination, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
                     Set.of(), player.getYRot(), player.getXRot());
         }
+        // Stepping through should feel like a deployment — title card up.
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(
+                10, 50, 15));
+        player.connection.send(new ClientboundSetTitleTextPacket(
+                Component.literal(run.definition().displayName())
+                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(
+                Component.literal(run.definition().dimension())
+                        .withStyle(ChatFormatting.GRAY)));
     }
 
     /**
@@ -910,6 +923,12 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
+                // Failure should land like failure: a power-down note as
+                // the Charter pulls you back, not silence.
+                if (run.status() == ExpeditionStatus.FAILED) {
+                    memberPlayer.playNotifySound(SoundEvents.BEACON_DEACTIVATE,
+                            SoundSource.PLAYERS, 0.8f, 0.6f);
+                }
                 removeMemberEffects(run, memberPlayer);
                 removeArtifacts(memberPlayer, run.runId());
                 removeCompasses(memberPlayer);

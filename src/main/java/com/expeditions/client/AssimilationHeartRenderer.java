@@ -51,7 +51,7 @@ public class AssimilationHeartRenderer implements BlockEntityRenderer<Assimilati
                     RenderType.entityTranslucent(TraceTexture.get()));
             AssimilationLayerRenderer.emitQuad(vein, poseStack, d, 1 + AURA,
                     shade, shade, shade, veins, light,
-                    packedOverlay, rot);
+                    packedOverlay, rot, 1.0f);
             VertexConsumer glow = buffers.getBuffer(
                     RenderType.eyes(TraceTexture.get()));
             AssimilationLayerRenderer.emitQuad(glow, poseStack, d,
@@ -59,7 +59,8 @@ public class AssimilationHeartRenderer implements BlockEntityRenderer<Assimilati
                     AssimilationLayerRenderer.EMBER[0],
                     AssimilationLayerRenderer.EMBER[1] * 0.8f,
                     AssimilationLayerRenderer.EMBER[2] * 0.5f, halo,
-                    AssimilationLayerRenderer.FULLBRIGHT, packedOverlay, rot);
+                    AssimilationLayerRenderer.FULLBRIGHT, packedOverlay,
+                    rot, 1.0f);
         }
     }
 }
