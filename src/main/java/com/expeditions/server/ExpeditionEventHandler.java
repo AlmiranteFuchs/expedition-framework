@@ -5,6 +5,7 @@ import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.Waypoint;
+import com.expeditions.registry.ModAttachments;
 import com.expeditions.server.data.ExpeditionTuning;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -14,13 +15,17 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -143,6 +148,31 @@ public final class ExpeditionEventHandler {
         if (!data.isDimensionCleared(dimensionId)) {
             data.raisePressure(dimensionId, amount);
         }
+    }
+
+    /**
+     * Assimilated bodies telegraph the take: embers and pale ash drift off
+     * them every couple of seconds. This is the signature for flagged
+     * entities whose renderer can't carry the overlay layer (custom
+     * pipelines), and free ambience for the ones that can.
+     */
+    public static void onEntityTick(EntityTickEvent.Post event) {
+        if (!(event.getEntity() instanceof LivingEntity entity)
+                || !(entity.level() instanceof ServerLevel level)
+                || entity.isInvisible()
+                || (entity.tickCount + entity.getId()) % 40 != 0) {
+            return;
+        }
+        int stage = entity.getData(ModAttachments.ASSIMILATED);
+        if (stage <= 0) {
+            return;
+        }
+        level.sendParticles(ParticleTypes.SMALL_FLAME,
+                entity.getX(), entity.getY() + entity.getBbHeight() * 0.7,
+                entity.getZ(), stage, 0.3, 0.35, 0.3, 0.008);
+        level.sendParticles(ParticleTypes.WHITE_ASH,
+                entity.getX(), entity.getY() + entity.getBbHeight() * 0.5,
+                entity.getZ(), 2, 0.45, 0.5, 0.45, 0.004);
     }
 
     /**

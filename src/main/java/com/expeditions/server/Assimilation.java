@@ -2,6 +2,7 @@ package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.block.entity.AssimilationHeartBlockEntity;
+import com.expeditions.registry.ModAttachments;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.data.ExpeditionTuning;
 import java.util.Set;
@@ -121,6 +122,7 @@ public final class Assimilation {
                     ExpeditionsConfig.infectionDecay()));
         }
         player.getPersistentData().putDouble(TAG_INFECTION, infection);
+        syncOverlayFlag(player, infection > 0 ? stageOf(level, infection) : 0);
         if (infection >= max) {
             convert(player, level);
         } else if (infection > 0) {
@@ -213,6 +215,17 @@ public final class Assimilation {
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 160, 1, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 0, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.POISON, 80, 0, true, false));
+        }
+    }
+
+    /**
+     * Mirrors the infection stage onto the synced attachment so the client
+     * overlay and ember particles show the take on the player model —
+     * written only on change to keep sync traffic quiet.
+     */
+    private static void syncOverlayFlag(ServerPlayer player, int stage) {
+        if (player.getData(ModAttachments.ASSIMILATED) != stage) {
+            player.setData(ModAttachments.ASSIMILATED, stage);
         }
     }
 

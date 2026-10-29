@@ -595,6 +595,15 @@ chunk, and validate on real block state — not heightmap assumptions.
   `expeditions:blood_letting` damage that bypasses invulnerability but
   never kills — and only a blooded journal renders the carrier's
   infection percentage and stage.
+- **Assimilated mobs** — every expedition horde, siege wave and boss pack
+  member is the organism's tissue wearing local fauna: a synced
+  `expeditions:assimilated` attachment (stage 1–3, dressed by pressure)
+  drives a client overlay layer added to every living-entity renderer —
+  vanilla or modded — bleaching the model toward bone, tracing pale
+  veins and igniting ember on each mob's own heartbeat phase. The same
+  attachment mirrors the player's infection stage, so the take shows on
+  player skins too. Renderers that can't carry layers get an ember/ash
+  particle signature instead — "taken" reads on anything.
 - **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies|campaign|infection`.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —
@@ -617,7 +626,8 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Microbiome** (M15) — `expeditions:assimilation_heart`, a pale node
   breathing ash, souls and ember sparks on its beat, seeded on standable
   ground in a ring around players as they move through
-  a dimension (`microbiome.enabled` runtime toggle). The heart is the
+  a dimension (`microbiome.enabled` runtime toggle). It breathes pale
+  ash and sculk souls, sparking embers only on the lub. The heart is the
   layer's only growth organ: it pulses every
   `microbiome.growthIntervalTicks`, seeding layers against its own faces,
   then filleting new faces onto member cells, walking them along the
@@ -731,6 +741,9 @@ chunk, and validate on real block state — not heightmap assumptions.
     blank until a blood sample latches on the stack (costing real health,
     bypassing creative invulnerability), then reports the carrier's
     infection percentage.
+  - pressured hordes arrive flagged assimilated (stage 3, the synced
+    attachment the client overlay reads) and an infected player's flag
+    mirrors their stage.
 - Earlier manual smoke: dev server boots, `setblock`/`summon` confirmed block
   and item registration.
 

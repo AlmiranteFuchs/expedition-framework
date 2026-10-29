@@ -374,6 +374,16 @@ client sees the fresh component (same ordering as `openItemGui`). Its
 `expeditions:blood_letting` damage type rides `bypasses_invulnerability`
 because mock players hardcode `isCreative()→true` — generic damage can
 never cost them blood (and creative players would get free samples).
+Synced attachments MUST gate `.sync` on
+`NetworkRegistry.hasChannel(connection, SyncAttachmentsPayload.TYPE.id())`
+— GameTest mock players ride embedded channels that never negotiated
+payloads, and an unguarded send throws `UnsupportedOperationException`.
+Entity appearance flags (e.g. `assimilated`) ride attachments, NOT
+`entity.getTags()` — tags never sync to clients. The assimilated overlay
+attaches via `EntityRenderersEvent.AddLayers` to every
+`LivingEntityRenderer` (vanilla + modded + player skins) — renderers on
+custom pipelines (GeckoLib) can't take layers and get the entity-tick
+ember/ash fallback instead.
 The dimension extension point is proven by
 `thirdPartyAdapterHostsExpedition` (test-side End adapter through the
 real `ExpeditionAdapters.register` path). Per-dimension tuning loads

@@ -1,5 +1,6 @@
 package com.expeditions;
 
+import com.expeditions.registry.ModAttachments;
 import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModCreativeTabs;
@@ -30,6 +31,7 @@ public class ExpeditionsMod {
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+        ModAttachments.ATTACHMENTS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.SERVER, ExpeditionsConfig.SPEC);
@@ -41,6 +43,7 @@ public class ExpeditionsMod {
         gameBus.addListener(ExpeditionEventHandler::onServerStarted);
         gameBus.addListener(ExpeditionEventHandler::onServerTick);
         gameBus.addListener(ExpeditionEventHandler::onPlayerTick);
+        gameBus.addListener(ExpeditionEventHandler::onEntityTick);
         gameBus.addListener(ExpeditionEventHandler::onAddReloadListener);
         gameBus.addListener(ExpeditionEventHandler::onRegisterCommands);
         LOGGER.info("Expedition Framework initialized");

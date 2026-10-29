@@ -22,6 +22,7 @@ import com.expeditions.block.entity.AssimilationHeartBlockEntity;
 import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.Waypoint;
 import com.expeditions.item.ExpeditionArtifactItem;
+import com.expeditions.registry.ModAttachments;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
@@ -3738,6 +3739,16 @@ public final class ExpeditionGameTests {
             helper.assertTrue(run.challengeEntities().size() >= expected,
                     "a pressured dimension must field a bigger horde, got "
                             + run.challengeEntities().size() + " of " + expected);
+            // Pressure past the buff threshold dresses the horde at
+            // stage 3 — the synced flag the client overlay reads.
+            for (UUID id : run.challengeEntities()) {
+                Entity mob = findEntity(helper.getLevel(),
+                        ExpeditionManager.toPos(run.checkpoints().get(0)),
+                        ExpeditionsConfig.challengeHordeSpawnRadius() + 8, id);
+                helper.assertTrue(mob != null
+                                && mob.getData(ModAttachments.ASSIMILATED) == 3,
+                        "a pressured horde member must arrive assimilated (stage 3)");
+            }
             ExpeditionSavedData restored = roundTrip(helper, server);
             helper.assertTrue(restored.pressure(dim) == data.pressure(dim),
                     "pressure must survive save/load");
@@ -3831,6 +3842,8 @@ public final class ExpeditionGameTests {
                     "stage 1 must whisper in the dark");
             helper.assertTrue(player.hasEffect(MobEffects.CONFUSION),
                     "stage 1 must disorient");
+            helper.assertTrue(player.getData(ModAttachments.ASSIMILATED) == 1,
+                    "stage 1 must mark the player for the client overlay");
 
             Assimilation.infect(player, ExpeditionsConfig.infectionStage3At());
             player.tickCount = interval * 3;

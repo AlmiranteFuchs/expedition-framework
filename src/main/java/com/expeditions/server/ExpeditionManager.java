@@ -23,6 +23,7 @@ import com.expeditions.core.DefenseState;
 import com.expeditions.core.Waypoint;
 import com.expeditions.entity.AttackDeviceGoal;
 import com.expeditions.item.ExpeditionArtifactItem;
+import com.expeditions.registry.ModAttachments;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
@@ -1073,6 +1074,7 @@ public final class ExpeditionManager {
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
                     MobSpawnType.EVENT, null);
             mob.setPersistenceRequired();
+            markAssimilated(mob, buffed ? 3 : pressure > 0 ? 2 : 1);
             for (EffectSpec spec : run.definition().modifiers().hordeEffects()) {
                 effectOf(spec).ifPresent(effect -> mob.addEffect(new MobEffectInstance(
                         effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),
@@ -1089,6 +1091,15 @@ public final class ExpeditionManager {
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
         }
+    }
+
+    /**
+     * Expedition hordes are the organism's tissue wearing local fauna —
+     * the synced stage flag drives the client overlay and ember particles
+     * so "taken" reads on any entity, ours or a mod's.
+     */
+    private static void markAssimilated(Mob mob, int stage) {
+        mob.setData(ModAttachments.ASSIMILATED, stage);
     }
 
     /**
@@ -1111,6 +1122,7 @@ public final class ExpeditionManager {
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
                     MobSpawnType.EVENT, null);
             mob.setPersistenceRequired();
+            markAssimilated(mob, 3);
             pressureBuffs(mob);
             if (i == size - 1) {
                 mob.setCustomName(Component.translatable(
@@ -1326,15 +1338,16 @@ public final class ExpeditionManager {
             }
         }
         int room = ExpeditionsConfig.defenseMobCap() - alive;
+        int pressure = data.pressure(run.definition().dimension());
         int count = Math.min(room, ExpeditionsConfig.defenseWaveSize()
-                + data.pressure(run.definition().dimension())
+                + pressure
                         / ExpeditionTuning.integer(run.definition().dimension(),
                                 "pressure.horde_bonus_per",
                                 ExpeditionsConfig.pressureHordeBonusPer()));
         if (count <= 0) {
             return;
         }
-        boolean buffed = data.pressure(run.definition().dimension())
+        boolean buffed = pressure
                 >= ExpeditionTuning.integer(run.definition().dimension(),
                         "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
         EntityType<?> type = HordePools.pick(level, devicePos,
@@ -1349,6 +1362,7 @@ public final class ExpeditionManager {
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
                     MobSpawnType.EVENT, null);
             mob.setPersistenceRequired();
+            markAssimilated(mob, buffed ? 3 : pressure > 0 ? 2 : 1);
             for (EffectSpec spec : run.definition().modifiers().hordeEffects()) {
                 effectOf(spec).ifPresent(effect -> mob.addEffect(new MobEffectInstance(
                         effect, MobEffectInstance.INFINITE_DURATION, spec.amplifier(),

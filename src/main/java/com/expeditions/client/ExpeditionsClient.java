@@ -4,11 +4,16 @@ import com.expeditions.ExpeditionsMod;
 import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
+import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
 import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.CompassItem;
 import net.minecraft.world.item.component.LodestoneTracker;
@@ -30,6 +35,7 @@ public class ExpeditionsClient {
     public ExpeditionsClient(IEventBus modEventBus, ModContainer container) {
         modEventBus.addListener(ExpeditionsClient::onClientSetup);
         modEventBus.addListener(ExpeditionsClient::onRegisterRenderers);
+        modEventBus.addListener(ExpeditionsClient::onAddLayers);
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {
@@ -56,5 +62,35 @@ public class ExpeditionsClient {
         event.registerBlockEntityRenderer(
                 ModBlockEntities.ASSIMILATION_HEART.get(),
                 AssimilationHeartRenderer::new);
+    }
+
+    /**
+     * Adds the assimilation overlay to every living-entity renderer —
+     * vanilla or modded, any model — plus both player skin models, so
+     * infection shows on players too. Renderers using custom pipelines
+     * (geo renderers) can't take layers; flagged entities get the ember
+     * particle fallback instead.
+     */
+    private static void onAddLayers(EntityRenderersEvent.AddLayers event) {
+        for (EntityType<?> type : event.getEntityTypes()) {
+            if (event.getRenderer(type)
+                    instanceof LivingEntityRenderer<?, ?> renderer) {
+                addOverlay(renderer);
+            }
+        }
+        for (PlayerSkin.Model skin : event.getSkins()) {
+            if (event.getSkin(skin)
+                    instanceof LivingEntityRenderer<?, ?> renderer) {
+                addOverlay(renderer);
+            }
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static <T extends LivingEntity, M extends EntityModel<T>> void addOverlay(
+            LivingEntityRenderer<?, ?> renderer) {
+        ((LivingEntityRenderer<T, M>) renderer).addLayer(
+                new AssimilationOverlayLayer<>(
+                        (LivingEntityRenderer<T, M>) renderer));
     }
 }
