@@ -794,7 +794,9 @@ chunk, and validate on real block state — not heightmap assumptions.
 - Challenge entities whose chunk was unloaded at cleanup time keep their
   tracking entry until the once-a-second sweep can reach them — worst case
   a horde survives until its chunk reloads.
-- Placeholder textures.
+- Procedural textures (`tools/gen_textures.py` regenerates the set —
+  bone shell, dark cavity, ember ignition); real hand-drawn art can
+  replace them file-for-file later.
 
 ## Architecture
 
