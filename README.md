@@ -599,21 +599,24 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —
   several at once, sculk-vein style, so corners hold floor and wall
-  alike — and renders each covered face grayscale: the client renderer
-  desaturates the face's real sprite at runtime, so the underlying block
-  keeps its detail and shading but loses its color — without modifying,
-  replacing, or storing the covered block's state. Amber capillary veins
-  run over the skin and beat like a heart — a lub-dub pulse that
-  originates at the colony's heart and ripples outward through the
-  membrane, each colony on its own tempo; kill the heart and the glow
-  dies to a resting thrum. Entities pass through
+  alike — and renders each covered face paled: the client renderer
+  bleaches the face's real sprite toward bone at runtime, so the
+  underlying block keeps its detail and shading but loses its color —
+  without modifying, replacing, or storing the covered block's state.
+  Bone-pale capillary veins run over the skin while an ember halo beats
+  through them — pale when dormant, ignited on the lub, Pale Garden
+  style — a lub-dub pulse that originates at the colony's heart and
+  ripples outward through the membrane, each colony on its own tempo;
+  kill the heart and the glow dies to a resting thrum. Entities pass
+  through
   the film (no collision); non-sturdy surfaces (air, fluids, fences,
   slabs, leaves) refuse attachment; each face dies with its own support.
   Breaking it by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
-- **Microbiome** (M15) — `expeditions:assimilation_heart`, an amber node
-  seeded on standable ground in a ring around players as they move through
+- **Microbiome** (M15) — `expeditions:assimilation_heart`, a pale node
+  breathing ash, souls and ember sparks on its beat, seeded on standable
+  ground in a ring around players as they move through
   a dimension (`microbiome.enabled` runtime toggle). The heart is the
   layer's only growth organ: it pulses every
   `microbiome.growthIntervalTicks`, seeding layers against its own faces,

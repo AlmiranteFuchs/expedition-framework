@@ -33,9 +33,11 @@ import net.neoforged.neoforge.client.model.data.ModelData;
  * state, model and any block entity render exactly as before; we simply
  * hide its color under its own grayscale copy.
  *
- * <p>Over the skin, two living passes: the amber vein trace (translucent,
- * alpha riding the colony's heartbeat) and an additive halo that blooms on
- * the thump. The wave originates at the cell's recorded heart and arrives
+ * <p>Over the skin, two living passes: the bone-pale vein trace (translucent,
+ * alpha riding the colony's heartbeat) and an additive ember halo that
+ * blooms on the thump — pale when dormant, ignited when alive, the Pale
+ * Garden's dormant/ember duality. The wave originates at the cell's
+ * recorded heart and arrives
  * later the farther the cell sits from it — the colony visibly beats
  * outward from its nucleus. A cell whose heart died falls back to the
  * resting thrum; a hand-placed membrane beats a faint solo rhythm.
@@ -54,6 +56,9 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
 
     /** Overlay light: always bright, regardless of the cell's lighting. */
     static final int FULLBRIGHT = 0xF000F0;
+
+    /** Ember tint for the additive halo — the heart's ignition color. */
+    static final float[] EMBER = {1.0f, 0.55f, 0.15f};
 
     /** Directional face shading, lifted from vanilla's factors (down 0.5,
      * sides 0.6/0.8) to offset the translucent membrane plate darkening
@@ -111,15 +116,17 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
             VertexConsumer skin = buffers.getBuffer(
                     RenderType.entityTranslucent(
                             textureFor(level, pos, support, facing)));
+            float shade = SHADE.get(facing);
             emitQuad(skin, poseStack, facing, (float) EPS,
-                    SHADE.get(facing), 1.0f, light, packedOverlay, 0);
+                    shade, shade, shade, 1.0f, light, packedOverlay, 0);
             VertexConsumer vein = buffers.getBuffer(
                     RenderType.entityTranslucent(TraceTexture.get()));
-            emitQuad(vein, poseStack, facing, (float) EPS * 2, 1.0f,
-                    veins, FULLBRIGHT, packedOverlay, rot);
+            emitQuad(vein, poseStack, facing, (float) EPS * 2, 1.0f, 1.0f,
+                    1.0f, veins, FULLBRIGHT, packedOverlay, rot);
             VertexConsumer glow = buffers.getBuffer(
                     RenderType.eyes(TraceTexture.get()));
-            emitQuad(glow, poseStack, facing, (float) EPS * 3, 1.0f,
+            emitQuad(glow, poseStack, facing, (float) EPS * 3,
+                    EMBER[0], EMBER[1], EMBER[2],
                     halo, FULLBRIGHT, packedOverlay, rot);
         }
     }
@@ -147,13 +154,15 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     /**
      * Emits one quad on the plane facing the given direction at offset
      * {@code plane} along the face axis (0..1 inside the cell, &gt;1 sits
-     * outside it — used by the heart's aura). {@code rot} spins the UVs —
+     * outside it — used by the heart's aura). {@code r},{@code g},{@code b}
+     * tint the quad — grayscale for the shaded skin, white for the pale
+     * veins, ember for the halo. {@code rot} spins the UVs —
      * bits 0-1 are quarter turns, bit 2 a horizontal mirror — so identical
      * textures never read as one continuous lattice across cells.
      */
     static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
-            Direction facing, float plane, float shade, float alpha,
-            int light, int overlay, int rot) {
+            Direction facing, float plane, float r, float g, float b,
+            float alpha, int light, int overlay, int rot) {
         PoseStack.Pose pose = poseStack.last();
         float[][] corners = switch (facing) {
             case UP -> new float[][] {
@@ -178,7 +187,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         float nz = facing.getStepZ();
         for (int i = 0; i < 4; i++) {
             consumer.addVertex(pose, corners[i][0], corners[i][1], corners[i][2])
-                    .setColor(shade, shade, shade, alpha)
+                    .setColor(r, g, b, alpha)
                     .setUv(uv[i][0], uv[i][1])
                     .setOverlay(overlay)
                     .setLight(light)

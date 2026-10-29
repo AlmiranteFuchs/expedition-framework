@@ -9,7 +9,10 @@ import net.minecraft.resources.ResourceLocation;
 
 /**
  * The assimilation's living signature, generated once per session: a
- * capillary network of amber veins over the covered face. Strands enter
+ * capillary network of bone-pale veins over the covered face — pale like
+ * the Pale Garden's bleached bark, while the renderer's halo pass is
+ * what ignites ember on the thump (pale when dormant, ember when alive).
+ * Strands enter
  * at the membrane's rim and meander toward interior sinks with random
  * walk, thinning as they go — the frontier reads as the glowing part.
  * Alpha is additionally rim-weighted so the veins are boldest at the
@@ -19,12 +22,12 @@ import net.minecraft.resources.ResourceLocation;
  */
 public final class TraceTexture {
     private static final ResourceLocation ID =
-            ResourceLocation.fromNamespaceAndPath(ExpeditionsMod.MOD_ID, "trace/amber");
+            ResourceLocation.fromNamespaceAndPath(ExpeditionsMod.MOD_ID, "trace/pale");
     private static final int SIZE = 32;
     private static final int STRANDS = 7;
     private static final long SEED = 0xA551CA71L;
-    /** Honey amber, packed ABGR little-endian like NativeImage uses. */
-    private static final int AMBER = 36 << 16 | 178 << 8 | 255;
+    /** Bone-pale, packed ABGR little-endian like NativeImage uses. */
+    private static final int BONE = 204 << 16 | 218 << 8 | 226;
 
     private static volatile boolean created;
 
@@ -56,7 +59,7 @@ public final class TraceTexture {
                 double edge = 1.0 - dist / (SIZE / 2.0 - 1);
                 int a = (int) (255 * Math.min(1.0,
                         alpha[y][x] * (0.30 + 0.70 * edge * edge)));
-                img.setPixelRGBA(x, y, a << 24 | AMBER);
+                img.setPixelRGBA(x, y, a << 24 | BONE);
             }
         }
         Minecraft.getInstance().getTextureManager().register(ID, new DynamicTexture(img));

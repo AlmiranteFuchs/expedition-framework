@@ -10,11 +10,13 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Runtime grayscale copies of atlas sprites: the assimilation layer draws
- * the covered face's own texture desaturated, preserving its detail and
- * shading instead of faking gray with a tint. Textures are generated once
- * per sprite, registered with the texture manager, and reused for the
- * session — no persistent data, no atlas mutation.
+ * Runtime bleached copies of atlas sprites: the assimilation layer draws
+ * the covered face's own texture paled toward bone — desaturated, lifted
+ * toward near-white and tinted a hair cream — preserving its detail and
+ * shading instead of faking it with a tint. Coverage reads "Pale Garden
+ * bleached", not merely grayed. Textures are generated once per sprite,
+ * registered with the texture manager, and reused for the session — no
+ * persistent data, no atlas mutation.
  */
 public final class DesaturationTextures {
     private static final Map<String, ResourceLocation> CACHE = new ConcurrentHashMap<>();
@@ -41,7 +43,11 @@ public final class DesaturationTextures {
                 int g = c >>> 8 & 0xFF;
                 int b = c >>> 16 & 0xFF;
                 int luma = (r * 299 + g * 587 + b * 114) / 1000;
-                gray.setPixelRGBA(x, y, a << 24 | luma << 16 | luma << 8 | luma);
+                // Bleach toward bone: pull luma ~22% toward near-white,
+                // then a faint cream bias so coverage reads paled.
+                int lift = luma + (240 - luma) * 22 / 100;
+                gray.setPixelRGBA(x, y, a << 24
+                        | lift * 90 / 100 << 16 | lift * 97 / 100 << 8 | lift);
             }
         }
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(

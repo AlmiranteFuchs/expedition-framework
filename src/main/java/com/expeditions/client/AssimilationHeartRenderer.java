@@ -14,11 +14,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 
 /**
- * The heart's aura: a shell of amber veins hovering a hair off each face,
- * throbbing on the colony's heartbeat — the wave's source, so it beats
- * first and brightest. A membrane growing over the heart sits outside
- * this shell (the aura lives inside the covering cell's space), so the
- * nucleus glows up through its own assimilation.
+ * The heart's aura: a shell of bone-pale veins hovering a hair off each
+ * face, throbbing on the colony's heartbeat — the wave's source, so it
+ * beats first and brightest, its halo burning a deeper ember than the
+ * membrane's. A membrane growing over the heart sits outside this shell
+ * (the aura lives inside the covering cell's space), so the nucleus
+ * glows up through its own assimilation.
  */
 public class AssimilationHeartRenderer implements BlockEntityRenderer<AssimilationHeartBlockEntity> {
     /** Vein shell sits this far outside the block, the halo a hair further. */
@@ -45,15 +46,19 @@ public class AssimilationHeartRenderer implements BlockEntityRenderer<Assimilati
         int rot = (int) (pos.asLong() & 7);
 
         for (Direction d : Direction.values()) {
+            float shade = AssimilationLayerRenderer.SHADE.get(d);
             VertexConsumer vein = buffers.getBuffer(
                     RenderType.entityTranslucent(TraceTexture.get()));
             AssimilationLayerRenderer.emitQuad(vein, poseStack, d, 1 + AURA,
-                    AssimilationLayerRenderer.SHADE.get(d), veins, light,
+                    shade, shade, shade, veins, light,
                     packedOverlay, rot);
             VertexConsumer glow = buffers.getBuffer(
                     RenderType.eyes(TraceTexture.get()));
             AssimilationLayerRenderer.emitQuad(glow, poseStack, d,
-                    1 + AURA * 2, 1.0f, halo,
+                    1 + AURA * 2,
+                    AssimilationLayerRenderer.EMBER[0],
+                    AssimilationLayerRenderer.EMBER[1] * 0.8f,
+                    AssimilationLayerRenderer.EMBER[2] * 0.5f, halo,
                     AssimilationLayerRenderer.FULLBRIGHT, packedOverlay, rot);
         }
     }
