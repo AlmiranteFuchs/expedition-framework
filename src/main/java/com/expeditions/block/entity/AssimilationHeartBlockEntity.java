@@ -4,6 +4,7 @@ import com.expeditions.ExpeditionsConfig;
 import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.core.PulseWave;
 import com.expeditions.server.Microbiome;
 import com.expeditions.server.data.ExpeditionTuning;
 import java.util.ArrayList;
@@ -21,6 +22,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -138,9 +141,22 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         return covered;
     }
 
+    /** Transient amplitude tracker for the audible lub — never persisted. */
+    private double lastBeatAmp;
+
     /** Block-entity ticker entry point: rate-limits, gates, then pulses. */
     public static void serverTick(ServerLevel level, BlockPos pos,
             BlockState state, AssimilationHeartBlockEntity heart) {
+        // The heartbeat is audible, not just visible: on the lub's rising
+        // edge the heart itself thumps — the same PulseWave the renderer
+        // glows to, so light and sound never drift apart.
+        double amp = PulseWave.amplitudeAt(level.getGameTime(), 0, pos.asLong());
+        if (amp > 0.8 && heart.lastBeatAmp <= 0.8
+                && Microbiome.enabled(level)) {
+            level.playSound(null, pos, SoundEvents.WARDEN_HEARTBEAT,
+                    SoundSource.BLOCKS, 1.0f, 0.95f);
+        }
+        heart.lastBeatAmp = amp;
         int interval = ExpeditionTuning.integer(level.dimension(),
                 "microbiome.growth_interval_ticks",
                 ExpeditionsConfig.microbiomeGrowthIntervalTicks());

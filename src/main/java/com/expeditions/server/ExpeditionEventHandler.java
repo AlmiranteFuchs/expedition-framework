@@ -17,6 +17,8 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -146,7 +148,38 @@ public final class ExpeditionEventHandler {
                         ExpeditionSavedData.DATA_NAME);
         String dimensionId = player.level().dimension().location().toString();
         if (!data.isDimensionCleared(dimensionId)) {
-            data.raisePressure(dimensionId, amount);
+            stirPressure(data, player.serverLevel(), dimensionId, amount);
+        }
+    }
+
+    /**
+     * Raises a dimension's pressure and lets its anger be heard: whenever
+     * the counter crosses a {@code pressure.horde_bonus_per} band — or
+     * breaches the buff threshold — every player in the dimension hears
+     * the Bloom answer with a distant roar. The counter is otherwise
+     * invisible; this is how it speaks. Band logic rides the same M14
+     * per-dimension tunables the spawns read.
+     */
+    public static void stirPressure(ExpeditionSavedData data,
+            ServerLevel level, String dimensionId, int amount) {
+        int step = ExpeditionTuning.integer(dimensionId,
+                "pressure.horde_bonus_per",
+                ExpeditionsConfig.pressureHordeBonusPer());
+        int buff = ExpeditionTuning.integer(dimensionId,
+                "pressure.buff_threshold",
+                ExpeditionsConfig.pressureBuffThreshold());
+        int before = data.pressure(dimensionId);
+        data.raisePressure(dimensionId, amount);
+        int after = data.pressure(dimensionId);
+        boolean empowered = before < buff && after >= buff;
+        boolean roused = step > 0 && before / step < after / step;
+        if (!empowered && !roused) {
+            return;
+        }
+        for (ServerPlayer p : level.players()) {
+            p.playNotifySound(SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE,
+                    empowered ? 0.85f : 0.45f,
+                    empowered ? 0.55f : 0.85f);
         }
     }
 

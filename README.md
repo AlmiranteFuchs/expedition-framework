@@ -575,8 +575,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   counter that enlarges hordes and empowers spawns past thresholds, and
   **presence itself stirs the organism**: every dwell interval spent in an
   unliberated dimension accrues pressure, so stalling between checkpoints
-  or lingering is dangerous. `big_bad` expeditions turn their final
-  checkpoint into a boss assault and clear the dimension on completion.
+  or lingering is dangerous — and every time the counter crosses a horde
+  band or breaches the buff threshold, everyone in the dimension hears
+  the Bloom answer with a distant roar. `big_bad` expeditions turn their
+  final checkpoint into a boss assault and clear the dimension on
+  completion.
 - **Infection** — lingering near a live assimilation heart lets the
   organism take hold: a personal infection counter accrues on cadence,
   decays away from hearts, and crosses staged thresholds (whispers →
@@ -596,7 +599,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   never kills — and only a blooded journal renders the carrier's
   infection percentage and stage.
 - **Assimilated mobs** — every expedition horde, siege wave and boss pack
-  member is the organism's tissue wearing local fauna: a synced
+  member is the organism's tissue wearing local fauna — they arrive with
+  a tell, souls and embers ringing the site and the Bloom's shriek — a synced
   `expeditions:assimilated` attachment (stage 1–3, dressed by pressure)
   drives a client overlay layer added to every living-entity renderer —
   vanilla or modded — bleaching the model toward bone, tracing pale
@@ -633,7 +637,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   then filleting new faces onto member cells, walking them along the
   surface, wrapping over block edges and seeping through thin walls —
   bounded by `microbiome.maxColonySize` covered faces (a blob, never a
-  takeover). And it hunts: within `microbiome.huntRadius` (default 24, 0
+  takeover). Its lub-dub is audible — the heart thumps on the same
+  PulseWave the membrane glows to. And it hunts: within `microbiome.huntRadius` (default 24, 0
   disables) each pulse prefers the frontier cells nearest a player, so
   the carpet visibly creeps toward warmth — beyond the radius growth is
   direction-blind again.

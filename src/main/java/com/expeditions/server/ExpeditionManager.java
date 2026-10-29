@@ -44,6 +44,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -52,6 +53,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffect;
@@ -318,7 +321,7 @@ public final class ExpeditionManager {
         ledger.startRun(run);
         // Every expedition stirs the organism a little — pressure is the
         // dimension-wide threat counter hordes and waves read.
-        data.raisePressure(definition.dimension(),
+        ExpeditionEventHandler.stirPressure(data, level, definition.dimension(),
                 ExpeditionTuning.integer(definition.dimension(), "pressure.per_run_start",
                         ExpeditionsConfig.pressurePerRunStart()));
         applyMemberEffects(run, player);
@@ -498,6 +501,14 @@ public final class ExpeditionManager {
                     toPos(run.checkpoints().get(run.completedCheckpoints() - 2)));
         }
         triggerCheckpointChallenge(run, player);
+        // The activation is a milestone — let it land: a beacon chime and
+        // a column of end-light over the just-lit checkpoint.
+        player.serverLevel().playSound(null, pos,
+                SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS,
+                0.7f, 1.2f);
+        player.serverLevel().sendParticles(ParticleTypes.END_ROD,
+                pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5,
+                18, 0.25, 1.1, 0.25, 0.015);
         data.setDirty();
         return run;
     }
@@ -574,7 +585,8 @@ public final class ExpeditionManager {
             ledger.addTrophy(member, run.definition().id());
         }
         data.recordCampaignCompletion(run.definition().dimension());
-        data.raisePressure(run.definition().dimension(),
+        ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
+                run.definition().dimension(),
                 ExpeditionTuning.integer(run.definition().dimension(),
                         "pressure.per_run_completion",
                         ExpeditionsConfig.pressurePerRunCompletion()));
@@ -601,6 +613,19 @@ public final class ExpeditionManager {
                 }
             }
         }
+        // Extraction lands the run's stakes — the challenge fanfare for
+        // the whole party and embers rising where the exit stood.
+        for (UUID member : run.party()) {
+            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            if (memberPlayer != null) {
+                memberPlayer.playNotifySound(
+                        SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
+                        SoundSource.PLAYERS, 0.7f, 1.0f);
+            }
+        }
+        player.serverLevel().sendParticles(ParticleTypes.FLAME,
+                player.getX(), player.getY() + 0.6, player.getZ(),
+                24, 0.5, 0.8, 0.5, 0.02);
         endRun(run);
         return run;
     }
@@ -1090,6 +1115,7 @@ public final class ExpeditionManager {
         }
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
+            announceSpawn(level, center, radius);
         }
     }
 
@@ -1100,6 +1126,25 @@ public final class ExpeditionManager {
      */
     private static void markAssimilated(Mob mob, int stage) {
         mob.setData(ModAttachments.ASSIMILATED, stage);
+    }
+
+    /**
+     * Taken mobs arrive with a tell — souls and embers ring the spawn site
+     * and the Bloom shrieks — so a wave materializing never reads as
+     * silent pop-in.
+     */
+    private static void announceSpawn(ServerLevel level, BlockPos center,
+            int radius) {
+        level.sendParticles(ParticleTypes.SCULK_SOUL,
+                center.getX() + 0.5, center.getY() + 0.8,
+                center.getZ() + 0.5,
+                14, radius * 0.45, 0.5, radius * 0.45, 0.03);
+        level.sendParticles(ParticleTypes.SMALL_FLAME,
+                center.getX() + 0.5, center.getY() + 0.6,
+                center.getZ() + 0.5,
+                10, radius * 0.4, 0.4, radius * 0.4, 0.02);
+        level.playSound(null, center, SoundEvents.SCULK_SHRIEKER_SHRIEK,
+                SoundSource.HOSTILE, 0.85f, 0.6f);
     }
 
     /**
@@ -1141,6 +1186,7 @@ public final class ExpeditionManager {
         }
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
+            announceSpawn(level, center, radius);
         }
     }
 
@@ -1380,6 +1426,7 @@ public final class ExpeditionManager {
         }
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
+            announceSpawn(level, devicePos, radius);
         }
     }
 
