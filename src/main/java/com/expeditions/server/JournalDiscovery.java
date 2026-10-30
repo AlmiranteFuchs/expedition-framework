@@ -45,6 +45,9 @@ public final class JournalDiscovery {
         }
         if (Assimilation.infection(player) > 0) unlock(player, JournalChapter.BLOOD);
         var manager = ExpeditionManager.get(player.server);
+        if (manager.activeRun(player.getUUID()).filter(run -> run.guardianEncounter().isPresent()).isPresent()) {
+            unlock(player, JournalChapter.GUARDIAN);
+        }
         if (manager.savedData().pressure(dimension) >= 25) unlock(player, JournalChapter.PRESSURE);
         if (manager.savedData().isDimensionCleared(dimension)) unlock(player, JournalChapter.LIBERATION);
     }

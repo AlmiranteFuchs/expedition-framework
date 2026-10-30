@@ -154,7 +154,7 @@ public final class FieldJournalScreen extends Screen {
         gui.drawString(font, font.plainSubstrByWidth(current.heading, pageWidth - 32), pageX + 3, top + 18, INK, false);
         if (selected.known(discoveries())) {
             var item = switch (selected) {
-                case BLOOM, LIBERATION -> ModItems.ASSIMILATION_HEART_ITEM.get();
+                case BLOOM, GUARDIAN, LIBERATION -> ModItems.ASSIMILATION_HEART_ITEM.get();
                 case ESSENCE, BLOOD, PRESSURE -> ModItems.ASSIMILATION_ESSENCE.get();
                 case TERMINAL -> ModItems.EXPEDITION_TERMINAL_ITEM.get();
                 case WAYFINDING -> ModItems.EXPEDITION_COMPASS.get();

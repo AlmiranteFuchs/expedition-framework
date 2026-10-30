@@ -1,0 +1,18 @@
+{
+  "dimension": "minecraft:overworld",
+  "display_name": "Heart of the Thicket",
+  "difficulty": 3,
+  "generate": {"checkpoints": 3, "min_spacing": 56, "max_spacing": 96},
+  "tokens": 90,
+  "bonus_tokens": 35,
+  "bonus_time_seconds": 900,
+  "cost_tokens": 25,
+  "requires": ["expeditions:salvage_clear"],
+  "grants": ["expeditions:guardian_clear"],
+  "min_campaign_state": "established",
+  "big_bad": true,
+  "objectives": [
+    {"id": "approach", "description": "Follow the roots to the final checkpoint", "type": "visit_checkpoint", "checkpoint": 3, "required": true},
+    {"id": "pace", "description": "Extract within twelve minutes", "type": "time_limit", "seconds": 720, "required": false, "bonus_tokens": 15}
+  ]
+}

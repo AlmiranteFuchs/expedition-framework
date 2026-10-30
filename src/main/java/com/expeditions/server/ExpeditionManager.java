@@ -620,10 +620,12 @@ public final class ExpeditionManager {
         // The Big Bad is the campaign's payoff: beating it wins the
         // dimension — the same cleared mark the grind threshold sets.
         if (run.definition().bigBad()) {
+            JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.LIBERATION);
             data.setDimensionCleared(run.definition().dimension());
             for (UUID member : run.party()) {
                 ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
                 if (memberPlayer != null) {
+                    JournalDiscovery.unlock(memberPlayer, com.expeditions.core.JournalChapter.LIBERATION);
                     memberPlayer.sendSystemMessage(Component.translatable(
                             "message.expeditions.dimension_won",
                             run.definition().dimension()));
@@ -891,6 +893,9 @@ public final class ExpeditionManager {
     }
 
     private boolean isRunRecoverable(ExpeditionRun run) {
+        // An old active boss run already past its final checkpoint has no
+        // accountable guardian. Never turn that legacy gap into a free win.
+        if (run.definition().bigBad() && run.allCheckpointsDone() && run.guardianEncounter().isEmpty()) return false;
         ServerLevel level = levelFor(run.definition().dimension());
         if (level == null) {
             return false;
@@ -1067,6 +1072,16 @@ public final class ExpeditionManager {
      * later checkpoint or run end can discard them.
      */
     private void triggerCheckpointChallenge(ExpeditionRun run, ServerPlayer player) {
+        // Mandatory campaign encounters do not roll the optional horde chance.
+        if (run.definition().bigBad() && run.allCheckpointsDone()) {
+            BlockPos site = toPos(run.checkpoints().get(run.completedCheckpoints() - 1));
+            if (!spawnBoss(run, player.serverLevel(), site)) {
+                run.fail("guardian_site_blocked");
+                player.sendSystemMessage(Component.translatable("message.expeditions.guardian_site_blocked"));
+                endRun(run);
+            }
+            return;
+        }
         if (!ExpeditionsConfig.challengesEnabled()) {
             return;
         }
@@ -1078,16 +1093,7 @@ public final class ExpeditionManager {
         }
         BlockPos checkpoint = toPos(run.checkpoints()
                 .get(run.completedCheckpoints() - 1));
-        // The Big Bad's signature: the expedition's last checkpoint is the
-        // fight itself — a buffed pack with a named, glowing alpha. The
-        // win still runs through the normal completion path.
-        boolean bossFight = run.definition().bigBad()
-                && run.completedCheckpoints() == run.totalCheckpoints();
-        if (bossFight) {
-            spawnBoss(run, level, checkpoint);
-        } else {
-            spawnHorde(run, level, checkpoint);
-        }
+        spawnHorde(run, level, checkpoint);
         if (run.challengeEntities().isEmpty()) {
             return;
         }
@@ -1189,46 +1195,44 @@ public final class ExpeditionManager {
                 SoundSource.HOSTILE, 0.85f, 0.6f);
     }
 
-    /**
-     * The Big Bad's assault: a fixed pack of the site's own mob pool, every
-     * member pressure-empowered, and the last one crowned — a named,
-     * glowing, hardened alpha that reads as the organism's champion. Same
-     * spawn machinery and tracking as any horde; only the dressing is new.
-     */
-    private void spawnBoss(ExpeditionRun run, ServerLevel level, BlockPos center) {
-        EntityType<?> type = HordePools.pick(level, center,
-                run.definition().dimension(), level.getRandom());
-        int size = ExpeditionsConfig.bossPackSize();
+    /** The guardian's body must fit the real site geometry, just like a horde. */
+    private boolean spawnBoss(ExpeditionRun run, ServerLevel level, BlockPos center) {
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
-        List<UUID> spawned = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            Mob mob = MobSpawns.trySpawn(type, level, center, radius);
-            if (mob == null) {
-                continue;
-            }
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
-                    MobSpawnType.EVENT, null);
-            mob.setPersistenceRequired();
-            markAssimilated(mob, 3);
-            pressureBuffs(mob);
-            if (i == size - 1) {
-                mob.setCustomName(Component.translatable(
-                        "entity.expeditions.big_bad"));
-                mob.setCustomNameVisible(true);
-                mob.setGlowingTag(true);
-                mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST,
-                        MobEffectInstance.INFINITE_DURATION, 1, false, false));
-                mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST,
-                        MobEffectInstance.INFINITE_DURATION, 4, false, false));
-            }
-            targetHordeMob(mob, nearestMember(run, level, mob.blockPosition()));
-            if (level.addFreshEntity(mob)) {
-                spawned.add(mob.getUUID());
+        Mob placed = MobSpawns.trySpawn(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(), level, center, radius);
+        if (!(placed instanceof com.expeditions.entity.RootboundGuardian guardian)) return false;
+        guardian.finalizeSpawn(level, level.getCurrentDifficultyAt(guardian.blockPosition()), MobSpawnType.EVENT, null);
+        guardian.setArena(center);
+        double health = Math.min(900, 180 * Math.sqrt(run.party().size())
+                * run.options().difficulty().hordePercent() / 100.0);
+        guardian.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(health);
+        guardian.setHealth((float) health);
+        targetHordeMob(guardian, nearestMember(run, level, guardian.blockPosition()));
+        if (!level.addFreshEntity(guardian)) return false;
+        run.trackChallengeEntities(List.of(guardian.getUUID()));
+        run.bindGuardian(guardian.getUUID());
+        announceSpawn(level, center, radius);
+        for (UUID member : run.party()) {
+            ServerPlayer online = server.getPlayerList().getPlayer(member);
+            if (online != null) {
+                JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.GUARDIAN);
+                online.sendSystemMessage(Component.translatable("message.expeditions.guardian_awakened"));
             }
         }
-        if (!spawned.isEmpty()) {
-            run.trackChallengeEntities(spawned);
-            announceSpawn(level, center, radius);
+        return true;
+    }
+
+    /** Accepted death only: cleanup/discard cannot grant encounter proof. */
+    public void onGuardianDefeated(com.expeditions.entity.RootboundGuardian guardian) {
+        for (ExpeditionRun run : ledger.runs()) {
+            if (run.definition().dimension().equals(guardian.level().dimension().location().toString())
+                    && run.recordGuardianDefeat(guardian.getUUID())) {
+                data.setDirty();
+                for (UUID member : run.party()) {
+                    ServerPlayer online = server.getPlayerList().getPlayer(member);
+                    if (online != null) online.sendSystemMessage(Component.translatable("message.expeditions.guardian_defeated"));
+                }
+                break;
+            }
         }
     }
 

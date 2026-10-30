@@ -88,5 +88,10 @@
   "gui.expeditions.locked_cost": "Short %1$s tokens",
   "gui.expeditions.locked_campaign": "Dimension must be \"%1$s\" (is \"%2$s\")",
   "gui.expeditions.click_cycle": "Click to change",
-  "message.expeditions.journal_discovery": "Your field journal stirs. A new chapter has taken root."
+  "message.expeditions.journal_discovery": "Your field journal stirs. A new chapter has taken root.",
+  "entity.expeditions.rootbound_guardian": "The Rootbound Guardian",
+  "message.expeditions.guardian_awakened": "The Rootbound Guardian wakes. Leave its ember circle before the roots strike; its core opens as it raises its arms.",
+  "message.expeditions.guardian_defeated": "The roots fall silent. Reach extraction to secure the victory.",
+  "message.expeditions.guardian_blocks_exit": "The guardian still holds this place. Defeat it before extracting.",
+  "message.expeditions.guardian_site_blocked": "The guardian could not safely take shape here. The expedition has failed; secured checkpoint tokens are kept."
 }

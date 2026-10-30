@@ -85,8 +85,16 @@
       {"heading": "Build on what survived", "body": "Successful missions leave permanent proof and advance their dimension's campaign. That proof opens harder work at the terminal. A listed mission can remain locked until its other requirements are met.\n\nTokens buy rewards through /expeditions redeem. The reward pool follows the dimension you stand in.\n\nThe field guide remembers your discoveries after death. The frontier should leave you with more than scars."}
     ]
   },
+  "guardian": {
+    "title": "XII. The guardian",
+    "unlock_hint": "Deploy into Heart of the Thicket after completing Deep Salvage. Reach the final checkpoint to awaken what guards the roots.",
+    "pages": [
+      {"heading": "The Rootbound Guardian", "body": "The crown is not growing from its head. The head is growing around the crown.\n\nAt the final checkpoint of Heart of the Thicket, a guardian takes shape. Defeat it, then use extraction to settle the campaign victory. Reaching the exit while it lives will not clear the dimension.\n\nThe approach costs 25 tokens and requires Deep Salvage proof and an established campaign."},
+      {"heading": "Read the ember circle", "body": "When the guardian roots itself and raises its arms, an ember circle marks its sweep. Leave the circle before the strike. Its exposed core takes extra damage during the windup: a chance to press your attack if you can still escape.\n\nBelow half health, its core flares. It alternates sweeps with smaller bursts marked beneath its target. Keep moving out of each new mark.\n\nEvery strike has a warning and recovery. It does not tear up the terrain."}
+    ]
+  },
   "liberation": {
-    "title": "XII. After silence",
+    "title": "XIII. After silence",
     "unlock_hint": "Stand in a dimension whose major threat has been defeated and whose campaign has been cleared.",
     "pages": [
       {"heading": "A quieter country", "body": "The roots have not vanished. The rhythm beneath them has.\n\nDefeating a dimension's campaign threat records that dimension as cleared. Its Bloom seeding is silenced until the campaign is reset. Other dimensions retain their own threats and their own histories.\n\nNeutralizing a threat is not an explanation for its origin. Leave that page open."}

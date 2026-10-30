@@ -306,7 +306,7 @@ public class ExpeditionSavedData extends SavedData {
                         ? CampaignState.byId(runTag.getString(TAG_MIN_STATE))
                         : CampaignState.FRONTIER,
                 runTag.getBoolean(TAG_BIG_BAD));
-        return ExpeditionRun.restore(
+        ExpeditionRun restored = ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
                 party,
@@ -330,6 +330,12 @@ public class ExpeditionSavedData extends SavedData {
                 readDefense(runTag),
                 readFailedObjectives(runTag),
                 readSecuredTokens(runTag));
+        if (runTag.contains("GuardianEncounter", Tag.TAG_COMPOUND)) {
+            CompoundTag encounter = runTag.getCompound("GuardianEncounter");
+            restored.restoreGuardian(new com.expeditions.core.GuardianEncounter(
+                    encounter.getUUID("EntityId"), encounter.getBoolean("Defeated")));
+        }
+        return restored;
     }
 
     /** A string-list tag, absent in saves from before the field existed. */
@@ -447,6 +453,12 @@ public class ExpeditionSavedData extends SavedData {
             runTag.putBoolean(TAG_REWARDED, run.isRewarded());
             runTag.putInt(TAG_TOKENS_AWARDED, run.tokensAwarded());
             runTag.putBoolean(TAG_ARTIFACT_ISSUED, run.artifactIssued());
+            run.guardianEncounter().ifPresent(encounter -> {
+                CompoundTag guardian = new CompoundTag();
+                guardian.putUUID("EntityId", encounter.entityId());
+                guardian.putBoolean("Defeated", encounter.defeated());
+                runTag.put("GuardianEncounter", guardian);
+            });
             CompoundTag securedTag = new CompoundTag();
             run.securedTokens().forEach((member, amount) -> {
                 if (amount > 0) {

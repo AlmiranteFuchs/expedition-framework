@@ -36,6 +36,8 @@ public class ExpeditionsClient {
     public ExpeditionsClient(IEventBus modEventBus, ModContainer container) {
         modEventBus.addListener(ExpeditionsClient::onClientSetup);
         modEventBus.addListener(ExpeditionsClient::onRegisterRenderers);
+        modEventBus.addListener((EntityRenderersEvent.RegisterLayerDefinitions event) ->
+                event.registerLayerDefinition(GuardianModel.LAYER, GuardianModel::createBodyLayer));
         modEventBus.addListener(ExpeditionsClient::onAddLayers);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);
@@ -62,6 +64,7 @@ public class ExpeditionsClient {
 
     private static void onRegisterRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(), GuardianRenderer::new);
         event.registerBlockEntityRenderer(
                 ModBlockEntities.ASSIMILATION_LAYER.get(),
                 AssimilationLayerRenderer::new);

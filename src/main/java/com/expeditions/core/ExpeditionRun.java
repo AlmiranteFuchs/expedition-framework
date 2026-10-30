@@ -54,6 +54,7 @@ public final class ExpeditionRun {
     private int tokensAwarded;
     private boolean artifactIssued;
     private DefenseState defense;
+    private GuardianEncounter guardian;
     private final Map<String, ObjectiveState> objectiveStates;
     private final Set<String> failedObjectives;
     private final Map<UUID, Integer> securedTokens;
@@ -404,6 +405,32 @@ public final class ExpeditionRun {
      */
     public List<UUID> challengeEntities() {
         return Collections.unmodifiableList(challengeEntities);
+    }
+
+    public Optional<GuardianEncounter> guardianEncounter() { return Optional.ofNullable(guardian); }
+    public boolean guardianDefeated() { return guardian != null && guardian.defeated(); }
+
+    public void bindGuardian(UUID entityId) {
+        ensureActive();
+        if (guardian != null) throw new IllegalStateException("This run already owns a guardian");
+        restoreGuardian(new GuardianEncounter(entityId, false));
+    }
+
+    /** Strict save seam; legacy completed runs may have no encounter record. */
+    public void restoreGuardian(GuardianEncounter encounter) {
+        Objects.requireNonNull(encounter, "encounter");
+        if (!definition.bigBad() || !allCheckpointsDone() || (status == ExpeditionStatus.COMPLETED && !encounter.defeated())
+                || (isActive() && !encounter.defeated() && !challengeEntities.contains(encounter.entityId()))) {
+            throw new IllegalArgumentException("Guardian record does not belong to this run's final challenge");
+        }
+        guardian = encounter;
+    }
+
+    /** Only a confirmed server death of the bound UUID can settle the encounter. */
+    public boolean recordGuardianDefeat(UUID entityId) {
+        if (!isActive() || guardian == null || guardian.defeated() || !guardian.entityId().equals(entityId)) return false;
+        guardian = new GuardianEncounter(entityId, true);
+        return true;
     }
 
     /**
@@ -831,6 +858,9 @@ public final class ExpeditionRun {
                     "Run " + runId + " has unfinished required objectives: "
                             + missing.stream().map(ExpeditionObjective::id)
                                     .collect(Collectors.joining(", ")));
+        }
+        if (definition.bigBad() && !guardianDefeated()) {
+            throw new IllegalStateException("The Rootbound Guardian must be defeated before extraction");
         }
         status = ExpeditionStatus.COMPLETED;
     }

@@ -44,7 +44,10 @@ public class ExpeditionExitBlock extends Block {
                 List<ExpeditionObjective> missing = active
                         .map(ExpeditionRun::missingRequiredObjectives)
                         .orElse(List.of());
-                if (!missing.isEmpty()) {
+                if (active.filter(run -> run.definition().bigBad() && run.allCheckpointsDone()
+                        && !run.guardianDefeated()).isPresent()) {
+                    player.sendSystemMessage(Component.translatable("message.expeditions.guardian_blocks_exit"));
+                } else if (!missing.isEmpty()) {
                     player.sendSystemMessage(Component.translatable(
                             "message.expeditions.objectives_missing",
                             missing.stream().map(ExpeditionObjective::description)

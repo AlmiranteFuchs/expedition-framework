@@ -611,8 +611,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   or lingering is dangerous — and every time the counter crosses a horde
   band or breaches the buff threshold, everyone in the dimension hears
   the Bloom answer with a distant roar. `big_bad` expeditions turn their
-  final checkpoint into a boss assault and clear the dimension on
-  completion.
+  final checkpoint into an original **Rootbound Guardian** encounter. Its
+  articulated heartwood body has emissive eyes/core, a tracking boss bar,
+  warned radial sweeps, and an enraged phase with marked root bursts. Its
+  core takes extra damage during windup. Defeating the bound guardian is
+  mandatory before extraction; cleanup and canceled deaths grant no proof.
+  `heart_of_the_thicket` follows Deep Salvage and clears the dimension only
+  after the party actually defeats its guardian and extracts.
 - **Infection** — lingering near a live assimilation heart lets the
   organism take hold: a personal infection counter accrues on cadence,
   decays away from hearts, and crosses staged thresholds (whispers →
@@ -623,7 +628,7 @@ chunk, and validate on real block state — not heightmap assumptions.
   armor and a carried attunement sigil delay the take, capped short of
   immunity — you can stall the Bloom, never refuse it.
 - **Field journal** — `expeditions:expedition_field_journal` (book +
-  assimilation essence). Right-click opens a twelve-chapter field guide.
+  assimilation essence). Right-click opens a thirteen-chapter field guide.
   Chapters unlock from server-observed discoveries and survive death,
   relogging and replacement books. Locked entries explain what to discover.
   Its field-record pages include the active expedition (name, dimension,
@@ -688,13 +693,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 128 unit tests + 100 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 137 unit tests + 105 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.5.5.jar` assembled.
-- `./gradlew test` — 128 unit tests, 0 failures.
-- `./gradlew runGameTestServer -PisolatedGameTests` — **100/100 core game tests passed** on a real dedicated
+- `./gradlew test` — 137 unit tests, 0 failures.
+- `./gradlew runGameTestServer -PisolatedGameTests` — **105/105 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -894,4 +899,4 @@ The roadmap's alpha surface is feature-complete; next is hardening and feel:
 
 1. Client playtest of the visual layer (trace pulse, membrane, colonies).
 2. Third-party dimension smoke (M13's open gap).
-3. A Big Bad design pass beyond the current assault-wave prototype.
+3. Terminal mission-board presentation and wider multiplayer balance testing.

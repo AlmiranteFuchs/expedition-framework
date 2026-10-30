@@ -36,6 +36,10 @@ origins of the organism and ancient infrastructure remain unresolved.
 4. **The confrontation**: a dedicated mission with an original root-and-ember
    guardian, custom model, boss bar, telegraphed attacks, and extraction gated
    on defeating the encounter. Treat its name and fiction as alpha vocabulary.
+   Implemented as Heart of the Thicket and the Rootbound Guardian. The client
+   verified the model, emissive core, both phases, warning circle, raised-arm
+   pose, boss-bar transition and real survival damage in a disposable world.
+   Unit and GameTests cover footprints, ownership, save/load and canceled death.
 5. **Release audit**: survival recipes, progression chain, guide discoveries,
    multiplayer cleanup, optional dimension compatibility, and an honest list
    of remaining gaps. Passing the old roadmap is not proof of finished polish.
@@ -50,3 +54,6 @@ origins of the organism and ancient infrastructure remain unresolved.
   the visual relationship between an eerie creature, its heart, and the traces
   that reveal it. Inspiration for readable root/ember cues, not a claim that
   the vanilla Creaking exists in Minecraft 1.21.1 or a replacement of its lore.
+- [NeoForge entity renderer documentation](https://github.com/neoforged/Documentation/blob/main/docs/entities/renderer.md):
+  custom geometry/layer registration. The implementation targets this project's
+  1.21.1 API; newer renderer-state APIs are not used.

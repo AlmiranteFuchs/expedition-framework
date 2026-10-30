@@ -29,6 +29,10 @@ public class ExpeditionsMod {
 
     public ExpeditionsMod(IEventBus modEventBus, ModContainer modContainer) {
         ModBlocks.BLOCKS.register(modEventBus);
+        com.expeditions.registry.ModEntities.ENTITIES.register(modEventBus);
+        modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
+                event.put(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(),
+                        com.expeditions.entity.RootboundGuardian.attributes().build()));
         ModItems.ITEMS.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModAttachments.ATTACHMENTS.register(modEventBus);

@@ -3784,6 +3784,7 @@ public final class ExpeditionGameTests {
         String dim = helper.getLevel().dimension().location().toString();
         int interval = ExpeditionsConfig.pressureDwellIntervalTicks();
         int amount = ExpeditionsConfig.pressureDwellAmount();
+        data.resetCampaign(dim);
         data.resetPressure(dim);
         try {
             player.tickCount = interval;
@@ -3820,6 +3821,7 @@ public final class ExpeditionGameTests {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         BlockPos heartPos = helper.absolutePos(new BlockPos(6, 1, 6));
         int interval = ExpeditionsConfig.infectionIntervalTicks();
+        savedData(level.getServer()).resetCampaign(level.dimension().location().toString());
         try {
             Assimilation.suppressForTests(false);
             level.setBlock(heartPos,
@@ -3959,7 +3961,7 @@ public final class ExpeditionGameTests {
 
     /**
      * The Big Bad: a flagged expedition turns its final checkpoint into the
-     * boss assault — a buffed pack — and completing the run wins the whole
+     * original guardian encounter; only its confirmed death and extraction win the whole
      * dimension (the cleared mark the microbiome reads).
      */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mic", batch = "expedition_mic")
@@ -3990,10 +3992,36 @@ public final class ExpeditionGameTests {
             // must field the boss pack, not a standard horde.
             manager.activateCheckpoint(player,
                     ExpeditionManager.toPos(run.checkpoints().get(0)));
-            helper.assertTrue(run.challengeEntities().size()
-                            >= ExpeditionsConfig.bossPackSize(),
-                    "the final checkpoint must field the boss pack, got "
-                            + run.challengeEntities().size());
+            helper.assertTrue(run.guardianEncounter().isPresent(), "the final checkpoint must bind a guardian");
+            UUID guardianId = run.guardianEncounter().orElseThrow().entityId();
+            Entity guardian = findEntity(player.serverLevel(), ExpeditionManager.toPos(run.checkpoints().getFirst()),
+                    ExpeditionsConfig.challengeHordeSpawnRadius(), guardianId);
+            helper.assertTrue(guardian instanceof com.expeditions.entity.RootboundGuardian,
+                    "the encounter must field the original guardian entity");
+            boolean refused = false;
+            try { manager.completeRun(player); } catch (IllegalStateException expected) { refused = true; }
+            helper.assertTrue(refused && run.isActive() && !data.isDimensionCleared(dim),
+                    "extraction before guardian death must not clear or reward the run");
+            var restored = ExpeditionSavedData.load(data.save(new CompoundTag(), server.registryAccess()), server.registryAccess());
+            helper.assertTrue(restored.ledger().activeRun(player.getUUID()).orElseThrow().guardianEncounter().equals(run.guardianEncounter()),
+                    "the bound guardian must survive a SavedData round trip");
+            java.util.function.Consumer<net.neoforged.neoforge.event.entity.living.LivingDeathEvent> veto = event -> {
+                if (event.getEntity() == guardian) event.setCanceled(true);
+            };
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(veto);
+            try {
+                ((com.expeditions.entity.RootboundGuardian) guardian).hurt(player.serverLevel().damageSources().genericKill(), 10000);
+                helper.assertTrue(!run.guardianDefeated(), "a canceled death must never grant guardian proof");
+            } finally {
+                net.neoforged.neoforge.common.NeoForge.EVENT_BUS.unregister(veto);
+            }
+            ((com.expeditions.entity.RootboundGuardian) guardian).setHealth(180);
+            guardian.invulnerableTime = 0;
+            ((com.expeditions.entity.RootboundGuardian) guardian).hurt(player.serverLevel().damageSources().genericKill(), 10000);
+            helper.assertTrue(run.guardianDefeated(), "a real accepted guardian death must unlock extraction");
+            restored = ExpeditionSavedData.load(data.save(new CompoundTag(), server.registryAccess()), server.registryAccess());
+            helper.assertTrue(restored.ledger().activeRun(player.getUUID()).orElseThrow().guardianDefeated(),
+                    "confirmed defeat must survive save/load without another fight");
             manager.completeRun(player);
             helper.assertTrue(data.isDimensionCleared(dim),
                     "beating the Big Bad must win the dimension");
@@ -4006,6 +4034,41 @@ public final class ExpeditionGameTests {
                 failRunIfActive(manager, player);
             }
             ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", templateNamespace = "expeditions_mic", batch = "guardian_peaceful")
+    public static void aPeacefulToggleCannotDiscardTheRequiredGuardian(GameTestHelper helper) {
+        var guardian = com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get().create(helper.getLevel());
+        var worldData = helper.getLevel().getServer().getWorldData();
+        var previous = worldData.getDifficulty();
+        try {
+            worldData.setDifficulty(net.minecraft.world.Difficulty.PEACEFUL);
+            guardian.checkDespawn();
+            helper.assertTrue(!guardian.isRemoved(), "a required encounter cannot disappear on a peaceful toggle");
+        } finally {
+            worldData.setDifficulty(previous);
+            guardian.discard();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", templateNamespace = "expeditions_mic", batch = "guardian_phase_save")
+    public static void guardianPhaseAndHealthSurviveEntityReload(GameTestHelper helper) {
+        var guardian = com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get().create(helper.getLevel());
+        var copy = com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get().create(helper.getLevel());
+        try {
+            guardian.setArena(helper.absolutePos(new BlockPos(3, 1, 3)));
+            guardian.setHealth(70);
+            guardian.tick();
+            helper.assertTrue(guardian.enraged(), "half health must enter the second phase");
+            copy.load(guardian.saveWithoutId(new CompoundTag()));
+            helper.assertTrue(copy.enraged() && copy.getHealth() == 70,
+                    "entity reload must preserve phase and health");
+            helper.assertTrue(copy.windupTicks() == 0, "reload must restart with a fresh reaction window");
+        } finally {
+            guardian.discard(); copy.discard();
         }
         helper.succeed();
     }
@@ -4321,6 +4384,7 @@ public final class ExpeditionGameTests {
         ServerLevel level = helper.getLevel();
         String dim = level.dimension().location().toString();
         ExpeditionSavedData data = savedData(level.getServer());
+        data.resetCampaign(dim);
         try {
             helper.assertTrue(Microbiome.enabled(level),
                     "an unmarked dimension must allow the microbiome");

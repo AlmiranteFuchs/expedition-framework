@@ -5,7 +5,7 @@ public enum JournalChapter {
     FIRST_STEPS(0, "first_steps"), BLOOM(1, "bloom"), ESSENCE(2, "essence"),
     TERMINAL(3, "terminal"), WAYFINDING(4, "wayfinding"), CHECKPOINTS(5, "checkpoints"),
     CARGO(6, "cargo"), DEFENSE(7, "defense"), BLOOD(8, "blood"),
-    PRESSURE(9, "pressure"), EXTRACTION(10, "extraction"), LIBERATION(11, "liberation");
+    PRESSURE(9, "pressure"), EXTRACTION(10, "extraction"), GUARDIAN(12, "guardian"), LIBERATION(11, "liberation");
 
     private final int bit;
     private final String id;
