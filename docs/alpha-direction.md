@@ -28,8 +28,9 @@ origins of the organism and ancient infrastructure remain unresolved.
 2. **Field guide**: chapter index, discovery-based unlocks, practical recipes,
    live survey/assay pages, and a matching illustrated journal cover. Preserve
    progress across death and relog; acquiring another book must not erase it.
-   Implemented; build, 131 unit tests and 103 core GameTests pass. Client visual
-   review remains pending after Computer Use was stopped with Escape.
+   Implemented; build, 131 unit tests and 103 core GameTests pass. Client review
+   confirmed readable pages, the new cover icon and working keyboard chapter
+   navigation. Fixed the vanilla menu blur obscuring the custom book lettering.
 3. **Terminal**: make mission choice, prerequisites, stakes and progression
    readable. Preserve server authority and keep unsupported routes fail-closed.
 4. **The confrontation**: a dedicated mission with an original root-and-ember

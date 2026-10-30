@@ -397,8 +397,10 @@ are explicit stable positions in pure-Java `JournalChapter`, persisted in the
 player's `JOURNAL_DISCOVERIES` attachment with `copyOnDeath`; do not reuse bits.
 The chapter body resource is `assets/expeditions/journal/chapters.json`.
 `expeditions_journal` tests save/load, death-copy, observed essence and the
-documented survival terminal recipe. Custom guide layout is not yet visually
-verified. Its
+documented survival terminal recipe. Custom guide layout, locked hints, cover
+art and keyboard chapter navigation are client-verified. Render the custom book's
+controls directly: `Screen.render` applies menu blur and would obscure already
+drawn lettering. Its
 `expeditions:blood_letting` damage type rides `bypasses_invulnerability`
 because mock players hardcode `isCreative()→true` — generic damage can
 never cost them blood (and creative players would get free samples).

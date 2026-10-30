@@ -31,7 +31,7 @@
     ]
   },
   "wayfinding": {
-    "title": "V. Heartwood bearings",
+    "title": "V. Heartwood",
     "unlock_hint": "Step through an expedition portal and let the terminal issue your compass.",
     "pages": [
       {"heading": "Follow the thorn", "body": "The compass points to your next checkpoint, then extraction. It follows a route, not a lodestone.\n\nIts hovering ember tells height: above the needle means the target is higher; below means it is lower. Near your elevation, it settles around the center.\n\nHold use to attune. The ember climbs or sinks and the chimes rise or fall. Release to quiet it."},
@@ -39,7 +39,7 @@
     ]
   },
   "checkpoints": {
-    "title": "VI. Stakes in the earth",
+    "title": "VI. Checkpoints",
     "unlock_hint": "Activate an expedition checkpoint. Merely walking past it does not settle the instrument.",
     "pages": [
       {"heading": "Wake the instrument", "body": "Use each checkpoint in the order the compass gives. The first checkpoint seals the party.\n\nA checkpoint banks part of the guaranteed token reward for every member. Those secured tokens survive failure. Completion settles what remains, including earned bonuses.\n\nA horde may answer the activation. Expect creatures that belong to this dimension's biome, including unfamiliar ones."},
@@ -63,7 +63,7 @@
     ]
   },
   "blood": {
-    "title": "IX. A private assay",
+    "title": "IX. Blood assay",
     "unlock_hint": "Experience Bloom exposure, or sneak-use the journal to give it a small blood sample. Never sample while critically wounded.",
     "pages": [
       {"heading": "What the paper drinks", "body": "The clasp opens more easily now. There is a clean space beneath it, the shape of a thumb.\n\nSneak-use this journal to take a blood sample. It costs one heart and is refused if that would kill you. Then open the guide normally; the field record at the end of this chapter shows the assay.\n\nExposure alone unlocks these notes. The assay itself still needs a sample."},
@@ -71,14 +71,14 @@
     ]
   },
   "pressure": {
-    "title": "X. The land listens",
+    "title": "X. Awareness",
     "unlock_hint": "Spend enough time in a dimension for its awareness to reach twenty-five. The survey belongs to the place you stand in.",
     "pages": [
       {"heading": "An answering pulse", "body": "At first the country felt empty. Now the pauses between sounds feel occupied.\n\nAwareness is a per-dimension pressure. Time spent there and expedition activity can raise it; higher pressure can strengthen the hordes. The next page reports this dimension's current reading.\n\nAnother dimension has its own state. Do not judge its safety by the quiet of your home."}
     ]
   },
   "extraction": {
-    "title": "XI. A road back",
+    "title": "XI. Extraction",
     "unlock_hint": "Complete a run by using its extraction marker after satisfying every required objective.",
     "pages": [
       {"heading": "Count everyone home", "body": "The terminal's light is a small thing to miss. It looks different when you have earned the return journey.\n\nUse extraction after all checkpoints and required objectives are complete. Hold recovered cargo if the mission requires it. Completion returns the party home and settles rewards.\n\nOptional objectives and fast completion may add bonuses. The mission description tells you the terms."},
@@ -86,7 +86,7 @@
     ]
   },
   "liberation": {
-    "title": "XII. After the silence",
+    "title": "XII. After silence",
     "unlock_hint": "Stand in a dimension whose major threat has been defeated and whose campaign has been cleared.",
     "pages": [
       {"heading": "A quieter country", "body": "The roots have not vanished. The rhythm beneath them has.\n\nDefeating a dimension's campaign threat records that dimension as cleared. Its Bloom seeding is silenced until the campaign is reset. Other dimensions retain their own threats and their own histories.\n\nNeutralizing a threat is not an explanation for its origin. Leave that page open."}

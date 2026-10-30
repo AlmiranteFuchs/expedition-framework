@@ -22,7 +22,7 @@ public final class FieldJournalScreen extends Screen {
     private static final int INK = 0xff393126, MUTED = 0xff7b6c50, EMBER = 0xffb46a27;
     private final InteractionHand hand;
     private final JsonObject text;
-    private final List<Button> tabs = new ArrayList<>();
+    private final List<Button> controls = new ArrayList<>();
     private JournalChapter selected = JournalChapter.FIRST_STEPS;
     private int page;
     private int left, top, bookWidth, bookHeight, margin, pageX, pageWidth;
@@ -50,7 +50,7 @@ public final class FieldJournalScreen extends Screen {
         margin = Math.min(128, bookWidth / 3);
         pageX = left + margin + 12;
         pageWidth = bookWidth - margin - 24;
-        tabs.clear();
+        controls.clear();
         int rowHeight = Math.min(17, (bookHeight - 62) / JournalChapter.values().length);
         int index = 0;
         for (var chapter : JournalChapter.values()) {
@@ -58,12 +58,12 @@ public final class FieldJournalScreen extends Screen {
                     margin - 15, rowHeight, Component.literal(title(chapter)), ignored -> {
                         selected = chapter; page = 0; turnSound();
                     }, chapter);
-            tabs.add(addRenderableWidget(button));
+            controls.add(addRenderableWidget(button));
         }
-        addRenderableWidget(new PaperButton(pageX, top + bookHeight - 24, 40, 16,
-                Component.literal("<"), ignored -> { if (page > 0) { page--; turnSound(); } }, null));
-        addRenderableWidget(new PaperButton(left + bookWidth - 54, top + bookHeight - 24, 40, 16,
-                Component.literal(">"), ignored -> { if (page + 1 < pages().size()) { page++; turnSound(); } }, null));
+        controls.add(addRenderableWidget(new PaperButton(pageX, top + bookHeight - 24, 40, 16,
+                Component.literal("<"), ignored -> { if (page > 0) { page--; turnSound(); } }, null)));
+        controls.add(addRenderableWidget(new PaperButton(left + bookWidth - 54, top + bookHeight - 24, 40, 16,
+                Component.literal(">"), ignored -> { if (page + 1 < pages().size()) { page++; turnSound(); } }, null)));
     }
 
     private int discoveries() {
@@ -178,7 +178,10 @@ public final class FieldJournalScreen extends Screen {
         String number = (page + 1) + " / " + pages.size();
         gui.drawString(font, number, pageX + (pageWidth - font.width(number)) / 2,
                 top + bookHeight - 20, MUTED, false);
-        super.render(gui, mouseX, mouseY, partialTick);
+        // Screen.render draws its menu blur before its widgets in 1.21.1.
+        // Our opaque book is already drawn: applying that blur now erases its
+        // lettering. Render our registered controls directly instead.
+        for (var control : controls) control.render(gui, mouseX, mouseY, partialTick);
     }
 
     private void turnSound() {

@@ -634,8 +634,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   never kills — and only a blooded journal renders the carrier's
   infection percentage and stage.
   Harvesting essence teaches the crafting-book recipes for the journal,
-  attunement sigil and craftable terminal. Guide layout and new cover artwork
-  still await a client visual review; persistence and crafting are GameTest-verified.
+  attunement sigil and craftable terminal. Guide layout, new cover artwork and
+  keyboard chapter navigation are client-verified; persistence and crafting are GameTest-verified.
 - **Assimilated mobs** — every expedition horde, siege wave and boss pack
   member is the organism's tissue wearing local fauna — they arrive with
   a tell, souls and embers ringing the site and the Bloom's shriek, and
