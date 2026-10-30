@@ -65,7 +65,7 @@ public final class Assimilation {
     private static volatile boolean suppressedForTests;
 
     public static void suppressForTests(boolean suppressed) {
-        suppressedForTests = suppressed;
+        suppressedForTests = suppressed && Boolean.getBoolean("expeditions.gameTestRun");
     }
 
     private Assimilation() {

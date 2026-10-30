@@ -22,7 +22,7 @@ public class ExpeditionDefinitionLoader extends SimpleJsonResourceReloadListener
     private static volatile boolean loadingSuppressedForTests;
 
     public static void suppressLoadingForTests(boolean suppressed) {
-        loadingSuppressedForTests = suppressed;
+        loadingSuppressedForTests = suppressed && Boolean.getBoolean("expeditions.gameTestRun");
     }
 
     public ExpeditionDefinitionLoader() {

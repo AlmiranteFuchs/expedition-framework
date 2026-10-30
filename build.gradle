@@ -91,6 +91,7 @@ neoForge {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
+            systemProperty 'expeditions.gameTestRun', 'true'
             gameDirectory = gameTestDirectory
             // -PgtNamespaces=<ns>[,<ns>...] runs only tests whose
             // templateNamespace matches — e.g. expeditions_smoke for the

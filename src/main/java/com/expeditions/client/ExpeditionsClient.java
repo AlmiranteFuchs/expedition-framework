@@ -36,6 +36,8 @@ public class ExpeditionsClient {
     public ExpeditionsClient(IEventBus modEventBus, ModContainer container) {
         modEventBus.addListener(ExpeditionsClient::onClientSetup);
         modEventBus.addListener(ExpeditionsClient::onRegisterRenderers);
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) ->
+                event.register(com.expeditions.registry.ModMenus.EXPEDITION.get(), ExpeditionScreen::new));
         modEventBus.addListener((EntityRenderersEvent.RegisterLayerDefinitions event) ->
                 event.registerLayerDefinition(GuardianModel.LAYER, GuardianModel::createBodyLayer));
         modEventBus.addListener(ExpeditionsClient::onAddLayers);

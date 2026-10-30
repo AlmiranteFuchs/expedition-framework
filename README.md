@@ -693,13 +693,18 @@ chunk, and validate on real block state — not heightmap assumptions.
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 137 unit tests + 105 core GameTests and 3 optional modded-biome probes.
+- **Deployment board** — dedicated terminal screen with mission briefings,
+  readable requirements, actual bonus-time windows, reward/cost previews,
+  previous/next navigation and reverse option cycling. It preselects an
+  unlocked mission in the terminal's home dimension. Required checkpoint
+  objectives set a minimum route length, enforced again by the server.
+- **Tests** — 137 unit tests + 107 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.5.5.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
-- `./gradlew runGameTestServer -PisolatedGameTests` — **105/105 core game tests passed** on a real dedicated
+- `./gradlew runGameTestServer -PisolatedGameTests` — **107/107 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -873,7 +878,7 @@ chunk, and validate on real block state — not heightmap assumptions.
   `ExpeditionEventHandler` (death + login recovery + startup pruning + commands),
 `ItemValuator` (stat-driven item score for reward weighting), `ItemRewards`
 (dimension-aware pools from `reward_items/<dim>` tags + score-weighted
-draws), `ExpeditionMenu` (vanilla chest-GUI terminal screen — server-only,
+draws), `ExpeditionMenu` (read-only slot transport for `ExpeditionScreen`,
 no custom menu type).
 - `com.expeditions.block` — terminal/checkpoint/exit blocks delegating to the
   manager. `com.expeditions.registry` — `DeferredRegister` wiring.

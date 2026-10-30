@@ -19,7 +19,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.util.Unit;
@@ -27,8 +26,9 @@ import net.minecraft.world.item.component.ItemLore;
 import org.slf4j.Logger;
 
 /**
- * Terminal configuration screen: a vanilla chest GUI (no custom menu type,
- * so no client code) where each option button cycles its value on click —
+ * Server-authoritative configuration for the custom deployment board. A
+ * ChestMenu transports read-only option/briefing stacks through vanilla sync;
+ * each option button cycles its value on click —
  * expedition, difficulty, route length, bonus-time window — and the start
  * button launches the run with the assembled {@link ExpeditionOptions}.
  * All clicks resolve on the server; the container is read-only so players
@@ -37,11 +37,9 @@ import org.slf4j.Logger;
 public class ExpeditionMenu extends ChestMenu {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int ROWS = 4;
-    private static final int SLOT_EXPEDITION = 10;
-    private static final int SLOT_DIFFICULTY = 12;
-    private static final int SLOT_CHECKPOINTS = 14;
-    private static final int SLOT_TIME = 16;
-    private static final int SLOT_START = 31;
+    public static final int SLOT_BRIEFING = 0, SLOT_READINESS = 1;
+    public static final int SLOT_PREVIOUS = 9, SLOT_EXPEDITION = 10, SLOT_NEXT = 11;
+    public static final int SLOT_DIFFICULTY = 12, SLOT_CHECKPOINTS = 14, SLOT_TIME = 16, SLOT_START = 31;
 
     private static final int[] CHECKPOINT_CHOICES = {0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16};
     private static final int[] TIME_CHOICES = {0, 50, 100, 150, 200};
@@ -56,9 +54,18 @@ public class ExpeditionMenu extends ChestMenu {
     private int checkpointsIndex;
     private int timeIndex;
 
+    /** Client factory. Items/lore arrive through ordinary server slot sync. */
+    public ExpeditionMenu(int containerId, Inventory playerInventory) {
+        super(com.expeditions.registry.ModMenus.EXPEDITION.get(), containerId, playerInventory,
+                new SimpleContainer(9 * ROWS), ROWS);
+        container = (SimpleContainer) getContainer();
+        manager = null; terminalPos = BlockPos.ZERO; startable = List.of();
+        playerId = playerInventory.player.getUUID();
+    }
+
     public ExpeditionMenu(int containerId, Inventory playerInventory,
             ExpeditionManager manager, BlockPos terminalPos, String homeDimension) {
-        super(MenuType.GENERIC_9x4, containerId, playerInventory,
+        super(com.expeditions.registry.ModMenus.EXPEDITION.get(), containerId, playerInventory,
                 new SimpleContainer(9 * ROWS), ROWS);
         this.container = (SimpleContainer) this.getContainer();
         this.manager = manager;
@@ -70,6 +77,15 @@ public class ExpeditionMenu extends ChestMenu {
         // like the old quick-start.
         for (int i = 0; i < startable.size(); i++) {
             if (startable.get(i).dimension().equals(homeDimension)) {
+                expeditionIndex = i;
+                break;
+            }
+        }
+        // Prefer a mission the player can actually deploy into, while keeping
+        // the terminal's home dimension ahead of a remote unlocked mission.
+        for (int i = 0; i < startable.size(); i++) {
+            if (startable.get(i).dimension().equals(homeDimension)
+                    && manager.missingRequirements(playerId, startable.get(i)).isSatisfied()) {
                 expeditionIndex = i;
                 break;
             }
@@ -93,7 +109,7 @@ public class ExpeditionMenu extends ChestMenu {
     public void clicked(int slotId, int button, ClickType clickType, Player player) {
         if (slotId >= 0 && slotId < container.getContainerSize()) {
             if (player instanceof ServerPlayer serverPlayer) {
-                onButton(slotId, serverPlayer);
+                onButton(slotId, button, serverPlayer);
             }
             return;
         }
@@ -111,18 +127,26 @@ public class ExpeditionMenu extends ChestMenu {
         return player.isAlive();
     }
 
-    private void onButton(int slotId, ServerPlayer player) {
+    private void onButton(int slotId, int mouseButton, ServerPlayer player) {
+        int step = mouseButton == 1 ? -1 : 1;
         switch (slotId) {
-            case SLOT_EXPEDITION -> {
+            case SLOT_EXPEDITION, SLOT_PREVIOUS, SLOT_NEXT -> {
                 if (!startable.isEmpty()) {
-                    expeditionIndex = (expeditionIndex + 1) % startable.size();
+                    expeditionIndex = Math.floorMod(expeditionIndex + (slotId == SLOT_PREVIOUS ? -1 : step), startable.size());
+                    checkpointsIndex = 0;
                 }
             }
             case SLOT_DIFFICULTY ->
-                difficultyIndex = (difficultyIndex + 1) % Difficulty.values().length;
-            case SLOT_CHECKPOINTS ->
-                checkpointsIndex = (checkpointsIndex + 1) % CHECKPOINT_CHOICES.length;
-            case SLOT_TIME -> timeIndex = (timeIndex + 1) % TIME_CHOICES.length;
+                difficultyIndex = Math.floorMod(difficultyIndex + step, Difficulty.values().length);
+            case SLOT_CHECKPOINTS -> {
+                if (!startable.isEmpty() && startable.get(expeditionIndex).route() instanceof com.expeditions.core.RouteGeneration) {
+                    int minimum = startable.get(expeditionIndex).objectives().stream().filter(o -> o.required())
+                            .mapToInt(o -> o.checkpoint()).max().orElse(1);
+                    do { checkpointsIndex = Math.floorMod(checkpointsIndex + step, CHECKPOINT_CHOICES.length); }
+                    while (CHECKPOINT_CHOICES[checkpointsIndex] > 0 && CHECKPOINT_CHOICES[checkpointsIndex] < minimum);
+                }
+            }
+            case SLOT_TIME -> timeIndex = Math.floorMod(timeIndex + step, TIME_CHOICES.length);
             case SLOT_START -> {
                 start(player);
                 return;
@@ -153,20 +177,24 @@ public class ExpeditionMenu extends ChestMenu {
             LOGGER.warn("Expedition start refused for {}: {}",
                     player.getScoreboardName(), e.getMessage());
             player.sendSystemMessage(Component.literal(e.getMessage()));
+            refresh();
         }
     }
 
     private void refresh() {
         container.clearContent();
+        boolean ready = false;
         if (startable.isEmpty()) {
             container.setItem(SLOT_EXPEDITION, button(Items.BARRIER,
                     "gui.expeditions.no_expeditions", List.of()));
         } else {
             ExpeditionDefinition selected = startable.get(expeditionIndex);
             RequirementCheck check = manager.missingRequirements(playerId, selected);
+            ready = check.isSatisfied();
             List<Component> lore = new ArrayList<>();
             lore.add(Component.literal(selected.displayName()));
             lore.add(Component.literal(selected.dimension()));
+            lore.add(Component.literal("Mission " + (expeditionIndex + 1) + " / " + startable.size()));
             if (check.isSatisfied()) {
                 lore.add(Component.translatable("gui.expeditions.click_cycle"));
                 container.setItem(SLOT_EXPEDITION, button(Items.COMPASS,
@@ -194,6 +222,40 @@ public class ExpeditionMenu extends ChestMenu {
                 container.setItem(SLOT_EXPEDITION, button(Items.TRIAL_KEY,
                         "gui.expeditions.expedition", lore));
             }
+            List<Component> brief = new ArrayList<>();
+            int checkpoints = CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]
+                    : selected.route() instanceof com.expeditions.core.RouteGeneration generated
+                            ? generated.checkpoints() : ((com.expeditions.core.ExpeditionRoute) selected.route()).checkpoints().size();
+            brief.add(Component.literal("Route: " + checkpoints + " checkpoints, then extraction"));
+            brief.add(Component.literal("Guaranteed base reward: " + selected.tokenReward() + " tokens"));
+            int bonuses = selected.bonusTokens() + selected.objectives().stream().mapToInt(o -> o.bonusTokens()).sum();
+            brief.add(Component.literal("Possible base bonuses: " + bonuses + " tokens"));
+            brief.add(Component.literal("Deployment fee: " + selected.costTokens() + " tokens"));
+            brief.add(Component.literal("Rewards scale with difficulty and party."));
+            brief.add(Component.literal(""));
+            if (selected.bigBad()) brief.add(Component.literal("! Defeat the Rootbound Guardian before extraction."));
+            for (var objective : selected.objectives()) {
+                brief.add(Component.literal((objective.required() ? "! " : "+ ") + objective.description()));
+            }
+            if (selected.objectives().isEmpty()) brief.add(Component.literal("! Activate every checkpoint and use extraction."));
+            brief.add(Component.literal(""));
+            brief.add(Component.literal("Checkpoint tokens are secured. Unfinished bonuses remain at risk."));
+            container.setItem(SLOT_BRIEFING, button(Items.WRITABLE_BOOK, "gui.expeditions.briefing", brief));
+            List<Component> requirements = new ArrayList<>();
+            requirements.add(Component.literal(ready ? "READY TO DEPLOY" : "REQUIREMENTS MISSING"));
+            requirements.add(Component.literal("Your balance: " + manager.tokenBalance(playerId) + " tokens"));
+            requirements.add(Component.literal(""));
+            for (String key : check.missingKeys()) requirements.add(Component.literal(proofHint(key)));
+            if (check.missingTokens() > 0) requirements.add(Component.literal("Earn " + check.missingTokens() + " more tokens."));
+            if (!check.currentState().atLeast(check.requiredState())) {
+                requirements.add(Component.literal("Campaign: " + check.currentState().id() + "; needs " + check.requiredState().id() + "."));
+                requirements.add(Component.literal("Complete expeditions in " + selected.dimension() + " to advance its campaign."));
+            }
+            if (ready) requirements.add(Component.literal("No missing requirements. Choose your equipment, then open the portal."));
+            requirements.add(Component.literal(""));
+            requirements.add(Component.literal("Party members join through the portal. The first checkpoint seals the party."));
+            container.setItem(SLOT_READINESS, button(ready ? Items.LIME_DYE : Items.RED_DYE,
+                    "gui.expeditions.requirements", requirements));
         }
         Difficulty difficulty = Difficulty.values()[difficultyIndex];
         container.setItem(SLOT_DIFFICULTY, button(Items.IRON_SWORD,
@@ -204,20 +266,43 @@ public class ExpeditionMenu extends ChestMenu {
                         Component.translatable("gui.expeditions.click_cycle"))));
         container.setItem(SLOT_CHECKPOINTS, button(Items.MAP,
                 "gui.expeditions.length",
-                List.of(CHECKPOINT_CHOICES[checkpointsIndex] == 0
-                        ? Component.translatable("gui.expeditions.default")
-                        : Component.literal(CHECKPOINT_CHOICES[checkpointsIndex]
-                                + " checkpoints"),
+                List.of(Component.literal(routeSummary()),
                         Component.translatable("gui.expeditions.click_cycle"))));
         container.setItem(SLOT_TIME, button(Items.CLOCK,
                 "gui.expeditions.time",
-                List.of(TIME_CHOICES[timeIndex] == 0
-                        ? Component.translatable("gui.expeditions.default")
-                        : Component.literal(TIME_CHOICES[timeIndex] + "%"),
+                List.of(Component.literal(bonusWindowSummary()),
+                        Component.literal("Changes the base time bonus; objective clocks stay fixed."),
                         Component.translatable("gui.expeditions.click_cycle"))));
-        container.setItem(SLOT_START, button(Items.LIME_CONCRETE,
+        container.setItem(SLOT_START, button(ready ? Items.LIME_CONCRETE : Items.BARRIER,
                 "gui.expeditions.start", List.of()));
         broadcastChanges();
+    }
+
+    private static String proofHint(String key) {
+        return switch (key) {
+            case "expeditions:field_clear" -> "Complete Field Survey to earn its proof.";
+            case "expeditions:salvage_clear" -> "Complete Deep Salvage to earn its proof.";
+            case "expeditions:attuned" -> "Use an attunement sigil against the terminal.";
+            case "expeditions:guardian_clear" -> "Defeat the Rootbound Guardian and extract.";
+            default -> "Requires proof: " + key;
+        };
+    }
+
+    private String routeSummary() {
+        if (startable.isEmpty()) return "Unavailable";
+        var route = startable.get(expeditionIndex).route();
+        if (route instanceof com.expeditions.core.ExpeditionRoute authored) return authored.checkpoints().size() + " (authored)";
+        int count = CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]
+                : ((com.expeditions.core.RouteGeneration) route).checkpoints();
+        return count + " checkpoints";
+    }
+
+    private String bonusWindowSummary() {
+        if (startable.isEmpty()) return "Unavailable";
+        var definition = startable.get(expeditionIndex);
+        if (definition.bonusTokens() == 0 || definition.bonusTimeTicks() == 0) return "No timed bonus";
+        long ticks = definition.bonusTimeTicks() * (long) (TIME_CHOICES[timeIndex] == 0 ? 100 : TIME_CHOICES[timeIndex]) / 100;
+        return ticks / 1200 + "m " + ticks / 20 % 60 + "s" + (timeIndex == 0 ? " (default)" : "");
     }
 
     private static ItemStack button(net.minecraft.world.item.Item item, String nameKey,

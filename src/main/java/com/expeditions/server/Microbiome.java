@@ -39,11 +39,11 @@ public final class Microbiome {
     private static volatile boolean traversalSuppressed;
 
     public static void suppressSeedingForTests(boolean suppressed) {
-        seedingSuppressed = suppressed;
+        seedingSuppressed = suppressed && Boolean.getBoolean("expeditions.gameTestRun");
     }
 
     public static void suppressTraversalForTests(boolean suppressed) {
-        traversalSuppressed = suppressed;
+        traversalSuppressed = suppressed && Boolean.getBoolean("expeditions.gameTestRun");
     }
 
     private Microbiome() {

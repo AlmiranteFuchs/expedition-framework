@@ -33,6 +33,12 @@ origins of the organism and ancient infrastructure remain unresolved.
    navigation. Fixed the vanilla menu blur obscuring the custom book lettering.
 3. **Terminal**: make mission choice, prerequisites, stakes and progression
    readable. Preserve server authority and keep unsupported routes fail-closed.
+   Implemented a dedicated deployment board with briefing/requirements pages,
+   readable missing-proof hints, costs/rewards, reverse cycling and safe route
+   lengths. Client-checked the layout; automated tests cover defaults and locks.
+   The client check also caught test-only suppression leaking into normal play;
+   isolated those flags to the automated test JVM and verified all three shipped
+   missions load in an ordinary client.
 4. **The confrontation**: a dedicated mission with an original root-and-ember
    guardian, custom model, boss bar, telegraphed attacks, and extraction gated
    on defeating the encounter. Treat its name and fiction as alpha vocabulary.

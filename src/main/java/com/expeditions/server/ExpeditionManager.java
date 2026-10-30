@@ -234,6 +234,12 @@ public final class ExpeditionManager {
 
         RouteSpec spec = definition.route();
         if (options.checkpoints() > 0 && spec instanceof RouteGeneration g) {
+            int requiredLength = definition.objectives().stream().filter(ExpeditionObjective::required)
+                    .mapToInt(ExpeditionObjective::checkpoint).max().orElse(1);
+            if (options.checkpoints() < requiredLength) {
+                throw new IllegalStateException("This mission needs at least " + requiredLength
+                        + " checkpoints for its required objectives");
+            }
             spec = g.withCheckpoints(options.checkpoints());
         }
         RandomSource rng = player.getRandom();

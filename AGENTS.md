@@ -229,8 +229,10 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   portal/terminal cleanup+teleport paths must use it (not the run dim).
   `listStartable()` = datapack + unshadowed config defs filtered by
   loaded-dimension + adapter — the menu and `/expeditions start` share it.
-  Terminal click opens `ExpeditionMenu` (vanilla `ChestMenu` subclass —
-  server-only, container is display-only; `clicked` consumes option-row
+  Terminal click opens `ExpeditionMenu` (a `ChestMenu` subclass used as
+  read-only slot-sync transport for the custom `ExpeditionScreen` registered
+  through `ModMenus`; its client factory never touches a server manager).
+  The container is display-only; `clicked` consumes option-row
   slots, `quickMoveStack` blocks insertion). The menu preselects the
   terminal's home-dimension expedition — sorted id order ≠ player intent.
   `pruneOrphanMarkers` must snapshot `liveMarkers` before iterating
@@ -303,6 +305,13 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   covered block state.
 
 ## Testing conventions
+
+- Suppression seams are active ONLY with JVM property
+  `expeditions.gameTestRun=true`, set by the Gradle GameTest server run.
+  NeoForge initializes test classes in ordinary dev clients too; accepting
+  their static suppression requests there hid bundled missions and disabled
+  Bloom traversal/infection in real play. Do not remove this property guard
+  from datapack loaders, Microbiome or Assimilation.
 
 - Unit-test domain rules in `src/test` — no Minecraft imports needed there.
   `SafeColumnSearch` is tested with synthetic column predicates; when modeling
@@ -400,7 +409,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Verified: `build` + 137 unit tests + 105/105 core GameTest in-game
+Verified: `build` + 137 unit tests + 107/107 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for `FieldJournalScreen` field-record pages.
 The client opens that screen through a presentation callback installed by
