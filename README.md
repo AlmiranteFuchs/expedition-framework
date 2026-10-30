@@ -623,14 +623,19 @@ chunk, and validate on real block state — not heightmap assumptions.
   armor and a carried attunement sigil delay the take, capped short of
   immunity — you can stall the Bloom, never refuse it.
 - **Field journal** — `expeditions:expedition_field_journal` (book +
-  assimilation essence). Right-click writes a live survey onto its own
-  pages and opens the book GUI: the active expedition (name, dimension,
+  assimilation essence). Right-click opens a twelve-chapter field guide.
+  Chapters unlock from server-observed discoveries and survive death,
+  relogging and replacement books. Locked entries explain what to discover.
+  Its field-record pages include the active expedition (name, dimension,
   checkpoint progress, time afield, party), the dimension's campaign and
   Bloom awareness (pressure band, horde swell, empowered spawns), and a
   blood assay. Sneak-use lets the journal drink a blood sample —
   `expeditions:blood_letting` damage that bypasses invulnerability but
   never kills — and only a blooded journal renders the carrier's
   infection percentage and stage.
+  Harvesting essence teaches the crafting-book recipes for the journal,
+  attunement sigil and craftable terminal. Guide layout and new cover artwork
+  still await a client visual review; persistence and crafting are GameTest-verified.
 - **Assimilated mobs** — every expedition horde, siege wave and boss pack
   member is the organism's tissue wearing local fauna — they arrive with
   a tell, souls and embers ringing the site and the Bloom's shriek, and
@@ -804,7 +809,7 @@ chunk, and validate on real block state — not heightmap assumptions.
   GameTest server** — verified mechanically (placement, survival, drops,
   shapes), not visually. Manual check: `./gradlew runClient`, place the layer
   on grass/stone/ore faces from all six directions and reload the chunk.
-  The field journal's book GUI is likewise client-only — the game test
+  The field journal's chapter GUI is likewise client-only — the game test
   verifies the report lands on the stack's `WRITTEN_BOOK_CONTENT`; the
   actual screen open needs a client session.
 - Not yet verified by a **human client session** — game tests drive the real

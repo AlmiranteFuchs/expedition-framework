@@ -550,7 +550,7 @@ def gen_essence():
 
 
 def gen_journal():
-    """Charter field journal: worn leather, brass clasp, ember-marked strap."""
+    """Pale-root binding, green-black leather, and a carved ember-eyed seal."""
     img = canvas()
     cover = [(2, 2), (13, 2), (14, 3), (14, 13), (13, 14), (2, 14), (1, 13),
              (1, 3)]
@@ -572,20 +572,37 @@ def gen_journal():
                 mask[(x, y)] = True
                 v = 0.55 + (8 - abs(x - 7.5)) * 0.02 - (x - 2) * 0.015 \
                     + (14 - y) * 0.008
-                c = ramp_at(LEATHER, v, x, y)
+                c = ramp_at(LEATHER, v * 0.72, x, y)
                 if x <= 2:                       # spine
                     c = ramp_at(LEATHER, v - 0.18, x, y)
                 put(img, x, y, c)
     outline(img, lambda x, y: mask.get((x, y), False), color=(48, 30, 18, 255))
-    # tooled border
+    # Exposed leaf edges beneath the rounded cover, lit from the upper left.
+    for x in range(3, 13):
+        put(img, x, 13, BONE[2] if x % 3 else BONE[1])
+    for x in range(4, 12):
+        put(img, x, 14, BONE[1])
+    # Tooled frame around the quiet, almost green leather inset.
     for x in range(4, 13):
         put(img, x, 3, LEATHER[2]); put(img, x, 12, LEATHER[2])
     for y in range(3, 13):
         put(img, 4, y, LEATHER[2]); put(img, 12, y, LEATHER[2])
-    # strap + ember clasp: the journal has drunk blood
-    for y in range(2, 15):
-        put(img, 9, y, LEATHER[1] if y % 2 else LEATHER[2])
-    put(img, 9, 8, EMBER[3]); put(img, 9, 9, EMBER[1])
+    for y in range(4, 12):
+        for x in range(5, 12):
+            put(img, x, y, (45 + (x + y) % 2 * 3, 49, 37, 255))
+    # Roots bind the spine, with larger bright knots rather than pixel noise.
+    for x, y in [(2, 3), (3, 4), (3, 5), (2, 6), (2, 7), (3, 8),
+                 (3, 9), (2, 10), (2, 11), (3, 12)]:
+        put(img, x, y, BONE[3] if x == 2 else BONE[2])
+    put(img, 4, 4, BONE[1]); put(img, 4, 9, BONE[1])
+    # A small branch-crowned mask: the same carved language as the compass.
+    for x, y in [(7, 4), (11, 4), (7, 5), (8, 5), (10, 5), (11, 5),
+                 (8, 6), (9, 6), (10, 6), (7, 7), (9, 7), (11, 7),
+                 (8, 8), (9, 8), (10, 8), (9, 9), (8, 10), (10, 10),
+                 (7, 11), (11, 11)]:
+        put(img, x, y, BONE[3] if x < 9 and y < 8 else BONE[2])
+    put(img, 8, 7, EMBER[4]); put(img, 10, 7, EMBER[3])
+    put(img, 9, 10, LEATHER[1]); put(img, 9, 11, EMBER[1])
     save(img, "item/expedition_field_journal.png")
 
 

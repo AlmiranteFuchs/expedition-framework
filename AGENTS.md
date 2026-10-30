@@ -387,11 +387,18 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Verified: `build` + 128 unit tests + 100/100 core GameTest in-game
+Verified: `build` + 131 unit tests + 103/103 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
-`WRITTEN_BOOK_CONTENT` component and opens the vanilla book GUI —
-`broadcastChanges()` MUST precede the `ClientboundOpenBookPacket` so the
-client sees the fresh component (same ordering as `openItemGui`). Its
+`WRITTEN_BOOK_CONTENT` component for `FieldJournalScreen` field-record pages.
+The client opens that screen through a presentation callback installed by
+`ExpeditionsClient`; keep `broadcastChanges()` so the component refresh reaches
+the already-open screen. No vanilla open-book packet is sent. Discovery bits
+are explicit stable positions in pure-Java `JournalChapter`, persisted in the
+player's `JOURNAL_DISCOVERIES` attachment with `copyOnDeath`; do not reuse bits.
+The chapter body resource is `assets/expeditions/journal/chapters.json`.
+`expeditions_journal` tests save/load, death-copy, observed essence and the
+documented survival terminal recipe. Custom guide layout is not yet visually
+verified. Its
 `expeditions:blood_letting` damage type rides `bypasses_invulnerability`
 because mock players hardcode `isCreative()→true` — generic damage can
 never cost them blood (and creative players would get free samples).

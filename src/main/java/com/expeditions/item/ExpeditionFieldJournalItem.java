@@ -11,7 +11,6 @@ import java.util.Optional;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundOpenBookPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,7 +27,7 @@ import net.minecraft.world.level.Level;
 
 /**
  * The Charter-issue field journal. Right-click writes a fresh survey onto its
- * own pages and opens the vanilla book GUI — the active expedition, this
+ * own pages for the chapter guide — the active expedition, this
  * dimension's campaign, and the Bloom's pressure (the organism's awareness of
  * you). The report lives in a {@code WRITTEN_BOOK_CONTENT} component on the
  * stack, so the journal physically holds its last survey between uses.
@@ -39,6 +38,13 @@ import net.minecraft.world.level.Level;
  * the journal remembers whose blood it drank, not the player.
  */
 public class ExpeditionFieldJournalItem extends Item {
+    // A presentation callback installed only by ExpeditionsClient. Dedicated
+    // servers never load a screen class or depend on a client implementation.
+    private static java.util.function.Consumer<InteractionHand> clientOpener = hand -> { };
+
+    public static void setClientOpener(java.util.function.Consumer<InteractionHand> opener) {
+        clientOpener = opener;
+    }
     private static final String TAG_BLOOD_SAMPLED = "expeditions:blood_sampled";
 
     /** The journal's price for reading what's inside you. Never kills. */
@@ -60,6 +66,7 @@ public class ExpeditionFieldJournalItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!(player instanceof ServerPlayer server)) {
+            if (!player.isShiftKeyDown()) clientOpener.accept(hand);
             return InteractionResultHolder.success(stack);
         }
         if (player.isShiftKeyDown()) {
@@ -67,6 +74,7 @@ public class ExpeditionFieldJournalItem extends Item {
                     ? InteractionResultHolder.sidedSuccess(stack, false)
                     : InteractionResultHolder.fail(stack);
         }
+        com.expeditions.server.JournalDiscovery.observe(server);
         openReport(server, stack, hand);
         return InteractionResultHolder.sidedSuccess(stack, false);
     }
@@ -85,6 +93,7 @@ public class ExpeditionFieldJournalItem extends Item {
         player.hurt(player.damageSources().source(BLOOD_LETTING), BLOOD_SAMPLE_COST);
         CustomData.update(DataComponents.CUSTOM_DATA, journal,
                 tag -> tag.putBoolean(TAG_BLOOD_SAMPLED, true));
+        com.expeditions.server.JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.BLOOD);
         player.sendSystemMessage(Component.translatable(
                 "message.expeditions.journal_blood"));
         return true;
@@ -96,10 +105,9 @@ public class ExpeditionFieldJournalItem extends Item {
     }
 
     /**
-     * Writes this tick's survey onto the stack and opens the book GUI. The
-     * client reads the component off the held stack, so the slot sync must be
-     * enqueued before the open packet — same ordering {@code openItemGui}
-     * uses via {@code broadcastChanges}.
+     * Writes this tick's survey onto the stack. The custom client guide reads
+     * the synchronized component on its field-record pages. Keep broadcasting
+     * changes: the screen can open before this server-side refresh arrives.
      */
     private static void openReport(ServerPlayer player, ItemStack journal, InteractionHand hand) {
         journal.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
@@ -110,7 +118,8 @@ public class ExpeditionFieldJournalItem extends Item {
                         Filterable.passThrough(assayPage(player, journal))),
                 true));
         player.containerMenu.broadcastChanges();
-        player.connection.send(new ClientboundOpenBookPacket(hand));
+        // The custom chapter screen reads this synchronized report as its
+        // field-record pages. It opens client-side through the use callback.
     }
 
     private static Component expeditionPage(ServerPlayer player) {

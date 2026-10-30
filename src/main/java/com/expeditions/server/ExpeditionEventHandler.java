@@ -115,6 +115,7 @@ public final class ExpeditionEventHandler {
                 Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
             }
             CompassPing.onPlayerTick(player);
+            if (player.tickCount > 0 && player.tickCount % 40 == 0) JournalDiscovery.observe(player);
             dwellPressure(player);
             Assimilation.onPlayerTick(player);
         }
@@ -239,6 +240,9 @@ public final class ExpeditionEventHandler {
             if (count > 0) {
                 ItemStack picked = event.getOriginalStack();
                 picked.setCount(count);
+                if (picked.is(com.expeditions.registry.ModItems.ASSIMILATION_ESSENCE.get())) {
+                    JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.ESSENCE);
+                }
                 ExpeditionManager.get(player.server).onItemPickup(player, picked);
             }
         }

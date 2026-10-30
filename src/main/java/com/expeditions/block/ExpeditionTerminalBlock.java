@@ -66,6 +66,8 @@ public class ExpeditionTerminalBlock extends Block {
             BlockHitResult hitResult) {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+            com.expeditions.server.JournalDiscovery.unlock(serverPlayer,
+                    com.expeditions.core.JournalChapter.TERMINAL);
             // Apply the recovery policy on interaction too: a run whose world
             // state vanished is failed closed instead of trapping the player.
             manager.resumeOrFail(serverPlayer).ifPresentOrElse(

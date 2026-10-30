@@ -87,5 +87,6 @@
   "gui.expeditions.locked_key": "Requires unlock: %1$s",
   "gui.expeditions.locked_cost": "Short %1$s tokens",
   "gui.expeditions.locked_campaign": "Dimension must be \"%1$s\" (is \"%2$s\")",
-  "gui.expeditions.click_cycle": "Click to change"
+  "gui.expeditions.click_cycle": "Click to change",
+  "message.expeditions.journal_discovery": "Your field journal stirs. A new chapter has taken root."
 }

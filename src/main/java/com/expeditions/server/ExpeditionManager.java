@@ -443,6 +443,7 @@ public final class ExpeditionManager {
         if (destination != null) {
             player.teleportTo(destination, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
                     Set.of(), player.getYRot(), player.getXRot());
+            JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.WAYFINDING);
         }
         // Stepping through should feel like a deployment — title card up.
         player.connection.send(new ClientboundSetTitlesAnimationPacket(
@@ -472,6 +473,11 @@ public final class ExpeditionManager {
             player.sendSystemMessage(Component.translatable(
                     "message.expeditions.objective_completed", objective.description()));
         }
+        JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CHECKPOINTS);
+        for (UUID member : run.party()) {
+            var online = server.getPlayerList().getPlayer(member);
+            if (online != null) JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.CHECKPOINTS);
+        }
         if (run.completedCheckpoints() == 1) {
             closePortal(run);
         }
@@ -481,6 +487,7 @@ public final class ExpeditionManager {
                 && run.definition().artifactObjectiveAt(run.completedCheckpoints())
                         .isPresent()) {
             grantArtifact(player, run);
+            JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CARGO);
             run.markArtifactIssued();
             player.sendSystemMessage(Component.translatable(
                     "message.expeditions.artifact_recovered"));
@@ -565,6 +572,11 @@ public final class ExpeditionManager {
             }
         }
         run.complete();
+        JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.EXTRACTION);
+        for (UUID member : run.party()) {
+            var online = server.getPlayerList().getPlayer(member);
+            if (online != null) JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.EXTRACTION);
+        }
         if (held != null) {
             held.consume();
         }
@@ -1265,6 +1277,7 @@ public final class ExpeditionManager {
                 ExpeditionsConfig.defenseDeviceHp(), now,
                 objective.timeLimitTicks(),
                 ExpeditionsConfig.defenseWaveSeconds() * 20L);
+        JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.DEFENSE);
         spawnSiegeWave(run, level, devicePos);
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);

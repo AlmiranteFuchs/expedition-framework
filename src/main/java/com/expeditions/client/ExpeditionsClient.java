@@ -42,6 +42,9 @@ public class ExpeditionsClient {
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> com.expeditions.item.ExpeditionFieldJournalItem
+                .setClientOpener(hand -> net.minecraft.client.Minecraft.getInstance()
+                        .setScreen(new FieldJournalScreen(hand))));
         // The layer's translucent membrane mesh needs the translucent
         // render layer; the desaturated skin is drawn by the BER.
         event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(

@@ -40,4 +40,12 @@ public final class ModAttachments {
 
     private ModAttachments() {
     }
+
+    /** Personal field notes survive death and synchronize through the negotiated attachment channel. */
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> JOURNAL_DISCOVERIES =
+            ATTACHMENTS.register("journal_discoveries", () -> AttachmentType.builder(() -> 0)
+                    .serialize(Codec.INT).copyOnDeath()
+                    .sync((holder, to) -> NetworkRegistry.hasChannel(
+                            to.connection, SyncAttachmentsPayload.TYPE.id()), ByteBufCodecs.VAR_INT)
+                    .build());
 }
