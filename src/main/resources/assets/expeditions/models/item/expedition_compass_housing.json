@@ -1,0 +1,39 @@
+{
+  "parent": "item/generated",
+  "display": {
+    "firstperson_righthand": {
+      "rotation": [
+        12,
+        -12,
+        -12
+      ],
+      "translation": [
+        -2.8,
+        4.5,
+        0
+      ],
+      "scale": [
+        0.44,
+        0.44,
+        0.44
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        12,
+        12,
+        12
+      ],
+      "translation": [
+        -2.8,
+        4.5,
+        0
+      ],
+      "scale": [
+        0.44,
+        0.44,
+        0.44
+      ]
+    }
+  }
+}

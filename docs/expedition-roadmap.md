@@ -430,6 +430,15 @@ third-party mod installation remains a manual compatibility check.
 
 ### Remaining work
 
+Compass navigation polish: a signed elevation ember floats over the held
+instrument; right-click attunement adds a vertical spark trace and three
+ascending/descending notes. The ±2-block level band keeps walkable differences
+quiet. All 32 needle frames now retain a carved pale-heartwood housing rather
+than substituting vanilla compass art. Two game tests cover either-hand use,
+cooldown, unchanged tracker data, and invalid/cross-dimension refusal; four
+unit tests cover the elevation rule. MCP client checks verified the held art,
+above/below movement, and an active right-click trail in the disposable world.
+
 Horde compatibility follow-up: selection now reads every non-friendly biome
 spawn category, including NeoForge extensions, instead of only MONSTER.
 Biomes without eligible hostiles fall back to local NeutralMob creatures

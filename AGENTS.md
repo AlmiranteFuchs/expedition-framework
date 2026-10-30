@@ -28,6 +28,7 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   `expeditions_loot`=drops; `expeditions_opts`=options;
   `expeditions_mod`=modifiers; `expeditions_horde`=nether horde;
   `expeditions_dim`=automatic dimensions; `expeditions`=core lifecycle.
+  `expeditions_compass`=compass attunement.
   Each namespace's `arena.nbt` is generated at
   build time from `data/expeditions/structure/arena.nbt` — register new
   namespaces in `gameTestStructureNamespaces` (build.gradle), never copy
@@ -146,6 +147,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   the server sets `DataComponents.LODESTONE_TRACKER` to the next target and
   `ExpeditionsClient` (`@Mod dist = CLIENT`) registers the `angle` property
   that reads `tracker.target()`.
+  `CompassResonance` renders a floating elevation ember in first-person hand
+  space; `CompassElevation` is the pure signed-height rule (two-block level
+  tolerance). Right-click starts a 24-tick reading with a 40-tick cooldown;
+  no useItemOn override, so checkpoint block interactions still take priority.
+  All 32 angle models use the mod's generated heartwood art and shared housing
+  display transforms. Invalid or other-dimension trackers stay dormant.
 - Portal + party lifecycle: `startRun(player, terminalPos)` resolves the
   route at a remote landing spot (`entryMin/Max` travel distance for
   generated routes; authored routes land on the first checkpoint) and spawns
@@ -380,7 +387,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Verified: `build` + 124 unit tests + 98/98 GameTest in-game
+Verified: `build` + 128 unit tests + 100/100 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component and opens the vanilla book GUI —
 `broadcastChanges()` MUST precede the `ClientboundOpenBookPacket` so the

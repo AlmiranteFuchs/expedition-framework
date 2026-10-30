@@ -532,6 +532,12 @@ chunk, and validate on real block state — not heightmap assumptions.
   (default 10, felt out to 3×). The 2D needle says "here"; the heartbeat is
   what says "25 blocks straight down" — the site's heart calling to the
   compass, and the Nether navigation answer.
+  A floating ember now gives a continuous vertical hint: it rises when the
+  target is above, sinks when below, and settles near the needle within two
+  blocks of the same height. Right-click to attune: a short spark trail and
+  three rising/falling chimes clarify the direction, with a two-second
+  cooldown. The carved pale-heartwood compass keeps its own art across all
+  32 needle frames and is held face-on so the whole instrument is readable.
 - **Portal entry + parties** — a run starts at the terminal and spawns a
   portal above it; stepping in teleports the player to a remote, validated
   landing spot the route was generated around. Anyone entering while it's
@@ -677,13 +683,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 124 unit tests + 98 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 128 unit tests + 100 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.5.5.jar` assembled.
-- `./gradlew test` — 124 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **98/98 game tests passed** on a real dedicated
+- `./gradlew test` — 128 unit tests, 0 failures.
+- `./gradlew runGameTestServer -PisolatedGameTests` — **100/100 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,

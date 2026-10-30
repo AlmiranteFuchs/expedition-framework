@@ -332,59 +332,84 @@ def gen_compass():
     All 32 directional models are ours: vanilla angle overrides must never
     replace the carved housing with the ordinary red-and-silver compass.
     """
-    bark = [(26, 23, 22, 255), (44, 39, 33, 255), (69, 61, 48, 255),
-            (100, 91, 70, 255), (141, 133, 105, 255)]
+    bark = [(27, 26, 24, 255), (48, 46, 40, 255), (79, 77, 64, 255),
+            (123, 122, 101, 255), (173, 173, 145, 255), (220, 219, 190, 255)]
     housing = canvas()
-    cx = cy = 7.5
+    cx, cy = 7.5, 8.0
     for y in range(H):
         for x in range(W):
             d = dist(x, y, cx, cy)
-            # An octagonal, slightly split wooden casing, not polished metal.
-            if d > 7.1 or abs(x - cx) + abs(y - cy) > 10:
+            # A pale heartwood shell with a dark recessed dial. The outer
+            # edge is chipped; the inner lip gives the instrument depth.
+            if d > 6.8 or abs(x - cx) + abs(y - cy) > 9.6:
                 continue
-            if d >= 5.3:
-                grain = ((x + y // 3) % 3) * 0.08
-                v = 0.57 - (x - cx) * 0.035 - (y - cy) * 0.045 + grain
+            if d >= 4.6:
+                v = 0.64 - (x - cx) * 0.045 - (y - cy) * 0.048
+                if d > 6.2:
+                    v -= 0.28
+                elif d < 5.2:
+                    v -= 0.22
                 color = ramp_at(bark, v, x, y)
             else:
-                color = mix(DARK, bark[1], max(0, 0.6 - d * 0.08))
+                color = mix(DARK, bark[1], max(0, 0.55 - d * 0.09))
             put(housing, x, y, color)
-    # Pale, angular root fingers clasp the hollow face. Deliberately uneven.
-    roots = [[(3, 3), (4, 4), (4, 5), (5, 6)],
-             [(11, 2), (11, 3), (10, 4), (10, 5)],
-             [(2, 10), (3, 10), (4, 9), (5, 9)],
-             [(12, 12), (11, 11), (10, 11), (10, 10)],
-             [(6, 13), (6, 12), (7, 11)]]
+    # A split suspension loop and pale roots bind the carved housing.
+    for x, y, value in ((6, 0, 2), (7, 0, 3), (8, 0, 2),
+                        (5, 1, 2), (9, 1, 1), (5, 2, 3), (9, 2, 1)):
+        put(housing, x, y, bark[value])
+    roots = [[(3, 3), (3, 4), (4, 5)],
+             [(12, 3), (11, 4)],
+             [(1, 10), (2, 10), (3, 9)],
+             [(12, 12), (11, 11)],
+             [(5, 14), (6, 13), (6, 12)]]
     for root in roots:
         for x, y in root:
-            put(housing, x, y, BONE[3] if x + y < 14 else BONE[1])
-            put(housing, x + 1, y, BONE[1] if x + y < 14 else BONE[0])
-    for x, y in ((5, 5), (10, 5)):
-        put(housing, x, y, EMBER[2])  # dormant creaking-like eye slits
-    for x, y in ((7, 2), (13, 7), (8, 13), (2, 8)):
-        put(housing, x, y, BONE[2])
-    # One crack runs from the core into the grain.
-    for x, y in ((8, 9), (9, 10), (9, 11), (10, 12)):
+            put(housing, x, y, bark[5] if x + y < 13 else bark[3])
+            put(housing, x + 1, y, bark[2] if x + y < 13 else bark[1])
+    # Long bark fissures and tiny dark bindings keep the surface legible
+    # as worn wood, with no random noise or ornament competing with the needle.
+    for x, y in ((4, 3), (5, 4), (2, 7), (2, 8), (12, 8), (13, 9), (8, 13), (8, 14)):
+        put(housing, x, y, bark[0])
+    for x, y in ((6, 6), (9, 6)):
+        put(housing, x, y, EMBER[1])  # quiet, creaking-like eye slits
+    for x, y in ((7, 3), (12, 8), (8, 13), (3, 8)):
+        put(housing, x, y, bark[3])
+    for x, y in ((8, 10), (9, 11), (9, 12)):
         put(housing, x, y, EMBER[1])
 
     model_root = os.path.abspath(os.path.join(ROOT, "../models/item"))
     os.makedirs(model_root, exist_ok=True)
+    parent = "expeditions:item/expedition_compass_housing"
+    with open(os.path.join(model_root, "expedition_compass_housing.json"), "w", encoding="utf-8") as file:
+        json.dump({"parent": "item/generated", "display": {
+            "firstperson_righthand": {"rotation": [12, -12, -12],
+                "translation": [-2.8, 4.5, 0], "scale": [0.44, 0.44, 0.44]},
+            "firstperson_lefthand": {"rotation": [12, 12, 12],
+                "translation": [-2.8, 4.5, 0], "scale": [0.44, 0.44, 0.44]}}}, file, indent=2)
+        file.write("\n")
     frames = []
     for frame in range(32):
         img = housing.copy()
         angle = (frame - 16) * math.tau / 32
         dx, dy = math.sin(angle), -math.cos(angle)
-        # A pale root tail and an ember-lit thorn; clusters, never smooth art.
-        for r in (1, 2, 3, 4):
-            put(img, round(cx - dx * r), round(cy - dy * r), BONE[1 if r > 2 else 2])
-        for r in (1, 2, 3, 4):
-            put(img, round(cx + dx * r), round(cy + dy * r), EMBER[5 if r == 4 else 3])
-        put(img, 7, 7, EMBER[4]); put(img, 8, 8, EMBER[2])
+        # A tapered ember thorn with a pale root tail. Rasterizing the same
+        # shape at each angle preserves its weight when it turns diagonally.
+        for y in range(4, 13):
+            for x in range(3, 13):
+                rx, ry = x - cx, y - cy
+                along = rx * dx + ry * dy
+                across = abs(rx * dy - ry * dx)
+                if 0.4 < along < 4.4 and across < 1.15 - along * 0.17:
+                    put(img, x, y, EMBER[5 if along > 3.2 else 3])
+                elif -3.5 < along < -0.4 and across < 0.58:
+                    put(img, x, y, bark[3 if across < 0.3 else 2])
+        put(img, 7, 8, EMBER[2]); put(img, 8, 8, EMBER[4])
+        put(img, 7, 9, bark[2]); put(img, 8, 9, EMBER[1])
         frames.append(img)
         name = f"expedition_compass_{frame:02d}"
         save(img, f"item/{name}.png")
         with open(os.path.join(model_root, f"{name}.json"), "w", encoding="utf-8") as file:
-            json.dump({"parent": "item/generated", "textures": {
+            json.dump({"parent": parent, "textures": {
                 "layer0": f"expeditions:item/{name}"}}, file, indent=2)
             file.write("\n")
     save(frames[16], "item/expedition_compass.png")
@@ -393,7 +418,7 @@ def gen_compass():
         overrides.append({"predicate": {"angle": (2 * step - 1) / 64},
                           "model": f"expeditions:item/expedition_compass_{(16 + step) % 32:02d}"})
     with open(os.path.join(model_root, "expedition_compass.json"), "w", encoding="utf-8") as file:
-        json.dump({"parent": "item/generated", "textures": {
+        json.dump({"parent": parent, "textures": {
             "layer0": "expeditions:item/expedition_compass"}, "overrides": overrides}, file, indent=2)
         file.write("\n")
 
