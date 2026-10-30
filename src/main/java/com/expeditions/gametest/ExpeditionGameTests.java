@@ -310,12 +310,11 @@ public final class ExpeditionGameTests {
     }
 
     /**
-     * Dimensions without a configured expedition and adapter — here the End —
-     * host no local expedition: a terminal click opens the options menu but
-     * starts nothing on its own.
+     * A terminal click opens the options menu without starting a run, including
+     * in automatically supported dimensions such as the End.
      */
     @GameTest(template = "arena", timeoutTicks = 1200, batch = "expedition_f")
-    public static void unsupportedDimensionRejected(GameTestHelper helper) {
+    public static void automaticDimensionTerminalOpensMenu(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ServerLevel end = server.getLevel(Level.END);
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -328,13 +327,20 @@ public final class ExpeditionGameTests {
 
         ExpeditionManager manager = ExpeditionManager.get(server);
         helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
-                "no run may start in an unsupported dimension");
+                "opening the terminal must not start a run");
+        helper.assertTrue(player.containerMenu instanceof ExpeditionMenu,
+                "the End terminal must open its expedition menu");
+        helper.assertTrue(player.containerMenu.getSlot(10).getItem()
+                        .getOrDefault(DataComponents.LORE,
+                                net.minecraft.world.item.component.ItemLore.EMPTY)
+                        .lines().stream().anyMatch(line -> line.getString().contains("minecraft:the_end")),
+                "the End's automatic expedition must be preselected");
         helper.succeed();
     }
 
     /**
-     * M13's extension point: a third-party-style adapter makes a
-     * vanilla-unsupported dimension expedition-capable. Registered
+     * M13's extension point: a third-party-style adapter overrides automatic
+     * dimension support with specialized placement. Registered
      * test-side exactly like a modded-dimension plugin would, it resolves
      * the run's authored anchors into safe marker spots and the whole
      * lifecycle — start, marker placement, cleanup — flows through it.
@@ -409,13 +415,14 @@ public final class ExpeditionGameTests {
         } finally {
             ExpeditionDefinitions.reload(Map.of());
             failRunIfActive(manager, player);
+            ExpeditionAdapters.unregister(Level.END);
         }
         helper.succeed();
     }
 
     /**
-     * A third-party-style adapter for the End — no built-in support exists,
-     * so this stands in for a modded dimension's own plugin. It scans a
+     * A third-party-style adapter for the End, standing in for a modded
+     * dimension's specialized override of automatic placement. It scans a
      * bounded band for a standable spot: two free blocks above a sturdy,
      * non-hazardous floor, refusing anything else.
      */

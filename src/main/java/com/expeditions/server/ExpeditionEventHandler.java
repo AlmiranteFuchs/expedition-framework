@@ -261,6 +261,7 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("trophies").executes(ExpeditionEventHandler::trophies))
                 .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign))
                 .then(Commands.literal("infection").executes(ExpeditionEventHandler::infection))
+                .then(Commands.literal("dimensions").executes(ExpeditionEventHandler::dimensions))
                 .then(Commands.literal("start")
                         .then(Commands.argument("expedition", ResourceLocationArgument.id())
                                 .suggests(EXPEDITION_SUGGESTIONS)
@@ -287,6 +288,22 @@ public final class ExpeditionEventHandler {
                     java.util.Arrays.stream(Difficulty.values())
                             .map(d -> d.name().toLowerCase(java.util.Locale.ROOT)).toList(),
                     builder);
+
+    private static int dimensions(CommandContext<CommandSourceStack> ctx) {
+        var source = ctx.getSource();
+        var definitions = ExpeditionManager.get(source.getServer()).listStartable();
+        var levels = new java.util.ArrayList<ServerLevel>();
+        source.getServer().getAllLevels().forEach(levels::add);
+        levels.sort(java.util.Comparator.comparing(l -> l.dimension().location().toString()));
+        for (ServerLevel level : levels) {
+            String id = level.dimension().location().toString();
+            String missions = definitions.stream().filter(d -> d.dimension().equals(id))
+                    .map(d -> d.id()).collect(java.util.stream.Collectors.joining(", "));
+            source.sendSystemMessage(Component.literal(id + " — "
+                    + (missions.isEmpty() ? "no expeditions enabled" : missions)));
+        }
+        return levels.size();
+    }
 
     private static int balance(CommandContext<CommandSourceStack> ctx) {
         ServerPlayer player = player(ctx);

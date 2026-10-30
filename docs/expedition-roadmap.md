@@ -415,6 +415,32 @@ fallbacks, and the clamp flowing into `raisePressure`.
 
 ## Next recommended milestone
 
+### Automatic dimension compatibility (2026-10-29)
+
+Loaded dimensions now receive an automatic terrain adapter and a generated
+exploration mission without requiring an addon. Explicit adapters retain
+priority; datapack missions replace automatic defaults for their dimension.
+The automatic scanner validates real floors, hazards and headroom, scans below
+logical ceilings, and refuses void/unsafe routes without creating platforms.
+Automatic mission IDs are `expeditions:auto/<namespace>/<dimension_path>`;
+`/expeditions dimensions` lists loaded dimension IDs and available mission IDs.
+Four integration tests cover listing, remote expedition start through extraction
+and cleanup, void/hazard refusal, and enclosed-dimension placement. A real
+third-party mod installation remains a manual compatibility check.
+
+### Remaining work
+
+Horde compatibility follow-up: selection now reads every non-friendly biome
+spawn category, including NeoForge extensions, instead of only MONSTER.
+Biomes without eligible hostiles fall back to local NeutralMob creatures
+before the generic fallback tag; passive livestock remain excluded. Neutral
+checkpoint/boss mobs receive anger toward their party target. Three optional
+integration probes passed against installed Aether, Bumblezone, and Twilight
+Forest biome data and the shared horde placement/finalization path. Since
+GameTest worlds load only vanilla dimensions, these probes apply the actual
+mod biomes to test platforms. The isolated core-suite option avoids unrelated
+Accessories mock-player payload failures without moving installed mod jars.
+
 Alpha is feature-complete — every roadmap milestone is now closed,
 including M13's extension-point proof and M14's per-dimension overrides.
 Remaining work is hardening and feel: client playtest of the visual

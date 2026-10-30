@@ -27,11 +27,17 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   `expeditions_party`=party/portal; `expeditions_obj`=objectives;
   `expeditions_loot`=drops; `expeditions_opts`=options;
   `expeditions_mod`=modifiers; `expeditions_horde`=nether horde;
-  `expeditions`=core lifecycle. Each namespace's `arena.nbt` is generated at
+  `expeditions_dim`=automatic dimensions; `expeditions`=core lifecycle.
+  Each namespace's `arena.nbt` is generated at
   build time from `data/expeditions/structure/arena.nbt` — register new
   namespaces in `gameTestStructureNamespaces` (build.gradle), never copy
   the nbt by hand.
 - Dev server: `./gradlew runServer`; dev client: `./gradlew runClient`
+- Installed dimension-mod checks: `./gradlew runGameTestServer -PbinaryMinecraft -PgtNamespaces=expeditions_modded_horde`
+  uses actual Aether/Bumblezone/Twilight
+  biome data when installed (optional probes skip absent biomes). Core suite
+  with installed mods that reject mock-player packets: add `-PisolatedGameTests`
+  to use `run/gametest-isolated`; its own `world` is cleaned before each run.
 - Datagen: `./gradlew runData` → `src/generated/resources`
 - Textures: `python3 tools/gen_textures.py` regenerates all asset PNGs
   (16×16, bone/ember ramps, top-left light, ordered dither — no noise)
@@ -47,7 +53,9 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 - `com.expeditions.server.dimension` — `ExpeditionDimensionAdapter` interface +
   Overworld/Nether implementations + `ExpeditionAdapters` registry. This is the
   dimension extension point: adapters own "can a route resolve here and where";
-  lifecycle code must never assume terrain. No adapter → unsupported dimension.
+  lifecycle code must never assume terrain. Unregistered loaded dimensions use
+  `AutomaticDimensionAdapter` (bounded column scan, ceiling-aware); explicit
+  adapters override it. Unsafe routes still refuse before marker placement.
 - `com.expeditions.server` — server-authoritative coordination
   (`ExpeditionManager`), persistence (`ExpeditionSavedData`, overworld
   `DimensionDataStorage`), game-bus hooks (`ExpeditionEventHandler`).
@@ -230,8 +238,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   effects the expedition didn't grant); `hordeEffects` baked into horde mobs
   at spawn. Effect ids validate against the registry at parse; runtime
   lookups degrade to no-ops. Mob pools: `HordePools.pick(level, pos, dim, rng)`
-  resolves smart-first — the biome's natural MONSTER spawn table at the spawn
-  position (weighted; water/lava placements filtered out), overridden ONLY by
+  resolves smart-first — all of the biome's non-friendly spawn categories
+  (including modded categories), then CREATURE entries implementing
+  `NeutralMob` only when no eligible hostiles exist. Passive livestock are
+  excluded. Neutral checkpoint/boss mobs receive persistent anger toward
+  their party target. Spawn pools retain biome weights and filter water/lava
+  placements; they are overridden ONLY by
   a non-empty `horde_mobs/<dim>` entity tag, then `horde_mobs/default`, then
   config `hordeMob`. One type is rolled per horde activation (thematic), not
   per mob.
@@ -368,7 +380,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Verified: `build` + 124 unit tests + 93/93 GameTest in-game
+Verified: `build` + 124 unit tests + 98/98 GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component and opens the vanilla book GUI —
 `broadcastChanges()` MUST precede the `ClientboundOpenBookPacket` so the

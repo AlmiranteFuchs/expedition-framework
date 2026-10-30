@@ -423,9 +423,9 @@ public final class ExpeditionsConfig {
     }
 
     /**
-     * The expedition configured for {@code dimension}, if any. Dimensions with
-     * no configured (or disabled) expedition have none — starting fails with a
-     * clear message before any world changes happen.
+     * Built-in expedition defaults. Other dimensions receive a generated
+     * exploration mission using the Overworld generation and reward settings.
+     * An explicitly disabled Nether expedition stays disabled.
      */
     public static Optional<ExpeditionDefinition> definitionFor(ResourceKey<Level> dimension) {
         if (dimension.equals(Level.OVERWORLD)) {
@@ -471,6 +471,23 @@ public final class ExpeditionsConfig {
                     dimension, NETHER_CHECKPOINTS.get(), NETHER_EXIT.get(),
                     NETHER_TOKENS.get(), NETHER_BONUS_TOKENS.get(),
                     NETHER_BONUS_SECONDS.get());
+        }
+        if (!dimension.equals(Level.NETHER)) {
+            var id = dimension.location();
+            return Optional.of(new ExpeditionDefinition(
+                    "expeditions:auto/" + id.getNamespace() + "/" + id.getPath(),
+                    "Explore " + id, 0, id.toString(),
+                    new RouteGeneration(
+                            OVERWORLD_GENERATION_CHECKPOINTS.get(),
+                            OVERWORLD_GENERATION_MIN_SPACING.get(),
+                            OVERWORLD_GENERATION_MAX_SPACING.get(),
+                            OVERWORLD_GENERATION_EXIT_MIN.get(),
+                            OVERWORLD_GENERATION_EXIT_MAX.get(),
+                            OVERWORLD_GENERATION_MAX_ATTEMPTS.get(),
+                            OVERWORLD_GENERATION_ENTRY_MIN.get(),
+                            OVERWORLD_GENERATION_ENTRY_MAX.get()),
+                    OVERWORLD_TOKENS.get(), OVERWORLD_BONUS_TOKENS.get(),
+                    OVERWORLD_BONUS_SECONDS.get() * TICKS_PER_SECOND));
         }
         return Optional.empty();
     }

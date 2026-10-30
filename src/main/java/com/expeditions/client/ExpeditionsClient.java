@@ -23,6 +23,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.common.NeoForge;
 
 /**
  * Client-only setup: registers the compass needle property for the expedition
@@ -36,6 +37,8 @@ public class ExpeditionsClient {
         modEventBus.addListener(ExpeditionsClient::onClientSetup);
         modEventBus.addListener(ExpeditionsClient::onRegisterRenderers);
         modEventBus.addListener(ExpeditionsClient::onAddLayers);
+        NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
+        NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {

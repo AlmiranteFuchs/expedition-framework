@@ -46,13 +46,22 @@ def gameTestStructureNamespaces = [
     'expeditions_asm', 'expeditions_prog', 'expeditions_art',
     'expeditions_eco', 'expeditions_party', 'expeditions_obj',
     'expeditions_loot', 'expeditions_opts', 'expeditions_mod',
-    'expeditions_horde'
+    'expeditions_horde', 'expeditions_dim', 'expeditions_modded_horde', 'expeditions_compass'
 ]
 ext.allGameTestNamespaces = (['expeditions'] + gameTestStructureNamespaces).join(',')
+// Installed mods can send unsupported packets to GameTest mock players.
+// Opt into a separate directory to run the core suite without those jars.
+def gameTestDirectory = file(project.hasProperty('isolatedGameTests') ? 'run/gametest-isolated' : 'run')
 
 neoForge {
     // Specify the version of NeoForge to use.
-    version = project.neo_version
+    enable {
+        version = project.neo_version
+        // Production mods can target compiler-generated lambda names that
+        // change when Minecraft is recompiled in a development workspace.
+        // Opt into the binary pipeline when testing installed mod jars.
+        disableRecompilation = project.hasProperty('binaryMinecraft')
+    }
 
     parchment {
         mappingsVersion = project.parchment_mappings_version
@@ -82,6 +91,7 @@ neoForge {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
+            gameDirectory = gameTestDirectory
             // -PgtNamespaces=<ns>[,<ns>...] runs only tests whose
             // templateNamespace matches — e.g. expeditions_smoke for the
             // smoke loop, expeditions_def for the defense batch. Feature
@@ -208,7 +218,7 @@ tasks.withType(JavaCompile).configureEach {
 // runs corrupt later results (authored-route anchors sit on shared absolute
 // columns near the origin). Always start from a clean world.
 def cleanGameTestWorld = tasks.register('cleanGameTestWorld', Delete) {
-    delete layout.projectDirectory.dir('run/world')
+    delete new File(gameTestDirectory, 'world')
     mustRunAfter 'prepareGameTestServerRun'
 }
 tasks.named('runGameTestServer') {

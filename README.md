@@ -27,7 +27,9 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 ./gradlew test               # pure-Java unit tests (JUnit 5)
 ./gradlew runServer          # headless dev server in ./run
 ./gradlew runClient          # dev client (GUI)
+./gradlew runClient -PbinaryMinecraft # client with installed production mod jars
 ./gradlew runGameTestServer  # in-game tests: boots a flat-world server, runs them, exits
+./gradlew runGameTestServer -PisolatedGameTests # core tests without jars from run/mods
 ./gradlew runData            # data generation (outputs to src/generated/resources)
 ```
 
@@ -38,6 +40,12 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 > it into `$JAVA_HOME/lib/security/cacerts` with `keytool -importcert`, then stop
 > any running Gradle daemons (`./gradlew --stop`) and retry.
 
+Install compatible NeoForge 1.21.1 mod jars and their dependencies in `run/mods`.
+If an installed mod fails on a compiler-generated lambda name during development
+startup, use `runClient -PbinaryMinecraft`. This uses Minecraft's binary pipeline
+while keeping the same Minecraft and NeoForge versions; it avoids the
+Accessories renderer injection failure encountered with Aether's bundled library.
+
 ## Playing the expedition
 
 1. Place an **Expedition Terminal** (creative tab "Expedition Framework") — it
@@ -45,8 +53,8 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 2. Right-click it. The expedition configured for your current dimension
    starts: a route is resolved at a remote landing spot, marker blocks
    appear there, and an **Expedition Portal** spawns above the terminal. In
-   unsupported dimensions the terminal reports that no expedition is
-   available.
+   dimensions without datapack missions, an automatic exploration mission
+   is available; unsafe routes refuse before placing markers.
 3. Step into the portal. It teleports you to the run's landing spot and
    hands you an **Expedition Compass** that always points at your next
    target — the next checkpoint, then the exit once all are done.
@@ -76,7 +84,15 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
    portal again if you never entered).
 
 Commands: `/expeditions status`, `/expeditions balance`, `/expeditions abandon`,
-`/expeditions unlocks`.
+`/expeditions unlocks`, `/expeditions dimensions`.
+
+Loaded dimensions (including modded ones and the End) automatically receive an
+exploration mission unless datapack missions already cover them. Select it by
+cycling the expedition option in the terminal. `/expeditions dimensions` lists
+dimension IDs and mission IDs; start one with `/expeditions start <mission_id>`.
+Automatic IDs have the form `expeditions:auto/<namespace>/<dimension_path>`, for
+example `/expeditions start expeditions:auto/minecraft/the_end`.
+Restart the game after updating the mod to load this behavior.
 
 ## Route configuration
 
@@ -157,7 +173,9 @@ values alone:
 - **Nether** — downward column scan (y 121→33) for two free blocks above a
   sturdy, hazard-free floor; unsafe columns refuse the run rather than
   guessing.
-- **Any other dimension** — no adapter → expeditions refuse to start.
+- **Other loaded dimensions** — an automatic adapter scans actual terrain for
+  safe floors and headroom, below the logical ceiling in enclosed dimensions.
+  Void and unsafe routes refuse cleanly. A registered custom adapter takes priority.
 
 Generated anchors may retry up to `maxAttempts` nearby candidate columns
 (±16-block ring); authored anchors are strict. Resolution is bounded — at
@@ -320,10 +338,10 @@ plus the jitter fallback.
 Precedence and rules:
 
 - A datapack definition for a dimension **overrides** the config expedition.
-- With multiple datapack definitions for one dimension, the lowest
-  `<namespace>:<name>` id wins.
-- Expeditions still require a dimension **adapter** — a datapack entry cannot
-  enable expeditions in an unsupported dimension.
+- The menu lists all datapack definitions. Dimension-local default selection
+  uses the lowest `<namespace>:<name>` ID.
+- Loaded dimensions have an automatic **adapter**; explicit adapters override
+  it for unusual terrain. Every route still requires safe destination columns.
 - Malformed files are skipped and logged; they never break other definitions.
 
 ### Reward pools
@@ -345,15 +363,21 @@ modded dimensions:
 ### Horde pools
 
 Hordes are **smart by default**: the pool is the checkpoint biome's own
-natural monster spawn table (spawn weights included), so a desert checkpoint
+natural hostile spawn categories (spawn weights included), so a desert checkpoint
 rolls husks, the Nether rolls its natives, and modded biomes/dimensions roll
 the mod's registered mobs — nothing to configure. Water/lava-spawn types are
 filtered out since the horde fights on land.
 
+Custom hostile categories are included (for example Aether's surface, sky,
+and darkness monsters). If a biome has no eligible hostiles, its neutral
+combat creatures are used next, such as Bumblezone bees. Passive livestock
+are excluded. Neutral checkpoint and boss mobs receive anger toward their
+party target as well as the ordinary attack target.
+
 Explicit control is still available: a non-empty
 `expeditions:horde_mobs/<dimension path>` entity tag **replaces** the natural
 pool for that dimension (plain datapack, `"replace": false` merges). If a
-dimension's biomes spawn nothing at all, `horde_mobs/default` and finally
+dimension's biome has no eligible hostile or neutral combat mobs, `horde_mobs/default` and finally
 the config `hordeMob` id are used.
 
 Draw weights come from `ItemValuator`'s stat score, so pool items rank by
@@ -400,11 +424,13 @@ The expedition lifecycle (markers, checkpoints, portal, challenges, rewards,
 persistence) never branches on which dimension a run is in — dimension
 support reduces to one seam: the **adapter**. Three outcomes per dimension:
 
-- **Supported** — an adapter is registered; any datapack definition (or
-  built-in config section) targeting that dimension can start runs.
-- **Requires integration** — a dimension mod needs a small adapter class.
-- **Unsupported** — no adapter; terminals refuse cleanly, nothing is placed.
-  Registry presence alone never implies support.
+- **Automatic** — every loaded dimension gets a conservative terrain adapter
+  and a generated exploration mission. Defaults reuse the Overworld generation
+  and reward settings, even when the Overworld uses an authored route.
+- **Customized** — datapack missions replace the automatic mission for their
+  dimension. An explicitly registered adapter overrides automatic placement.
+- **Unsafe terrain** — routes that cannot find safe floors and headroom refuse
+  before placing markers or charging tokens. No platforms are created.
 
 An addon (or a dimension mod itself) registers an adapter at any point —
 lookup happens when a run starts:
@@ -439,8 +465,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   in the Overworld and the Nether.
 - **Dimension adapters** — `ExpeditionDimensionAdapter` resolves route anchors
   per dimension: Overworld (heightmap), Nether (safe-column scan via pure
-  `SafeColumnSearch`), everything else explicitly unsupported. Register new
-  adapters via `ExpeditionAdapters.register`.
+  `SafeColumnSearch`), other loaded dimensions (ceiling-aware automatic scan).
+  Register overrides via `ExpeditionAdapters.register`.
 - **Per-dimension expeditions** — config sections per dimension; the terminal
   starts the expedition matching the player's dimension.
 - **Per-player runs** — one active run per player, enforced by the ledger.
@@ -550,7 +576,8 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Expedition modifiers** — datapack `"modifiers"` force weather on the
   expedition's dimension, apply mob effects to party members for the run's
   duration, and bake permanent buffs into spawned horde mobs. Horde types
-  roll from the spawn site's natural monster table — dimension-, biome- and
+  roll from the spawn site's natural hostile categories (or neutral combat
+  creatures when there are no hostiles) — dimension-, biome- and
   mod-aware with no configuration; `expeditions:horde_mobs/<dimension>`
   entity tags override explicitly.
 - **Run summary** — every member gets a structured end-of-run breakdown:
@@ -650,13 +677,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the glowing blob doubles as the
   route's landmark.
-- **Tests** — 124 unit tests + 94 GameTest in-game tests.
+- **Tests** — 124 unit tests + 98 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.5.5.jar` assembled.
 - `./gradlew test` — 124 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **93/93 game tests passed** on a real dedicated
+- `./gradlew runGameTestServer` — **98/98 game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -668,7 +695,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   - the exit refuses unfinished runs,
   - the Nether expedition resolves inside the safe scan window and its markers
     are placed and removed in the Nether,
-  - the End refuses to start a run (unsupported dimension),
+  - End terminals preselect their automatic exploration mission; opening the
+    menu does not start a run,
   - save→load preserves active runs, progress, terminal states, reward flags
     and balances,
   - malformed run/balance records are skipped without corrupting the rest,
@@ -788,8 +816,9 @@ chunk, and validate on real block state — not heightmap assumptions.
   same checkpoints cooperatively.
 - An offline member when the run ends keeps their compass until next login
   (it is swept on join) and is not teleported back.
-- One expedition per dimension wins (lowest datapack id or the config
-  section); each dimension still needs an adapter to be supported.
+- The menu lists all datapack missions; dimension-local default selection uses
+  the lowest datapack ID, then config or automatic defaults. Exotic terrain
+  can supply an explicit adapter when automatic scanning is insufficient.
 - The Nether adapter guarantees a safe marker spot but not a safe *path*
   between markers — generated legs can still span lava lakes or open air.
 - A permanently-offline player's active run keeps its markers until they next
@@ -835,7 +864,7 @@ no custom menu type).
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
   (`SimpleJsonResourceReloadListener`) + `ExpeditionDefinitions` (immutable
   snapshot, datapack-over-config precedence).
-- `com.expeditions.gametest` — `ExpeditionGameTests` (86 tests in
+- `com.expeditions.gametest` — `ExpeditionGameTests` and `DimensionCompatibilityTests` (97 tests in
   per-feature filter namespaces — run one with
   `-PgtNamespaces=expeditions_<feature>`) + `ExpeditionSmokeTests`
   (1-test fast loop).
@@ -854,5 +883,4 @@ The roadmap's alpha surface is feature-complete; next is hardening and feel:
 
 1. Client playtest of the visual layer (trace pulse, membrane, colonies).
 2. Third-party dimension smoke (M13's open gap).
-3. Per-dimension config overrides and a Big Bad design pass beyond the
-   current assault-wave prototype.
+3. A Big Bad design pass beyond the current assault-wave prototype.

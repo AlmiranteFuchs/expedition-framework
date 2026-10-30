@@ -15,8 +15,9 @@ import net.minecraft.world.level.Level;
  * lifecycle code.
  *
  * <p>Resolution is deliberately conservative: an adapter returns empty rather
- * than guessing an unsafe spot. A dimension with no adapter is unsupported and
- * the manager refuses to start runs there.
+ * than guessing an unsafe spot. Loaded dimensions without an explicitly
+ * registered adapter use {@link AutomaticDimensionAdapter}; unresolved routes
+ * still refuse before placing markers or charging tokens.
  */
 public interface ExpeditionDimensionAdapter {
     /** The dimension this adapter serves. */

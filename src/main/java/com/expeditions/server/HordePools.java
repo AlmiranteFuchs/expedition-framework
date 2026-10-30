@@ -15,6 +15,8 @@ import net.minecraft.util.random.WeightedEntry;
 import net.minecraft.util.random.WeightedRandom;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.SpawnPlacementType;
 import net.minecraft.world.entity.SpawnPlacementTypes;
 import net.minecraft.world.entity.SpawnPlacements;
@@ -22,12 +24,12 @@ import net.minecraft.world.level.biome.MobSpawnSettings;
 
 /**
  * What a horde spawns, resolved smart-first: the pool is the biome's own
- * natural MONSTER spawn table at the horde's position — dimension-, biome-
+ * natural hostile spawn categories at the horde's position — dimension-, biome-
  * and mod-aware by construction (deserts roll husks, modded biomes roll the
  * mod's registered mobs) with no configuration needed. Explicit control is
  * still possible: a non-empty {@code expeditions:horde_mobs/<dimension path>}
  * entity tag replaces the natural pool entirely, {@code horde_mobs/default}
- * covers dimensions whose biomes spawn nothing, and the config
+ * covers dimensions with no local combat mobs, and the config
  * {@code expeditions.challenges.hordeMob} id is the final fallback.
  */
 public final class HordePools {
@@ -89,7 +91,9 @@ public final class HordePools {
     }
 
     /**
-     * The biome's monster spawn table as a weighted list, minus types that
+     * All hostile categories, including NeoForge enum extensions used by
+     * dimension mods. Biomes without hostiles can supply neutral combat mobs
+     * (e.g. bees), but never passive livestock. Minus types that
      * can't fight on land (water/lava-spawn placements) — a drowned or
      * strider rolled onto dry ground is a bug, not variety. Types with no
      * registered placement (some modded mobs) are assumed land-capable.
@@ -97,12 +101,24 @@ public final class HordePools {
     private static List<WeightedEntry.Wrapper<EntityType<?>>> naturalPool(
             ServerLevel level, BlockPos pos) {
         List<WeightedEntry.Wrapper<EntityType<?>>> pool = new ArrayList<>();
-        for (MobSpawnSettings.SpawnerData spawn
-                : level.getBiome(pos).value().getMobSettings()
-                        .getMobs(MobCategory.MONSTER).unwrap()) {
-            if (canFightOnLand(spawn.type)) {
-                pool.add(WeightedEntry.wrap(spawn.type,
-                        spawn.getWeight().asInt()));
+        MobSpawnSettings settings = level.getBiome(pos).value().getMobSettings();
+        for (MobCategory category : settings.getSpawnerTypes()) {
+            if (category.isFriendly()) {
+                continue;
+            }
+            for (MobSpawnSettings.SpawnerData spawn : settings.getMobs(category).unwrap()) {
+                if (canFightOnLand(spawn.type)) {
+                    pool.add(WeightedEntry.wrap(spawn.type, spawn.getWeight().asInt()));
+                }
+            }
+        }
+        if (pool.isEmpty()) {
+            for (MobSpawnSettings.SpawnerData spawn : settings.getMobs(MobCategory.CREATURE).unwrap()) {
+                if (canFightOnLand(spawn.type)
+                        && spawn.type.create(level) instanceof Mob mob
+                        && mob instanceof NeutralMob) {
+                    pool.add(WeightedEntry.wrap(spawn.type, spawn.getWeight().asInt()));
+                }
             }
         }
         return pool;

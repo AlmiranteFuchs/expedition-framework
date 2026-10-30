@@ -7,6 +7,8 @@
   "block.expeditions.assimilation_layer": "Assimilation Layer",
   "block.expeditions.assimilation_heart": "Microbiome Heart",
   "item.expeditions.expedition_compass": "Expedition Compass",
+  "item.expeditions.compass_ember_hint": "Its ember rises toward higher ground and sinks toward the depths.",
+  "item.expeditions.compass_attune_hint": "Use to attune: follow the drifting sparks and rising or falling chime.",
   "item.expeditions.expedition_artifact": "Expedition Artifact",
   "item.expeditions.assimilation_essence": "Assimilation Essence",
   "item.expeditions.attunement_sigil": "Attunement Sigil",

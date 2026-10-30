@@ -67,6 +67,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -363,8 +364,8 @@ public final class ExpeditionManager {
 
     /**
      * Every expedition that could start right now: datapack definitions plus
-     * the built-in config ones they don't shadow, filtered to dimensions that
-     * are loaded and have an adapter — the same "can a run actually resolve
+     * the config and automatic defaults they don't shadow, filtered to
+     * loaded dimensions — the same "can a run actually resolve
      * here" test the start path applies.
      */
     public List<ExpeditionDefinition> listStartable() {
@@ -376,13 +377,14 @@ public final class ExpeditionManager {
                 coveredDimensions.add(definition.dimension());
             }
         }
-        for (ResourceKey<Level> builtin : List.of(Level.OVERWORLD, Level.NETHER)) {
-            if (coveredDimensions.contains(builtin.location().toString())) {
+        for (ServerLevel loadedLevel : server.getAllLevels()) {
+            ResourceKey<Level> dimension = loadedLevel.dimension();
+            if (coveredDimensions.contains(dimension.location().toString())) {
                 continue;
             }
-            ExpeditionsConfig.definitionFor(builtin)
+            ExpeditionsConfig.definitionFor(dimension)
                     .filter(this::isStartable)
-                    .ifPresent(d -> startable.put(d.id(), d));
+                    .ifPresent(d -> startable.putIfAbsent(d.id(), d));
         }
         return List.copyOf(startable.values());
     }
@@ -1127,7 +1129,7 @@ public final class ExpeditionManager {
             if (buffed) {
                 pressureBuffs(mob);
             }
-            mob.setTarget(nearestMember(run, level, mob.blockPosition()));
+            targetHordeMob(mob, nearestMember(run, level, mob.blockPosition()));
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
             }
@@ -1145,6 +1147,15 @@ public final class ExpeditionManager {
      */
     private static void markAssimilated(Mob mob, int stage) {
         mob.setData(ModAttachments.ASSIMILATED, stage);
+    }
+
+    /** Neutral local fauna need anger as well as a target to keep fighting. */
+    private static void targetHordeMob(Mob mob, ServerPlayer target) {
+        if (target != null && mob instanceof NeutralMob neutral) {
+            neutral.setPersistentAngerTarget(target.getUUID());
+            neutral.startPersistentAngerTimer();
+        }
+        mob.setTarget(target);
     }
 
     /**
@@ -1198,7 +1209,7 @@ public final class ExpeditionManager {
                 mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST,
                         MobEffectInstance.INFINITE_DURATION, 4, false, false));
             }
-            mob.setTarget(nearestMember(run, level, mob.blockPosition()));
+            targetHordeMob(mob, nearestMember(run, level, mob.blockPosition()));
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
             }

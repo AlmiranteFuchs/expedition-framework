@@ -10,6 +10,7 @@ Every texture is 16x16, vanilla-plus resolution. Style rules:
 Run: python3 tools/gen_textures.py   (writes into src/main/resources)
 """
 import math
+import json
 import os
 import random
 from PIL import Image
@@ -326,21 +327,85 @@ def _circle_item(img, cx, cy, r, face_ramp, rim_ramp, rim_lo, rim_hi):
 
 
 def gen_compass():
-    """Bone compass: dark rim, tick marks, two-tone ember needle."""
-    img = canvas()
-    _circle_item(img, 8, 8, 7.2, BONE, BONE, 0.12, 0.4)
-    for tx, ty in ((8, 4), (8, 12), (4, 8), (12, 8)):   # cardinal ticks
-        put(img, tx, ty, OUTLINE)
-    put(img, 8, 4, EMBER[3])                            # north burns
-    # needle: a crisp two-wide diagonal, ember tip NE, dark tail SW
-    for x, y in ((4, 11), (5, 10), (6, 9), (7, 8), (4, 10), (5, 9),
-                 (6, 8), (7, 7)):
-        put(img, x, y, mix(BONE[0], OUTLINE, 0.45))
-    for x, y in ((8, 7), (9, 6), (10, 5), (11, 4), (9, 7), (10, 6),
-                 (11, 5), (12, 4)):
-        put(img, x, y, EMBER[4] if x + y <= 15 else EMBER[3])
-    put(img, 8, 8, EMBER[4])                            # axle pin
-    save(img, "item/expedition_compass.png")
+    """A dark wooden heart-cage, pale root ribs and a living ember needle.
+
+    All 32 directional models are ours: vanilla angle overrides must never
+    replace the carved housing with the ordinary red-and-silver compass.
+    """
+    bark = [(26, 23, 22, 255), (44, 39, 33, 255), (69, 61, 48, 255),
+            (100, 91, 70, 255), (141, 133, 105, 255)]
+    housing = canvas()
+    cx = cy = 7.5
+    for y in range(H):
+        for x in range(W):
+            d = dist(x, y, cx, cy)
+            # An octagonal, slightly split wooden casing, not polished metal.
+            if d > 7.1 or abs(x - cx) + abs(y - cy) > 10:
+                continue
+            if d >= 5.3:
+                grain = ((x + y // 3) % 3) * 0.08
+                v = 0.57 - (x - cx) * 0.035 - (y - cy) * 0.045 + grain
+                color = ramp_at(bark, v, x, y)
+            else:
+                color = mix(DARK, bark[1], max(0, 0.6 - d * 0.08))
+            put(housing, x, y, color)
+    # Pale, angular root fingers clasp the hollow face. Deliberately uneven.
+    roots = [[(3, 3), (4, 4), (4, 5), (5, 6)],
+             [(11, 2), (11, 3), (10, 4), (10, 5)],
+             [(2, 10), (3, 10), (4, 9), (5, 9)],
+             [(12, 12), (11, 11), (10, 11), (10, 10)],
+             [(6, 13), (6, 12), (7, 11)]]
+    for root in roots:
+        for x, y in root:
+            put(housing, x, y, BONE[3] if x + y < 14 else BONE[1])
+            put(housing, x + 1, y, BONE[1] if x + y < 14 else BONE[0])
+    for x, y in ((5, 5), (10, 5)):
+        put(housing, x, y, EMBER[2])  # dormant creaking-like eye slits
+    for x, y in ((7, 2), (13, 7), (8, 13), (2, 8)):
+        put(housing, x, y, BONE[2])
+    # One crack runs from the core into the grain.
+    for x, y in ((8, 9), (9, 10), (9, 11), (10, 12)):
+        put(housing, x, y, EMBER[1])
+
+    model_root = os.path.abspath(os.path.join(ROOT, "../models/item"))
+    os.makedirs(model_root, exist_ok=True)
+    frames = []
+    for frame in range(32):
+        img = housing.copy()
+        angle = (frame - 16) * math.tau / 32
+        dx, dy = math.sin(angle), -math.cos(angle)
+        # A pale root tail and an ember-lit thorn; clusters, never smooth art.
+        for r in (1, 2, 3, 4):
+            put(img, round(cx - dx * r), round(cy - dy * r), BONE[1 if r > 2 else 2])
+        for r in (1, 2, 3, 4):
+            put(img, round(cx + dx * r), round(cy + dy * r), EMBER[5 if r == 4 else 3])
+        put(img, 7, 7, EMBER[4]); put(img, 8, 8, EMBER[2])
+        frames.append(img)
+        name = f"expedition_compass_{frame:02d}"
+        save(img, f"item/{name}.png")
+        with open(os.path.join(model_root, f"{name}.json"), "w", encoding="utf-8") as file:
+            json.dump({"parent": "item/generated", "textures": {
+                "layer0": f"expeditions:item/{name}"}}, file, indent=2)
+            file.write("\n")
+    save(frames[16], "item/expedition_compass.png")
+    overrides = [{"predicate": {"angle": 0.0}, "model": "expeditions:item/expedition_compass_16"}]
+    for step in range(1, 33):
+        overrides.append({"predicate": {"angle": (2 * step - 1) / 64},
+                          "model": f"expeditions:item/expedition_compass_{(16 + step) % 32:02d}"})
+    with open(os.path.join(model_root, "expedition_compass.json"), "w", encoding="utf-8") as file:
+        json.dump({"parent": "item/generated", "textures": {
+            "layer0": "expeditions:item/expedition_compass"}, "overrides": overrides}, file, indent=2)
+        file.write("\n")
+
+    ember = canvas()
+    for y in range(H):
+        for x in range(W):
+            d = abs(x - 7.5) + abs(y - 7.5)
+            if d < 7:
+                color = ramp_at(EMBER, max(0.2, 1 - d / 7), x, y)
+                put(ember, x, y, (*color[:3], int(255 * max(0, 1 - d / 7) ** 1.5)))
+    put(ember, 7, 7, EMBER[5]); put(ember, 8, 7, EMBER[4])
+    save(ember, "item/compass_ember.png")
 
 
 def gen_artifact():
