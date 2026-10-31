@@ -34,6 +34,7 @@ bin/
 
 ### Python art tools ###
 __pycache__/
+art-exports/
 
 ### Minecraft Modding ###
 run/
