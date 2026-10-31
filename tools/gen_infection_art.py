@@ -22,45 +22,38 @@ def generate(root):
             active = [path for i, path in enumerate(paths) if mask & (1 << i)]
             if not active: active = [[(cx - 3, cy + 3), (cx - 2, cy), (cx, cy), (cx + 2, cy - 2)]]
             for path in active:
-                d.line([(min(15, x + 1), min(15, y + 1)) for x, y in path], fill=(20, 28, 19, 110), width=4)
+                d.line([(min(15, x + 1), min(15, y + 1)) for x, y in path], fill=(75, 68, 60, 65), width=5)
             for path in active:
                 # A swollen root narrows towards its neighbour, with broken bark highlights.
                 for i in range(len(path) - 1):
-                    d.line(path[i:i+2], fill='#34432b', width=max(2, 4-i))
-                    d.line(path[i:i+2], fill='#68794b', width=max(1, 2-i))
-                d.point(path[1], fill='#919b6c')
-            # An irregular rooted palm, with hooked root hairs instead of straight spokes.
+                    d.line(path[i:i+2], fill='#aaa296', width=max(2, 5-i*2))
+                    d.line(path[i:i+2], fill='#d1c9ba', width=max(1, 3-i))
+                d.point(path[1], fill='#e0dace')
+            # Chipped pale bark grips the host, split by one narrow amber fissure.
             d.polygon([(cx-2, cy-1), (cx-1, cy-3), (cx+2, cy-2), (cx+3, cy),
-                       (cx+1, cy+2), (cx-2, cy+2)], fill='#3d4c30')
-            d.line([(cx-2, cy+2), (cx-3, cy+3), (cx-4, cy+2), (cx-3, cy+1)], fill='#7d8a58')
-            d.line([(cx+1, cy-1), (cx+3, cy-3), (cx+4, cy-2)], fill='#889362')
-            d.line([(cx-1, cy+1), (cx, cy-1), (cx+1, cy-2)], fill='#a4a77a')
-            d.point((cx, cy), fill='#704125')
-            e.point((cx, cy), fill='#d18a3b')
+                       (cx+1, cy+2), (cx-2, cy+2)], fill='#aaa499')
+            d.line([(cx-2, cy+2), (cx-3, cy+2), (cx-3, cy+1)], fill='#d9d3c7')
+            d.line([(cx+1, cy-1), (cx+1, cy-3), (cx+3, cy-3)], fill='#bcb6a9')
+            d.line([(cx-1, cy+1), (cx-1, cy-1), (cx+1, cy-1)], fill='#e8e0d1')
+            # Broken grain lives inside the pale tissue, without a uniform bright outline.
+            d.point((cx-2, cy), fill='#70665a')
+            d.point((cx+2, cy-1), fill='#ded5c4')
+            d.line([(cx+1, cy+1), (cx+2, cy+2)], fill='#9c6a39')
+            d.line([(cx, cy+1), (cx, cy-1)], fill='#765037')
+            d.point((cx, cy), fill='#be792d')
+            e.point((cx, cy), fill='#e3a348')
             # Standardize endpoints after drawing shadows/branches.
             ports = [[(7, 0), (8, 0)], [(15, 7), (15, 8)], [(7, 15), (8, 15)], [(0, 7), (0, 8)]]
             for n in range(16):
                 for point in [(n, 0), (n, 15), (0, n), (15, n)]: d.point(point, fill=(0, 0, 0, 0))
             for i, points in enumerate(ports):
                 if mask & (1 << i):
-                    d.point(points[0], fill='#68794b'); d.point(points[1], fill='#34432b')
+                    d.point(points[0], fill='#c6c1b3'); d.point(points[1], fill='#77716a')
             index = mask * 4 + variant
             offset = (index % 8 * 16, index // 8 * 16)
             atlas.alpha_composite(tile, offset); heat.alpha_composite(ember, offset)
     atlas.save(root / 'block/assimilation_connections.png')
     heat.save(root / 'block/assimilation_connections_embers.png')
-
-    # Uneven longitudinal bark fissures, avoiding transverse stripes on narrow fingers.
-    relief = Image.new('RGBA', (16, 16), '#586544'); r = ImageDraw.Draw(relief)
-    r.polygon([(0, 0), (4, 0), (6, 6), (3, 12), (4, 15), (0, 15)], fill='#3b4b31')
-    r.polygon([(9, 0), (12, 0), (11, 6), (13, 10), (10, 15), (8, 15)], fill='#7c885c')
-    r.line([(5, 0), (7, 5), (5, 11), (6, 15)], fill='#899369')
-    r.line([(14, 2), (12, 7), (14, 13)], fill='#465638')
-    relief.save(root / 'block/assimilation_relief.png')
-    resin = Image.new('RGBA', (16, 16)); r = ImageDraw.Draw(resin)
-    r.rectangle((5, 6, 10, 9), fill='#7c4b26')
-    r.rectangle((7, 6, 9, 8), fill='#c18b42')
-    resin.save(root / 'block/assimilation_relief_resin.png')
 
     scars = Image.new('RGBA', (64, 64)); d = ImageDraw.Draw(scars)
     embers = Image.new('RGBA', (64, 64)); e = ImageDraw.Draw(embers)
@@ -71,11 +64,11 @@ def generate(root):
                        (33, 21, 1), (18, 31, -1), (50, 29, 1), (4, 37, 1),
                        (35, 49, -1), (51, 43, 1)]:
         points = [(x, y), (x + flip * 2, y + 2), (x + flip, y + 5)]
-        d.line(points, fill=(40, 51, 33, 235), width=3)
-        d.line(points, fill=(125, 139, 96, 225))
-        d.line([(x + flip * 2, y + 2), (x + flip * 4, y + 1)], fill=(76, 91, 59, 160))
-        d.point((x - flip, y), fill=(149, 153, 116, 170))
-        d.line([(x + flip, y + 4), (x - flip * 2, y + 6)], fill=(85, 101, 62, 210))
+        d.line(points, fill=(91, 83, 73, 235), width=3)
+        d.line(points, fill=(193, 185, 168, 225))
+        d.line([(x + flip * 2, y + 2), (x + flip * 4, y + 1)], fill=(157, 148, 132, 160))
+        d.point((x - flip, y), fill=(222, 214, 196, 170))
+        d.line([(x + flip, y + 4), (x - flip * 2, y + 6)], fill=(174, 164, 145, 210))
     for x, y in [(11, 11), (23, 26), (44, 24), (27, 53), (19, 10), (34, 23), (51, 45), (7, 26)]:
         d.point((x, y), fill=(116, 68, 31, 200)); e.point((x, y), fill='#b67b35')
     scars.save(root / 'entity/infection_scars.png')

@@ -108,13 +108,13 @@ def gen_layer(root):
              [(6, 4), (3, 3), (2, 0)],
              [(6, 12), (9, 12), (11, 14), (12, 15)]]
     for points in roots:
-        draw.line([(x+1, y+1) for x, y in points], fill=(29, 35, 24, 95), width=2)
+        draw.line([(x+1, y+1) for x, y in points], fill=(43, 39, 35, 95), width=2)
     for points in roots:
-        draw.line(points, fill=(82, 88, 63, 255), width=2)
-        draw.line(points, fill=(184, 186, 149, 255))
+        draw.line(points, fill=(119, 113, 106, 255), width=2)
+        draw.line(points, fill=(198, 193, 179, 255))
     for points in [[(7, 14), (6, 12), (7, 10)], [(7, 6), (6, 4), (7, 1)],
                    [(9, 6), (10, 5), (12, 5)], [(5, 9), (4, 9), (2, 10)]]:
-        draw.line(points, fill=(223, 222, 183, 255))
+        draw.line(points, fill=(238, 231, 217, 255))
     for x, y in [(7, 8), (11, 5)]:
         draw.point((x, y-1), fill=WOOD[0]); draw.point((x+1, y), fill=WOOD[0])
         draw.point((x, y), fill=EMBER[1]); draw.point((x-1, y), fill=EMBER[2])

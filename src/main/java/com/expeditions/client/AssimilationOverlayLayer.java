@@ -29,7 +29,7 @@ public class AssimilationOverlayLayer<T extends LivingEntity, M extends EntityMo
                 0, entity.getUUID().getMostSignificantBits());
         int overlay = LivingEntityRenderer.getOverlayCoords(entity, 0);
         getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.entityTranslucent(textures.get().scars())), light,
-                overlay, FastColor.ARGB32.color((int)(255 * (.60f + .30f * taken)), 218, 225, 200));
+                overlay, FastColor.ARGB32.color((int)(255 * (.60f + .30f * taken)), 235, 229, 216));
         // Small resin fissures are emissive. Cap RGB as well as alpha for additive blending.
         float heat = pulse * (.4f + .6f * taken);
         getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.eyes(textures.get().embers())), light,

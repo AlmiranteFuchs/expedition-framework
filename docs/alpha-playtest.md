@@ -1,4 +1,4 @@
-# 0.6.0-alpha.6: playable alpha candidate
+# 0.6.0-alpha.7: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -130,16 +130,15 @@ spore/ash shedding. Native skin transparency and ordinary lesion lighting stay
 intact. Resin fades in RGB as well as alpha for additive rendering, so dead
 hearts leave cold scars. Nearby mob particles share a four-per-tick client budget.
 
-Alpha.6 replaces the straight rib silhouette with irregular swollen root bases
-and two or three unequal hooked fingers. The tapered joints project from the
-host and flex towards the local player's body within four blocks, including in
-third person. Connected atlas edge ports remain reciprocal and unrotated. The
-free fingers fade at 10–14 blocks to bound the extra geometry; dead-heart growth
-keeps a static silhouette. The host surface remains the harvest target and the
-decorative fingers have no collision. Live checks covered floor/wall junctions,
-all six faces of a suspended support, and close versus distant views. Build,
-137 unit tests and all 120 core GameTests pass (the isolated full run reports
-123 including three optional biome probes that skip absent modded biomes).
+Alpha.7 removes all raised layer geometry and the experimental fingers. The
+texture-only layer uses connected pale bark tissue, warm gray grain and small
+amber fissures. The same palette replaces green across the inventory art, mob
+lesions and dust. Connection ports remain reciprocal and unrotated; harvest
+targeting and empty collision stay unchanged.
+Verified the flat floor/wall rendering in the disposable debug save, all 64 tile
+edge contracts and the pale/amber palette. Build, 137 unit tests and the full
+GameTest suite pass (120 core tests plus three optional biome probes that skip
+absent modded biomes in the isolated run).
 
 ```powershell
 .\gradlew.bat build

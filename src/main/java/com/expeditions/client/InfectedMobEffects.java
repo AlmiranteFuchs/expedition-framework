@@ -10,7 +10,7 @@ import org.joml.Vector3f;
 
 /** Local drifting spores, including mobs whose renderer cannot accept our skin layer. */
 final class InfectedMobEffects {
-    private static final DustParticleOptions SPORE = new DustParticleOptions(new Vector3f(.48f, .53f, .32f), .65f);
+    private static final DustParticleOptions SPORE = new DustParticleOptions(new Vector3f(.76f, .72f, .64f), .65f);
     private InfectedMobEffects() { }
 
     static void onClientTick(ClientTickEvent.Post event) {

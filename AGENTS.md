@@ -326,11 +326,11 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   Mob lesions use native-skin alpha masks, normal lighting and sparse, dim ember
   points; dynamic skins with no readable source are skipped rather than painted
   opaque. The bounded texture cache clears on resource reload.
-  `BloomRelief` caches 64 rooted claw meshes. Tapered fingers lift off the host,
-  curl towards the local player's body within four blocks and fade at 10–14
-  blocks; rooted palms fade at 20–24. The thin host surface is still the harvest
-  target and there is no collision. Dead-heart fingers stop reaching and glowing.
-  Only free fingers rotate; keep the base connections unrotated. Nearby infected mobs shed client-side spores/ash with
+  The assimilation layer is strictly flat, texture-only art: pale bark tissue,
+  warm gray grain and sparse amber fissures on the bleached host. No raised
+  cuboids, fingers, tubes or proximity bending; no vine-green palette. Keep
+  connection ports unrotated. The host surface stays the harvest target and
+  collision stays empty. Nearby infected mobs shed pale client-side dust/ash with
   a shared four-particle-per-tick budget, 24-block range and stage-based cadence.
   Infection grants neither nausea nor vanilla Darkness. `BloomVignette` caps
   the border pulse at 10% opacity and leaves fog/central vision unchanged.

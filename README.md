@@ -653,7 +653,7 @@ chunk, and validate on real block state — not heightmap assumptions.
   attachment mirrors the player's infection stage, so the take shows on
   player skins too. Renderers that can't carry layers get an ember/ash
   particle signature instead — "taken" reads on anything.
-  Nearby infected mobs also shed olive spores and ash more often at later stages;
+  Nearby infected mobs also shed pale bark dust and ash more often at later stages;
   the local effect has a shared four-particle-per-tick budget and a 24-block range.
 - **Field assay kit** — craft a glass bottle, iron ingot, copper ingot and essence
   together. Use to inspect the last sealed sample; sneak-use draws a fresh one
@@ -684,11 +684,10 @@ chunk, and validate on real block state — not heightmap assumptions.
   Sixty-four connected 16px tiles share fixed edge ports. Neighbour-aware branches
   match across flat surfaces and inside/outside corners, with symmetric edge
   decisions preventing a square lattice. Tiles close their ports when growth is removed.
-  Swollen root bases anchor unequal, hooked fingers that lift off the host and
-  curl towards nearby players. Tapered joints and irregular bark replace the
-  straight wire silhouette. Fingers fade at 10–14 blocks; rooted palms at 20–24.
+  Flat pale bark tissue, warm gray grain and sparse amber fissures follow the
+  Creaking-inspired palette. Its surface art carries the spreading influence.
   The thin host surface remains the harvest target, with no movement collision.
-  Dead colonies stop reaching and glowing.
+  Dead colonies stop glowing.
 - **Microbiome** (M15) — `expeditions:assimilation_heart`, a pale node
   breathing ash, souls and ember sparks on its beat, seeded on standable
   ground in a ring around players as they move through
@@ -734,7 +733,7 @@ chunk, and validate on real block state — not heightmap assumptions.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.6.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.7.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
