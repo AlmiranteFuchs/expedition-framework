@@ -639,8 +639,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   never kills — and only a blooded journal renders the carrier's
   infection percentage and stage.
   Harvesting essence teaches the crafting-book recipes for the journal,
-  attunement sigil and craftable terminal. Guide layout, new cover artwork and
-  keyboard chapter navigation are client-verified; persistence and crafting are GameTest-verified.
+  attunement sigil and craftable terminal. Guide layout and keyboard chapter
+  navigation are client-verified; persistence and crafting are GameTest-verified.
 - **Assimilated mobs** — every expedition horde, siege wave and boss pack
   member is the organism's tissue wearing local fauna — they arrive with
   a tell, souls and embers ringing the site and the Bloom's shriek, and
@@ -698,13 +698,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   previous/next navigation and reverse option cycling. It preselects an
   unlocked mission in the terminal's home dimension. Required checkpoint
   objectives set a minimum route length, enforced again by the server.
-- **Tests** — 137 unit tests + 107 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 137 unit tests + 109 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.5.5.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.1.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
-- `./gradlew runGameTestServer -PisolatedGameTests` — **107/107 core game tests passed** on a real dedicated
+- `./gradlew runGameTestServer -PisolatedGameTests` — **109/109 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -879,7 +879,7 @@ chunk, and validate on real block state — not heightmap assumptions.
 `ItemValuator` (stat-driven item score for reward weighting), `ItemRewards`
 (dimension-aware pools from `reward_items/<dim>` tags + score-weighted
 draws), `ExpeditionMenu` (read-only slot transport for `ExpeditionScreen`,
-no custom menu type).
+registered through `ModMenus`).
 - `com.expeditions.block` — terminal/checkpoint/exit blocks delegating to the
   manager. `com.expeditions.registry` — `DeferredRegister` wiring.
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`

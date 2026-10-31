@@ -13,7 +13,7 @@ import math
 import json
 import os
 import random
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = os.path.join(os.path.dirname(__file__), "..",
                     "src/main/resources/assets/expeditions/textures")
@@ -550,59 +550,43 @@ def gen_essence():
 
 
 def gen_journal():
-    """Pale-root binding, green-black leather, and a carved ember-eyed seal."""
+    """An angled field book: visible paper, pale root spine, one amber clasp.
+
+    The silhouette carries the item identity at 16px. Broad material clusters
+    replace the old front-facing mask, which read as a badge rather than a book.
+    """
     img = canvas()
-    cover = [(2, 2), (13, 2), (14, 3), (14, 13), (13, 14), (2, 14), (1, 13),
-             (1, 3)]
-    mask = {}
-
-    def inside_cover(x, y):
-        n = 0
-        for i in range(len(cover)):
-            x1, y1 = cover[i]
-            x2, y2 = cover[(i + 1) % len(cover)]
-            if (y1 > y) != (y2 > y) and \
-                    x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
-                n += 1
-        return n % 2 == 1
-
-    for y in range(H):
-        for x in range(W):
-            if inside_cover(x + 0.5, y + 0.5):
-                mask[(x, y)] = True
-                v = 0.55 + (8 - abs(x - 7.5)) * 0.02 - (x - 2) * 0.015 \
-                    + (14 - y) * 0.008
-                c = ramp_at(LEATHER, v * 0.72, x, y)
-                if x <= 2:                       # spine
-                    c = ramp_at(LEATHER, v - 0.18, x, y)
-                put(img, x, y, c)
-    outline(img, lambda x, y: mask.get((x, y), False), color=(48, 30, 18, 255))
-    # Exposed leaf edges beneath the rounded cover, lit from the upper left.
-    for x in range(3, 13):
-        put(img, x, 13, BONE[2] if x % 3 else BONE[1])
-    for x in range(4, 12):
-        put(img, x, 14, BONE[1])
-    # Tooled frame around the quiet, almost green leather inset.
-    for x in range(4, 13):
-        put(img, x, 3, LEATHER[2]); put(img, x, 12, LEATHER[2])
-    for y in range(3, 13):
-        put(img, 4, y, LEATHER[2]); put(img, 12, y, LEATHER[2])
-    for y in range(4, 12):
-        for x in range(5, 12):
-            put(img, x, y, (45 + (x + y) % 2 * 3, 49, 37, 255))
-    # Roots bind the spine, with larger bright knots rather than pixel noise.
-    for x, y in [(2, 3), (3, 4), (3, 5), (2, 6), (2, 7), (3, 8),
-                 (3, 9), (2, 10), (2, 11), (3, 12)]:
-        put(img, x, y, BONE[3] if x == 2 else BONE[2])
-    put(img, 4, 4, BONE[1]); put(img, 4, 9, BONE[1])
-    # A small branch-crowned mask: the same carved language as the compass.
-    for x, y in [(7, 4), (11, 4), (7, 5), (8, 5), (10, 5), (11, 5),
-                 (8, 6), (9, 6), (10, 6), (7, 7), (9, 7), (11, 7),
-                 (8, 8), (9, 8), (10, 8), (9, 9), (8, 10), (10, 10),
-                 (7, 11), (11, 11)]:
-        put(img, x, y, BONE[3] if x < 9 and y < 8 else BONE[2])
-    put(img, 8, 7, EMBER[4]); put(img, 10, 7, EMBER[3])
-    put(img, 9, 10, LEATHER[1]); put(img, 9, 11, EMBER[1])
+    draw = ImageDraw.Draw(img)
+    edge = (29, 32, 25, 255)
+    cover = (52, 62, 43, 255)
+    lit_cover = (73, 81, 55, 255)
+    # Complete bound volume. The long diagonal page edge is recognizable
+    # before any cover ornament is visible.
+    draw.polygon([(9, 0), (10, 1), (14, 9), (15, 10), (14, 12),
+                  (8, 15), (6, 15), (5, 13), (1, 6), (2, 4), (7, 1)], fill=edge)
+    draw.polygon([(7, 12), (13, 9), (14, 10), (13, 12), (7, 14), (6, 14)], fill=BONE[2])
+    draw.line([(7, 12), (13, 9), (14, 10)], fill=BONE[5])
+    draw.line([(7, 13), (13, 10)], fill=BONE[4])
+    draw.line([(8, 14), (13, 11)], fill=BONE[3])
+    put(img, 10, 12, BONE[5]); put(img, 12, 11, BONE[5])
+    # Rounded pale-heartwood spine, with only two large binding knots.
+    draw.polygon([(2, 5), (3, 4), (7, 12), (6, 14), (5, 13), (2, 7)], fill=BONE[1])
+    draw.line([(2, 5), (6, 13)], fill=BONE[3], width=2)
+    draw.line([(2, 5), (5, 11)], fill=BONE[4])
+    put(img, 3, 7, BONE[2]); put(img, 4, 8, BONE[4])
+    put(img, 5, 11, BONE[2]); put(img, 6, 12, BONE[4])
+    # Quiet leather face. Broad clusters keep it readable rather than noisy.
+    draw.polygon([(3, 4), (9, 1), (13, 9), (7, 12)], fill=cover)
+    draw.polygon([(4, 4), (9, 2), (11, 6), (7, 10)], fill=lit_cover)
+    draw.line([(3, 4), (9, 1)], fill=(111, 116, 78, 255))
+    draw.line([(7, 12), (13, 9)], fill=(37, 44, 31, 255))
+    # A restrained root crease, not a literal face or glowing cover emblem.
+    draw.line([(8, 9), (8, 7), (7, 6)], fill=(93, 94, 61, 255))
+    put(img, 9, 6, (93, 94, 61, 255))
+    # Tiny protruding resin clasp, top-left highlight and ember underside.
+    draw.line([(10, 7), (13, 6)], fill=LEATHER[1], width=2)
+    put(img, 12, 6, EMBER[4]); put(img, 13, 7, EMBER[3])
+    put(img, 12, 7, EMBER[2]); put(img, 13, 8, LEATHER[1])
     save(img, "item/expedition_field_journal.png")
 
 
