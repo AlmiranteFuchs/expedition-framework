@@ -698,13 +698,16 @@ chunk, and validate on real block state — not heightmap assumptions.
   previous/next navigation and reverse option cycling. It preselects an
   unlocked mission in the terminal's home dimension. Required checkpoint
   objectives set a minimum route length, enforced again by the server.
-- **Tests** — 137 unit tests + 109 core GameTests and 3 optional modded-biome probes.
+- **Horde cleanup** — persistent run ownership follows wandering mobs and slime
+  children. Ended hordes are removed on load or tick; chunk unloads retain cleanup
+  responsibility. Active hordes remain alive.
+- **Tests** — 137 unit tests + 112 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
 - `./gradlew build` — passes; `expeditions-0.6.0-alpha.1.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
-- `./gradlew runGameTestServer -PisolatedGameTests` — **109/109 core game tests passed** on a real dedicated
+- `./gradlew runGameTestServer -PisolatedGameTests` — **112/112 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,

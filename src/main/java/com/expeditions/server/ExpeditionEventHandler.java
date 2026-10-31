@@ -192,6 +192,9 @@ public final class ExpeditionEventHandler {
      * pipelines), and free ambience for the ones that can.
      */
     public static void onEntityTick(EntityTickEvent.Post event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.Mob mob
+                && (mob.tickCount + mob.getId()) % 20 == 0
+                && ChallengeOwnership.onTick(mob)) return;
         if (!(event.getEntity() instanceof LivingEntity entity)
                 || !(entity.level() instanceof ServerLevel level)
                 || entity.isInvisible()

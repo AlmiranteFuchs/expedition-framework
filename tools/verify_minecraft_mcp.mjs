@@ -1,5 +1,7 @@
 // Live integration checks in a disposable world copy, using the real MCP protocol.
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
@@ -15,6 +17,11 @@ const directory = resolve(root, 'build/mcp-verification');
 mkdirSync(directory, { recursive: true });
 const report = { world: 'sp:MCP-Debug-Test-20261029', checks: [], expeditions: [] };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const bundledPython = resolve(homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe');
+const python = process.env.EXPEDITIONS_PYTHON ?? (existsSync(bundledPython) ? bundledPython : 'python3');
+const biomeTables = JSON.parse(execFileSync(python, [resolve(root, 'tools/read_mod_biomes.py'),
+  ...readdirSync(resolve(root, 'run/mods')).filter(name => name.endsWith('.jar')).map(name => resolve(root, 'run/mods', name))],
+  {encoding:'utf8', maxBuffer: 16 * 1024 * 1024}));
 let verifiedWorld = false;
 let previousMobSpawning;
 
@@ -52,12 +59,44 @@ async function snapshot() {
   assert(json, 'The live server must return an authoritative diagnostic snapshot');
   return JSON.parse(json);
 }
+async function waitForClient() {
+  for (let n = 0; n < 150; n++) {
+    const screen = await call('get_screen');
+    assert.equal(screen.lastWorldId, report.world, 'Stay inside the disposable test world');
+    if (screen.inWorld && !['loading', 'connecting'].includes(screen.screen)) return;
+    await pause(200);
+  }
+  throw new Error('The client did not finish loading the dimension');
+}
+async function nativeBiome(dimension, point) {
+  const namespace = dimension.split(':')[0];
+  for (const [id, categories] of Object.entries(biomeTables).filter(([id]) => id.startsWith(namespace + ':'))) {
+    // Execute a real terminal command so the bridge's result callback fires
+    // for the successful branch as well as failed conditions.
+    const match = await command(`execute in ${dimension} positioned ${point.x} ${point.y} ${point.z} if biome ~ ~ ~ ${id} run time query gametime`, false);
+    if (match.success && match.resultValue > 0) {
+      return { id, mobs: [...new Set(Object.values(categories).flat().map(entry => entry.type))] };
+    }
+  }
+  throw new Error(`Could not identify the checkpoint's native biome in ${dimension}`);
+}
 async function clickMarker(point, dimension) {
+  await waitForClient();
   await call('close_screen');
-  await command(`execute in ${dimension} run tp Dev ${point.x + .5} ${point.y + 1} ${point.z + 2.5}`);
-  await pause(250);
-  await call('look_at', {x: point.x + .5, y: point.y + .5, z: point.z + .5});
-  await pause(200);
+  // The route guarantees the marker's own floor, not terrain two blocks
+  // beside it. Stand on the solid marker and look down instead of falling
+  // off an island or cave ledge between teleport and right-click.
+  await command(`execute in ${dimension} run tp Dev ${point.x + .5} ${point.y + 1} ${point.z + .5} 0 90`);
+  let scene;
+  for (let n = 0; n < 150; n++) {
+    await pause(200);
+    scene = await call('describe_scene', {maxDistance: 6, rayColumns: 1, rayRows: 1});
+    const hit = scene.lookingAt;
+    if (hit?.type === 'block' && hit.pos.x === point.x && hit.pos.y === point.y && hit.pos.z === point.z) break;
+  }
+  assert(scene.lookingAt?.type === 'block' && scene.lookingAt.pos.x === point.x
+    && scene.lookingAt.pos.y === point.y && scene.lookingAt.pos.z === point.z,
+    `Client must load and actually aim at the marker before clicking: ${JSON.stringify(scene.lookingAt)}`);
   const use = await call('use_item');
   await pause(250);
   return use;
@@ -78,8 +117,9 @@ try {
   await command('gamerule doMobSpawning false');
   await command('gamemode creative Dev');
   await command('item replace entity Dev weapon.mainhand with minecraft:air');
-  await command('execute in minecraft:overworld run fill -4 179 -4 4 179 4 minecraft:stone');
-  await command('execute in minecraft:overworld run fill -4 180 -4 4 184 4 minecraft:air');
+  // Vanilla /fill reports failure when the fixture already matches.
+  await command('execute in minecraft:overworld run fill -4 179 -4 4 179 4 minecraft:stone', false);
+  await command('execute in minecraft:overworld run fill -4 180 -4 4 184 4 minecraft:air', false);
   await command('execute in minecraft:overworld run tp Dev 0.5 180 0.5');
 
   for (const dimension of ['aether:the_aether', 'the_bumblezone:the_bumblezone', 'twilightforest:twilight_forest']) {
@@ -122,6 +162,7 @@ try {
       report.checks.push({movementDistance: distance});
     }
     test.click = await clickMarker(run.Checkpoints[0], dimension);
+    test.nativeBiome = await nativeBiome(dimension, test.checkpoint);
     data = await snapshot();
     const active = data.Runs.find(entry => uuid(entry.RunId) === test.runId);
     assert.equal(active.Done, 1, 'The real right-click must activate the checkpoint');
@@ -129,17 +170,20 @@ try {
     assert(tracked.length > 0, 'Checkpoint must track an actual horde');
     test.horde = [];
     for (const id of tracked) {
-      const entity = await call('get_entity', {uuid:id});
+      let entity;
+      for (let n = 0; n < 40; n++) {
+        try { entity = await call('get_entity', {uuid:id}); break; }
+        catch (error) {
+          if (!error.message.includes('[not_found]') || n === 39) throw error;
+          // Spawned entities can wait for a newly arrived player's chunk tickets.
+          await pause(200);
+        }
+      }
       assert.equal(entity.dimension, dimension);
       test.horde.push({uuid: id, type: entity.type, x:entity.x, y:entity.y, z:entity.z});
     }
-    if (dimension.startsWith('aether:')) {
-      assert(test.horde.every(entity => entity.type.startsWith('aether:')), 'Aether hordes must use native custom hostile categories');
-    }
-    if (dimension.startsWith('the_bumblezone:')) {
-      assert(test.horde.every(entity => entity.type === 'minecraft:bee' || entity.type.startsWith('the_bumblezone:')),
-        'Bumblezone hordes must use local bees rather than generic monsters');
-    }
+    assert(test.horde.every(entity => test.nativeBiome.mobs.includes(entity.type)),
+      `Horde types must belong to the actual ${test.nativeBiome.id} spawn table`);
     const first = test.horde[0];
     await call('look_at', {x:first.x, y:first.y + .7, z:first.z});
     await pause(200);
@@ -157,12 +201,16 @@ try {
     test.status = ended.Status;
     test.tokensAwarded = ended.TokensAwarded;
     test.cleanup = true;
+    await waitForClient();
     console.log(`PASS ${dimension}: ${test.horde.length} ${first.type}, reward ${test.tokensAwarded}, horde cleaned`);
     writeFileSync(resolve(directory, 'live-report.json'), JSON.stringify(report, null, 2));
   }
   report.success = true;
 } catch (error) {
   report.error = error.stack;
+  if (verifiedWorld) {
+    try { report.failureState = await call('get_self'); report.failureScreenshot = await call('screenshot'); } catch { }
+  }
   console.error(error.message);
   process.exitCode = 1;
 } finally {

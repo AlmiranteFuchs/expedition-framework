@@ -1157,6 +1157,7 @@ public final class ExpeditionManager {
                 pressureBuffs(mob);
             }
             targetHordeMob(mob, nearestMember(run, level, mob.blockPosition()));
+            ChallengeOwnership.mark(mob, run);
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
             }
@@ -1216,6 +1217,7 @@ public final class ExpeditionManager {
         guardian.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(health);
         guardian.setHealth((float) health);
         targetHordeMob(guardian, nearestMember(run, level, guardian.blockPosition()));
+        ChallengeOwnership.mark(guardian, run);
         if (!level.addFreshEntity(guardian)) return false;
         run.trackChallengeEntities(List.of(guardian.getUUID()));
         run.bindGuardian(guardian.getUUID());
@@ -1477,6 +1479,7 @@ public final class ExpeditionManager {
             mob.goalSelector.addGoal(1, new AttackDeviceGoal(mob, devicePos,
                     ExpeditionsConfig.defenseMobDamage(),
                     ExpeditionsConfig.defenseMobAttackTicks()));
+            ChallengeOwnership.mark(mob, run);
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
             }
@@ -1518,7 +1521,7 @@ public final class ExpeditionManager {
         if (run.challengeEntities().isEmpty()) {
             return;
         }
-        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        int radius = ExpeditionsConfig.challengeHordeSpawnRadius() + 16;
         for (int cx = (center.getX() - radius) >> 4;
                 cx <= (center.getX() + radius) >> 4; cx++) {
             for (int cz = (center.getZ() - radius) >> 4;
@@ -1570,7 +1573,7 @@ public final class ExpeditionManager {
             Waypoint center = run.checkpoints().get(
                     Math.min(run.completedCheckpoints(), run.totalCheckpoints()) - 1);
             AABB box = columnBox(level, toPos(center),
-                    ExpeditionsConfig.challengeHordeSpawnRadius() + 1);
+                    ExpeditionsConfig.challengeHordeSpawnRadius() + 17);
             for (UUID entityId : List.copyOf(run.challengeEntities())) {
                 Entity entity = findInSections(level, box, entityId);
                 if (entity != null) {
@@ -1591,6 +1594,8 @@ public final class ExpeditionManager {
      * sees entities parked in sections whose chunk is not entity-ticking.
      */
     private static Entity findInSections(ServerLevel level, AABB box, UUID entityId) {
+        Entity visible = level.getEntity(entityId);
+        if (visible != null) return visible;
         List<Entity> found = new ArrayList<>();
         level.getEntities().get(box, entity -> {
             if (found.isEmpty() && entity.getUUID().equals(entityId)) {

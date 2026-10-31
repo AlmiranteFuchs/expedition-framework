@@ -423,7 +423,15 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Verified: `build` + 137 unit tests + 109/109 core GameTest in-game
+Challenge entities carry a persistent `expeditions:challenge_run` UUID.
+`ChallengeOwnership` rejects ended/orphan ownership on load, retries cleanup on
+mob ticks, and retains UUID tracking across chunk unloads. Slime children inherit
+ownership through `MobSplitEvent`; only actually ticking children enter tracking,
+and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
+load. The cleanup search checks the global visible UUID lookup before bounded
+full-column section storage; never discard a live run's owned horde.
+
+Verified: `build` + 137 unit tests + 112/112 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for `FieldJournalScreen` field-record pages.
 The client opens that screen through a presentation callback installed by
