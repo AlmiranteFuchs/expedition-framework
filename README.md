@@ -703,14 +703,33 @@ chunk, and validate on real block state — not heightmap assumptions.
   PulseWave the membrane glows to — and each new face unfurls over a few
   ticks with a wet sculk spread, so you see and hear the colony crawl.
   And it hunts: within `microbiome.huntRadius` (default 24, 0
-  disables) each pulse prefers the frontier cells nearest a player, so
+  disables) each pulse prefers the frontier cells nearest a living host, so
   the carpet visibly creeps toward warmth — beyond the radius growth is
-  direction-blind again.
+  direction-blind again. Growth continues without any host while its chunk ticks.
   Breaking the heart stops the spread; a dimension marked cleared in the
   saved data silences hearts and spawning both. Expedition markers get
   colonized too — a heart seeds in the ring around each checkpoint and
   exit (`microbiome.markerColonies`), so the ember-lit heart doubles as the
   route's landmark.
+- **Contact infection and hive hosts** — heart proximity is harmless. Touching live
+  painted tissue (including its frayed footprint), an infected body, or its direct
+  melee attack queues exposure for the next infection cadence. Cold scars and
+  cleared dimensions cannot spread it. Every living mob can acquire an infected
+  variant while retaining its native species, skin, equipment and drops. Nearby
+  infected mobs share threats/targets and idle peers regroup around an older
+  member; normal combat and siege priorities remain available. They move 15%
+  slower through one non-stacking modifier and use vanilla's visual frozen-body
+  shiver, without setting frozen ticks or causing freezing damage.
+- **Disruption Charm** — craft string, amethyst, copper and essence. Hold it in the
+  offhand, or equip it in a Curios charm slot if Curios is installed. It supplies
+  `expeditions:assimilation_disruption`; `/effect give` can grant the same effect
+  to any living entity. The effect blocks new contact exposure and interrupts
+  an infected mob's hive coordination. It does not instantly cure existing doses.
+  Curios is optional; compatibility uses its documented NeoForge item-handler
+  capability, with no required API jar or new runtime dependency. To test the real
+  Curios-equipped client in development: `./gradlew runClient -PbinaryMinecraft
+  -PcuriosCompatTest`. Curios 9.5.1 emits unsupported sync packets to GameTest mock
+  players, so that integration is verified in the live client instead.
 - **Deployment board** — dedicated terminal screen with mission briefings,
   readable requirements, actual bonus-time windows, reward/cost previews,
   previous/next navigation and reverse option cycling. It preselects an
@@ -730,12 +749,12 @@ chunk, and validate on real block state — not heightmap assumptions.
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 149 unit tests + 121 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 155 unit tests + 129 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.9.jar` assembled.
-- `./gradlew test` — 149 unit tests, 0 failures.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.10.jar` assembled.
+- `./gradlew test` — 155 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,

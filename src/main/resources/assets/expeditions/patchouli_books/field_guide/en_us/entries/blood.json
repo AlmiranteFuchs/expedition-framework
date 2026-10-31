@@ -28,7 +28,12 @@
     {
       "type": "patchouli:text",
       "title": "Leave before it answers",
-      "text": "Low exposure subsides away from the source. Check a fresh assay before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart."
+      "text": "Low exposure subsides away from the source. Check a fresh assay before another long harvest. Assimilation Disruption blocks new exposure. A Disruption Charm supplies it while held in the offhand or worn in a Curios charm slot; an"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Leave before it answers",
+      "text": "existing dose still needs time to subside."
     },
     {
       "type": "patchouli:text",

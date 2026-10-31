@@ -33,7 +33,17 @@
     {
       "type": "patchouli:text",
       "title": "Work from the edge",
-      "text": "Exposure near a live heart can infect you. Leave its reach to let low exposure subside; do not work beside it indefinitely."
+      "text": "Infection requires physical contact with living Bloom tissue or an infected body. Merely standing nearby is safe. Leave contact to let early exposure subside."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Work from the edge",
+      "text": "A Disruption Charm, held in the offhand or worn in a Curios charm slot, blocks new infection. String, amethyst, copper and essence make one. It does not cure an infection already established. Infected creatures keep their bodies"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Work from the edge",
+      "text": "but share threats and move as one unsettled mind."
     },
     {
       "type": "patchouli:text",

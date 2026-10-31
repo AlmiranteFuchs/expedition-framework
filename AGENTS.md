@@ -465,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 149 unit tests + 121/121 core GameTest in-game
+Verified: `build` + 155 unit tests + 129/129 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the
@@ -517,3 +517,45 @@ expeditions stay in the terminal list (lore explains the gap);
 the locked-lore path unverified visually (same as the summary
 broadcast). Human client click-through and real disconnect not
 simulated.
+
+
+## Contact infection / hive milestone
+
+Infection is contact-only. `AssimilationLayerBlock.entityInside` delegates to
+`Assimilation.touchLayer`, which intersects the living body's AABB with the
+same frayed boundary regions used by the renderer. Dead-heart scars and cleared
+worlds cannot expose hosts. A persistent queued contact bit is consumed once on
+the configured cadence, so a brief crossing counts without accumulating per
+frame. Players retain the staged effects/effigy lifecycle; native mobs retain
+their type and persist an infected variant at stage one or later. Legacy horde
+attachment flags hydrate their infection dose on tick. Established mob variants
+retain stage one unless the dimension is cleared. Armor stands are not hosts.
+
+`AssimilationProtection` accepts the registered disruption effect, an offhand
+Disruption Charm, or an actually equipped Curios item via the documented
+`curios:item_handler` NeoForge capability. No Curios classes or reflection are
+required in the release. Never treat a charm merely packed in inventory as
+protection. The charm refreshes a short effect; don't remove separately granted
+effects on unequip. The optional `-PcuriosCompatTest` runtime is for real client
+verification only: Curios 9.5.1 sends `curios:sync_data` to embedded GameTest
+channels and fails before our assertions. The ordinary isolated suite remains
+Curios-free. Real Curios slot equip, automatic effect refresh and contact
+immunity were verified in the disposable debug client.
+
+`HiveMind` shares nearby threats/targets and regrouping leaders; it keeps no
+static cross-world targets or forced chunk tickets. Its stable transient speed
+modifier is -15% and must not stack or remove another mod's modifiers. The
+priority-4 `HiveMindGoal` preserves priority-1 defense-device behavior and native
+combat. Passive hosts gain a weak contact attack. Client-only
+`LivingEntityRendererMixin` enables the existing vanilla shiver, without setting
+frozen ticks or inflicting freezing damage. Disruption suspends that hive shiver
+and coordination; it is not universal immunity to a species' ordinary attacks.
+
+Verified: build + 155 unit tests + 129 core GameTests (132 reported including
+three optional biome probes); contact/ward, all six surfaces, dead scars, native
+mob persistence, physical carrier transmission, shared targets/non-stacking slow,
+autonomous growth and cow-seeking have dedicated interaction checks. The live
+client confirmed cows converging on a sheep, body-contact conversion, a 0.17
+movement speed from a 0.20 baseline, and Curios-only protection. User art exports
+are under ignored `art-exports/`; never regenerate or overwrite those editable
+handoffs while iterating runtime art.

@@ -51,6 +51,14 @@ public class AssimilationLayerBlock extends MultifaceBlock implements EntityBloc
     }
 
     @Override
+    protected void entityInside(BlockState state,Level level,BlockPos pos,net.minecraft.world.entity.Entity entity) {
+        super.entityInside(state,level,pos,entity);
+        if(level instanceof net.minecraft.server.level.ServerLevel server
+                && entity instanceof net.minecraft.world.entity.LivingEntity living)
+            com.expeditions.server.Assimilation.touchLayer(server,pos,state,living);
+    }
+
+    @Override
     protected MapCodec<? extends MultifaceBlock> codec() {
         return CODEC;
     }

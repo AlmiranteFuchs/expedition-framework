@@ -3816,7 +3816,7 @@ public final class ExpeditionGameTests {
      * colony claimed them. Imbued armor slows the take but can't stop it.
      */
     @GameTest(template = "arena", timeoutTicks = 800, templateNamespace = "expeditions_mic", batch = "expedition_mic")
-    public static void assimilationInfectsNearHeart(GameTestHelper helper) {
+    public static void assimilationRequiresContact(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         BlockPos heartPos = helper.absolutePos(new BlockPos(6, 1, 6));
@@ -3837,14 +3837,14 @@ public final class ExpeditionGameTests {
 
             player.tickCount = interval;
             Assimilation.onPlayerTick(player);
-            helper.assertTrue(Assimilation.infection(player) > 0,
-                    "heart proximity must infect the player (hearts="
-                            + AssimilationHeartBlockEntity.liveHearts(
-                                    level.dimension().location().toString())
-                            + ", microbiomeEnabled=" + Microbiome.enabled(level)
-                            + ", pos=" + player.blockPosition() + ")");
+            helper.assertTrue(Assimilation.infection(player) == 0,
+                    "proximity without contact must never infect");
+            Assimilation.onContact(player);
+            Assimilation.onPlayerTick(player);
+            helper.assertTrue(Assimilation.infection(player)>0,"queued direct contact must infect");
 
             Assimilation.infect(player, ExpeditionsConfig.infectionStage1At());
+            Assimilation.onContact(player);
             player.tickCount = interval * 2;
             Assimilation.onPlayerTick(player);
             helper.assertTrue(!player.hasEffect(MobEffects.DARKNESS),
@@ -3855,6 +3855,7 @@ public final class ExpeditionGameTests {
                     "stage 1 must mark the player for the client overlay");
 
             Assimilation.infect(player, ExpeditionsConfig.infectionStage3At());
+            Assimilation.onContact(player);
             player.tickCount = interval * 3;
             Assimilation.onPlayerTick(player);
             helper.assertTrue(player.hasEffect(MobEffects.POISON),
@@ -3869,6 +3870,7 @@ public final class ExpeditionGameTests {
                             .getHolderOrThrow(Enchantments.PROTECTION), 1);
             player.setItemSlot(EquipmentSlot.CHEST, chest);
             double before = Assimilation.infection(player);
+            Assimilation.onContact(player);
             player.tickCount = interval * 4;
             Assimilation.onPlayerTick(player);
             helper.assertTrue(Assimilation.infection(player) - before
@@ -3877,6 +3879,7 @@ public final class ExpeditionGameTests {
 
             player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
             Assimilation.infect(player, ExpeditionsConfig.infectionMax() - 0.5);
+            Assimilation.onContact(player);
             player.tickCount = interval * 5;
             Assimilation.onPlayerTick(player);
             helper.assertTrue(!player.isAlive(),

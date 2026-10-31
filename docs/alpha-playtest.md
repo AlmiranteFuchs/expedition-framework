@@ -1,4 +1,4 @@
-# 0.6.0-alpha.9: playable alpha candidate
+# 0.6.0-alpha.10: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -49,7 +49,7 @@ datapacks; the live terminal is the authority on your world's requirements.
 
 ## Verified
 
-- Build and 149 pure-Java unit tests.
+- Build and 155 pure-Java unit tests.
 - 120 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
   journal save/load and death copy, survival crafting, terminal defaults,
   required route length, guardian binding/death veto/save-load/Peaceful toggle,
@@ -178,3 +178,27 @@ together. The player approved the isolated and connected appearance in-game.
 149 unit tests pass, including mask reconstruction and shared-edge continuity;
 121 core GameTests pass, including diagonal boundary updates on all six faces
 (124 reported in the isolated suite with three optional modded-biome probes).
+
+
+Alpha.10: infection now requires actual surface/body contact or direct melee;
+heart proximity alone is harmless. The surface contact uses frayed coverage on
+all six faces. Short touches queue one exposure rather than being missed between
+cadences. A Disruption Charm works in the offhand or a real Curios charm slot;
+it grants the same registered effect admins can give to any living host. Existing
+infection is not instantly cured. Native infected mobs retain their species and
+persist their state, share nearby threats and targets, regroup, move 15% slower
+and shiver through the vanilla renderer without freezing damage. Autonomous
+heart growth seeks non-player living hosts as well as players.
+
+Eight interaction tests cover the new paths; six pure-Java progression tests
+cover contact-only accrual, protection precedence, retained variants and bounds.
+The full isolated run passes 129 core GameTests (132 including optional biome
+probes); 155 unit tests pass. A separate attempt with real Curios in GameTest
+fails on that mod's unsupported mock-player sync packets. Curios compatibility
+was instead verified in the actual client with `-PcuriosCompatTest`: wearing the
+charm in its slot automatically supplied disruption, direct tissue contact kept
+infection at zero, removing it allowed a dose to accumulate, and re-equipping
+stopped new exposure. Two infected cows converged on an invulnerable sheep,
+which became infected by body contact while retaining its sheep entity type.
+The frozen-body shiver mixin applied successfully in the actual render pipeline;
+no server frozen ticks or client frost overlay were introduced.

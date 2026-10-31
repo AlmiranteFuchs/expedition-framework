@@ -6,6 +6,7 @@ import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.core.PulseWave;
 import com.expeditions.server.Microbiome;
+import com.expeditions.server.HiveMind;
 import com.expeditions.server.data.ExpeditionTuning;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -189,20 +190,26 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     }
 
     /**
-     * The colony hunts: when a player lingers within
+     * The colony hunts: when a living host lingers within
      * {@code microbiome.huntRadius} of the heart, the pulse prefers the
      * frontier cells nearest them — the carpet visibly creeps toward
      * warmth rather than spreading blind. Picks uniformly among the
-     * closest candidates so the tendrils still branch; no player in
+     * closest candidates so the tendrils still branch; no host in
      * reach (or hunting disabled) falls back to the uniform pick.
      */
     private Move pickMove(ServerLevel level, List<Move> choices) {
         int radius = ExpeditionTuning.integer(level.dimension(),
                 "microbiome.hunt_radius", ExpeditionsConfig.microbiomeHuntRadius());
-        ServerPlayer nearest = null;
+        net.minecraft.world.entity.LivingEntity nearest = null;
         int nearestDist = Integer.MAX_VALUE;
-        for (ServerPlayer p : level.players()) {
-            if (p.isSpectator()) {
+        var hosts=new ArrayList<net.minecraft.world.entity.LivingEntity>(level.getEntitiesOfClass(
+                net.minecraft.world.entity.LivingEntity.class,new net.minecraft.world.phys.AABB(getBlockPos()).inflate(Math.max(0,radius)),
+                e->e.isAlive() && !e.isSpectator() && !(e instanceof net.minecraft.world.entity.decoration.ArmorStand)
+                        && !(e instanceof net.minecraft.world.entity.Mob && HiveMind.infected(e))));
+        // Mock players do not enter section entity storage; real players are already in hosts.
+        for(ServerPlayer player:level.players()) if(!hosts.contains(player)) hosts.add(player);
+        for (var p : hosts) {
+            if (!p.isAlive() || p.isSpectator()) {
                 continue;
             }
             int d = p.blockPosition().distManhattan(getBlockPos());

@@ -56,7 +56,7 @@ origins of the organism and ancient infrastructure remain unresolved.
 5. **Release audit**: survival recipes, progression chain, guide discoveries,
    multiplayer cleanup, optional dimension compatibility, and an honest list
    of remaining gaps. Passing the old roadmap is not proof of finished polish.
-   Packaged `0.6.0-alpha.9`: 149 unit tests, 121 core GameTests and three actual
+   Packaged `0.6.0-alpha.10`: 155 unit tests, 129 core GameTests and three actual
    installed-dimension biome probes pass. Hardening also fixed reused portal
    addresses, remote sealing cleanup and oversized horde rolls. Remaining
    human/client checks are recorded in `docs/alpha-playtest.md`.

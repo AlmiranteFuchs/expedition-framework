@@ -191,15 +191,15 @@ public final class ExpeditionsConfig {
             .defineInRange("expeditions.microbiome.markerColonyStarterPulses", 6, 0, 64);
 
     private static final ModConfigSpec.IntValue HUNT_RADIUS = BUILDER
-            .comment("How far a heart senses players — within this distance",
+            .comment("How far a heart senses living hosts — within this distance",
                     "each growth pulse prefers the frontier cells nearest a",
-                    "player, so the colony visibly creeps toward warmth.",
+                    "living host, so the colony visibly creeps toward warmth.",
                     "Beyond it (or 0) growth is direction-blind.")
             .defineInRange("expeditions.microbiome.huntRadius", 24, 0, 128);
 
     private static final ModConfigSpec.IntValue INFECTION_RADIUS = BUILDER
-            .comment("How close to an assimilation heart the infection",
-                    "reaches — within this distance the organism takes hold.")
+            .comment("Legacy compatibility setting. Infection now requires physical",
+                    "contact with living tissue or an infected body; radius is not used.")
             .defineInRange("expeditions.microbiome.infectionRadius", 12, 1, 64);
 
     private static final ModConfigSpec.IntValue INFECTION_INTERVAL = BUILDER
@@ -207,11 +207,11 @@ public final class ExpeditionsConfig {
             .defineInRange("expeditions.microbiome.infectionIntervalTicks", 20, 1, 600);
 
     private static final ModConfigSpec.IntValue INFECTION_ACCRUAL = BUILDER
-            .comment("Infection gained per interval while near a heart.")
+            .comment("Infection gained per interval after physical contact.")
             .defineInRange("expeditions.microbiome.infectionAccrual", 1, 0, 1000);
 
     private static final ModConfigSpec.IntValue INFECTION_DECAY = BUILDER
-            .comment("Infection shed per interval while away from hearts.")
+            .comment("Early infection shed per interval without contact.")
             .defineInRange("expeditions.microbiome.infectionDecay", 1, 0, 1000);
 
     private static final ModConfigSpec.IntValue INFECTION_MAX = BUILDER
@@ -607,7 +607,7 @@ public final class ExpeditionsConfig {
         return MICROBIOME_MARKER_COLONIES.get();
     }
 
-    /** How far a heart senses players for directional growth (0 = off). */
+    /** How far a heart senses living hosts for directional growth (0 = off). */
     public static int microbiomeHuntRadius() {
         return HUNT_RADIUS.get();
     }

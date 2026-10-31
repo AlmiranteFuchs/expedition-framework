@@ -1,0 +1,6 @@
+{
+  "criteria":{"has_essence":{"trigger":"minecraft:inventory_changed","conditions":{
+    "items":[{"items":["expeditions:assimilation_essence"]}]}}},
+  "requirements":[["has_essence"]],
+  "rewards":{"recipes":["expeditions:disruption_charm"]}
+}

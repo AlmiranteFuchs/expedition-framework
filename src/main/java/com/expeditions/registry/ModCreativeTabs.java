@@ -32,6 +32,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ASSIMILATION_ESSENCE.get());
                         output.accept(ModItems.ATTUNEMENT_SIGIL.get());
                         output.accept(ModItems.FIELD_ASSAY_KIT.get());
+                        output.accept(ModItems.DISRUPTION_CHARM.get());
                         output.accept(ModItems.EXPEDITION_FIELD_JOURNAL.get());
                     })
                     .build());

@@ -195,6 +195,8 @@ public final class ExpeditionEventHandler {
         if (event.getEntity() instanceof net.minecraft.world.entity.Mob mob
                 && (mob.tickCount + mob.getId()) % 20 == 0
                 && ChallengeOwnership.onTick(mob)) return;
+        if(event.getEntity() instanceof LivingEntity living && living.level() instanceof ServerLevel)
+            Assimilation.onLivingTick(living);
         if (!(event.getEntity() instanceof LivingEntity entity)
                 || !(entity.level() instanceof ServerLevel level)
                 || entity.isInvisible()
@@ -220,6 +222,11 @@ public final class ExpeditionEventHandler {
      */
     public static void onLivingHurt(LivingDamageEvent.Post event) {
         LivingEntity entity = event.getEntity();
+        if(event.getSource().getDirectEntity()==event.getSource().getEntity()
+                && event.getSource().getEntity() instanceof LivingEntity attacker
+                && attacker.getData(ModAttachments.ASSIMILATED)>0
+                && attacker.distanceToSqr(entity)<=Math.pow(attacker.getBbWidth()+entity.getBbWidth()+.75,2))
+            Assimilation.onContact(entity);
         if (!(entity.level() instanceof ServerLevel level)
                 || entity.getData(ModAttachments.ASSIMILATED) <= 0) {
             return;

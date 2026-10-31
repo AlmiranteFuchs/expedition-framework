@@ -96,5 +96,10 @@
   "message.expeditions.guardian_site_blocked": "The guardian could not safely take shape here. The expedition has failed; secured checkpoint tokens are kept.",
   "gui.expeditions.briefing": "Mission briefing",
   "gui.expeditions.requirements": "Deployment requirements",
-  "item.expeditions.field_assay_kit": "Field Assay Kit"
+  "item.expeditions.field_assay_kit": "Field Assay Kit",
+  "item.expeditions.disruption_charm": "Disruption Charm",
+  "effect.expeditions.assimilation_disruption": "Assimilation Disruption",
+  "item.expeditions.disruption_charm.equip": "Offhand or Curios charm slot",
+  "item.expeditions.disruption_charm.protect": "Blocks new assimilation on contact",
+  "item.expeditions.disruption_charm.limit": "Does not cure an existing infection"
 }

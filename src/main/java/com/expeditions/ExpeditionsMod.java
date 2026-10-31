@@ -35,6 +35,7 @@ public class ExpeditionsMod {
                 event.put(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(),
                         com.expeditions.entity.RootboundGuardian.attributes().build()));
         ModItems.ITEMS.register(modEventBus);
+        com.expeditions.registry.ModEffects.EFFECTS.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModAttachments.ATTACHMENTS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);

@@ -6,6 +6,8 @@ import json
 
 def generate(root):
     root = Path(root)
+    from gen_disruptor import generate as generate_disruptor
+    generate_disruptor(root)
     from bloom_surface_art import generate as generate_surface
     generate_surface(root)
 

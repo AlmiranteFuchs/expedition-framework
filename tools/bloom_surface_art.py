@@ -1,4 +1,4 @@
-"""Native 16px corner-compatible heartwood material. In-game art trial."""
+"""Native 16px corner-compatible heartwood material. Approved native material."""
 from pathlib import Path
 from PIL import Image, ImageDraw
 

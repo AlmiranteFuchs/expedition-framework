@@ -28,6 +28,10 @@ sourceSets.main.resources {
 
 repositories {
     maven {
+        url = 'https://maven.theillusivec4.top/'
+        content { includeGroup 'top.theillusivec4.curios' }
+    }
+    maven {
         url = 'https://maven.blamejared.com'
         content { includeGroup 'vazkii.patchouli' }
     }
@@ -157,6 +161,10 @@ configurations {
 }
 
 dependencies {
+    // Optional verification only; compatibility itself uses NeoForge's named capability.
+    if (project.hasProperty('curiosCompatTest')) {
+        localRuntime 'top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1'
+    }
     implementation 'vazkii.patchouli:Patchouli:1.21.1-92-NEOFORGE'
     // Unit tests for the pure expedition domain (no Minecraft classes required).
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'

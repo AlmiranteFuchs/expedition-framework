@@ -43,4 +43,4 @@ finished or approved. The restarted client was verified in the disposable
 `MCP-Debug-Test-20261029` save: floor and wall show the native repeatable material,
 not the eight-block scars. The installed 128×128 atlas passed all 2,048 compatible
 RGBA edge pairings; build, 143 unit tests and the full isolated GameTest suite
-passed. The client remains open for player review. Trial changes are uncommitted.
+passed. The player subsequently approved this native material and its frayed boundary treatment. Both were committed in alpha.9; this directory remains the original technical proof.
