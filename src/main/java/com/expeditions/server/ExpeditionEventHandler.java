@@ -266,6 +266,8 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign))
                 .then(Commands.literal("infection").executes(ExpeditionEventHandler::infection))
                 .then(Commands.literal("dimensions").executes(ExpeditionEventHandler::dimensions))
+                .then(Commands.literal("diagnostics").requires(source -> source.hasPermission(2))
+                        .executes(ExpeditionEventHandler::diagnostics))
                 .then(Commands.literal("start")
                         .then(Commands.argument("expedition", ResourceLocationArgument.id())
                                 .suggests(EXPEDITION_SUGGESTIONS)
@@ -307,6 +309,33 @@ public final class ExpeditionEventHandler {
                     + (missions.isEmpty() ? "no expeditions enabled" : missions)));
         }
         return levels.size();
+    }
+
+    /** A bounded read-only snapshot for admins and optional live test tooling. */
+    private static int diagnostics(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player == null) return 0;
+        var manager = ExpeditionManager.get(player.server);
+        var entries = new java.util.ArrayList<java.util.Map<String, Object>>();
+        manager.latestRun(player.getUUID()).ifPresent(run -> {
+            java.util.Map<String, Object> entry = new java.util.LinkedHashMap<>();
+            entry.put("RunId", run.runId().toString());
+            entry.put("Dimension", run.definition().dimension());
+            entry.put("PortalDimension", run.portalDimension());
+            entry.put("Portal", run.portal()); entry.put("Checkpoints", run.checkpoints()); entry.put("Exit", run.exit());
+            entry.put("Status", run.status().name()); entry.put("Done", run.completedCheckpoints());
+            entry.put("Rewarded", run.isRewarded() ? 1 : 0); entry.put("TokensAwarded", run.tokensAwarded());
+            entry.put("ChallengeEntities", run.challengeEntities().stream()
+                    .map(id -> java.util.Map.of("EntityId", id.toString())).toList());
+            run.guardianEncounter().ifPresent(guardian -> entry.put("Guardian", guardian));
+            entries.add(entry);
+        });
+        String json = new com.google.gson.Gson().toJson(java.util.Map.of(
+                "Runs", entries, "Balance", manager.tokenBalance(player.getUUID())));
+        // sendSystemMessage redirects to the player entity after `execute as`,
+        // bypassing the invoking command source (including MCP/admin capture).
+        ctx.getSource().sendSuccess(() -> Component.literal(json), false);
+        return 1;
     }
 
     private static int balance(CommandContext<CommandSourceStack> ctx) {

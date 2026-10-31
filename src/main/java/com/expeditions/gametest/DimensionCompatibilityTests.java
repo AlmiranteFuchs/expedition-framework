@@ -135,6 +135,9 @@ public final class DimensionCompatibilityTests {
             for (Waypoint waypoint : run.checkpoints()) {
                 helper.assertTrue(waypoint.y() == 101, "automatic floor resolution must be used");
                 manager.activateCheckpoint(player, ExpeditionManager.toPos(waypoint));
+                helper.assertTrue(!helper.getLevel().getBlockState(ExpeditionManager.toPos(run.portal()))
+                                .is(ModBlocks.EXPEDITION_PORTAL.get()),
+                        "sealing a remote party must close the portal in its home dimension");
             }
             manager.completeRun(player);
             helper.assertTrue(run.isRewarded(), "automatic missions must settle rewards");

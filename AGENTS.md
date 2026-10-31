@@ -255,7 +255,10 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   placements; they are overridden ONLY by
   a non-empty `horde_mobs/<dim>` entity tag, then `horde_mobs/default`, then
   config `hordeMob`. One type is rolled per horde activation (thematic), not
-  per mob.
+  per mob. Before settling a wave's type, `MobSpawns.trySpawnFromPool` retries
+  up to 16 distinct weighted candidates if an oversized body cannot fit.
+  Retries stay within the same resolved pool, including explicit tag overrides;
+  the first positioned body is reused, not thrown away. Siege waves share this.
 - `cleanupMarkers` removes per position via `isReferencedByActiveRun`, NOT
   the old `anyOtherActiveRunInDimension` dimension-wide guard — that guard
   let one leaked active run poison marker cleanup for the whole dimension,
@@ -305,6 +308,17 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   covered block state.
 
 ## Testing conventions
+
+- Portal lookup must filter `portalOpen()` (ACTIVE and unsealed) before matching a portal address.
+  Different parties reuse a terminal; an ended party's saved record must not
+  shadow the new portal and cause it to self-remove. A sealed but still ACTIVE
+  party must not shadow it either. `closePortal` uses `portalDimension`, and
+  closed portals are not live marker references. The `portal_reuse` regression
+  uses three distinct players at one terminal to prove entry and cleanup.
+- `horde_body_fit` uses a real soul-sand-valley spawn table in a three-high
+  enclosed room, deliberately rolls a ghast first, then verifies a smaller
+  native type fits. Fill the biome over a region, not one block: biome lookup
+  samples neighboring quart cells and a one-cell fixture can still read plains.
 
 - Suppression seams are active ONLY with JVM property
   `expeditions.gameTestRun=true`, set by the Gradle GameTest server run.
@@ -409,7 +423,7 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Verified: `build` + 137 unit tests + 107/107 core GameTest in-game
+Verified: `build` + 137 unit tests + 109/109 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for `FieldJournalScreen` field-record pages.
 The client opens that screen through a presentation callback installed by

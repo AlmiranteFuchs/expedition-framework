@@ -412,6 +412,7 @@ public final class ExpeditionManager {
         String dimension = level.dimension().location().toString();
         Waypoint portalWaypoint = toWaypoint(portalPos);
         Optional<ExpeditionRun> match = ledger.runs().stream()
+                .filter(ExpeditionRun::portalOpen)
                 .filter(r -> r.portal().equals(portalWaypoint)
                         && r.portalDimension().equals(dimension))
                 .findFirst();
@@ -894,7 +895,7 @@ public final class ExpeditionManager {
                         && (r.checkpoints().contains(waypoint) || r.exit().equals(waypoint)
                                 || r.defense().map(d -> d.device().equals(waypoint))
                                         .orElse(false)))
-                        || (r.portalDimension().equals(dimension)
+                        || (r.portalOpen() && r.portalDimension().equals(dimension)
                                 && r.portal().equals(waypoint)));
     }
 
@@ -1121,8 +1122,6 @@ public final class ExpeditionManager {
     private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center) {
         // One type per activation, rolled from the spawn site's own mob pool
         // (biome spawn table → tag override → config fallback).
-        EntityType<?> type = HordePools.pick(level, center,
-                run.definition().dimension(), level.getRandom());
         int size = (ExpeditionsConfig.challengeHordeSize()
                 + ExpeditionsConfig.challengeHordeSizePerExtraMember()
                         * (run.party().size() - 1))
@@ -1135,9 +1134,13 @@ public final class ExpeditionManager {
         boolean buffed = pressure >= ExpeditionTuning.integer(run.definition().dimension(),
                 "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        if (size <= 0) return;
+        Mob first = MobSpawns.trySpawnFromPool(level, center, radius, run.definition().dimension());
+        if (first == null) return;
+        EntityType<?> type = first.getType();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            Mob mob = MobSpawns.trySpawn(type, level, center, radius);
+            Mob mob = i == 0 ? first : MobSpawns.trySpawn(type, level, center, radius);
             if (mob == null) {
                 continue;
             }
@@ -1449,12 +1452,13 @@ public final class ExpeditionManager {
         boolean buffed = pressure
                 >= ExpeditionTuning.integer(run.definition().dimension(),
                         "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
-        EntityType<?> type = HordePools.pick(level, devicePos,
-                run.definition().dimension(), level.getRandom());
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        Mob first = MobSpawns.trySpawnFromPool(level, devicePos, radius, run.definition().dimension());
+        if (first == null) return;
+        EntityType<?> type = first.getType();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Mob mob = MobSpawns.trySpawn(type, level, devicePos, radius);
+            Mob mob = i == 0 ? first : MobSpawns.trySpawn(type, level, devicePos, radius);
             if (mob == null) {
                 continue;
             }
@@ -1598,12 +1602,14 @@ public final class ExpeditionManager {
 
     /** Removes the portal block when the first checkpoint seals the party. */
     private void closePortal(ExpeditionRun run) {
-        String dimension = run.definition().dimension();
+        String dimension = run.portalDimension();
         ServerLevel level = levelFor(dimension);
         if (level != null) {
             BlockPos portalPos = toPos(run.portal());
-            removeMarkerAt(level, portalPos);
-            data.untrackMarker(dimension, portalPos);
+            if (!isReferencedByActiveRun(dimension, portalPos)) {
+                removeMarkerAt(level, portalPos);
+                data.untrackMarker(dimension, portalPos);
+            }
         }
     }
 

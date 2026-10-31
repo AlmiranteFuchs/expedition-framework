@@ -45,22 +45,40 @@ public final class HordePools {
      */
     public static EntityType<?> pick(ServerLevel level, BlockPos pos,
             String dimensionId, RandomSource random) {
+        return pickExcluding(level, pos, dimensionId, random, java.util.Set.of());
+    }
+
+    /** Weighted retry without replacement, never crossing the chosen pool's boundary. */
+    public static EntityType<?> pickExcluding(ServerLevel level, BlockPos pos,
+            String dimensionId, RandomSource random, java.util.Set<EntityType<?>> excluded) {
+        var remaining = weightedPool(level, pos, dimensionId).stream()
+                .filter(entry -> !excluded.contains(entry.data())).toList();
+        return WeightedRandom.getRandomItem(random, remaining).map(WeightedEntry.Wrapper::data).orElse(null);
+    }
+
+    private static List<WeightedEntry.Wrapper<EntityType<?>>> weightedPool(
+            ServerLevel level, BlockPos pos, String dimensionId) {
         List<EntityType<?>> override = overridePool(dimensionId);
         if (!override.isEmpty()) {
-            return override.get(random.nextInt(override.size()));
+            return weighted(override);
         }
         List<WeightedEntry.Wrapper<EntityType<?>>> natural = naturalPool(level, pos);
         if (!natural.isEmpty()) {
-            return WeightedRandom.getRandomItem(random, natural)
-                    .map(WeightedEntry.Wrapper::data).orElseThrow();
+            return natural;
         }
 
         List<EntityType<?>> fallback = tagTypes(DEFAULT_TAG);
         if (!fallback.isEmpty()) {
-            return fallback.get(random.nextInt(fallback.size()));
+            return weighted(fallback);
         }
-        return BuiltInRegistries.ENTITY_TYPE.get(
-                ResourceLocation.parse(ExpeditionsConfig.challengeHordeMob()));
+        return weighted(List.of(BuiltInRegistries.ENTITY_TYPE.get(
+                ResourceLocation.parse(ExpeditionsConfig.challengeHordeMob()))));
+    }
+
+    private static List<WeightedEntry.Wrapper<EntityType<?>>> weighted(List<EntityType<?>> types) {
+        List<WeightedEntry.Wrapper<EntityType<?>>> entries = new ArrayList<>();
+        for (var type : types) entries.add(WeightedEntry.wrap(type, 1));
+        return entries;
     }
 
     /** Every type {@link #pick} may return — for tests and diagnostics. */
