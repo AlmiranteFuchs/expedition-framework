@@ -47,6 +47,7 @@ public class ExpeditionsClient {
         modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterGuiLayersEvent event) ->
                 event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("expeditions", "bloom_influence"), BloomVignette::render));
         NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
+        NeoForge.EVENT_BUS.addListener(InfectedMobEffects::onClientTick);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);
     }
 

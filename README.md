@@ -647,12 +647,14 @@ chunk, and validate on real block state — not heightmap assumptions.
   they bleed embers when cut — a synced
   `expeditions:assimilated` attachment (stage 1–3, dressed by pressure)
   drives a client overlay layer added to every living-entity renderer —
-  vanilla or modded — drawing sparse, world-lit bark lesions and four dim ember
+  vanilla or modded — drawing branching, world-lit bark lesions and eight dim ember
   points. Native skin alpha masks preserve transparent hats/wings; there is no
   bright body-wide wash. The same
   attachment mirrors the player's infection stage, so the take shows on
   player skins too. Renderers that can't carry layers get an ember/ash
   particle signature instead — "taken" reads on anything.
+  Nearby infected mobs also shed olive spores and ash more often at later stages;
+  the local effect has a shared four-particle-per-tick budget and a 24-block range.
 - **Field assay kit** — craft a glass bottle, iron ingot, copper ingot and essence
   together. Use to inspect the last sealed sample; sneak-use draws a fresh one
   for one heart, refuses lethal sampling and causes no knockback. The kit stores
@@ -682,6 +684,9 @@ chunk, and validate on real block state — not heightmap assumptions.
   Sixty-four connected 16px tiles share fixed edge ports. Neighbour-aware branches
   match across flat surfaces and inside/outside corners, with symmetric edge
   decisions preventing a square lattice. Tiles close their ports when growth is removed.
+  Raised bark ribs follow the same branches, with small resin knots that breathe
+  with the heart. Their relief stays below 1/16 block, fades out at 20–24 blocks,
+  and leaves the thin selection shape and pass-through collision unchanged.
 - **Microbiome** (M15) — `expeditions:assimilation_heart`, a pale node
   breathing ash, souls and ember sparks on its beat, seeded on standable
   ground in a ring around players as they move through
@@ -727,7 +732,7 @@ chunk, and validate on real block state — not heightmap assumptions.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.4.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.5.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:

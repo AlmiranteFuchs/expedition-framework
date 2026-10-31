@@ -1,4 +1,4 @@
-# 0.6.0-alpha.4: playable alpha candidate
+# 0.6.0-alpha.5: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -121,6 +121,14 @@ the client during this pass; the development process was restarted and the
 Minecraft bridge supplied the live inputs and visual checks.
 
 ## Reproducing development checks
+
+Alpha.5 adds cached, branch-aligned bark ribs and resin knots to the connected
+surface growth, keeping the relief below its thin selection shape. Client
+checks in the disposable debug save covered floor/wall junctions and oblique
+views, infected husk/cow skins against a normal cow, and stronger stage-based
+spore/ash shedding. Native skin transparency and ordinary lesion lighting stay
+intact. Resin fades in RGB as well as alpha for additive rendering, so dead
+hearts leave cold scars. Nearby mob particles share a four-per-tick client budget.
 
 ```powershell
 .\gradlew.bat build

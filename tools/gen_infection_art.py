@@ -44,18 +44,35 @@ def generate(root):
     atlas.save(root / 'block/assimilation_connections.png')
     heat.save(root / 'block/assimilation_connections_embers.png')
 
+    # Grain runs along the raised ribs; broad shaded bands read as bark, not metal.
+    relief = Image.new('RGBA', (16, 16), '#53583e'); r = ImageDraw.Draw(relief)
+    r.rectangle((0, 0, 15, 2), fill='#8b9270')
+    r.rectangle((0, 3, 15, 5), fill='#6c7652')
+    r.rectangle((0, 12, 15, 15), fill='#303c2c')
+    r.line([(0, 7), (5, 7), (8, 9), (15, 9)], fill='#a2aa7f')
+    r.line([(1, 11), (6, 11), (10, 13)], fill='#404c34')
+    r.line([(6, 2), (8, 4), (13, 4)], fill='#b8bc90')
+    relief.save(root / 'block/assimilation_relief.png')
+    resin = Image.new('RGBA', (16, 16)); r = ImageDraw.Draw(resin)
+    r.rectangle((5, 6, 10, 9), fill='#7c4b26')
+    r.rectangle((7, 6, 9, 8), fill='#c18b42')
+    resin.save(root / 'block/assimilation_relief_resin.png')
+
     scars = Image.new('RGBA', (64, 64)); d = ImageDraw.Draw(scars)
     embers = Image.new('RGBA', (64, 64)); e = ImageDraw.Draw(embers)
     # Authored small lesions over common head/torso/limb UV islands. Most skin stays visible.
     for x, y, flip in [(10, 9, 1), (26, 12, -1), (43, 7, 1), (22, 24, 1),
                        (29, 29, -1), (45, 22, -1), (6, 24, 1), (12, 43, -1),
-                       (26, 51, 1), (43, 43, -1), (53, 53, 1)]:
+                       (26, 51, 1), (43, 43, -1), (53, 53, 1), (18, 8, 1),
+                       (33, 21, 1), (18, 31, -1), (50, 29, 1), (4, 37, 1),
+                       (35, 49, -1), (51, 43, 1)]:
         points = [(x, y), (x + flip * 2, y + 2), (x + flip, y + 5)]
-        d.line(points, fill=(48, 59, 40, 205), width=2)
-        d.line(points, fill=(107, 122, 85, 195))
+        d.line(points, fill=(40, 51, 33, 235), width=3)
+        d.line(points, fill=(125, 139, 96, 225))
         d.line([(x + flip * 2, y + 2), (x + flip * 4, y + 1)], fill=(76, 91, 59, 160))
         d.point((x - flip, y), fill=(149, 153, 116, 170))
-    for x, y in [(11, 11), (23, 26), (44, 24), (27, 53)]:
+        d.line([(x + flip, y + 4), (x - flip * 2, y + 6)], fill=(85, 101, 62, 210))
+    for x, y in [(11, 11), (23, 26), (44, 24), (27, 53), (19, 10), (34, 23), (51, 45), (7, 26)]:
         d.point((x, y), fill=(116, 68, 31, 200)); e.point((x, y), fill='#b67b35')
     scars.save(root / 'entity/infection_scars.png')
     embers.save(root / 'entity/infection_embers.png')

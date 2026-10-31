@@ -326,6 +326,10 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   Mob lesions use native-skin alpha masks, normal lighting and sparse, dim ember
   points; dynamic skins with no readable source are skipped rather than painted
   opaque. The bounded texture cache clears on resource reload.
+  `BloomRelief` caches 64 small branch-aligned meshes; ribs and resin knots stay
+  below the 1/16-block selection profile and fade at 20–24 blocks. Keep the base
+  connections unrotated. Nearby infected mobs shed client-side spores/ash with
+  a shared four-particle-per-tick budget, 24-block range and stage-based cadence.
   Infection grants neither nausea nor vanilla Darkness. `BloomVignette` caps
   the border pulse at 10% opacity and leaves fog/central vision unchanged.
 
