@@ -27,11 +27,22 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        url = 'https://maven.blamejared.com'
+        content { includeGroup 'vazkii.patchouli' }
+    }
 }
 
 base {
     archivesName = mod_id
+}
+
+// Ready-to-install alpha: our mod and its required guidebook library only.
+tasks.register('alphaBundle', Sync) {
+    dependsOn tasks.named('jar')
+    from(tasks.named('jar'))
+    from(configurations.runtimeClasspath) { include 'Patchouli-*.jar' }
+    into layout.buildDirectory.dir('alpha')
 }
 
 // Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
@@ -146,6 +157,7 @@ configurations {
 }
 
 dependencies {
+    implementation 'vazkii.patchouli:Patchouli:1.21.1-92-NEOFORGE'
     // Unit tests for the pure expedition domain (no Minecraft classes required).
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

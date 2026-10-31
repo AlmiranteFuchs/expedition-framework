@@ -1,0 +1,46 @@
+{
+  "name": "The guardian",
+  "icon": "expeditions:assimilation_heart",
+  "category": "expeditions:thicket",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_heart",
+      "text": "The crown is not growing from its head. The head is growing around the crown.",
+      "title": "The guardian"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The Rootbound Guardian",
+      "text": "At the final checkpoint of Heart of the Thicket, a guardian takes shape. Defeat it, then use extraction to settle the campaign victory. Reaching the exit while it lives will not clear the dimension."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The Rootbound Guardian",
+      "text": "The approach costs 25 tokens and requires Deep Salvage proof and an established campaign."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Read the ember circle",
+      "text": "When the guardian roots itself and raises its arms, an ember circle marks its sweep. Leave the circle before the strike. Its exposed core takes extra damage during the windup: a chance to press your attack if you can still escape."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Read the ember circle",
+      "text": "Below half health, its core flares. It alternates sweeps with smaller bursts marked beneath its target. Keep moving out of each new mark."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Read the ember circle",
+      "text": "Every strike has a warning and recovery. It does not tear up the terrain."
+    },
+    {
+      "type": "patchouli:entity",
+      "entity": "expeditions:rootbound_guardian",
+      "scale": 0.55,
+      "text": "Read the raised arms. Leave the marked ground before it strikes."
+    }
+  ],
+  "advancement": "expeditions:journal/guardian"
+}

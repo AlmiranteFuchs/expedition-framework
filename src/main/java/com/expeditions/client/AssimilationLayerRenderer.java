@@ -33,14 +33,13 @@ import net.neoforged.neoforge.client.model.data.ModelData;
  * state, model and any block entity render exactly as before; we simply
  * hide its color under its own grayscale copy.
  *
- * <p>Over the skin, two living passes: the bone-pale vein trace (translucent,
- * alpha riding the colony's heartbeat) and an additive ember halo that
- * blooms on the thump — pale when dormant, ignited when alive, the Pale
- * Garden's dormant/ember duality. The wave originates at the cell's
+ * <p>Over the skin, sparse pale rootlets preserve the host's material identity.
+ * Only the small ember knots pulse; the roots take ordinary world lighting.
+ * The wave originates at the cell's
  * recorded heart and arrives
  * later the farther the cell sits from it — the colony visibly beats
- * outward from its nucleus. A cell whose heart died falls back to the
- * resting thrum; a hand-placed membrane beats a faint solo rhythm.
+ * outward from its nucleus. A cell whose heart died retains an ashen scar
+ * without a pulse; hand-placed growth beats a faint solo rhythm.
  *
  * <p>Blocks whose face exposes no baked sprite (custom renderers, BER-only
  * blocks) get the generic membrane texture instead — the layer still
@@ -50,6 +49,8 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     /** Bundled fallback for faces with no resolvable sprite. */
     static final ResourceLocation MEMBRANE =
             ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_layer.png");
+    private static final ResourceLocation ROOT_EMBERS =
+            ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_layer_embers.png");
 
     /** Offset of the skin into the layer cell, off the covered face. */
     static final double EPS = 1.0 / 512.0;
@@ -57,7 +58,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     /** Overlay light: always bright, regardless of the cell's lighting. */
     static final int FULLBRIGHT = 0xF000F0;
 
-    /** Ember tint for the additive halo — the heart's ignition color. */
+    /** Shared ignition tint used by the heart's aura. */
     static final float[] EMBER = {1.0f, 0.55f, 0.15f};
 
     /** Directional face shading, lifted from vanilla's factors (down 0.5,
@@ -89,10 +90,11 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
 
         // The wave radiates from the colony's heart: same lub-dub
         // everywhere, delayed per block of distance. A recorded-but-dead
-        // heart leaves only the resting thrum — the film stays, the life
-        // is gone; hand-placed membrane beats a faint solo rhythm.
+        // heart leaves cold roots — the scar stays, the life is gone;
+        // hand-placed growth beats a faint solo rhythm.
         BlockPos heart = entity.heart();
         float amp;
+        boolean living = heart == null || level.getBlockState(heart).is(ModBlocks.ASSIMILATION_HEART.get());
         if (heart != null && level.getBlockState(heart)
                 .is(ModBlocks.ASSIMILATION_HEART.get())) {
             amp = (float) PulseWave.amplitudeAt(
@@ -100,17 +102,21 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         } else if (heart == null) {
             amp = (float) PulseWave.amplitudeAt(time, 0, pos.asLong()) * 0.5f;
         } else {
-            amp = (float) PulseWave.THRUM;
+            amp = 0;
         }
-        float veins = 0.15f + 0.85f * amp;
-        float halo = 0.45f * amp;
+        float halo = living ? 0.03f + 0.72f * amp : 0;
 
         // Fresh tissue unfurls: a just-grown face scales in over ~10
         // ticks (ease-out) instead of popping — the colony visibly crawls.
         long born = entity.born();
+        // Infection drains the host over a minute. Fresh growth still shows
+        // the original material; the older colony becomes an ashen scar.
+        float maturity = born == AssimilationLayerBlockEntity.BORN_UNKNOWN ? 1.0f
+                : (float) Math.clamp((time - born) / 1200.0, 0, 1);
+        float bleaching = 0.08f + 0.86f * maturity;
         float grow = 1.0f;
         if (born != AssimilationLayerBlockEntity.BORN_UNKNOWN) {
-            float t = Math.min(1.0f, (float) (time - born) / 10.0f);
+            float t = (float) Math.clamp((time - born) / 10.0, 0, 1);
             grow = t * (2.0f - t);
         }
 
@@ -121,21 +127,21 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
             Direction facing = d.getOpposite();
             BlockState support = level.getBlockState(pos.relative(d));
             // Per-cell vein rotation so neighboring membranes never tile.
-            int rot = (int) ((pos.asLong() * 31L + facing.ordinal()) & 7);
+            int rot = (int) ((net.minecraft.util.Mth.getSeed(pos) + facing.ordinal()) & 7);
             VertexConsumer skin = buffers.getBuffer(
                     RenderType.entityTranslucent(
                             textureFor(level, pos, support, facing)));
             float shade = SHADE.get(facing);
             emitQuad(skin, poseStack, facing, (float) EPS,
-                    shade, shade, shade, 1.0f, light, packedOverlay, 0, grow);
+                    shade, shade, shade, bleaching, light, packedOverlay, 0, 1);
             VertexConsumer vein = buffers.getBuffer(
-                    RenderType.entityTranslucent(TraceTexture.get()));
-            emitQuad(vein, poseStack, facing, (float) EPS * 2, 1.0f, 1.0f,
-                    1.0f, veins, FULLBRIGHT, packedOverlay, rot, grow);
+                    RenderType.entityTranslucent(MEMBRANE));
+            emitQuad(vein, poseStack, facing, (float) EPS * 2, shade, shade,
+                    shade, 1.0f, light, packedOverlay, rot, grow);
             VertexConsumer glow = buffers.getBuffer(
-                    RenderType.eyes(TraceTexture.get()));
+                    RenderType.eyes(ROOT_EMBERS));
             emitQuad(glow, poseStack, facing, (float) EPS * 3,
-                    EMBER[0], EMBER[1], EMBER[2],
+                    1.0f, 1.0f, 1.0f,
                     halo, FULLBRIGHT, packedOverlay, rot, grow);
         }
     }

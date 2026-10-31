@@ -1,0 +1,43 @@
+{
+  "name": "Blood assay",
+  "icon": "expeditions:assimilation_essence",
+  "category": "expeditions:bloom",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_essence",
+      "text": "The clasp opens more easily now. There is a clean space beneath it, the shape of a thumb.",
+      "title": "Blood assay"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What the paper drinks",
+      "text": "Sneak-use this journal to take a blood sample. It costs one heart and is refused if that would kill you. Then open the guide normally; the field record at the end of this chapter shows the assay."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What the paper drinks",
+      "text": "Exposure alone unlocks these notes. The assay itself still needs a sample."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Leave before it answers",
+      "text": "Live hearts can build infection while you stay nearby. The effects intensify by stage; extreme exposure has consequences beyond a passing sickness."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Leave before it answers",
+      "text": "Low exposure subsides away from the source. Check the blood record before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Leave before it answers",
+      "text": "The book remembers its sample. A fresh book must drink for itself."
+    },
+    {
+      "type": "expeditions:record_2"
+    }
+  ],
+  "advancement": "expeditions:journal/blood"
+}

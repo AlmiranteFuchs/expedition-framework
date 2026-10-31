@@ -16,6 +16,7 @@ public final class JournalDiscovery {
     public static void unlock(ServerPlayer player, JournalChapter chapter) {
         int old = player.getData(ModAttachments.JOURNAL_DISCOVERIES);
         int next = chapter.unlock(old);
+        grantBookDiscovery(player, chapter);
         if (next == old) return;
         player.setData(ModAttachments.JOURNAL_DISCOVERIES, next);
         boolean hasBook = player.getInventory().items.stream()
@@ -30,6 +31,7 @@ public final class JournalDiscovery {
     /** Bounded observation of already-loaded hearts, plus facts the server already knows. */
     public static void observe(ServerPlayer player) {
         if (!player.isAlive() || player.isSpectator()) return;
+        reconcileBookDiscoveries(player);
         String dimension = player.level().dimension().location().toString();
         int known = player.getData(ModAttachments.JOURNAL_DISCOVERIES);
         if (!JournalChapter.BLOOM.known(known)) {
@@ -50,5 +52,21 @@ public final class JournalDiscovery {
         }
         if (manager.savedData().pressure(dimension) >= 25) unlock(player, JournalChapter.PRESSURE);
         if (manager.savedData().isDimensionCleared(dimension)) unlock(player, JournalChapter.LIBERATION);
+    }
+
+    /** Migrate existing journals without inventing any new discoveries. */
+    public static void reconcileBookDiscoveries(ServerPlayer player) {
+        int known = player.getData(ModAttachments.JOURNAL_DISCOVERIES);
+        for (var chapter : JournalChapter.values()) {
+            if (chapter.known(known)) grantBookDiscovery(player, chapter);
+        }
+    }
+
+    private static void grantBookDiscovery(ServerPlayer player, JournalChapter chapter) {
+        var id = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("expeditions", "journal/" + chapter.id());
+        var advancement = player.server.getAdvancements().get(id);
+        if (advancement != null && !player.getAdvancements().getOrStartProgress(advancement).isDone()) {
+            player.getAdvancements().award(advancement, "discovered");
+        }
     }
 }

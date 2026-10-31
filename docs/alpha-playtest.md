@@ -1,8 +1,9 @@
-# 0.6.0-alpha.2: playable alpha candidate
+# 0.6.0-alpha.3: playable alpha candidate
 
-Minecraft 1.21.1, NeoForge 21.1.x, Java 21. No additional mod is required.
+Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
+for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
 Optional MCP tooling is development-only; nothing in the shipped mod depends
-on MCP, Aether, Bumblezone, Twilight Forest, Patchouli, or a client automation tool.
+on MCP, Aether, Bumblezone, Twilight Forest, or a client automation tool.
 
 ## Default survival loop
 
@@ -33,7 +34,8 @@ datapacks; the live terminal is the authority on your world's requirements.
 
 - Compass thorn: direction. Hovering ember: target above/below your elevation.
   Hold use to hear and see its elevation attunement.
-- Journal use: chapter guide. Dark chapters explain their discovery condition.
+- Journal use: Patchouli guidebook. Browse categories, search and bookmark
+  entries; Unwritten pages lists the remaining discovery conditions.
   Sneak-use: nonlethal blood sample costing one heart. The assay remains bound
   to that particular book; chapter knowledge belongs to the player.
 - Terminal: previous/next mission, left/right click to cycle options forward or
@@ -46,33 +48,52 @@ datapacks; the live terminal is the authority on your world's requirements.
 ## Verified
 
 - Build and 137 pure-Java unit tests.
-- 112 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
+- 116 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
   journal save/load and death copy, survival crafting, terminal defaults,
   required route length, guardian binding/death veto/save-load/Peaceful toggle,
   reused portals ignoring ended/sealed parties, remote portal sealing at home,
   read-only diagnostic snapshots, and weighted body-fit retries for
   oversized biome mobs in enclosed terrain. Three new ownership tests cover
   wandering mobs, saved entities/chunk unloads, and slime descendants.
-- Client: compass face/elevation/attunement, journal readability/locked hints/
-  keyboard navigation, deployment-board layout, guardian geometry/emissive art,
+- Four presentation interaction tests cover real terminal placement/rotation,
+  portal rim/aperture ray selection and empty collision, guide discovery
+  migration, and registry validation of every guide icon, recipe and entity.
+- Bloom growth is sparse infection over the host: pale rootlets occupy roughly
+  a third of a face, with separate ember knots. The original block gradually
+  loses color over a minute while retaining its grain and contrast. Dead hearts
+  leave cold scars. There is no raised membrane slab or full beige tile.
+- Client: compass face/elevation/attunement, guide pages/recipes/field records,
+  deployment-board layout, guardian geometry/emissive art,
   both phases, warning pose/circle, boss-bar transition and real survival damage.
 - Normal development client loads all three shipped missions and dimension
   tuning. Test suppression is now limited to the automated test-server JVM.
+- The Patchouli guide loads all four categories and fourteen entries. Illustrated
+  journal/terminal recipes, live survey components and discovery-gated opening
+  were reviewed in the real client. An essence entry initially stayed locked,
+  then opened after collecting a sample through the server observation path.
 - All three installed-mod probes passed again with actual Aether, Bumblezone
   and Twilight biome data and mob placement.
 - The complete live MCP portal → native horde → extraction loop passes in
   Aether, Bumblezone and Twilight Forest, with 12-token rewards and empty
-  challenge tracking after extraction. The final run observed golden swets,
-  endermen and wolves respectively, checked against each checkpoint biome's
-  installed spawn table. Earlier runs also exercised zephyrs and slimes.
+  challenge tracking after extraction. The final alpha.3 run observed aechor
+  plants, cave spiders and wolves respectively, checked against each checkpoint
+  biome's installed spawn table. Earlier runs also exercised swets, zephyrs,
+  endermen and slimes.
 - Remaining legacy art is redrawn: heart, membrane, terminal, checkpoint,
   extraction, device, portal, cargo, sigil and essence. Native 16px clusters
   share heartwood, dark metal and ember materials; blocks have dedicated top
   faces. The portal has a transparent root aperture and ash/ember particles.
   The complete block lineup, deployment-board briefing and angled journal
   sprite/guide were reviewed in the restarted client.
+- Terminal screen/casing faces, the smaller mirrored compass grip and sparse
+  Bloom roots were reviewed in-world. A comparison wall on stone, oak and dirt
+  showed fresh growth retaining host color above established ashen growth.
 
 ## Still to validate
+
+- Guidebook mouse/keyboard navigation at additional GUI scales and with resource
+  packs. This pass opened specific entries through Patchouli's operator command;
+  MCP UI widget control is disabled in the development bridge.
 
 - The final deployment-screen tweaks with the restored shipped missions,
   including long objective pages and real mouse interaction at multiple GUI
@@ -104,3 +125,4 @@ never modifies rewards, progress, or world blocks.
 Regenerate native art with `python tools/gen_textures.py` (Pillow required).
 `python tools/preview_heartwood.py` creates a before/after review board in
 `build/heartwood-art-review.png`; the default reference is commit `724c27a`.
+Regenerate the guide and its advancement gates with `python tools/gen_guidebook.py`.

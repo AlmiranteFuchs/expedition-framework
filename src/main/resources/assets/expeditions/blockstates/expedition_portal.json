@@ -1,7 +1,11 @@
 {
   "variants": {
-    "": {
+    "axis=x": {
       "model": "expeditions:block/expedition_portal"
+    },
+    "axis=z": {
+      "model": "expeditions:block/expedition_portal",
+      "y": 90
     }
   }
 }

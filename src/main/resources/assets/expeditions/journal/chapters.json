@@ -2,102 +2,174 @@
   "first_steps": {
     "title": "I. A field guide",
     "pages": [
-      {"heading": "The Charter field guide", "body": "The cover was warm before you touched it. The blank paper feels almost like bark.\n\nThis is a working guide to the frontier. Its chapters fill when you find something worth recording. Select any darkened chapter to read its discovery hint.\n\nThe last page of this chapter records your current expedition."},
-      {"heading": "Begin at the roots", "body": "Look for pale growth and its ember-lit heart. Harvest attached growth for assimilation essence; break its heart to arrest that colony.\n\nA book + one essence makes this journal. Discovering essence also teaches your crafting book the terminal and attunement sigil recipes.\n\nThe terminal is your base of operations. Bring it somewhere you can safely return."}
+      {
+        "heading": "The field guide",
+        "body": "The cover was warm before you touched it. The blank paper feels almost like bark.\n\nThis is a working guide to the frontier. Its chapters fill when you find something worth recording. Browse the categories to read your discoveries. The Unwritten pages entry offers hints for the trails still ahead.\n\nThe last page of this chapter records your current expedition."
+      },
+      {
+        "heading": "Begin at the roots",
+        "body": "Look for pale growth and its ember-lit heart. Harvest attached growth for assimilation essence; break its heart to arrest that colony.\n\nA book + one essence makes this journal. Discovering essence also teaches your crafting book the terminal and attunement sigil recipes.\n\nThe terminal is your base of operations. Bring it somewhere you can safely return."
+      }
     ]
   },
   "bloom": {
     "title": "II. The Bloom",
     "unlock_hint": "Approach an ember-lit assimilation heart within sixteen blocks. The journal records contact, even if you have not crafted it yet.",
     "pages": [
-      {"heading": "A fire under bark", "body": "Pale plates gather on stone. The air loses its color. Somewhere nearby, something beats.\n\nA colony grows from an assimilation heart. Its skin spreads along sturdy faces; the heart keeps it alive. Breaking that heart arrests its colony.\n\nWatch the ember flecks. They are a warning before the land becomes unfamiliar."},
-      {"heading": "Work from the edge", "body": "Take essence from attached growth before destroying the heart if you need a sample. Growth lost with its support yields no harvest.\n\nExposure near a live heart can infect you. Leave its reach to let low exposure subside; do not work beside it indefinitely.\n\nThis is not proof the Bloom was born here. Only proof it has learned to live here."}
+      {
+        "heading": "A fire under bark",
+        "body": "Pale veins take hold in stone. The air loses its color. Somewhere nearby, something beats.\n\nA colony grows from an assimilation heart. Its veins spread along sturdy faces; the heart keeps them alive. Fresh growth slowly drains color from its host, leaving the land ashen. Ember knots pulse with the colony while its heart lives. Breaking that heart arrests its colony.\n\nWatch the ember flecks. They are a warning before the land becomes unfamiliar."
+      },
+      {
+        "heading": "Work from the edge",
+        "body": "Take essence from attached growth before destroying the heart if you need a sample. Growth lost with its support yields no harvest.\n\nExposure near a live heart can infect you. Leave its reach to let low exposure subside; do not work beside it indefinitely.\n\nThis is not proof the Bloom was born here. Only proof it has learned to live here."
+      }
     ]
   },
   "essence": {
     "title": "III. What remains",
     "unlock_hint": "Harvest assimilation growth and collect its essence. Carrying a sample is enough to make these pages answer.",
     "pages": [
-      {"heading": "A little borrowed heat", "body": "The sample cools in water, then warms again in your palm. It seems reluctant to become an ordinary material.\n\nAssimilation essence comes from harvesting attached growth in survival. The colony must have something left to harvest.\n\nCombine a book with one essence to make another field journal. Your discoveries belong to you; a replacement book remembers them."},
-      {"heading": "Two useful constructions", "body": "Terminal, in a crafting table:\nIron / Iron / Iron\nEssence / Amethyst / Essence\nCopper / Redstone / Copper\n\nAttunement sigil: three essence + one amethyst shard, anywhere in the grid. Use the sigil against a terminal to attest your attunement. It is proof, so it is not consumed.\n\nThe crafting book has both recipes."}
+      {
+        "heading": "A little borrowed heat",
+        "body": "The sample cools in water, then warms again in your palm. It seems reluctant to become an ordinary material.\n\nAssimilation essence comes from harvesting attached growth in survival. The colony must have something left to harvest.\n\nCombine a book with one essence to make another field journal. Your discoveries belong to you; a replacement book remembers them."
+      },
+      {
+        "heading": "Two useful constructions",
+        "body": "Terminal, in a crafting table:\nIron / Iron / Iron\nEssence / Amethyst / Essence\nCopper / Redstone / Copper\n\nAttunement sigil: three essence + one amethyst shard, anywhere in the grid. Use the sigil against a terminal to attest your attunement. It is proof, so it is not consumed.\n\nThe crafting book has both recipes."
+      }
     ]
   },
   "terminal": {
     "title": "IV. The threshold",
     "unlock_hint": "Use an expedition terminal. A deployed terminal is a promise that there is somewhere to come back to.",
     "pages": [
-      {"heading": "An address in the dark", "body": "The terminal does not make the frontier safe. It remembers an address.\n\nUse it to select an expedition, difficulty and route length. Read the mission's requirements before deploying. Some need a sigil, previous expedition proof, tokens, or a more established campaign.\n\nStarting resolves a safe route first. If none can be found, nothing is deployed."},
-      {"heading": "Before you step through", "body": "The portal opens above the terminal. Enter it to deploy and receive a compass. Other players may join through it until the first checkpoint seals the party.\n\nTake food, a weapon and room for recovered cargo. The terminal can offer loaded modded dimensions too; their own biome creatures may answer a checkpoint's call.\n\nAn absent dimension cannot host a route."}
+      {
+        "heading": "An address in the dark",
+        "body": "The terminal does not make the frontier safe. It remembers an address.\n\nUse it to select an expedition, difficulty and route length. Read the mission's requirements before deploying. Some need a sigil, previous expedition proof, tokens, or a more established campaign.\n\nStarting resolves a safe route first. If none can be found, nothing is deployed."
+      },
+      {
+        "heading": "Before you step through",
+        "body": "The portal opens above the terminal. Enter it to deploy and receive a compass. Other players may join through it until the first checkpoint seals the party.\n\nTake food, a weapon and room for recovered cargo. The terminal can offer loaded modded dimensions too; their own biome creatures may answer a checkpoint's call.\n\nAn absent dimension cannot host a route."
+      }
     ]
   },
   "wayfinding": {
     "title": "V. Heartwood",
     "unlock_hint": "Step through an expedition portal and let the terminal issue your compass.",
     "pages": [
-      {"heading": "Follow the thorn", "body": "The compass points to your next checkpoint, then extraction. It follows a route, not a lodestone.\n\nIts hovering ember tells height: above the needle means the target is higher; below means it is lower. Near your elevation, it settles around the center.\n\nHold use to attune. The ember climbs or sinks and the chimes rise or fall. Release to quiet it."},
-      {"heading": "Read the country", "body": "The compass gives a bearing, not a walkable path. Go around cliffs, find a stair through caves, and treat lava as lava.\n\nRoutes are checked against the destination's real terrain. A ceiling is not a surface to stand upon. Dimensions with unfamiliar terrain may still refuse a route safely.\n\nThe terminal recalls its compass when the expedition ends."}
+      {
+        "heading": "Follow the thorn",
+        "body": "The compass points to your next checkpoint, then extraction. It follows a route, not a lodestone.\n\nIts hovering ember tells height: above the needle means the target is higher; below means it is lower. Near your elevation, it settles around the center.\n\nHold use to attune. The ember climbs or sinks and the chimes rise or fall. Release to quiet it."
+      },
+      {
+        "heading": "Read the country",
+        "body": "The compass gives a bearing, not a walkable path. Go around cliffs, find a stair through caves, and treat lava as lava.\n\nRoutes are checked against the destination's real terrain. A ceiling is not a surface to stand upon. Dimensions with unfamiliar terrain may still refuse a route safely.\n\nThe terminal recalls its compass when the expedition ends."
+      }
     ]
   },
   "checkpoints": {
     "title": "VI. Checkpoints",
     "unlock_hint": "Activate an expedition checkpoint. Merely walking past it does not settle the instrument.",
     "pages": [
-      {"heading": "Wake the instrument", "body": "Use each checkpoint in the order the compass gives. The first checkpoint seals the party.\n\nA checkpoint banks part of the guaranteed token reward for every member. Those secured tokens survive failure. Completion settles what remains, including earned bonuses.\n\nA horde may answer the activation. Expect creatures that belong to this dimension's biome, including unfamiliar ones."},
-      {"heading": "What failure costs", "body": "Death removes a member from the expedition. The last member lost fails the run. You keep tokens already secured at checkpoints; unfinished bonuses remain at risk.\n\nDisconnecting leaves the run resumable. On return, every marker and the dimension itself must still exist. Missing pieces fail the expedition safely.\n\nExtraction, not the final checkpoint, ends the journey."}
+      {
+        "heading": "Wake the instrument",
+        "body": "Use each checkpoint in the order the compass gives. The first checkpoint seals the party.\n\nA checkpoint banks part of the guaranteed token reward for every member. Those secured tokens survive failure. Completion settles what remains, including earned bonuses.\n\nA horde may answer the activation. Expect creatures that belong to this dimension's biome, including unfamiliar ones."
+      },
+      {
+        "heading": "What failure costs",
+        "body": "Death removes a member from the expedition. The last member lost fails the run. You keep tokens already secured at checkpoints; unfinished bonuses remain at risk.\n\nDisconnecting leaves the run resumable. On return, every marker and the dimension itself must still exist. Missing pieces fail the expedition safely.\n\nExtraction, not the final checkpoint, ends the journey."
+      }
     ]
   },
   "cargo": {
     "title": "VII. Sealed cargo",
     "unlock_hint": "Reach a recovery objective and receive the expedition's physical artifact.",
     "pages": [
-      {"heading": "Something to bring home", "body": "The seal carries the same faint warmth as the journal clasp. Whatever was stored here was meant to travel.\n\nA recovery mission issues its artifact at the named checkpoint. Keep it safe and hold it when using the extraction marker.\n\nThe seal belongs to this expedition. A souvenir from another run cannot satisfy it."},
-      {"heading": "Proof has weight", "body": "A recovered artifact is a physical item. Losing it can leave a required recovery unfinished. Return and retrieve it before extracting.\n\nAt successful extraction, the bound cargo is consumed and its objective settles. The journal is a record; it does not stand in for the missing object.\n\nThe frontier has a habit of making paperwork literal."}
+      {
+        "heading": "Something to bring home",
+        "body": "The seal carries the same faint warmth as the journal clasp. Whatever was stored here was meant to travel.\n\nA recovery mission issues its artifact at the named checkpoint. Keep it safe and hold it when using the extraction marker.\n\nThe seal belongs to this expedition. A souvenir from another run cannot satisfy it."
+      },
+      {
+        "heading": "Proof has weight",
+        "body": "A recovered artifact is a physical item. Losing it can leave a required recovery unfinished. Return and retrieve it before extracting.\n\nAt successful extraction, the bound cargo is consumed and its objective settles. The journal is a record; it does not stand in for the missing object.\n\nThe frontier has a habit of making paperwork literal."
+      }
     ]
   },
   "defense": {
     "title": "VIII. Hold the line",
     "unlock_hint": "Deploy a defense device by reaching a checkpoint with a defend-device objective.",
     "pages": [
-      {"heading": "The machine draws breath", "body": "The extractor's first pulse travels farther than its light. Things in the dark hear it.\n\nA defense objective raises a device beside its checkpoint. Protect it until the countdown finishes. Waves focus the machine; waiting at the next marker will not protect it.\n\nIts remaining integrity matters. Player blows can damage it too."},
-      {"heading": "Make a place to stand", "body": "Scout the approach before activation. Clear room to move, keep a way back to the device, and bring the equipment you need to interrupt attackers.\n\nIf a required device is destroyed, the expedition fails. An optional device can be lost without ending the route, but its bonus is gone.\n\nA vanished device is treated as destroyed. The terminal never assumes an absent machine survived."}
+      {
+        "heading": "The machine draws breath",
+        "body": "The extractor's first pulse travels farther than its light. Things in the dark hear it.\n\nA defense objective raises a device beside its checkpoint. Protect it until the countdown finishes. Waves focus the machine; waiting at the next marker will not protect it.\n\nIts remaining integrity matters. Player blows can damage it too."
+      },
+      {
+        "heading": "Make a place to stand",
+        "body": "Scout the approach before activation. Clear room to move, keep a way back to the device, and bring the equipment you need to interrupt attackers.\n\nIf a required device is destroyed, the expedition fails. An optional device can be lost without ending the route, but its bonus is gone.\n\nA vanished device is treated as destroyed. The terminal never assumes an absent machine survived."
+      }
     ]
   },
   "blood": {
     "title": "IX. Blood assay",
     "unlock_hint": "Experience Bloom exposure, or sneak-use the journal to give it a small blood sample. Never sample while critically wounded.",
     "pages": [
-      {"heading": "What the paper drinks", "body": "The clasp opens more easily now. There is a clean space beneath it, the shape of a thumb.\n\nSneak-use this journal to take a blood sample. It costs one heart and is refused if that would kill you. Then open the guide normally; the field record at the end of this chapter shows the assay.\n\nExposure alone unlocks these notes. The assay itself still needs a sample."},
-      {"heading": "Leave before it answers", "body": "Live hearts can build infection while you stay nearby. The effects intensify by stage; extreme exposure has consequences beyond a passing sickness.\n\nLow exposure subsides away from the source. Check the blood record before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart.\n\nThe book remembers its sample. A fresh book must drink for itself."}
+      {
+        "heading": "What the paper drinks",
+        "body": "The clasp opens more easily now. There is a clean space beneath it, the shape of a thumb.\n\nSneak-use this journal to take a blood sample. It costs one heart and is refused if that would kill you. Then open the guide normally; the field record at the end of this chapter shows the assay.\n\nExposure alone unlocks these notes. The assay itself still needs a sample."
+      },
+      {
+        "heading": "Leave before it answers",
+        "body": "Live hearts can build infection while you stay nearby. The effects intensify by stage; extreme exposure has consequences beyond a passing sickness.\n\nLow exposure subsides away from the source. Check the blood record before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart.\n\nThe book remembers its sample. A fresh book must drink for itself."
+      }
     ]
   },
   "pressure": {
     "title": "X. Awareness",
     "unlock_hint": "Spend enough time in a dimension for its awareness to reach twenty-five. The survey belongs to the place you stand in.",
     "pages": [
-      {"heading": "An answering pulse", "body": "At first the country felt empty. Now the pauses between sounds feel occupied.\n\nAwareness is a per-dimension pressure. Time spent there and expedition activity can raise it; higher pressure can strengthen the hordes. The next page reports this dimension's current reading.\n\nAnother dimension has its own state. Do not judge its safety by the quiet of your home."}
+      {
+        "heading": "An answering pulse",
+        "body": "At first the country felt empty. Now the pauses between sounds feel occupied.\n\nAwareness is a per-dimension pressure. Time spent there and expedition activity can raise it; higher pressure can strengthen the hordes. The next page reports this dimension's current reading.\n\nAnother dimension has its own state. Do not judge its safety by the quiet of your home."
+      }
     ]
   },
   "extraction": {
     "title": "XI. Extraction",
     "unlock_hint": "Complete a run by using its extraction marker after satisfying every required objective.",
     "pages": [
-      {"heading": "Count everyone home", "body": "The terminal's light is a small thing to miss. It looks different when you have earned the return journey.\n\nUse extraction after all checkpoints and required objectives are complete. Hold recovered cargo if the mission requires it. Completion returns the party home and settles rewards.\n\nOptional objectives and fast completion may add bonuses. The mission description tells you the terms."},
-      {"heading": "Build on what survived", "body": "Successful missions leave permanent proof and advance their dimension's campaign. That proof opens harder work at the terminal. A listed mission can remain locked until its other requirements are met.\n\nTokens buy rewards through /expeditions redeem. The reward pool follows the dimension you stand in.\n\nThe field guide remembers your discoveries after death. The frontier should leave you with more than scars."}
+      {
+        "heading": "Count everyone home",
+        "body": "The terminal's light is a small thing to miss. It looks different when you have earned the return journey.\n\nUse extraction after all checkpoints and required objectives are complete. Hold recovered cargo if the mission requires it. Completion returns the party home and settles rewards.\n\nOptional objectives and fast completion may add bonuses. The mission description tells you the terms."
+      },
+      {
+        "heading": "Build on what survived",
+        "body": "Successful missions leave permanent proof and advance their dimension's campaign. That proof opens harder work at the terminal. A listed mission can remain locked until its other requirements are met.\n\nTokens buy rewards through /expeditions redeem. The reward pool follows the dimension you stand in.\n\nThe field guide remembers your discoveries after death. The frontier should leave you with more than scars."
+      }
     ]
   },
   "guardian": {
     "title": "XII. The guardian",
     "unlock_hint": "Deploy into Heart of the Thicket after completing Deep Salvage. Reach the final checkpoint to awaken what guards the roots.",
     "pages": [
-      {"heading": "The Rootbound Guardian", "body": "The crown is not growing from its head. The head is growing around the crown.\n\nAt the final checkpoint of Heart of the Thicket, a guardian takes shape. Defeat it, then use extraction to settle the campaign victory. Reaching the exit while it lives will not clear the dimension.\n\nThe approach costs 25 tokens and requires Deep Salvage proof and an established campaign."},
-      {"heading": "Read the ember circle", "body": "When the guardian roots itself and raises its arms, an ember circle marks its sweep. Leave the circle before the strike. Its exposed core takes extra damage during the windup: a chance to press your attack if you can still escape.\n\nBelow half health, its core flares. It alternates sweeps with smaller bursts marked beneath its target. Keep moving out of each new mark.\n\nEvery strike has a warning and recovery. It does not tear up the terrain."}
+      {
+        "heading": "The Rootbound Guardian",
+        "body": "The crown is not growing from its head. The head is growing around the crown.\n\nAt the final checkpoint of Heart of the Thicket, a guardian takes shape. Defeat it, then use extraction to settle the campaign victory. Reaching the exit while it lives will not clear the dimension.\n\nThe approach costs 25 tokens and requires Deep Salvage proof and an established campaign."
+      },
+      {
+        "heading": "Read the ember circle",
+        "body": "When the guardian roots itself and raises its arms, an ember circle marks its sweep. Leave the circle before the strike. Its exposed core takes extra damage during the windup: a chance to press your attack if you can still escape.\n\nBelow half health, its core flares. It alternates sweeps with smaller bursts marked beneath its target. Keep moving out of each new mark.\n\nEvery strike has a warning and recovery. It does not tear up the terrain."
+      }
     ]
   },
   "liberation": {
     "title": "XIII. After silence",
     "unlock_hint": "Stand in a dimension whose major threat has been defeated and whose campaign has been cleared.",
     "pages": [
-      {"heading": "A quieter country", "body": "The roots have not vanished. The rhythm beneath them has.\n\nDefeating a dimension's campaign threat records that dimension as cleared. Its Bloom seeding is silenced until the campaign is reset. Other dimensions retain their own threats and their own histories.\n\nNeutralizing a threat is not an explanation for its origin. Leave that page open."}
+      {
+        "heading": "A quieter country",
+        "body": "The roots have not vanished. The rhythm beneath them has.\n\nDefeating a dimension's campaign threat records that dimension as cleared. Its Bloom seeding is silenced until the campaign is reset. Other dimensions retain their own threats and their own histories.\n\nNeutralizing a threat is not an explanation for its origin. Leave that page open."
+      }
     ]
   }
 }

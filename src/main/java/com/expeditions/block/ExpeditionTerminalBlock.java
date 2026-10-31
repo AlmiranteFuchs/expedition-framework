@@ -28,8 +28,32 @@ import net.minecraft.world.phys.BlockHitResult;
  * run's progress otherwise. All state changes happen on the server.
  */
 public class ExpeditionTerminalBlock extends Block {
+    public static final net.minecraft.world.level.block.state.properties.DirectionProperty FACING =
+            net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
+
     public ExpeditionTerminalBlock(Properties properties) {
         super(properties);
+        registerDefaultState(stateDefinition.any().setValue(FACING, net.minecraft.core.Direction.NORTH));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING);
+    }
+
+    @Override
+    public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+
+    @Override
+    protected BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+    }
+
+    @Override
+    protected BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
+        return rotate(state, mirror.getRotation(state.getValue(FACING)));
     }
 
     /**

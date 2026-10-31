@@ -1,0 +1,55 @@
+{
+  "name": "What remains",
+  "icon": "expeditions:assimilation_essence",
+  "category": "expeditions:beginnings",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_essence",
+      "text": "The sample cools in water, then warms again in your palm. It seems reluctant to become an ordinary material.",
+      "title": "What remains"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A little borrowed heat",
+      "text": "Assimilation essence comes from harvesting attached growth in survival. The colony must have something left to harvest."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A little borrowed heat",
+      "text": "Combine a book with one essence to make another field journal. Your discoveries belong to you; a replacement book remembers them."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Two useful constructions",
+      "text": "Terminal, in a crafting table:$(br)Iron / Iron / Iron$(br)Essence / Amethyst / Essence$(br)Copper / Redstone / Copper"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Two useful constructions",
+      "text": "Attunement sigil: three essence + one amethyst shard, anywhere in the grid. Use the sigil against a terminal to attest your attunement. It is proof, so it is not consumed."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Two useful constructions",
+      "text": "The crafting book has both recipes."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_field_journal",
+      "text": "Your discoveries belong to you. A replacement book remembers them."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_terminal",
+      "text": "Place it facing a safe space. Its portal opens above it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:attunement_sigil",
+      "text": "Shapeless. Use the sigil against a terminal; proof is not consumed."
+    }
+  ],
+  "advancement": "expeditions:journal/essence"
+}

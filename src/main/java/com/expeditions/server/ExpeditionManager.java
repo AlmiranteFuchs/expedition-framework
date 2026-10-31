@@ -312,7 +312,14 @@ public final class ExpeditionManager {
         level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
         data.trackMarker(dimension, exitPos);
         Microbiome.seedColonyNear(level, exitPos, level.random);
-        portalLevel.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState(), 3);
+        var terminalState = portalLevel.getBlockState(terminalPos);
+        var front = terminalState.hasProperty(com.expeditions.block.ExpeditionTerminalBlock.FACING)
+                ? terminalState.getValue(com.expeditions.block.ExpeditionTerminalBlock.FACING)
+                : player.getDirection();
+        var portalAxis = front.getAxis() == net.minecraft.core.Direction.Axis.X
+                ? net.minecraft.core.Direction.Axis.Z : net.minecraft.core.Direction.Axis.X;
+        portalLevel.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState()
+                .setValue(com.expeditions.block.ExpeditionPortalBlock.AXIS, portalAxis), 3);
         data.trackMarker(portalDimension, portalPos);
 
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(),

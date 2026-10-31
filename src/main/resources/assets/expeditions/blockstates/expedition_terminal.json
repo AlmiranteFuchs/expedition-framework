@@ -1,7 +1,20 @@
 {
   "variants": {
-    "": {
-      "model": "expeditions:block/expedition_terminal"
+    "facing=north": {
+      "model": "expeditions:block/expedition_terminal",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "expeditions:block/expedition_terminal",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "expeditions:block/expedition_terminal",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "expeditions:block/expedition_terminal",
+      "y": 270
     }
   }
 }

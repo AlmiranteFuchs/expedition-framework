@@ -3,36 +3,36 @@
   "display": {
     "firstperson_righthand": {
       "rotation": [
-        12,
-        -12,
-        -12
-      ],
-      "translation": [
-        -2.8,
-        4.5,
+        -35,
+        -20,
         0
       ],
+      "translation": [
+        -1.3,
+        3.0,
+        -0.5
+      ],
       "scale": [
-        0.44,
-        0.44,
-        0.44
+        0.42,
+        0.42,
+        0.42
       ]
     },
     "firstperson_lefthand": {
       "rotation": [
-        12,
-        12,
-        12
-      ],
-      "translation": [
-        -2.8,
-        4.5,
+        -35,
+        -20,
         0
       ],
+      "translation": [
+        -1.3,
+        3.0,
+        -0.5
+      ],
       "scale": [
-        0.44,
-        0.44,
-        0.44
+        0.42,
+        0.42,
+        0.42
       ]
     }
   }

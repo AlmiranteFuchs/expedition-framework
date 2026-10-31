@@ -33,8 +33,10 @@ origins of the organism and ancient infrastructure remain unresolved.
    navigation. Fixed the vanilla menu blur obscuring the custom book lettering.
    After feedback on the cover, replaced the mask motif with a clearer angled
    16px book silhouette, pale page block, root spine and single amber clasp.
-   The replacement is locally pixel-reviewed; its live resource reload remains
-   pending while desktop control reports its Escape safety stop.
+   The replacement is client-reviewed. Following guidebook feedback, the journal
+   now uses Patchouli: a two-page book, category index, search/bookmarks, illustrated
+   recipes and a guardian preview. Dynamic components retain per-stack survey and
+   assay records. Existing discovery bits mirror into hidden advancement gates.
 3. **Terminal**: make mission choice, prerequisites, stakes and progression
    readable. Preserve server authority and keep unsupported routes fail-closed.
    Implemented a dedicated deployment board with briefing/requirements pages,
@@ -53,7 +55,7 @@ origins of the organism and ancient infrastructure remain unresolved.
 5. **Release audit**: survival recipes, progression chain, guide discoveries,
    multiplayer cleanup, optional dimension compatibility, and an honest list
    of remaining gaps. Passing the old roadmap is not proof of finished polish.
-   Packaged `0.6.0-alpha.2`: 137 unit tests, 112 core GameTests and three actual
+   Packaged `0.6.0-alpha.3`: 137 unit tests, 116 core GameTests and three actual
    installed-dimension biome probes pass. Hardening also fixed reused portal
    addresses, remote sealing cleanup and oversized horde rolls. Remaining
    human/client checks are recorded in `docs/alpha-playtest.md`.
@@ -66,8 +68,8 @@ origins of the organism and ancient infrastructure remain unresolved.
 
 - [Patchouli discovery locks](https://vazkiimods.github.io/Patchouli/docs/patchouli-basics/advancement-locking/):
   entries unlock with player progress; clear category navigation gives notes a
-  practical structure. Our guide uses server-synced discoveries and a custom
-  book interface, so the alpha does not require another mod for instructions.
+  practical structure. Patchouli is now the required guidebook library; the mod
+  keeps server-owned discovery bits and mirrors them into advancement gates.
 - [Minecraft's Pale Garden](https://www.minecraft.net/en-us/article/the-pale-garden):
   the visual relationship between an eerie creature, its heart, and the traces
   that reveal it. Inspiration for readable root/ember cues, not a claim that

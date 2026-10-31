@@ -99,23 +99,37 @@ def gen_heart(root):
 
 
 def gen_layer(root):
-    image = Image.new('RGBA', (16, 16), (103, 102, 79, 195))
+    image = canvas()
     draw = ImageDraw.Draw(image)
-    # Wide pale plates with branching root channels, legible across many blocks.
-    for polygon in [[(0, 0), (7, 0), (6, 5), (2, 7), (0, 6)],
-                    [(9, 0), (15, 0), (15, 6), (11, 5)],
-                    [(0, 10), (5, 8), (8, 12), (7, 15), (0, 15)],
-                    [(10, 8), (15, 9), (15, 15), (10, 15), (8, 12)]]:
-        draw.polygon(polygon, fill=(185, 184, 152, 232))
-    roots = [[(0, 8), (4, 7), (7, 8), (9, 6), (9, 0)],
-             [(7, 8), (8, 12), (8, 15)], [(9, 6), (12, 7), (15, 7)],
-             [(4, 7), (5, 4), (4, 2)]]
+    # Creeping rootlets, not a sheet: most of the host remains exposed.
+    roots = [[(7, 15), (6, 12), (7, 9), (8, 7), (6, 4), (7, 0)],
+             [(8, 7), (10, 5), (13, 5), (15, 3)],
+             [(7, 10), (4, 9), (2, 10), (0, 10)],
+             [(6, 4), (3, 3), (2, 0)],
+             [(6, 12), (9, 12), (11, 14), (12, 15)]]
     for points in roots:
-        draw.line(points, fill=(58, 65, 48, 230), width=2)
-        draw.line([(x-1, y) for x, y in points], fill=(220, 214, 178, 245))
-    for x, y in [(6, 8), (10, 6), (8, 13)]:
-        draw.point((x, y), fill=EMBER[2])
+        draw.line([(x+1, y+1) for x, y in points], fill=(29, 35, 24, 95), width=2)
+    for points in roots:
+        draw.line(points, fill=(82, 88, 63, 255), width=2)
+        draw.line(points, fill=(184, 186, 149, 255))
+    for points in [[(7, 14), (6, 12), (7, 10)], [(7, 6), (6, 4), (7, 1)],
+                   [(9, 6), (10, 5), (12, 5)], [(5, 9), (4, 9), (2, 10)]]:
+        draw.line(points, fill=(223, 222, 183, 255))
+    for x, y in [(7, 8), (11, 5)]:
+        draw.point((x, y-1), fill=WOOD[0]); draw.point((x+1, y), fill=WOOD[0])
+        draw.point((x, y), fill=EMBER[1]); draw.point((x-1, y), fill=EMBER[2])
     save(root, 'block/assimilation_layer', image)
+    embers = canvas(); e = ImageDraw.Draw(embers)
+    e.point((7, 8), fill=EMBER[3]); e.point((11, 5), fill=EMBER[2])
+    save(root, 'block/assimilation_layer_embers', embers)
+    # The BER places both root and ember passes directly on the host face.
+    # A second raised slab would turn the organic growth back into floor tiles.
+    (Path(root).parent / 'models/block/assimilation_layer.json').write_text(json.dumps({
+        'parent':'minecraft:block/block', 'textures':{'particle':'expeditions:block/assimilation_layer'}},
+        indent=2)+'\n', encoding='utf-8')
+    (Path(root).parent / 'models/item/assimilation_layer.json').write_text(json.dumps({
+        'parent':'minecraft:item/generated', 'textures':{'layer0':'expeditions:block/assimilation_layer'}},
+        indent=2)+'\n', encoding='utf-8')
 
 
 def gen_terminal(root):
@@ -136,7 +150,25 @@ def gen_terminal(root):
     d.line([(5, 9), (7, 5), (10, 7), (8, 11), (5, 9)], fill=WOOD[3])
     d.point((7, 6), fill=EMBER[3]); d.point((9, 8), fill=EMBER[1])
     save(root, 'block/expedition_terminal_top', top)
-    base(root); cube_model(root, 'expedition_terminal', 'expedition_terminal_top')
+    side = wood_face(); metal_frame(side)
+    d = ImageDraw.Draw(side)
+    # Braced casing, with no duplicate screen or controls on the other sides.
+    d.rectangle((4, 3, 11, 12), fill=IRON[1])
+    for y in (5, 7, 9): d.line((5, y, 10, y), fill=IRON[0])
+    d.point((4, 3), fill=COPPER[2]); d.point((11, 12), fill=COPPER[1])
+    save(root, 'block/expedition_terminal_side', side)
+    base(root)
+    model_root = Path(root).parent / 'models/block'
+    (model_root / 'expedition_terminal.json').write_text(json.dumps({
+        'parent':'minecraft:block/orientable_with_bottom', 'textures':{
+            'front':'expeditions:block/expedition_terminal',
+            'side':'expeditions:block/expedition_terminal_side',
+            'top':'expeditions:block/expedition_terminal_top',
+            'bottom':'expeditions:block/heartwood_base'}}, indent=2)+'\n', encoding='utf-8')
+    state_root = Path(root).parent / 'blockstates'
+    (state_root / 'expedition_terminal.json').write_text(json.dumps({'variants':{
+        'facing='+facing:{'model':'expeditions:block/expedition_terminal', 'y':angle}
+        for facing, angle in [('north',0),('east',90),('south',180),('west',270)]}}, indent=2)+'\n', encoding='utf-8')
 
 
 def gen_checkpoint(root):
@@ -206,10 +238,13 @@ def gen_portal(root):
              'textures':{'particle':'expeditions:block/expedition_portal', 'portal':'expeditions:block/expedition_portal'},
              'elements':[
                  {'from':[0,0,7.99], 'to':[16,16,8.01], 'shade':False,
-                  'faces':{side:{'texture':'#portal','uv':[0,0,16,16]} for side in ('north','south')}},
-                 {'from':[7.99,0,0], 'to':[8.01,16,16], 'shade':False,
-                  'faces':{side:{'texture':'#portal','uv':[0,0,16,16]} for side in ('east','west')}}]}
+                  'faces':{
+                      'north':{'texture':'#portal','uv':[16,0,0,16]},
+                      'south':{'texture':'#portal','uv':[0,0,16,16]}}}]}
     (Path(root).parent / 'models/block/expedition_portal.json').write_text(json.dumps(model, indent=2)+'\n', encoding='utf-8')
+    (Path(root).parent / 'blockstates/expedition_portal.json').write_text(json.dumps({'variants':{
+        'axis=x':{'model':'expeditions:block/expedition_portal'},
+        'axis=z':{'model':'expeditions:block/expedition_portal', 'y':90}}}, indent=2)+'\n', encoding='utf-8')
 
 
 def gen_artifact(root):

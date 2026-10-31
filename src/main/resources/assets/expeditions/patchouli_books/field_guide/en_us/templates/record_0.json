@@ -1,0 +1,11 @@
+{
+  "components": [
+    {
+      "type": "patchouli:custom",
+      "class": "com.expeditions.client.JournalRecordComponent",
+      "x": 0,
+      "y": 0,
+      "record": 0
+    }
+  ]
+}

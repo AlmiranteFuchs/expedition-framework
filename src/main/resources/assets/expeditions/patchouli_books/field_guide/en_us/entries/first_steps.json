@@ -1,0 +1,47 @@
+{
+  "name": "A field guide",
+  "icon": "expeditions:expedition_field_journal",
+  "category": "expeditions:beginnings",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_field_journal",
+      "text": "The cover was warm before you touched it. The blank paper feels almost like bark.",
+      "title": "A field guide"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The field guide",
+      "text": "This is a working guide to the frontier. Its chapters fill when you find something worth recording. Browse the categories to read your discoveries. The Unwritten pages entry offers hints for the trails still ahead."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The field guide",
+      "text": "The last page of this chapter records your current expedition."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Begin at the roots",
+      "text": "Look for pale growth and its ember-lit heart. Harvest attached growth for assimilation essence; break its heart to arrest that colony."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Begin at the roots",
+      "text": "A book + one essence makes this journal. Discovering essence also teaches your crafting book the terminal and attunement sigil recipes."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Begin at the roots",
+      "text": "The terminal is your base of operations. Bring it somewhere you can safely return."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_field_journal",
+      "text": "Your discoveries belong to you. A replacement book remembers them."
+    },
+    {
+      "type": "expeditions:record_0"
+    }
+  ]
+}

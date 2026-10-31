@@ -1,0 +1,25 @@
+{
+  "name": "After silence",
+  "icon": "expeditions:attunement_sigil",
+  "category": "expeditions:thicket",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:attunement_sigil",
+      "text": "The roots have not vanished. The rhythm beneath them has.",
+      "title": "After silence"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quieter country",
+      "text": "Defeating a dimension's campaign threat records that dimension as cleared. Its Bloom seeding is silenced until the campaign is reset. Other dimensions retain their own threats and their own histories."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quieter country",
+      "text": "Neutralizing a threat is not an explanation for its origin. Leave that page open."
+    }
+  ],
+  "advancement": "expeditions:journal/liberation"
+}

@@ -1,0 +1,40 @@
+{
+  "name": "Sealed cargo",
+  "icon": "expeditions:expedition_artifact",
+  "category": "expeditions:expeditions",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_artifact",
+      "text": "The seal carries the same faint warmth as the journal clasp. Whatever was stored here was meant to travel.",
+      "title": "Sealed cargo"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Something to bring home",
+      "text": "A recovery mission issues its artifact at the named checkpoint. Keep it safe and hold it when using the extraction marker."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Something to bring home",
+      "text": "The seal belongs to this expedition. A souvenir from another run cannot satisfy it."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Proof has weight",
+      "text": "A recovered artifact is a physical item. Losing it can leave a required recovery unfinished. Return and retrieve it before extracting."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Proof has weight",
+      "text": "At successful extraction, the bound cargo is consumed and its objective settles. The journal is a record; it does not stand in for the missing object."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Proof has weight",
+      "text": "The frontier has a habit of making paperwork literal."
+    }
+  ],
+  "advancement": "expeditions:journal/cargo"
+}

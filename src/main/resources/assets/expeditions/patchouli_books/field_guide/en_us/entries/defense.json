@@ -1,0 +1,40 @@
+{
+  "name": "Hold the line",
+  "icon": "expeditions:expedition_checkpoint",
+  "category": "expeditions:expeditions",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_checkpoint",
+      "text": "The extractor's first pulse travels farther than its light. Things in the dark hear it.",
+      "title": "Hold the line"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The machine draws breath",
+      "text": "A defense objective raises a device beside its checkpoint. Protect it until the countdown finishes. Waves focus the machine; waiting at the next marker will not protect it."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The machine draws breath",
+      "text": "Its remaining integrity matters. Player blows can damage it too."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Make a place to stand",
+      "text": "Scout the approach before activation. Clear room to move, keep a way back to the device, and bring the equipment you need to interrupt attackers."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Make a place to stand",
+      "text": "If a required device is destroyed, the expedition fails. An optional device can be lost without ending the route, but its bonus is gone."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Make a place to stand",
+      "text": "A vanished device is treated as destroyed. The terminal never assumes an absent machine survived."
+    }
+  ],
+  "advancement": "expeditions:journal/defense"
+}

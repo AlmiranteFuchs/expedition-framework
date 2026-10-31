@@ -1,0 +1,45 @@
+{
+  "name": "The threshold",
+  "icon": "expeditions:expedition_terminal",
+  "category": "expeditions:beginnings",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_terminal",
+      "text": "The terminal does not make the frontier safe. It remembers an address.",
+      "title": "The threshold"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An address in the dark",
+      "text": "Use it to select an expedition, difficulty and route length. Read the mission's requirements before deploying. Some need a sigil, previous expedition proof, tokens, or a more established campaign."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An address in the dark",
+      "text": "Starting resolves a safe route first. If none can be found, nothing is deployed."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Before you step through",
+      "text": "The portal opens above the terminal. Enter it to deploy and receive a compass. Other players may join through it until the first checkpoint seals the party."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Before you step through",
+      "text": "Take food, a weapon and room for recovered cargo. The terminal can offer loaded modded dimensions too; their own biome creatures may answer a checkpoint's call."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Before you step through",
+      "text": "An absent dimension cannot host a route."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_terminal",
+      "text": "Place it facing a safe space. Its portal opens above it."
+    }
+  ],
+  "advancement": "expeditions:journal/terminal"
+}

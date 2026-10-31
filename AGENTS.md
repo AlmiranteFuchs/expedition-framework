@@ -40,6 +40,12 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   with installed mods that reject mock-player packets: add `-PisolatedGameTests`
   to use `run/gametest-isolated`; its own `world` is cleaned before each run.
 - Datagen: `./gradlew runData` → `src/generated/resources`
+- Guidebook: Patchouli `1.21.1-92-NEOFORGE` is a required runtime library.
+  `python3 tools/gen_guidebook.py` generates its categories/entries and hidden
+  advancement gates from `assets/expeditions/journal/chapters.json`.
+  Book metadata belongs in `data/expeditions/patchouli_books/field_guide`;
+  contents belong in the matching `assets/` directory. `./gradlew alphaBundle`
+  stages both required jars in `build/alpha`.
 - Textures: `python3 tools/gen_textures.py` regenerates all asset PNGs
   (16×16, bone/ember ramps, top-left light, ordered dither — no noise)
   and the heartwood block face models via `tools/heartwood_art.py`.
@@ -308,6 +314,11 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   face's own sprite desaturated — resolve sprites via face quads, then
   unculled quads, then the particle icon; never mutate atlas sprites or
   covered block state.
+  The layer's block model is intentionally empty: its BER draws the host skin,
+  sparse `assimilation_layer.png` roots and the separate two-knot ember mask.
+  Do not restore a raised full-face slab. Persisted `born` drives one minute of
+  gradual host bleaching; missing legacy birth times render mature. Rootlets
+  use world lighting, knots follow the heart, and dead hearts leave cold scars.
 
 ## Testing conventions
 
@@ -433,20 +444,22 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 137 unit tests + 112/112 core GameTest in-game
+Verified: `build` + 137 unit tests + 116/116 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
-`WRITTEN_BOOK_CONTENT` component for `FieldJournalScreen` field-record pages.
-The client opens that screen through a presentation callback installed by
-`ExpeditionsClient`; keep `broadcastChanges()` so the component refresh reaches
-the already-open screen. No vanilla open-book packet is sent. Discovery bits
+`WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
+`JournalBook` opens the guide through the client callback and remembers the
+hand used, so assays read the correct physical stack. Keep `broadcastChanges()`
+so fresh report data reaches an already-open book. Discovery bits
 are explicit stable positions in pure-Java `JournalChapter`, persisted in the
 player's `JOURNAL_DISCOVERIES` attachment with `copyOnDeath`; do not reuse bits.
 The chapter body resource is `assets/expeditions/journal/chapters.json`.
-`expeditions_journal` tests save/load, death-copy, observed essence and the
-documented survival terminal recipe. Custom guide layout, locked hints, cover
-art and keyboard chapter navigation are client-verified. Render the custom book's
-controls directly: `Screen.render` applies menu blur and would obscure already
-drawn lettering. Its
+`JournalDiscovery.reconcileBookDiscoveries` mirrors known bits into the hidden
+`expeditions:journal/<chapter>` advancement gates, including legacy players.
+The bits remain the authority; migration must never unlock unknown chapters.
+Guide components are client-only and read synchronized reports, never mutable
+server state. `expeditions_journal` tests discovery migration, referenced guide
+items/recipes/entities, placement direction and hollow portal selection alongside
+the existing save/load/death/crafting tests. The journal's
 `expeditions:blood_letting` damage type rides `bypasses_invulnerability`
 because mock players hardcode `isCreative()→true` — generic damage can
 never cost them blood (and creative players would get free samples).

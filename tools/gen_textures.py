@@ -50,6 +50,11 @@ def canvas():
     return Image.new("RGBA", (W, H), (0, 0, 0, 0))
 
 
+def mix(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(4))
+
+
 def put(img, x, y, c):
     if 0 <= x < W and 0 <= y < H:
         img.putpixel((x, y), c)
@@ -160,11 +165,12 @@ def gen_compass():
     os.makedirs(model_root, exist_ok=True)
     parent = "expeditions:item/expedition_compass_housing"
     with open(os.path.join(model_root, "expedition_compass_housing.json"), "w", encoding="utf-8") as file:
+        # A palm-sized instrument held low, tilted back towards the player.
+        # ItemTransform mirrors this same pose for the opposite hand.
+        grip = {"rotation": [-35, -20, 0], "translation": [-1.3, 3.0, -0.5],
+                "scale": [0.42, 0.42, 0.42]}
         json.dump({"parent": "item/generated", "display": {
-            "firstperson_righthand": {"rotation": [12, -12, -12],
-                "translation": [-2.8, 4.5, 0], "scale": [0.44, 0.44, 0.44]},
-            "firstperson_lefthand": {"rotation": [12, 12, 12],
-                "translation": [-2.8, 4.5, 0], "scale": [0.44, 0.44, 0.44]}}}, file, indent=2)
+            "firstperson_righthand": grip, "firstperson_lefthand": grip}}, file, indent=2)
         file.write("\n")
     frames = []
     for frame in range(32):

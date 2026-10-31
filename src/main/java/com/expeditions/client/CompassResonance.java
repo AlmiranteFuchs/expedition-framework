@@ -92,7 +92,17 @@ public final class CompassResonance {
         pose.translate(side * (-0.4f * Math.sin(swingRoot * Math.PI)),
                 0.2f * Math.sin(swingRoot * Math.PI * 2),
                 -0.2f * Math.sin(event.getSwingProgress() * Math.PI));
-        pose.translate(side * 0.33, -0.205 - event.getEquipProgress() * 0.6, -0.62);
+        pose.translate(side * 0.56, -0.52 - event.getEquipProgress() * 0.6, -0.72);
+        float swing = event.getSwingProgress();
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * (45 - 20 * (float)Math.sin(swing * swing * Math.PI))));
+        pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(side * -20 * (float)Math.sin(swingRoot * Math.PI)));
+        pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(-80 * (float)Math.sin(swingRoot * Math.PI)));
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * -45));
+        var context = right ? net.minecraft.world.item.ItemDisplayContext.FIRST_PERSON_RIGHT_HAND
+                : net.minecraft.world.item.ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
+        mc.getItemRenderer().getModel(event.getItemStack(), mc.level, mc.player, 0)
+                .applyTransform(context, pose, !right);
+        pose.translate(0, 0, 0.04);
         float beat = (float) PulseWave.amplitudeAt(time, 0, target.pos().asLong());
         float y = (float) (pull * 0.12 + Math.sin(time * 0.16) * 0.006);
         spark(event, pose, 0, y, 0.019f + beat * 0.005f, 0.8f);

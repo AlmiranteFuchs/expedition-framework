@@ -1,0 +1,28 @@
+{
+  "name": "Awareness",
+  "icon": "expeditions:assimilation_heart",
+  "category": "expeditions:bloom",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_heart",
+      "text": "At first the country felt empty. Now the pauses between sounds feel occupied.",
+      "title": "Awareness"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An answering pulse",
+      "text": "Awareness is a per-dimension pressure. Time spent there and expedition activity can raise it; higher pressure can strengthen the hordes. The next page reports this dimension's current reading."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An answering pulse",
+      "text": "Another dimension has its own state. Do not judge its safety by the quiet of your home."
+    },
+    {
+      "type": "expeditions:record_1"
+    }
+  ],
+  "advancement": "expeditions:journal/pressure"
+}

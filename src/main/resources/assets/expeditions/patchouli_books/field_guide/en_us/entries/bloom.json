@@ -1,0 +1,45 @@
+{
+  "name": "The Bloom",
+  "icon": "expeditions:assimilation_heart",
+  "category": "expeditions:bloom",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_heart",
+      "text": "Pale veins take hold in stone. The air loses its color. Somewhere nearby, something beats.",
+      "title": "The Bloom"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A fire under bark",
+      "text": "A colony grows from an assimilation heart. Its veins spread along sturdy faces; the heart keeps them alive. Fresh growth slowly drains color from its host, leaving the land ashen. Ember knots pulse with the colony while its heart"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A fire under bark",
+      "text": "lives. Breaking that heart arrests its colony."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A fire under bark",
+      "text": "Watch the ember flecks. They are a warning before the land becomes unfamiliar."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Work from the edge",
+      "text": "Take essence from attached growth before destroying the heart if you need a sample. Growth lost with its support yields no harvest."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Work from the edge",
+      "text": "Exposure near a live heart can infect you. Leave its reach to let low exposure subside; do not work beside it indefinitely."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Work from the edge",
+      "text": "This is not proof the Bloom was born here. Only proof it has learned to live here."
+    }
+  ],
+  "advancement": "expeditions:journal/bloom"
+}

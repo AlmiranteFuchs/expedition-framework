@@ -6,7 +6,8 @@ checkpoints, objectives, difficulty, and guaranteed token rewards.
 
 The long-term goal is to support vanilla dimensions and dimensions added by other
 mods, with minimal hardcoded assumptions about terrain, mechanics, or registries.
-The mod is intended to work standalone and to be suitable for modpacks.
+The mod requires Patchouli for its field guide and is suitable for modpacks.
+Dimension mods and MCP tooling are optional.
 
 ## Environment
 
@@ -17,6 +18,7 @@ The mod is intended to work standalone and to be suitable for modpacks.
 | Java        | 21                         |
 | Gradle      | 9.2.1 (wrapper)            |
 | Build plugin| ModDevGradle 2.0.148       |
+| Guidebook   | Patchouli 1.21.1-92-NEOFORGE |
 
 Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 
@@ -24,6 +26,7 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 
 ```bash
 ./gradlew build              # compile, run unit tests, produce build/libs/expeditions-<version>.jar
+./gradlew alphaBundle        # stage our jar + required Patchouli jar in build/alpha
 ./gradlew test               # pure-Java unit tests (JUnit 5)
 ./gradlew runServer          # headless dev server in ./run
 ./gradlew runClient          # dev client (GUI)
@@ -660,11 +663,10 @@ chunk, and validate on real block state — not heightmap assumptions.
   bleaches the face's real sprite toward bone at runtime, so the
   underlying block keeps its detail and shading but loses its color —
   without modifying, replacing, or storing the covered block's state.
-  Bone-pale capillary veins run over the skin while an ember halo beats
-  through them — pale when dormant, ignited on the lub, Pale Garden
-  style — a lub-dub pulse that originates at the colony's heart and
-  ripples outward through the membrane, each colony on its own tempo;
-  kill the heart and the glow dies to a resting thrum. Entities pass
+  Sparse pale rootlets take ordinary world lighting, while small ember knots
+  follow the colony's lub-dub pulse. Fresh growth drains the host's color over
+  a minute, preserving the original grain and contrast. Kill the heart and
+  the pulse stops, leaving cold ashen scars. Entities pass
   through
   the film (no collision); non-sturdy surfaces (air, fluids, fences,
   slabs, leaves) refuse attachment; each face dies with its own support.
@@ -691,7 +693,7 @@ chunk, and validate on real block state — not heightmap assumptions.
   Breaking the heart stops the spread; a dimension marked cleared in the
   saved data silences hearts and spawning both. Expedition markers get
   colonized too — a heart seeds in the ring around each checkpoint and
-  exit (`microbiome.markerColonies`), so the glowing blob doubles as the
+  exit (`microbiome.markerColonies`), so the ember-lit heart doubles as the
   route's landmark.
 - **Deployment board** — dedicated terminal screen with mission briefings,
   readable requirements, actual bonus-time windows, reward/cost previews,
@@ -701,17 +703,24 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Horde cleanup** — persistent run ownership follows wandering mobs and slime
   children. Ended hordes are removed on load or tick; chunk unloads retain cleanup
   responsibility. Active hordes remain alive.
+- **Field guide** — a Patchouli book with four categories, discovery-gated entries,
+  search/bookmarks, illustrated crafting and guardian pages. Live survey/assay
+  components read the particular journal's server-synchronized report. Existing
+  discoveries migrate to hidden guide advancement gates without changing progress.
+- **Placement and grip** — the terminal has one directional screen face, the
+  portal selection follows its hollow root frame, and the compass uses a small,
+  tilted grip with the same mirrored transform for its ember indicator.
 - **Heartwood art** — all ten legacy block/item designs now share carved pale
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 137 unit tests + 112 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 137 unit tests + 116 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.2.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.3.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
-- `./gradlew runGameTestServer -PisolatedGameTests` — **112/112 core game tests passed** on a real dedicated
+- `./gradlew runGameTestServer -PisolatedGameTests` — **116/116 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,

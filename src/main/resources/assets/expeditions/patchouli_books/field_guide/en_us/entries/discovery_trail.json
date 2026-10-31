@@ -1,0 +1,68 @@
+{
+  "name": "Unwritten pages",
+  "icon": "minecraft:feather",
+  "category": "expeditions:beginnings",
+  "sortnum": 10,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "The Bloom",
+      "text": "Approach an ember-lit assimilation heart within sixteen blocks. The journal records contact, even if you have not crafted it yet."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What remains",
+      "text": "Harvest assimilation growth and collect its essence. Carrying a sample is enough to make these pages answer."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The threshold",
+      "text": "Use an expedition terminal. A deployed terminal is a promise that there is somewhere to come back to."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Heartwood",
+      "text": "Step through an expedition portal and let the terminal issue your compass."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Checkpoints",
+      "text": "Activate an expedition checkpoint. Merely walking past it does not settle the instrument."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Sealed cargo",
+      "text": "Reach a recovery objective and receive the expedition's physical artifact."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Hold the line",
+      "text": "Deploy a defense device by reaching a checkpoint with a defend-device objective."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Blood assay",
+      "text": "Experience Bloom exposure, or sneak-use the journal to give it a small blood sample. Never sample while critically wounded."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Awareness",
+      "text": "Spend enough time in a dimension for its awareness to reach twenty-five. The survey belongs to the place you stand in."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Extraction",
+      "text": "Complete a run by using its extraction marker after satisfying every required objective."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The guardian",
+      "text": "Deploy into Heart of the Thicket after completing Deep Salvage. Reach the final checkpoint to awaken what guards the roots."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "After silence",
+      "text": "Stand in a dimension whose major threat has been defeated and whose campaign has been cleared."
+    }
+  ]
+}

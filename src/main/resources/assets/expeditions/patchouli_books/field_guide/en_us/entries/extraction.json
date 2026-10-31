@@ -1,0 +1,40 @@
+{
+  "name": "Extraction",
+  "icon": "expeditions:expedition_exit",
+  "category": "expeditions:expeditions",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_exit",
+      "text": "The terminal's light is a small thing to miss. It looks different when you have earned the return journey.",
+      "title": "Extraction"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Count everyone home",
+      "text": "Use extraction after all checkpoints and required objectives are complete. Hold recovered cargo if the mission requires it. Completion returns the party home and settles rewards."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Count everyone home",
+      "text": "Optional objectives and fast completion may add bonuses. The mission description tells you the terms."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Build on what survived",
+      "text": "Successful missions leave permanent proof and advance their dimension's campaign. That proof opens harder work at the terminal. A listed mission can remain locked until its other requirements are met."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Build on what survived",
+      "text": "Tokens buy rewards through /expeditions redeem. The reward pool follows the dimension you stand in."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Build on what survived",
+      "text": "The field guide remembers your discoveries after death. The frontier should leave you with more than scars."
+    }
+  ],
+  "advancement": "expeditions:journal/extraction"
+}

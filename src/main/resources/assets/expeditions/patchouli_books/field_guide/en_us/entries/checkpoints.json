@@ -1,0 +1,40 @@
+{
+  "name": "Checkpoints",
+  "icon": "expeditions:expedition_checkpoint",
+  "category": "expeditions:expeditions",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_checkpoint",
+      "text": "Use each checkpoint in the order the compass gives. The first checkpoint seals the party.",
+      "title": "Checkpoints"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Wake the instrument",
+      "text": "A checkpoint banks part of the guaranteed token reward for every member. Those secured tokens survive failure. Completion settles what remains, including earned bonuses."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Wake the instrument",
+      "text": "A horde may answer the activation. Expect creatures that belong to this dimension's biome, including unfamiliar ones."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What failure costs",
+      "text": "Death removes a member from the expedition. The last member lost fails the run. You keep tokens already secured at checkpoints; unfinished bonuses remain at risk."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What failure costs",
+      "text": "Disconnecting leaves the run resumable. On return, every marker and the dimension itself must still exist. Missing pieces fail the expedition safely."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What failure costs",
+      "text": "Extraction, not the final checkpoint, ends the journey."
+    }
+  ],
+  "advancement": "expeditions:journal/checkpoints"
+}
