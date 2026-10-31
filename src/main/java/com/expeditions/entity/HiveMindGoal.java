@@ -15,19 +15,25 @@ public final class HiveMindGoal extends Goal {
     private Mob leader;
     private int nextAttack;
     public HiveMindGoal(Mob mob) { this.mob=mob;setFlags(EnumSet.of(Flag.MOVE,Flag.LOOK)); }
+    @Override public boolean requiresUpdateEveryTick() { return true; }
     @Override public boolean canUse() {
         if(!HiveMind.active(mob)) return false;
         host=HiveMind.targetFor(mob); leader=host==null?HiveMind.leaderFor(mob):null;
         return host!=null || leader!=null && mob.distanceToSqr(leader)>25;
     }
     @Override public boolean canContinueToUse() {
+        host=HiveMind.targetFor(mob);
+        if(host!=null) leader=null;
+        else if(leader==null || !HiveMind.active(leader)) leader=HiveMind.leaderFor(mob);
         return HiveMind.active(mob) && (host!=null?HiveMind.validHost(mob,host) && mob.distanceToSqr(host)<32*32
                 :leader!=null && HiveMind.active(leader) && mob.distanceToSqr(leader)>9 && mob.distanceToSqr(leader)<24*24);
     }
     @Override public void tick() {
+        host=HiveMind.targetFor(mob);
+        if(host!=null) leader=null;
         LivingEntity destination=host!=null?host:leader;
         if(destination==null) return;
-        mob.getLookControl().setLookAt(destination,20,20);
+        if(host==null) mob.getLookControl().setLookAt(destination,20,20);
         if(mob.tickCount%10==0) mob.getNavigation().moveTo(destination,1);
         if(host==null) return;
         mob.setTarget(host);

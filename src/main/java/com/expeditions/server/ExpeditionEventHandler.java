@@ -222,6 +222,8 @@ public final class ExpeditionEventHandler {
      */
     public static void onLivingHurt(LivingDamageEvent.Post event) {
         LivingEntity entity = event.getEntity();
+        if(event.getNewDamage()>0 && entity instanceof net.minecraft.world.entity.Mob victim
+                && event.getSource().getEntity() instanceof LivingEntity attacker) Assimilation.onAttacked(victim,attacker);
         if(event.getSource().getDirectEntity()==event.getSource().getEntity()
                 && event.getSource().getEntity() instanceof LivingEntity attacker
                 && attacker.getData(ModAttachments.ASSIMILATED)>0

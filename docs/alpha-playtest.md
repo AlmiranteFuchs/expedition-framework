@@ -1,4 +1,4 @@
-# 0.6.0-alpha.10: playable alpha candidate
+# 0.6.0-alpha.11: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -192,7 +192,7 @@ heart growth seeks non-player living hosts as well as players.
 
 Eight interaction tests cover the new paths; six pure-Java progression tests
 cover contact-only accrual, protection precedence, retained variants and bounds.
-The full isolated run passes 129 core GameTests (132 including optional biome
+The full isolated run passes 132 core GameTests (135 including optional biome
 probes); 155 unit tests pass. A separate attempt with real Curios in GameTest
 fails on that mod's unsupported mock-player sync packets. Curios compatibility
 was instead verified in the actual client with `-PcuriosCompatTest`: wearing the
@@ -202,3 +202,18 @@ stopped new exposure. Two infected cows converged on an invulnerable sheep,
 which became infected by body contact while retaining its sheep entity type.
 The frozen-body shiver mixin applied successfully in the actual render pipeline;
 no server frozen ticks or client frost overlay were introduced.
+
+
+Alpha.11 corrects shared attention: private native targets no longer split a
+nearby pack, head tracking is independent of movement, and already-running goals
+retarget immediately when an attack alerts the pack. A staggered vanilla AI
+schedule could also prevent odd-schedule animals from ever updating their path;
+the pursuit goal now ticks each frame. Three additional GameTests exercise
+conflicting targets, yaw/pitch tracking, invalidation, damage-event alerts and
+real pursuit by animals on both native AI schedules. Shared attention is transient
+and server-only. Disruption protects a host from infection, not from being seen.
+
+Live alpha.11 check: a naturally ticking cow, sheep and husk all converged on one
+protected pig. Temporarily freezing movement and moving the pig from left to
+right made all three heads follow the same host; normal AI was then restored.
+The current client is open in the disposable MCP test world for review.

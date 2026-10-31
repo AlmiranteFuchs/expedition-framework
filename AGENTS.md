@@ -465,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 155 unit tests + 129/129 core GameTest in-game
+Verified: `build` + 155 unit tests + 132/132 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the
@@ -559,3 +559,32 @@ client confirmed cows converging on a sheep, body-contact conversion, a 0.17
 movement speed from a 0.20 baseline, and Curios-only protection. User art exports
 are under ignored `art-exports/`; never regenerate or overwrite those editable
 handoffs while iterating runtime art.
+
+
+## Shared hive focus correction (alpha.11)
+
+`ModAttachments.HIVE_FOCUS` is transient/server-only: no codec or network sync.
+Nearby active infected mobs (24-block radius, capped at 32 bodies per decision)
+receive one common focus. Refreshes are shared and bounded to ten ticks, fresh
+attacks alert immediately, and member-private target goals cannot replace the
+live common focus. Validity is checked before reuse: dead, unloaded, converted,
+allied or other-world hosts are rejected. Disruption on a target prevents
+infection, not detection; disruption on an infected member releases coordination.
+`HiveMind.tick` runs after native AI and tracks eye height/head yaw separately
+from the movement goal, without locking native combat or priority-1 device goals.
+`HiveMindGoal` refreshes its running host instead of retaining an obsolete target.
+`Assimilation.onAttacked` preserves the GameTest suppression guard for alerts.
+Three interaction regressions cover conflicting targets, private-AI overwrite,
+actual head orientation, stale-target removal, damage-event alerts and running
+goal retargeting and real pursuit on both native AI tick schedules. The pursuit
+goal requires every-tick updates: a tickCount % 10 navigation gate otherwise
+never executes for one staggered schedule. Do not serialize entity references
+in shared focus state.
+
+Verified alpha.11: build/alphaBundle, 155 unit tests and all 132 core GameTests
+(135 reported including three optional biome probes). The real Curios-equipped
+client confirmed cow/sheep/husk convergence on one protected pig. With movement
+disabled temporarily, all three heads followed that pig from left to right;
+normal AI was restored afterward. Local screenshots are
+`build/mcp-verification/screenshot-1793470484338-0.png` and
+`build/mcp-verification/screenshot-1793470507594-0.png`.

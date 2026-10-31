@@ -64,6 +64,9 @@ public final class Assimilation {
     public static void suppressForTests(boolean suppressed) {
         suppressedForTests = suppressed && Boolean.getBoolean("expeditions.gameTestRun");
     }
+    public static void onAttacked(Mob victim,LivingEntity attacker) {
+        if(!suppressedForTests) HiveMind.alert(victim,attacker);
+    }
 
     private Assimilation() {
     }

@@ -716,7 +716,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   melee attack queues exposure for the next infection cadence. Cold scars and
   cleared dimensions cannot spread it. Every living mob can acquire an infected
   variant while retaining its native species, skin, equipment and drops. Nearby
-  infected mobs share threats/targets and idle peers regroup around an older
+  infected mobs agree on one nearby target, track it with their heads even while
+  native combat is active, and immediately share attack alerts. Idle peers regroup around an older
   member; normal combat and siege priorities remain available. They move 15%
   slower through one non-stacking modifier and use vanilla's visual frozen-body
   shiver, without setting frozen ticks or causing freezing damage.
@@ -749,11 +750,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 155 unit tests + 129 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 155 unit tests + 132 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.10.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.11.jar` assembled.
 - `./gradlew test` — 155 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:

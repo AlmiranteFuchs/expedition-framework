@@ -1,6 +1,7 @@
 package com.expeditions.registry;
 
 import com.expeditions.ExpeditionsMod;
+import com.expeditions.server.HiveFocus;
 import com.mojang.serialization.Codec;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.neoforged.neoforge.attachment.AttachmentType;
@@ -11,13 +12,14 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 /**
- * Data attachment registrations — entity-level metadata synced to tracking
- * clients, the channel that lets the client overlay and ember particles
- * telegraph "taken" on any entity, ours or a mod's.
+ * Entity metadata. Appearance/discovery attachments synchronize to clients;
+ * shared hive attention remains transient and server-only.
  */
 public final class ModAttachments {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENTS =
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, ExpeditionsMod.MOD_ID);
+    public static final DeferredHolder<AttachmentType<?>,AttachmentType<HiveFocus>> HIVE_FOCUS =
+            ATTACHMENTS.register("hive_focus",()->AttachmentType.builder(()->HiveFocus.EMPTY).build());
 
     /**
      * Assimilation stage carried by an entity: 0 clean, 1-3 increasingly

@@ -182,6 +182,102 @@ public final class InfectionContactTests {
         h.succeed();
     }
 
+    @GameTest(template="arena",batch="hive_consensus")
+    public static void hiveOverridesConflictingTargetsAndAllHeadsTrackOneHost(GameTestHelper h) {
+        var level=h.getLevel();begin(level);
+        Mob a=h.spawn(EntityType.COW,new BlockPos(2,2,2));
+        Mob b=h.spawn(EntityType.SHEEP,new BlockPos(5,2,3));
+        Mob c=h.spawn(EntityType.ZOMBIE,new BlockPos(7,2,2));
+        Mob host=h.spawn(EntityType.PIG,new BlockPos(9,2,5));
+        Mob rival=h.spawn(EntityType.PIG,new BlockPos(8,2,8));
+        var pack=java.util.List.of(a,b,c);var all=java.util.List.of(a,b,c,host,rival);
+        all.forEach(e->e.setNoAi(true));pack.forEach(e->e.setData(ModAttachments.ASSIMILATED,1));
+        try {
+            a.setTarget(host);b.setTarget(rival);c.setTarget(rival);
+            HiveMind.tick(c);
+            for(Mob peer:pack) h.assertTrue(peer.getTarget()==host,"one deterministic pack decision must replace conflicting targets");
+            // Native combat/look AI may choose something else between hive updates.
+            b.setTarget(rival);HiveMind.tick(b);
+            h.assertTrue(b.getTarget()==host,"private target changes must not steal the pack's focus");
+            for(int tick=0;tick<20;tick++) for(Mob peer:pack) HiveMind.tick(peer);
+            for(Mob peer:pack) {
+                double expected=Math.toDegrees(Math.atan2(host.getZ()-peer.getZ(),host.getX()-peer.getX()))-90;
+                h.assertTrue(Math.abs(net.minecraft.util.Mth.wrapDegrees(peer.getYHeadRot()-(float)expected))<.01,
+                        "every head must actually face the shared world-space host, even without a running movement goal");
+                double horizontal=Math.sqrt(peer.distanceToSqr(host.getX(),peer.getY(),host.getZ()));
+                double pitch=-Math.toDegrees(Math.atan2(host.getEyeY()-peer.getEyeY(),horizontal));
+                h.assertTrue(Math.abs(peer.getXRot()-pitch)<.01,"shared attention must track the host eye height too");
+            }
+            var saved=new CompoundTag();a.save(saved);
+            h.assertTrue(!saved.getCompound("neoforge:attachments").contains("expeditions:hive_focus"),
+                    "transient attention must not serialize stale entity references");
+            host.discard();b.setTarget(rival);HiveMind.tick(a);
+            for(Mob peer:pack) h.assertTrue(peer.getTarget()==rival,"a lost host must cause a shared retarget");
+        } finally { Assimilation.suppressForTests(true);all.forEach(Mob::discard); }
+        h.succeed();
+    }
+
+    @GameTest(template="arena",batch="hive_alert")
+    public static void hiveAttackAlertRetargetsRunningGoalAndWardDoesNotHideHost(GameTestHelper h) {
+        var level=h.getLevel();begin(level);
+        Mob a=h.spawn(EntityType.COW,new BlockPos(2,2,2));Mob b=h.spawn(EntityType.SHEEP,new BlockPos(5,2,3));
+        Mob old=h.spawn(EntityType.PIG,new BlockPos(8,2,4));Mob attacker=h.spawn(EntityType.ZOMBIE,new BlockPos(7,2,7));
+        var all=java.util.List.of(a,b,old,attacker);all.forEach(e->e.setNoAi(true));
+        a.setData(ModAttachments.ASSIMILATED,1);b.setData(ModAttachments.ASSIMILATED,1);
+        try {
+            a.setTarget(old);HiveMind.tick(a);
+            var goal=new com.expeditions.entity.HiveMindGoal(b);
+            h.assertTrue(goal.canUse(),"the follower must begin pursuing the original focus");
+            attacker.addEffect(new MobEffectInstance(ModEffects.ASSIMILATION_DISRUPTION,100));
+            // Real damage event path; the victim's current focus must not hide a fresh threat.
+            a.hurt(level.damageSources().mobAttack(attacker),1);
+            h.assertTrue(a.getTarget()==attacker && b.getTarget()==attacker,"a hit must immediately alert the pack");
+            goal.tick();
+            h.assertTrue(b.getTarget()==attacker,"an already-running goal must not restore its cached old host");
+            h.assertTrue(HiveMind.validHost(b,attacker),"disruption blocks new infection, not enemies' ability to see the wearer");
+            b.addEffect(new MobEffectInstance(ModEffects.ASSIMILATION_DISRUPTION,100));HiveMind.tick(b);
+            h.assertTrue(HiveMind.targetFor(b)==null && b.getTarget()==null,"a disrupted member must release shared attention");
+        } finally { Assimilation.suppressForTests(true);all.forEach(Mob::discard); }
+        h.succeed();
+    }
+
+    @GameTest(template="arena",batch="hive_live_navigation",timeoutTicks=120)
+    public static void hivePursuitWorksOnBothNativeAiTickSchedules(GameTestHelper h) {
+        var level=h.getLevel();begin(level);
+        for(int x=1;x<=14;x++) for(int z=1;z<=14;z++) {
+            level.setBlockAndUpdate(h.absolutePos(new BlockPos(x,0,z)),Blocks.STONE.defaultBlockState());
+            for(int y=1;y<=3;y++) level.setBlockAndUpdate(h.absolutePos(new BlockPos(x,y,z)),Blocks.AIR.defaultBlockState());
+        }
+        Mob a=h.spawn(EntityType.COW,new BlockPos(3,1,3));Mob b=h.spawn(EntityType.COW,new BlockPos(7,1,3));
+        Mob host=h.spawn(EntityType.PIG,new BlockPos(5,1,12));
+        host.setNoAi(true);host.setInvulnerable(true);
+        host.addEffect(new MobEffectInstance(ModEffects.ASSIMILATION_DISRUPTION,1000));
+        var all=java.util.List.of(a,b,host);
+        Runnable cleanup=()->{Assimilation.suppressForTests(true);all.forEach(Mob::discard);};
+        try {
+            h.assertTrue(Math.floorMod(a.getId(),2)!=Math.floorMod(b.getId(),2),"fixture must cover both native AI schedules");
+            for(Mob peer:java.util.List.of(a,b)) {
+                peer.setData(ModAttachments.ASSIMILATED,1);peer.setTarget(host);
+                peer.tickCount=40-Math.floorMod(peer.getId(),20);HiveMind.tick(peer);
+            }
+            double startA=a.distanceTo(host),startB=b.distanceTo(host);
+            h.runAtTickTime(80,()->{
+                try {
+                    h.assertTrue(a.distanceTo(host)<startA-1 && b.distanceTo(host)<startB-1,
+                            "both infected animals must navigate toward the common host, regardless of staggered AI scheduling: "
+                                    +a.distanceTo(host)+"/"+b.distanceTo(host));
+                    h.assertTrue(a.getTarget()==host && b.getTarget()==host,"native AI must retain common attention during pursuit");
+                    for(Mob peer:java.util.List.of(a,b)) {
+                        double yaw=Math.toDegrees(Math.atan2(host.getZ()-peer.getZ(),host.getX()-peer.getX()))-90;
+                        h.assertTrue(Math.abs(net.minecraft.util.Mth.wrapDegrees(peer.getYHeadRot()-(float)yaw))<5,
+                                "native AI must not steal head tracking between shared decisions");
+                    }
+                    h.succeed();
+                } finally { cleanup.run(); }
+            });
+        } catch(RuntimeException | Error failure) { cleanup.run();throw failure; }
+    }
+
     @GameTest(template="arena",batch="infection_growth")
     public static void colonyGrowsAutonomouslyAndSeeksNonPlayerHosts(GameTestHelper h) {
         var level=h.getLevel();begin(level);var origin=h.absolutePos(new BlockPos(1,0,1));var p=origin.offset(6,0,6);
