@@ -701,11 +701,15 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Horde cleanup** — persistent run ownership follows wandering mobs and slime
   children. Ended hordes are removed on load or tick; chunk unloads retain cleanup
   responsibility. Active hordes remain alive.
+- **Heartwood art** — all ten legacy block/item designs now share carved pale
+  wood, dark metal and ember accents, with separate block tops and a transparent
+  root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
+  before/after with `python tools/preview_heartwood.py` (Pillow required).
 - **Tests** — 137 unit tests + 112 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.1.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.2.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **112/112 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:

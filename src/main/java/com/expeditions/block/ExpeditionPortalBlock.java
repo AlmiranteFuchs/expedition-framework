@@ -23,6 +23,19 @@ public class ExpeditionPortalBlock extends Block {
     }
 
     @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, net.minecraft.util.RandomSource random) {
+        double angle = random.nextDouble() * Math.PI * 2;
+        double x = pos.getX() + 0.5 + Math.cos(angle) * 0.35;
+        double z = pos.getZ() + 0.5 + Math.sin(angle) * 0.35;
+        double y = pos.getY() + 0.2 + random.nextDouble() * 0.7;
+        level.addParticle(net.minecraft.core.particles.ParticleTypes.ASH, x, y, z, 0, 0.012, 0);
+        if (random.nextInt(4) == 0) {
+            level.addParticle(net.minecraft.core.particles.ParticleTypes.SMALL_FLAME,
+                    x, y, z, (pos.getX() + 0.5 - x) * 0.02, 0.005, (pos.getZ() + 0.5 - z) * 0.02);
+        }
+    }
+
+    @Override
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (!level.isClientSide && entity instanceof ServerPlayer player) {
             ExpeditionManager.get(level.getServer()).enterPortal(player, pos);

@@ -53,10 +53,14 @@ origins of the organism and ancient infrastructure remain unresolved.
 5. **Release audit**: survival recipes, progression chain, guide discoveries,
    multiplayer cleanup, optional dimension compatibility, and an honest list
    of remaining gaps. Passing the old roadmap is not proof of finished polish.
-   Packaged `0.6.0-alpha.1`: 137 unit tests, 112 core GameTests and three actual
+   Packaged `0.6.0-alpha.2`: 137 unit tests, 112 core GameTests and three actual
    installed-dimension biome probes pass. Hardening also fixed reused portal
    addresses, remote sealing cleanup and oversized horde rolls. Remaining
    human/client checks are recorded in `docs/alpha-playtest.md`.
+   The live portal/native-horde/extraction loop now passes in all three optional
+   dimensions. Wandering mobs and split slime children retain durable run
+   ownership. Ten legacy asset designs now share carved heartwood and ember
+   materials; the portal uses a transparent root aperture and restrained particles.
 
 ## Studied references
 

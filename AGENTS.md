@@ -42,6 +42,8 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
 - Datagen: `./gradlew runData` → `src/generated/resources`
 - Textures: `python3 tools/gen_textures.py` regenerates all asset PNGs
   (16×16, bone/ember ramps, top-left light, ordered dither — no noise)
+  and the heartwood block face models via `tools/heartwood_art.py`.
+  `python3 tools/preview_heartwood.py` builds a before/after board in `build/`.
 
 Corporate proxy: TLS interception requires importing the corporate root CA into
 `$JAVA_HOME/lib/security/cacerts` before dependency resolution works.

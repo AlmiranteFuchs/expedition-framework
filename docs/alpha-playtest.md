@@ -1,4 +1,4 @@
-# 0.6.0-alpha.1: playable alpha candidate
+# 0.6.0-alpha.2: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. No additional mod is required.
 Optional MCP tooling is development-only; nothing in the shipped mod depends
@@ -46,40 +46,46 @@ datapacks; the live terminal is the authority on your world's requirements.
 ## Verified
 
 - Build and 137 pure-Java unit tests.
-- 109 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
+- 112 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
   journal save/load and death copy, survival crafting, terminal defaults,
   required route length, guardian binding/death veto/save-load/Peaceful toggle,
   reused portals ignoring ended/sealed parties, remote portal sealing at home,
   read-only diagnostic snapshots, and weighted body-fit retries for
-  oversized biome mobs in enclosed terrain.
+  oversized biome mobs in enclosed terrain. Three new ownership tests cover
+  wandering mobs, saved entities/chunk unloads, and slime descendants.
 - Client: compass face/elevation/attunement, journal readability/locked hints/
   keyboard navigation, deployment-board layout, guardian geometry/emissive art,
   both phases, warning pose/circle, boss-bar transition and real survival damage.
 - Normal development client loads all three shipped missions and dimension
   tuning. Test suppression is now limited to the automated test-server JVM.
 - All three installed-mod probes passed again with actual Aether, Bumblezone
-  and Twilight biome data and mob placement. These are distinct from the
-  pending live loop.
+  and Twilight biome data and mob placement.
+- The complete live MCP portal → native horde → extraction loop passes in
+  Aether, Bumblezone and Twilight Forest, with 12-token rewards and empty
+  challenge tracking after extraction. The final run observed golden swets,
+  endermen and wolves respectively, checked against each checkpoint biome's
+  installed spawn table. Earlier runs also exercised zephyrs and slimes.
+- Remaining legacy art is redrawn: heart, membrane, terminal, checkpoint,
+  extraction, device, portal, cargo, sigil and essence. Native 16px clusters
+  share heartwood, dark metal and ember materials; blocks have dedicated top
+  faces. The portal has a transparent root aperture and ash/ember particles.
+  The complete block lineup, deployment-board briefing and angled journal
+  sprite/guide were reviewed in the restarted client.
 
 ## Still to validate
 
-- The complete live MCP portal → native horde → extraction loop in each of the
-  three optional dimensions. The script previously depended on `save-all`,
-  which an integrated server does not expose; it now uses the read-only admin
-  `/expeditions diagnostics` snapshot. It has not yet completed a live pass.
 - The final deployment-screen tweaks with the restored shipped missions,
   including long objective pages and real mouse interaction at multiple GUI
-  scales. The earlier board layout and server click paths are verified.
-- The replacement angled journal sprite in the live client after resource
-  reload. The 16px silhouette and material clusters have been reviewed locally.
+  scales. The current briefing and server click paths are verified.
 - Human multiplayer balance, disconnect/rejoin with actual clients, shields,
   different equipment tiers, and extended boss kiting in varied terrain.
 - Accessibility/localization polish: new guide text and some board copy are
   currently English. There is no claim of release-quality encounter balance.
 
-Client interaction stopped on the physical Escape safety switch during the
-remaining live checks. Automated verification continued; no destructive live
-test was run against the user's separate `supaflat test` world.
+Live checks used only the disposable debug save. The user's separate
+`supaflat test` world was not modified. The Windows helper could not capture
+the client during this pass; the development process was restarted and the
+Minecraft bridge supplied the live inputs and visual checks.
 
 ## Reproducing development checks
 
@@ -94,3 +100,7 @@ Use the disposable `MCP-Debug-Test-20261029` save for the live tool script. It
 checks the world identity before every command and restores mob spawning when
 finished. The admin snapshot reads only the invoking player's latest run and
 never modifies rewards, progress, or world blocks.
+
+Regenerate native art with `python tools/gen_textures.py` (Pillow required).
+`python tools/preview_heartwood.py` creates a before/after review board in
+`build/heartwood-art-review.png`; the default reference is commit `724c27a`.

@@ -53,6 +53,8 @@ public class ExpeditionsClient {
         // render layer; the desaturated skin is drawn by the BER.
         event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(
                 ModBlocks.ASSIMILATION_LAYER.get(), RenderType.translucent()));
+        event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(
+                ModBlocks.EXPEDITION_PORTAL.get(), RenderType.cutout()));
         event.enqueueWork(() -> ItemProperties.register(
                 ModItems.EXPEDITION_COMPASS.get(),
                 ResourceLocation.withDefaultNamespace("angle"),

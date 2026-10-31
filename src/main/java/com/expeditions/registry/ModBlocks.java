@@ -102,7 +102,8 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, ExpeditionPortalBlock> EXPEDITION_PORTAL = BLOCKS.register(
             "expedition_portal",
             () -> new ExpeditionPortalBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_PURPLE)
+                    .mapColor(MapColor.TERRACOTTA_ORANGE)
+                    .noOcclusion()
                     .noCollission()
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()

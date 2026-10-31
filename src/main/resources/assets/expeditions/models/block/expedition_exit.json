@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "expeditions:block/expedition_exit"
+    "side": "expeditions:block/expedition_exit",
+    "top": "expeditions:block/expedition_exit_top",
+    "bottom": "expeditions:block/heartwood_base"
   }
 }
