@@ -2,6 +2,7 @@ package com.expeditions.client;
 
 import com.expeditions.block.entity.AssimilationLayerBlockEntity;
 import com.expeditions.core.PulseWave;
+import com.expeditions.core.BloomSurfacePattern;
 import com.expeditions.registry.ModBlocks;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -115,7 +116,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         // the original material; the older colony becomes an ashen scar.
         float maturity = born == AssimilationLayerBlockEntity.BORN_UNKNOWN ? 1.0f
                 : (float) Math.clamp((time - born) / 1200.0, 0, 1);
-        float bleaching = 0.08f + 0.86f * maturity;
+        float bleaching = 0.06f + 0.64f * maturity;
         float grow = 1.0f;
         if (born != AssimilationLayerBlockEntity.BORN_UNKNOWN) {
             float t = (float) Math.clamp((time - born) / 10.0, 0, 1);
@@ -128,27 +129,42 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         for (Direction d : MultifaceBlock.availableFaces(state)) {
             Direction facing = d.getOpposite();
             BlockState support = level.getBlockState(pos.relative(d));
-            // Variant interiors share fixed ports; reciprocal edge choices
-            // preserve seams without forcing every face into a square lattice.
-            int mask = com.expeditions.block.AssimilationConnections.veinMask(level, pos, facing);
-            int tile = mask * 4 + (int)(net.minecraft.util.Mth.getSeed(pos) & 3);
-            float u = (tile % 8 * 16 + .01f) / 128, v = (tile / 8 * 16 + .01f) / 128;
-            float span = 15.98f / 128;
             VertexConsumer skin = buffers.getBuffer(
                     RenderType.entityTranslucent(
                             textureFor(level, pos, support, facing)));
             float shade = SHADE.get(facing);
             emitQuad(skin, poseStack, facing, (float) EPS,
                     shade, shade, shade, bleaching, light, packedOverlay, 0, 1);
-            VertexConsumer vein = buffers.getBuffer(
-                    RenderType.entityTranslucent(CONNECTED_ROOTS));
-            emitQuad(vein, poseStack, facing, (float) EPS * 2, shade, shade,
-                    shade, 1.0f, light, packedOverlay, 0, grow, u, v, span);
-            VertexConsumer glow = buffers.getBuffer(
-                    RenderType.eyes(ROOT_EMBERS));
-            emitQuad(glow, poseStack, facing, (float) EPS * 3,
-                    halo, halo, halo,
-                    halo, FULLBRIGHT, packedOverlay, 0, grow, u, v, span);
+            // Shared world UVs slice one colony across many faces. No per-block knot
+            // or independently rotated tile; matching faces sample the same scar.
+            int worldU = switch(facing) {
+                case NORTH -> -pos.getX()-1;
+                case WEST -> -pos.getZ()-1;
+                case EAST -> pos.getZ();
+                default -> pos.getX();
+            };
+            int worldV = facing.getAxis()==Direction.Axis.Y ? pos.getZ() : -pos.getY()-1;
+            int plane = switch(facing.getAxis()) {
+                case X -> pos.getX(); case Y -> pos.getY(); case Z -> pos.getZ();
+            };
+            long seed=plane*0x632be59bd9b4e019L+facing.ordinal();
+            var patches=BloomSurfacePattern.overlapping(worldU,worldV,seed);
+            VertexConsumer vein = buffers.getBuffer(RenderType.entityTranslucent(CONNECTED_ROOTS));
+            for (var patch : patches) {
+                float u=(patch.variant()%4*128+(worldU-patch.u())*16+.01f)/512;
+                float v=(patch.variant()/4*128+(worldV-patch.v())*16+.01f)/256;
+                // Alpha reveals the patch; scaling each face would reopen block seams.
+                emitQuad(vein,poseStack,facing,(float)EPS*2,shade,shade,shade,
+                        grow*patch.strength(),light,packedOverlay,0,1,u,v,15.98f/512,15.98f/256);
+            }
+            VertexConsumer glow = buffers.getBuffer(RenderType.eyes(ROOT_EMBERS));
+            for (var patch : patches) {
+                float u=(patch.variant()%4*128+(worldU-patch.u())*16+.01f)/512;
+                float v=(patch.variant()/4*128+(worldV-patch.v())*16+.01f)/256;
+                float heat=halo*grow*patch.strength();
+                emitQuad(glow,poseStack,facing,(float)EPS*3,heat,heat,heat,heat,
+                        FULLBRIGHT,packedOverlay,0,1,u,v,15.98f/512,15.98f/256);
+            }
         }
     }
 
@@ -184,12 +200,12 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
             Direction facing, float plane, float r, float g, float b,
             float alpha, int light, int overlay, int rot, float grow) {
-        emitQuad(consumer, poseStack, facing, plane, r, g, b, alpha, light, overlay, rot, grow, 0, 0, 1);
+        emitQuad(consumer, poseStack, facing, plane, r, g, b, alpha, light, overlay, rot, grow, 0, 0, 1, 1);
     }
 
     private static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
             Direction facing, float plane, float r, float g, float b,
-            float alpha, int light, int overlay, int rot, float grow, float u, float v, float span) {
+            float alpha, int light, int overlay, int rot, float grow, float u, float v, float spanU, float spanV) {
         PoseStack.Pose pose = poseStack.last();
         float[][] corners = switch (facing) {
             case UP -> new float[][] {
@@ -223,7 +239,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
             float z = normalAxis == 2 ? c[2] : 0.5f + (c[2] - 0.5f) * grow;
             consumer.addVertex(pose, x, y, z)
                     .setColor(r, g, b, alpha)
-                    .setUv(u + uv[i][0] * span, v + uv[i][1] * span)
+                    .setUv(u + uv[i][0] * spanU, v + uv[i][1] * spanV)
                     .setOverlay(overlay)
                     .setLight(light)
                     .setNormal(pose, nx, ny, nz);

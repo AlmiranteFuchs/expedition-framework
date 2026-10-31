@@ -1,4 +1,4 @@
-# 0.6.0-alpha.7: playable alpha candidate
+# 0.6.0-alpha.8: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -49,7 +49,7 @@ datapacks; the live terminal is the authority on your world's requirements.
 
 ## Verified
 
-- Build and 137 pure-Java unit tests.
+- Build and 143 pure-Java unit tests.
 - 120 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
   journal save/load and death copy, survival crafting, terminal defaults,
   required route length, guardian binding/death veto/save-load/Peaceful toggle,
@@ -139,6 +139,20 @@ Verified the flat floor/wall rendering in the disposable debug save, all 64 tile
 edge contracts and the pale/amber palette. Build, 137 unit tests and the full
 GameTest suite pass (120 core tests plus three optional biome probes that skip
 absent modded biomes in the isolated run).
+
+Alpha.8 implements the approved B + a little C art direction: large interrupted
+heartwood scars with rare resin wounds. Eight authored eight-block patches use
+a world-anchored jittered layout with a maximum of four overlapping patches per
+face. The native art density stays 16px/block; the eight patches occupy a
+512×256 atlas. Neighboring blocks share patch coordinates instead of repeating
+a centered sprite. Fresh tissue fades in through alpha without pulling UV seams
+apart. Host bleaching is gentler, retaining more native material detail. Six
+pure-Java tests cover stable world sampling, negative coordinates, continuity,
+bounded overlap/opacity and layout diversity. The historical 64-port atlas
+checks above describe alpha.7 and earlier, not the new patch system.
+Verified live floor/wall grain and a rare resin seam crossing a block boundary
+in the disposable debug save. The build and 143 unit tests pass; the full isolated
+GameTest run passes all 120 core tests (123 reported with optional biome probes).
 
 ```powershell
 .\gradlew.bat build

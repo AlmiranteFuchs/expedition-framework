@@ -681,9 +681,10 @@ chunk, and validate on real block state — not heightmap assumptions.
   Breaking it by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
-  Sixty-four connected 16px tiles share fixed edge ports. Neighbour-aware branches
-  match across flat surfaces and inside/outside corners, with symmetric edge
-  decisions preventing a square lattice. Tiles close their ports when growth is removed.
+  Eight overlapping scar templates span eight blocks each at native 16px/block
+  density. Their world-anchored, jittered layout keeps grain continuous across
+  neighboring faces on a plane, with varying opacity and quiet patches. Amber
+  wounds appear only in two templates. There is no emblem repeated on each block.
   Flat pale bark tissue, warm gray grain and sparse amber fissures follow the
   Creaking-inspired palette. Its surface art carries the spreading influence.
   The thin host surface remains the harvest target, with no movement collision.
@@ -729,12 +730,12 @@ chunk, and validate on real block state — not heightmap assumptions.
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 137 unit tests + 120 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 143 unit tests + 120 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.7.jar` assembled.
-- `./gradlew test` — 137 unit tests, 0 failures.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.8.jar` assembled.
+- `./gradlew test` — 143 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,

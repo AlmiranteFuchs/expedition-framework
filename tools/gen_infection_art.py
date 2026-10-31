@@ -1,4 +1,4 @@
-"""Connected 16px growth tiles and restrained native infection/assay assets. No noise."""
+"""World-scale 16px/block growth and restrained native infection/assay assets. No noise."""
 from pathlib import Path
 from PIL import Image, ImageDraw
 import json
@@ -6,54 +6,8 @@ import json
 
 def generate(root):
     root = Path(root)
-    atlas = Image.new('RGBA', (128, 128))
-    heat = Image.new('RGBA', (128, 128))
-    for mask in range(16):
-        for variant in range(4):
-            tile = Image.new('RGBA', (16, 16)); d = ImageDraw.Draw(tile)
-            ember = Image.new('RGBA', (16, 16)); e = ImageDraw.Draw(ember)
-            cx, cy = [(7, 9), (8, 6), (6, 7), (9, 9)][variant]
-            paths = [
-                [(cx, cy), (cx + 2, max(3, cy - 3)), (5, 3), (7, 0)],
-                [(cx, cy), (min(12, cx + 3), cy + 2), (12, 5), (15, 7)],
-                [(cx, cy), (cx - 2, min(12, cy + 3)), (10, 12), (7, 15)],
-                [(cx, cy), (max(3, cx - 3), cy - 2), (3, 10), (0, 7)],
-            ]
-            active = [path for i, path in enumerate(paths) if mask & (1 << i)]
-            if not active: active = [[(cx - 3, cy + 3), (cx - 2, cy), (cx, cy), (cx + 2, cy - 2)]]
-            for path in active:
-                d.line([(min(15, x + 1), min(15, y + 1)) for x, y in path], fill=(75, 68, 60, 65), width=5)
-            for path in active:
-                # A swollen root narrows towards its neighbour, with broken bark highlights.
-                for i in range(len(path) - 1):
-                    d.line(path[i:i+2], fill='#aaa296', width=max(2, 5-i*2))
-                    d.line(path[i:i+2], fill='#d1c9ba', width=max(1, 3-i))
-                d.point(path[1], fill='#e0dace')
-            # Chipped pale bark grips the host, split by one narrow amber fissure.
-            d.polygon([(cx-2, cy-1), (cx-1, cy-3), (cx+2, cy-2), (cx+3, cy),
-                       (cx+1, cy+2), (cx-2, cy+2)], fill='#aaa499')
-            d.line([(cx-2, cy+2), (cx-3, cy+2), (cx-3, cy+1)], fill='#d9d3c7')
-            d.line([(cx+1, cy-1), (cx+1, cy-3), (cx+3, cy-3)], fill='#bcb6a9')
-            d.line([(cx-1, cy+1), (cx-1, cy-1), (cx+1, cy-1)], fill='#e8e0d1')
-            # Broken grain lives inside the pale tissue, without a uniform bright outline.
-            d.point((cx-2, cy), fill='#70665a')
-            d.point((cx+2, cy-1), fill='#ded5c4')
-            d.line([(cx+1, cy+1), (cx+2, cy+2)], fill='#9c6a39')
-            d.line([(cx, cy+1), (cx, cy-1)], fill='#765037')
-            d.point((cx, cy), fill='#be792d')
-            e.point((cx, cy), fill='#e3a348')
-            # Standardize endpoints after drawing shadows/branches.
-            ports = [[(7, 0), (8, 0)], [(15, 7), (15, 8)], [(7, 15), (8, 15)], [(0, 7), (0, 8)]]
-            for n in range(16):
-                for point in [(n, 0), (n, 15), (0, n), (15, n)]: d.point(point, fill=(0, 0, 0, 0))
-            for i, points in enumerate(ports):
-                if mask & (1 << i):
-                    d.point(points[0], fill='#c6c1b3'); d.point(points[1], fill='#77716a')
-            index = mask * 4 + variant
-            offset = (index % 8 * 16, index // 8 * 16)
-            atlas.alpha_composite(tile, offset); heat.alpha_composite(ember, offset)
-    atlas.save(root / 'block/assimilation_connections.png')
-    heat.save(root / 'block/assimilation_connections_embers.png')
+    from bloom_surface_art import generate as generate_surface
+    generate_surface(root)
 
     scars = Image.new('RGBA', (64, 64)); d = ImageDraw.Draw(scars)
     embers = Image.new('RGBA', (64, 64)); e = ImageDraw.Draw(embers)
@@ -89,7 +43,7 @@ def generate(root):
     model = root.parent / 'models/item/field_assay_kit.json'
     model.write_text(json.dumps({'parent':'minecraft:item/generated', 'textures':{
         'layer0':'expeditions:item/field_assay_kit'}}, indent=2)+'\n', encoding='utf-8')
-    print('Generated 64 connected growth tiles, sparse mob lesions and the field assay kit.')
+    print('Generated world-scale growth, sparse mob lesions and the field assay kit.')
 
 
 if __name__ == '__main__':
