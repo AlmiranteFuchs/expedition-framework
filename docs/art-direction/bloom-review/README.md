@@ -1,8 +1,9 @@
 # Bloom surface art — approval draft
 
-Status: B with a little C approved by the player. Implemented as world-anchored,
-overlapping multi-block heartwood scars in alpha.8. The images remain art guides,
-not installed runtime textures.
+Status: the player approved the native 16px corner-compatible material, then
+approved its frayed isolation/edge treatment. Both ship in alpha.9. Alpha.8's
+multi-block picture approach was rejected and replaced. The concept images are
+style references, not textures to map across several block faces.
 
 ## Diagnosis
 

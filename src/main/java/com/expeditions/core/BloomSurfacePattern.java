@@ -1,35 +1,22 @@
 package com.expeditions.core;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/** World-anchored, overlapping art patches. Coordinates are block-face UVs, including negatives. */
+/** One native 16px material tile per block face, selected by shared world-corner labels. */
 public final class BloomSurfacePattern {
-    public static final int SIZE = 8;
-    private static final int SPACING = 6;
-    public record Patch(int u, int v, int variant, float strength) {
-        public boolean covers(int x, int y) {
-            return x >= u && x < u + SIZE && y >= v && y < v + SIZE;
-        }
+    public record Tile(int corners, int variant, boolean resin) {
+        public int index() { return corners*2+variant+(resin?32:0); }
+        public int corner(int n) { return corners>>>n & 1; }
     }
     private BloomSurfacePattern() { }
 
-    public static List<Patch> overlapping(int u, int v, long plane) {
-        List<Patch> result = new ArrayList<>(4);
-        int x = Math.floorDiv(u, SPACING), y = Math.floorDiv(v, SPACING);
-        for (int dy=-1; dy<=1; dy++) for (int dx=-1; dx<=1; dx++) {
-            Patch patch = at(x+dx,y+dy,plane);
-            if (patch.covers(u,v)) result.add(patch);
-        }
-        return result;
+    public static Tile at(int u, int v, long plane) {
+        int corners=corner(u,v,plane)|corner(u+1,v,plane)<<1
+                |corner(u+1,v+1,plane)<<2|corner(u,v+1,plane)<<3;
+        long detail=mix(u*0x632be59bd9b4e019L ^ v*0x9e3779b97f4a7c15L ^ plane ^ 0x51ed2705L);
+        return new Tile(corners,(int)(detail>>>32 & 1),(detail & 31)==0);
     }
 
-    public static Patch at(int cellU, int cellV, long plane) {
-        long hash = mix(cellU*0x632be59bd9b4e019L ^ cellV*0x9e3779b97f4a7c15L ^ plane);
-        int du=(int)Math.floorMod(hash,3)-1, dv=(int)Math.floorMod(hash>>>9,3)-1;
-        int variant=(int)(hash>>>20 & 7);
-        return new Patch(cellU*SPACING+du-4,cellV*SPACING+dv-4,variant,
-                .66f+(hash>>>32 & 255)/255f*.34f);
+    private static int corner(int u,int v,long plane) {
+        return (int)(mix(u*0x632be59bd9b4e019L ^ v*0x9e3779b97f4a7c15L ^ plane)>>>20 & 1);
     }
 
     private static long mix(long x) {

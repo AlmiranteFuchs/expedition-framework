@@ -3,6 +3,8 @@ package com.expeditions.client;
 import com.expeditions.block.entity.AssimilationLayerBlockEntity;
 import com.expeditions.core.PulseWave;
 import com.expeditions.core.BloomSurfacePattern;
+import com.expeditions.core.BloomBoundary;
+import com.expeditions.block.AssimilationConnections;
 import com.expeditions.registry.ModBlocks;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -129,14 +131,15 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         for (Direction d : MultifaceBlock.availableFaces(state)) {
             Direction facing = d.getOpposite();
             BlockState support = level.getBlockState(pos.relative(d));
+            var boundary=BloomBoundary.regions(AssimilationConnections.boundaryMask(level,pos,facing),
+                    (int)(net.minecraft.util.Mth.getSeed(pos)&3));
             VertexConsumer skin = buffers.getBuffer(
                     RenderType.entityTranslucent(
                             textureFor(level, pos, support, facing)));
             float shade = SHADE.get(facing);
-            emitQuad(skin, poseStack, facing, (float) EPS,
-                    shade, shade, shade, bleaching, light, packedOverlay, 0, 1);
-            // Shared world UVs slice one colony across many faces. No per-block knot
-            // or independently rotated tile; matching faces sample the same scar.
+            emitMasked(skin,poseStack,facing,(float)EPS,shade,shade,shade,bleaching*grow,
+                    light,packedOverlay,boundary,0,0,1,false);
+            // One native 16px tile per face; neighbors share corner labels.
             int worldU = switch(facing) {
                 case NORTH -> -pos.getX()-1;
                 case WEST -> -pos.getZ()-1;
@@ -148,22 +151,51 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
                 case X -> pos.getX(); case Y -> pos.getY(); case Z -> pos.getZ();
             };
             long seed=plane*0x632be59bd9b4e019L+facing.ordinal();
-            var patches=BloomSurfacePattern.overlapping(worldU,worldV,seed);
-            VertexConsumer vein = buffers.getBuffer(RenderType.entityTranslucent(CONNECTED_ROOTS));
-            for (var patch : patches) {
-                float u=(patch.variant()%4*128+(worldU-patch.u())*16+.01f)/512;
-                float v=(patch.variant()/4*128+(worldV-patch.v())*16+.01f)/256;
-                // Alpha reveals the patch; scaling each face would reopen block seams.
-                emitQuad(vein,poseStack,facing,(float)EPS*2,shade,shade,shade,
-                        grow*patch.strength(),light,packedOverlay,0,1,u,v,15.98f/512,15.98f/256);
+            var tile=BloomSurfacePattern.at(worldU,worldV,seed);
+            int index=tile.index();
+            float u=(index%8*16+.01f)/128, v=(index/8*16+.01f)/128;
+            VertexConsumer grain = buffers.getBuffer(RenderType.entityTranslucent(CONNECTED_ROOTS));
+            emitMasked(grain,poseStack,facing,(float)EPS*2,shade,shade,shade,
+                    grow,light,packedOverlay,boundary,u,v,15.98f/128,false);
+            if (tile.resin()) {
+                VertexConsumer glow = buffers.getBuffer(RenderType.eyes(ROOT_EMBERS));
+                float heat=halo*grow;
+                emitMasked(glow,poseStack,facing,(float)EPS*3,heat,heat,heat,heat,
+                        FULLBRIGHT,packedOverlay,boundary,u,v,15.98f/128,true);
             }
-            VertexConsumer glow = buffers.getBuffer(RenderType.eyes(ROOT_EMBERS));
-            for (var patch : patches) {
-                float u=(patch.variant()%4*128+(worldU-patch.u())*16+.01f)/512;
-                float v=(patch.variant()/4*128+(worldV-patch.v())*16+.01f)/256;
-                float heat=halo*grow*patch.strength();
-                emitQuad(glow,poseStack,facing,(float)EPS*3,heat,heat,heat,heat,
-                        FULLBRIGHT,packedOverlay,0,1,u,v,15.98f/512,15.98f/256);
+        }
+    }
+
+    /** One shared coverage mask crops all passes; cached horizontal runs avoid a 16x16 quad grid. */
+    private static void emitMasked(VertexConsumer out,PoseStack stack,Direction normal,float plane,
+            float r,float g,float b,float alpha,int light,int overlay,List<BloomBoundary.Region> regions,
+            float textureU,float textureV,float span,boolean emissive) {
+        if(regions.size()==1) {
+            var region=regions.getFirst();
+            if(region.x0()==0 && region.y0()==0 && region.x1()==8 && region.y1()==8 && region.alpha()==1) {
+                emitQuad(out,stack,normal,plane,r,g,b,alpha,light,overlay,0,1,textureU,textureV,span,span);
+                return;
+            }
+        }
+        for(var region:regions) {
+            float tint=emissive?region.alpha():1;
+            for(int i=0;i<4;i++) {
+                // UP uses the opposite chart winding to the other five faces.
+                int corner=normal==Direction.UP?(4-i)%4:i;
+                float u=(corner==1||corner==2?region.x1():region.x0())/8f;
+                float v=(corner>=2?region.y1():region.y0())/8f;
+                float x,y,z;
+                switch(normal) {
+                    case UP -> {x=u;y=plane;z=v;}
+                    case DOWN -> {x=u;y=1-plane;z=v;}
+                    case NORTH -> {x=1-u;y=1-v;z=1-plane;}
+                    case SOUTH -> {x=u;y=1-v;z=plane;}
+                    case WEST -> {x=1-plane;y=1-v;z=1-u;}
+                    default -> {x=plane;y=1-v;z=u;}
+                }
+                out.addVertex(stack.last(),x,y,z).setColor(r*tint,g*tint,b*tint,alpha*region.alpha())
+                        .setUv(textureU+u*span,textureV+v*span).setOverlay(overlay).setLight(light)
+                        .setNormal(stack.last(),normal.getStepX(),normal.getStepY(),normal.getStepZ());
             }
         }
     }

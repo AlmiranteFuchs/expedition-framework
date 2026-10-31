@@ -18,6 +18,36 @@ public final class BloomSurfaceTests {
     private static net.minecraft.world.level.block.state.BlockState face(Direction d) {
         return ModBlocks.ASSIMILATION_LAYER.get().defaultBlockState().setValue(MultifaceBlock.getFaceProperty(d), true);
     }
+    @GameTest(template="arena", batch="bloom_boundary_corners")
+    public static void boundaryMasksFollowDiagonalGrowthOnAllSixFaces(GameTestHelper helper) {
+        var level=helper.getLevel(); var cell=helper.absolutePos(new BlockPos(4,4,4));
+        for(Direction normal:Direction.values()) {
+            Direction support=normal.getOpposite(); var ports=AssimilationConnections.ports(normal);
+            var top=cell.relative(ports[0]); var right=cell.relative(ports[1]);
+            var diagonal=top.relative(ports[1]);
+            var cells=java.util.List.of(cell,top,right,diagonal);
+            try {
+                for(var p:cells) level.setBlockAndUpdate(p.relative(support),Blocks.STONE.defaultBlockState());
+                level.setBlockAndUpdate(cell,face(support));
+                helper.assertTrue(AssimilationConnections.boundaryMask(level,cell,normal)==0,
+                        "isolated growth must expose all its boundaries on "+normal);
+                level.setBlockAndUpdate(top,face(support)); level.setBlockAndUpdate(right,face(support));
+                int mask=AssimilationConnections.boundaryMask(level,cell,normal);
+                helper.assertTrue((mask&3)==3 && (mask&32)==0,
+                        "an empty diagonal must leave a concave NE boundary on "+normal);
+                level.setBlockAndUpdate(diagonal,face(support));
+                helper.assertTrue((AssimilationConnections.boundaryMask(level,cell,normal)&32)!=0,
+                        "diagonal growth must fill the corner immediately on "+normal);
+                level.removeBlock(diagonal,false);
+                helper.assertTrue((AssimilationConnections.boundaryMask(level,cell,normal)&32)==0,
+                        "removing diagonal growth must reopen the corner on "+normal);
+            } finally {
+                for(var p:cells) level.removeBlock(p,false);
+                for(var p:cells) level.removeBlock(p.relative(support),false);
+            }
+        }
+        helper.succeed();
+    }
     @GameTest(template="arena", batch="bloom_connected_surfaces")
     public static void allFaceOrientationsConnectReciprocallyAndDisconnectOnRemoval(GameTestHelper helper) {
         var level = helper.getLevel();

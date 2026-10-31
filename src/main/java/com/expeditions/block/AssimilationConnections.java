@@ -34,6 +34,22 @@ public final class AssimilationConnections {
         return mask;
     }
 
+    /** Coverage boundaries include diagonal holes; fold/wrap paths keep their joined corners. */
+    public static int boundaryMask(BlockGetter level,BlockPos cell,Direction normal) {
+        int mask=mask(level,cell,normal);
+        Direction support=normal.getOpposite();
+        var ports=ports(normal);
+        int[][] pairs={{0,3},{0,1},{2,1},{2,3}};
+        for(int corner=0;corner<4;corner++) {
+            int a=pairs[corner][0],b=pairs[corner][1];
+            if((mask&(1<<a))==0 || (mask&(1<<b))==0) continue;
+            if(!covered(level,cell.relative(ports[a]),support)
+                    || !covered(level,cell.relative(ports[b]),support)
+                    || covered(level,cell.relative(ports[a]).relative(ports[b]),support)) mask|=16<<corner;
+        }
+        return mask;
+    }
+
     /** Flat neighbours share an edge decision, preventing an all-four-way square lattice.
      * Folded/wrapped edges always continue around the corner. */
     public static int veinMask(BlockGetter level, BlockPos cell, Direction normal) {

@@ -43,7 +43,7 @@ def generate(root):
     model = root.parent / 'models/item/field_assay_kit.json'
     model.write_text(json.dumps({'parent':'minecraft:item/generated', 'textures':{
         'layer0':'expeditions:item/field_assay_kit'}}, indent=2)+'\n', encoding='utf-8')
-    print('Generated world-scale growth, sparse mob lesions and the field assay kit.')
+    print('Generated native material tiles, sparse mob lesions and the field assay kit.')
 
 
 if __name__ == '__main__':

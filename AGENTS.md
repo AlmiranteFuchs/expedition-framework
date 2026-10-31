@@ -319,13 +319,16 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   Do not restore a raised full-face slab. Persisted `born` drives one minute of
   gradual host bleaching; missing legacy birth times render mature. Rootlets
   use world lighting, knots follow the heart, and dead hearts leave cold scars.
-  `BloomSurfacePattern` (pure Java) anchors jittered, overlapping eight-block
-  patches to canonical face coordinates, including negative world coordinates.
-  At most four patches cover a face. `tools/bloom_surface_art.py` generates eight
-  128px scars in a 512×256 atlas, retaining 16px/block density. Adjacent faces on
-  a plane sample the same patch; fade fresh tissue with alpha, never by scaling
-  individual quads. No per-block emblem, independent UV rotations or fixed short
-  world period. The multiface attachment/spread rules remain unchanged.
+  The player approved the native tile material and frayed boundaries in alpha.9.
+  `BloomSurfacePattern` derives shared world-corner labels; one 16px tile covers
+  one face. `tools/bloom_surface_art.py` builds 32 materials plus resin variants
+  in a 128×128 atlas. Never stretch an illustration over multiple block faces.
+  `BloomBoundary` caches at most 1024 merged coverage masks (eight neighbors ×
+  four fray variants); the same mask clips grain, bleaching and ember light.
+  Full interiors keep a single quad. Exposed edges leave original host visible;
+  missing diagonals cut concave corners. Shared edge endpoints must agree even
+  when neighboring fray variants differ. Keep additive RGB masked with alpha.
+  The multiface attachment/spread rules remain unchanged.
   Mob lesions use native-skin alpha masks, normal lighting and sparse, dim ember
   points; dynamic skins with no readable source are skipped rather than painted
   opaque. The bounded texture cache clears on resource reload.
@@ -462,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 143 unit tests + 120/120 core GameTest in-game
+Verified: `build` + 149 unit tests + 121/121 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the

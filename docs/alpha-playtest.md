@@ -1,4 +1,4 @@
-# 0.6.0-alpha.8: playable alpha candidate
+# 0.6.0-alpha.9: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -49,7 +49,7 @@ datapacks; the live terminal is the authority on your world's requirements.
 
 ## Verified
 
-- Build and 143 pure-Java unit tests.
+- Build and 149 pure-Java unit tests.
 - 120 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
   journal save/load and death copy, survival crafting, terminal defaults,
   required route length, guardian binding/death veto/save-load/Peaceful toggle,
@@ -170,3 +170,11 @@ Regenerate native art with `python tools/gen_textures.py` (Pillow required).
 `python tools/preview_heartwood.py` creates a before/after review board in
 `build/heartwood-art-review.png`; the default reference is commit `724c27a`.
 Regenerate the guide and its advancement gates with `python tools/gen_guidebook.py`.
+
+
+Alpha.9 replaces alpha.8's rejected multi-block mural with the player-approved
+native 16px tile material. Frayed eight-neighbor masks crop tissue and bleaching
+together. The player approved the isolated and connected appearance in-game.
+149 unit tests pass, including mask reconstruction and shared-edge continuity;
+121 core GameTests pass, including diagonal boundary updates on all six faces
+(124 reported in the isolated suite with three optional modded-biome probes).
