@@ -89,8 +89,12 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         BlockPos pos = entity.getBlockPos();
         int light = LevelRenderer.getLightColor(level, pos);
         double time = level.getGameTime() + partialTick;
-        float distance=(float)Math.sqrt(Minecraft.getInstance().gameRenderer.getMainCamera().getPosition()
-                .distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5));
+        var camera=Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        var player=Minecraft.getInstance().player;
+        double viewerX=(player==null?camera.x:player.getX())-pos.getX()-.5;
+        double viewerY=(player==null?camera.y:player.getY()+player.getBbHeight()*.5)-pos.getY()-.5;
+        double viewerZ=(player==null?camera.z:player.getZ())-pos.getZ()-.5;
+        float distance=(float)Math.sqrt(camera.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5));
 
         // The wave radiates from the colony's heart: same lub-dub
         // everywhere, delayed per block of distance. A recorded-but-dead
@@ -152,7 +156,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
                     halo, halo, halo,
                     halo, FULLBRIGHT, packedOverlay, 0, grow, u, v, span);
             BloomRelief.render(poseStack,buffers,facing,mask,tile%4,light,packedOverlay,grow,shade,
-                    living ? amp : 0,distance);
+                    living ? amp : 0,distance,living,viewerX,viewerY,viewerZ);
         }
     }
 

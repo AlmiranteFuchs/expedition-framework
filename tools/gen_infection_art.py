@@ -12,24 +12,30 @@ def generate(root):
         for variant in range(4):
             tile = Image.new('RGBA', (16, 16)); d = ImageDraw.Draw(tile)
             ember = Image.new('RGBA', (16, 16)); e = ImageDraw.Draw(ember)
-            cx, cy = [(7, 8), (8, 7), (6, 7), (8, 9)][variant]
+            cx, cy = [(7, 9), (8, 6), (6, 7), (9, 9)][variant]
             paths = [
-                [(cx, cy), (6 + variant % 2, 5), (7, 2), (7, 0)],
-                [(cx, cy), (10, 6 + variant % 2), (13, 7), (15, 7)],
-                [(cx, cy), (9 - variant % 2, 11), (7, 13), (7, 15)],
-                [(cx, cy), (4, 9 - variant % 2), (2, 7), (0, 7)],
+                [(cx, cy), (cx + 2, max(3, cy - 3)), (5, 3), (7, 0)],
+                [(cx, cy), (min(12, cx + 3), cy + 2), (12, 5), (15, 7)],
+                [(cx, cy), (cx - 2, min(12, cy + 3)), (10, 12), (7, 15)],
+                [(cx, cy), (max(3, cx - 3), cy - 2), (3, 10), (0, 7)],
             ]
             active = [path for i, path in enumerate(paths) if mask & (1 << i)]
-            if not active: active = [[(cx - 2, cy - 2), (cx, cy), (cx + 2, cy + 1)]]
+            if not active: active = [[(cx - 3, cy + 3), (cx - 2, cy), (cx, cy), (cx + 2, cy - 2)]]
             for path in active:
-                d.line([(min(15, x + 1), min(15, y + 1)) for x, y in path], fill=(25, 33, 24, 90), width=2)
+                d.line([(min(15, x + 1), min(15, y + 1)) for x, y in path], fill=(20, 28, 19, 110), width=4)
             for path in active:
-                d.line(path, fill='#525b43', width=2)
-                d.line(path, fill='#b2b896')
-            # Interior forks differ, while every shared edge keeps the same two-pixel port.
-            spur = [(cx, cy), (cx - 2, cy + 2), (cx - 1, min(13, cy + 4))]
-            d.line(spur, fill='#7b8762'); d.point((cx - 1, cy - 1), fill='#d4d5b0')
-            d.point((cx, cy), fill='#704125'); d.point((cx + 1, cy), fill='#393e2d')
+                # A swollen root narrows towards its neighbour, with broken bark highlights.
+                for i in range(len(path) - 1):
+                    d.line(path[i:i+2], fill='#34432b', width=max(2, 4-i))
+                    d.line(path[i:i+2], fill='#68794b', width=max(1, 2-i))
+                d.point(path[1], fill='#919b6c')
+            # An irregular rooted palm, with hooked root hairs instead of straight spokes.
+            d.polygon([(cx-2, cy-1), (cx-1, cy-3), (cx+2, cy-2), (cx+3, cy),
+                       (cx+1, cy+2), (cx-2, cy+2)], fill='#3d4c30')
+            d.line([(cx-2, cy+2), (cx-3, cy+3), (cx-4, cy+2), (cx-3, cy+1)], fill='#7d8a58')
+            d.line([(cx+1, cy-1), (cx+3, cy-3), (cx+4, cy-2)], fill='#889362')
+            d.line([(cx-1, cy+1), (cx, cy-1), (cx+1, cy-2)], fill='#a4a77a')
+            d.point((cx, cy), fill='#704125')
             e.point((cx, cy), fill='#d18a3b')
             # Standardize endpoints after drawing shadows/branches.
             ports = [[(7, 0), (8, 0)], [(15, 7), (15, 8)], [(7, 15), (8, 15)], [(0, 7), (0, 8)]]
@@ -37,21 +43,19 @@ def generate(root):
                 for point in [(n, 0), (n, 15), (0, n), (15, n)]: d.point(point, fill=(0, 0, 0, 0))
             for i, points in enumerate(ports):
                 if mask & (1 << i):
-                    d.point(points[0], fill='#b2b896'); d.point(points[1], fill='#525b43')
+                    d.point(points[0], fill='#68794b'); d.point(points[1], fill='#34432b')
             index = mask * 4 + variant
             offset = (index % 8 * 16, index // 8 * 16)
             atlas.alpha_composite(tile, offset); heat.alpha_composite(ember, offset)
     atlas.save(root / 'block/assimilation_connections.png')
     heat.save(root / 'block/assimilation_connections_embers.png')
 
-    # Grain runs along the raised ribs; broad shaded bands read as bark, not metal.
-    relief = Image.new('RGBA', (16, 16), '#53583e'); r = ImageDraw.Draw(relief)
-    r.rectangle((0, 0, 15, 2), fill='#8b9270')
-    r.rectangle((0, 3, 15, 5), fill='#6c7652')
-    r.rectangle((0, 12, 15, 15), fill='#303c2c')
-    r.line([(0, 7), (5, 7), (8, 9), (15, 9)], fill='#a2aa7f')
-    r.line([(1, 11), (6, 11), (10, 13)], fill='#404c34')
-    r.line([(6, 2), (8, 4), (13, 4)], fill='#b8bc90')
+    # Uneven longitudinal bark fissures, avoiding transverse stripes on narrow fingers.
+    relief = Image.new('RGBA', (16, 16), '#586544'); r = ImageDraw.Draw(relief)
+    r.polygon([(0, 0), (4, 0), (6, 6), (3, 12), (4, 15), (0, 15)], fill='#3b4b31')
+    r.polygon([(9, 0), (12, 0), (11, 6), (13, 10), (10, 15), (8, 15)], fill='#7c885c')
+    r.line([(5, 0), (7, 5), (5, 11), (6, 15)], fill='#899369')
+    r.line([(14, 2), (12, 7), (14, 13)], fill='#465638')
     relief.save(root / 'block/assimilation_relief.png')
     resin = Image.new('RGBA', (16, 16)); r = ImageDraw.Draw(resin)
     r.rectangle((5, 6, 10, 9), fill='#7c4b26')
