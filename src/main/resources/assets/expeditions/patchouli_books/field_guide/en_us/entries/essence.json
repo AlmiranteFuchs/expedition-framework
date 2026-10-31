@@ -47,6 +47,11 @@
     },
     {
       "type": "patchouli:crafting",
+      "recipe": "expeditions:field_assay_kit",
+      "text": "Inspect a sealed sample with use. Sneak-use to draw a fresh, nonlethal sample."
+    },
+    {
+      "type": "patchouli:crafting",
       "recipe": "expeditions:attunement_sigil",
       "text": "Shapeless. Use the sigil against a terminal; proof is not consumed."
     }

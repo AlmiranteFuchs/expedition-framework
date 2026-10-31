@@ -95,5 +95,6 @@
   "message.expeditions.guardian_blocks_exit": "The guardian still holds this place. Defeat it before extracting.",
   "message.expeditions.guardian_site_blocked": "The guardian could not safely take shape here. The expedition has failed; secured checkpoint tokens are kept.",
   "gui.expeditions.briefing": "Mission briefing",
-  "gui.expeditions.requirements": "Deployment requirements"
+  "gui.expeditions.requirements": "Deployment requirements",
+  "item.expeditions.field_assay_kit": "Field Assay Kit"
 }

@@ -1,24 +1,24 @@
 {
   "name": "Blood assay",
-  "icon": "expeditions:assimilation_essence",
+  "icon": "expeditions:field_assay_kit",
   "category": "expeditions:bloom",
   "sortnum": 1,
   "pages": [
     {
       "type": "patchouli:spotlight",
-      "item": "expeditions:assimilation_essence",
-      "text": "The clasp opens more easily now. There is a clean space beneath it, the shape of a thumb.",
+      "item": "expeditions:field_assay_kit",
+      "text": "The guide records what the Charter has learned. Blood belongs in the field assay kit.",
       "title": "Blood assay"
     },
     {
       "type": "patchouli:text",
-      "title": "What the paper drinks",
-      "text": "Sneak-use this journal to take a blood sample. It costs one heart and is refused if that would kill you. Then open the guide normally; the field record at the end of this chapter shows the assay."
+      "title": "A sealed answer",
+      "text": "Craft the kit with a glass bottle, iron ingot, copper ingot and assimilation essence. Sneak-use it to draw a nonlethal sample costing one heart."
     },
     {
       "type": "patchouli:text",
-      "title": "What the paper drinks",
-      "text": "Exposure alone unlocks these notes. The assay itself still needs a sample."
+      "title": "A sealed answer",
+      "text": "Use normally to inspect the sealed sample: patient, infection percentage, stage and sample age. It is a measured snapshot; draw another sample to check your recovery."
     },
     {
       "type": "patchouli:text",
@@ -28,15 +28,17 @@
     {
       "type": "patchouli:text",
       "title": "Leave before it answers",
-      "text": "Low exposure subsides away from the source. Check the blood record before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart."
+      "text": "Low exposure subsides away from the source. Check a fresh assay before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart."
     },
     {
       "type": "patchouli:text",
       "title": "Leave before it answers",
-      "text": "The book remembers its sample. A fresh book must drink for itself."
+      "text": "The kit remembers its sealed sample. The journal retains only your discoveries."
     },
     {
-      "type": "expeditions:record_2"
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:field_assay_kit",
+      "text": "The journal teaches the assay; the kit holds the blood and measured result."
     }
   ],
   "advancement": "expeditions:journal/blood"

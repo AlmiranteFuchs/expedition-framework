@@ -636,11 +636,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   relogging and replacement books. Locked entries explain what to discover.
   Its field-record pages include the active expedition (name, dimension,
   checkpoint progress, time afield, party), the dimension's campaign and
-  Bloom awareness (pressure band, horde swell, empowered spawns), and a
-  blood assay. Sneak-use lets the journal drink a blood sample —
-  `expeditions:blood_letting` damage that bypasses invulnerability but
-  never kills — and only a blooded journal renders the carrier's
-  infection percentage and stage.
+  Bloom awareness (pressure band, horde swell, empowered spawns).
+  Blood sampling and infection measurements belong to the separate field assay kit.
   Harvesting essence teaches the crafting-book recipes for the journal,
   attunement sigil and craftable terminal. Guide layout and keyboard chapter
   navigation are client-verified; persistence and crafting are GameTest-verified.
@@ -650,12 +647,21 @@ chunk, and validate on real block state — not heightmap assumptions.
   they bleed embers when cut — a synced
   `expeditions:assimilated` attachment (stage 1–3, dressed by pressure)
   drives a client overlay layer added to every living-entity renderer —
-  vanilla or modded — bleaching the model toward bone, tracing pale
-  veins and igniting ember on each mob's own heartbeat phase. The same
+  vanilla or modded — drawing sparse, world-lit bark lesions and four dim ember
+  points. Native skin alpha masks preserve transparent hats/wings; there is no
+  bright body-wide wash. The same
   attachment mirrors the player's infection stage, so the take shows on
   player skins too. Renderers that can't carry layers get an ember/ash
   particle signature instead — "taken" reads on anything.
-- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies|campaign|infection`.
+- **Field assay kit** — craft a glass bottle, iron ingot, copper ingot and essence
+  together. Use to inspect the last sealed sample; sneak-use draws a fresh one
+  for one heart, refuses lethal sampling and causes no knockback. The kit stores
+  patient, infection percentage, stage, dimension and sampling time. Its result
+  is a snapshot, not a free live reading. Infection no longer applies nausea or
+  vanilla Darkness; a faint edge pulse preserves central visibility and fog range.
+- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies|campaign`.
+  `/expeditions infection` remains operator-only diagnostics; survival readings
+  use the physical assay kit.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —
   several at once, sculk-vein style, so corners hold floor and wall
@@ -673,6 +679,9 @@ chunk, and validate on real block state — not heightmap assumptions.
   Breaking it by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
+  Sixty-four connected 16px tiles share fixed edge ports. Neighbour-aware branches
+  match across flat surfaces and inside/outside corners, with symmetric edge
+  decisions preventing a square lattice. Tiles close their ports when growth is removed.
 - **Microbiome** (M15) — `expeditions:assimilation_heart`, a pale node
   breathing ash, souls and ember sparks on its beat, seeded on standable
   ground in a ring around players as they move through
@@ -704,8 +713,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   children. Ended hordes are removed on load or tick; chunk unloads retain cleanup
   responsibility. Active hordes remain alive.
 - **Field guide** — a Patchouli book with four categories, discovery-gated entries,
-  search/bookmarks, illustrated crafting and guardian pages. Live survey/assay
-  components read the particular journal's server-synchronized report. Existing
+  search/bookmarks, illustrated crafting and guardian pages. Live survey
+  components read the journal report; the assay kit holds the blood measurement. Existing
   discoveries migrate to hidden guide advancement gates without changing progress.
 - **Placement and grip** — the terminal has one directional screen face, the
   portal selection follows its hollow root frame, and the compass uses a small,
@@ -714,13 +723,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 137 unit tests + 116 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 137 unit tests + 120 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.3.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.4.jar` assembled.
 - `./gradlew test` — 137 unit tests, 0 failures.
-- `./gradlew runGameTestServer -PisolatedGameTests` — **116/116 core game tests passed** on a real dedicated
+- `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -812,11 +821,10 @@ chunk, and validate on real block state — not heightmap assumptions.
     the horde rolls its type from the dimension's entity-tag pool and every
     member carries the declared buffs, modifiers survive save→load, and
     malformed modifier definitions are skipped at reload.
-  - the field journal writes a live survey onto its own book pages —
-    dimension pressure readable as "Awareness" — keeps its assay page
-    blank until a blood sample latches on the stack (costing real health,
-    bypassing creative invulnerability), then reports the carrier's
-    infection percentage.
+  - the field journal writes its live expedition/survey records, while the
+    separate assay kit pays for a nonlethal blood sample and stores the measured
+    infection percentage. Inspection preserves the dated sample, and sampling
+    causes no knockback.
   - pressured hordes arrive flagged assimilated (stage 3, the synced
     attachment the client overlay reads) and an infected player's flag
     mirrors their stage.

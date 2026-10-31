@@ -32,7 +32,7 @@ icons = {'first_steps':'expedition_field_journal', 'bloom':'assimilation_heart',
          'essence':'assimilation_essence', 'terminal':'expedition_terminal',
          'wayfinding':'expedition_compass', 'checkpoints':'expedition_checkpoint',
          'cargo':'expedition_artifact', 'defense':'expedition_checkpoint',
-         'blood':'assimilation_essence', 'pressure':'assimilation_heart',
+         'blood':'field_assay_kit', 'pressure':'assimilation_heart',
          'extraction':'expedition_exit', 'guardian':'assimilation_heart', 'liberation':'attunement_sigil'}
 
 write(ROOT / 'data/expeditions/patchouli_books/field_guide/book.json', {
@@ -75,12 +75,17 @@ for order, (group, name, icon, description, chapters) in enumerate(groups):
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:expedition_terminal',
                           'text':'Place it facing a safe space. Its portal opens above it.'})
         if key == 'essence':
+            pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:field_assay_kit',
+                          'text':'Inspect a sealed sample with use. Sneak-use to draw a fresh, nonlethal sample.'})
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:attunement_sigil',
                           'text':'Shapeless. Use the sigil against a terminal; proof is not consumed.'})
         if key == 'guardian':
             pages.append({'type':'patchouli:entity', 'entity':'expeditions:rootbound_guardian',
                           'scale':0.55, 'text':'Read the raised arms. Leave the marked ground before it strikes.'})
-        record = {'first_steps':0, 'pressure':1, 'blood':2}.get(key)
+        if key == 'blood':
+            pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:field_assay_kit',
+                          'text':'The journal teaches the assay; the kit holds the blood and measured result.'})
+        record = {'first_steps':0, 'pressure':1}.get(key)
         if record is not None:
             pages.append({'type':f'expeditions:record_{record}'})
             write(BOOK / f'en_us/templates/record_{record}.json', {'components':[

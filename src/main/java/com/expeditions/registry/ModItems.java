@@ -14,6 +14,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(ExpeditionsMod.MOD_ID);
+    public static final DeferredItem<com.expeditions.item.FieldAssayKitItem> FIELD_ASSAY_KIT = ITEMS.register(
+            "field_assay_kit", () -> new com.expeditions.item.FieldAssayKitItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<BlockItem> EXPEDITION_TERMINAL_ITEM = ITEMS.registerSimpleBlockItem(
             "expedition_terminal", ModBlocks.EXPEDITION_TERMINAL);

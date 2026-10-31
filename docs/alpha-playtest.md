@@ -1,4 +1,4 @@
-# 0.6.0-alpha.3: playable alpha candidate
+# 0.6.0-alpha.4: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -36,8 +36,10 @@ datapacks; the live terminal is the authority on your world's requirements.
   Hold use to hear and see its elevation attunement.
 - Journal use: Patchouli guidebook. Browse categories, search and bookmark
   entries; Unwritten pages lists the remaining discovery conditions.
-  Sneak-use: nonlethal blood sample costing one heart. The assay remains bound
-  to that particular book; chapter knowledge belongs to the player.
+  The journal handles guide knowledge and expedition/survey records.
+- Field assay kit: use to inspect the last sealed sample; sneak-use draws a
+  fresh sample costing one heart, with no knockback and no lethal draw.
+  The kit holds the measured infection status and sampling time.
 - Terminal: previous/next mission, left/right click to cycle options forward or
   backward, briefing/requirements tabs, page arrows or mouse wheel for long
   notes. The first checkpoint seals the party.
@@ -48,7 +50,7 @@ datapacks; the live terminal is the authority on your world's requirements.
 ## Verified
 
 - Build and 137 pure-Java unit tests.
-- 116 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
+- 120 core GameTests: lifecycle, reward atomicity, party cleanup, dimensions,
   journal save/load and death copy, survival crafting, terminal defaults,
   required route length, guardian binding/death veto/save-load/Peaceful toggle,
   reused portals ignoring ended/sealed parties, remote portal sealing at home,
@@ -58,13 +60,23 @@ datapacks; the live terminal is the authority on your world's requirements.
 - Four presentation interaction tests cover real terminal placement/rotation,
   portal rim/aperture ray selection and empty collision, guide discovery
   migration, and registry validation of every guide icon, recipe and entity.
+- Four additional tests cover reciprocal surface connections on all six face
+  orientations, concave/convex corner paths, nonlethal assay refusal and migration
+  away from the old nausea/darkness effects. The journal/assay integration test
+  verifies separate jobs, paid samples, stable snapshots and no sampling knockback.
 - Bloom growth is sparse infection over the host: pale rootlets occupy roughly
   a third of a face, with separate ember knots. The original block gradually
   loses color over a minute while retaining its grain and contrast. Dead hearts
   leave cold scars. There is no raised membrane slab or full beige tile.
+  Atlas edge contracts were checked across all 64 tiles. Branches use shared
+  neighbour decisions instead of independent face rotations or an all-four-way grid.
 - Client: compass face/elevation/attunement, guide pages/recipes/field records,
   deployment-board layout, guardian geometry/emissive art,
   both phases, warning pose/circle, boss-bar transition and real survival damage.
+- Alpha.4 client checks: connected wall/floor growth, subdued infected husk/cow
+  skins, no nausea/darkness effects, and the kit's unsampled/measured screens.
+  A real sneak-use sealed a paid sample without moving the patient. Reading it
+  afterward displayed the stored patient, percentage, stage and sample age.
 - Normal development client loads all three shipped missions and dimension
   tuning. Test suppression is now limited to the automated test-server JVM.
 - The Patchouli guide loads all four categories and fourteen entries. Illustrated

@@ -3847,10 +3847,10 @@ public final class ExpeditionGameTests {
             Assimilation.infect(player, ExpeditionsConfig.infectionStage1At());
             player.tickCount = interval * 2;
             Assimilation.onPlayerTick(player);
-            helper.assertTrue(player.hasEffect(MobEffects.DARKNESS),
-                    "stage 1 must whisper in the dark");
-            helper.assertTrue(player.hasEffect(MobEffects.CONFUSION),
-                    "stage 1 must disorient");
+            helper.assertTrue(!player.hasEffect(MobEffects.DARKNESS),
+                    "infection must preserve normal view distance");
+            helper.assertTrue(!player.hasEffect(MobEffects.CONFUSION),
+                    "infection must never apply nausea");
             helper.assertTrue(player.getData(ModAttachments.ASSIMILATED) == 1,
                     "stage 1 must mark the player for the client overlay");
 
@@ -3896,14 +3896,12 @@ public final class ExpeditionGameTests {
     }
 
     /**
-     * The field journal: right-click writes a live survey onto its own pages
-     * (dimension pressure is readable as "Awareness"), and the assay page
-     * stays blank until sneak-use spends health on a blood sample — which
-     * must latch on the stack's custom data, not the player.
+     * The journal holds survey records; the separate assay kit pays for and
+     * stores a dated blood measurement without moving the patient.
      */
     @GameTest(template = "arena", templateNamespace = "expeditions",
             timeoutTicks = 200, batch = "expedition_journal")
-    public static void fieldJournalReportsSurveyAndBlood(GameTestHelper helper) {
+    public static void fieldJournalAndAssayHaveSeparateJobs(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         // Mock players report isCreative() true — the journal's bloodletting
@@ -3930,24 +3928,29 @@ public final class ExpeditionGameTests {
                     .map(Component::getString).reduce("", String::concat);
             helper.assertTrue(all.contains("Awareness: 37"),
                     "survey must report the dimension's pressure, got: " + all);
-            helper.assertTrue(all.contains("These pages stay blank"),
-                    "the assay must stay blank before blood is given");
+            helper.assertTrue(report.getPages(false).size() == 2 && !all.contains("Infection:"),
+                    "the journal must contain expedition/survey records, not an infection assay");
 
             player.setShiftKeyDown(true);
             float health = player.getHealth();
             ModItems.EXPEDITION_FIELD_JOURNAL.get()
                     .use(level, player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(player.getHealth() == health, "sneaking with the journal must never draw blood");
+            ItemStack kit = new ItemStack(ModItems.FIELD_ASSAY_KIT.get());
+            player.setItemInHand(InteractionHand.MAIN_HAND, kit);
+            var motionBeforeSample = player.getDeltaMovement();
+            ModItems.FIELD_ASSAY_KIT.get().use(level, player, InteractionHand.MAIN_HAND);
             helper.assertTrue(player.getHealth() < health,
                     "the blood sample must cost blood");
+            helper.assertTrue(player.getDeltaMovement().equals(motionBeforeSample),
+                    "drawing a sample must never knock the patient off a ledge");
             player.setShiftKeyDown(false);
-
-            ModItems.EXPEDITION_FIELD_JOURNAL.get()
-                    .use(level, player, InteractionHand.MAIN_HAND);
-            report = journal.get(DataComponents.WRITTEN_BOOK_CONTENT);
-            all = report.getPages(false).stream()
-                    .map(Component::getString).reduce("", String::concat);
-            helper.assertTrue(all.contains("Infection: 40%"),
-                    "a blooded journal must assay infection, got: " + all);
+            var sample = com.expeditions.item.FieldAssayKitItem.record(kit);
+            helper.assertTrue(sample.getInt("Percent") == 40, "the separate kit must measure infection");
+            Assimilation.infect(player, 0);
+            ModItems.FIELD_ASSAY_KIT.get().use(level, player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(com.expeditions.item.FieldAssayKitItem.record(kit).getInt("Percent") == 40,
+                    "opening a sealed sample must not pretend to take a new live reading");
         } finally {
             Assimilation.infect(player, 0);
             data.resetPressure(dimension);

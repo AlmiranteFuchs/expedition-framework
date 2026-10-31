@@ -112,15 +112,15 @@
   },
   "blood": {
     "title": "IX. Blood assay",
-    "unlock_hint": "Experience Bloom exposure, or sneak-use the journal to give it a small blood sample. Never sample while critically wounded.",
+    "unlock_hint": "Experience Bloom exposure, or draw a sample with a field assay kit.",
     "pages": [
       {
-        "heading": "What the paper drinks",
-        "body": "The clasp opens more easily now. There is a clean space beneath it, the shape of a thumb.\n\nSneak-use this journal to take a blood sample. It costs one heart and is refused if that would kill you. Then open the guide normally; the field record at the end of this chapter shows the assay.\n\nExposure alone unlocks these notes. The assay itself still needs a sample."
+        "heading": "A sealed answer",
+        "body": "The guide records what the Charter has learned. Blood belongs in the field assay kit.\n\nCraft the kit with a glass bottle, iron ingot, copper ingot and assimilation essence. Sneak-use it to draw a nonlethal sample costing one heart.\n\nUse normally to inspect the sealed sample: patient, infection percentage, stage and sample age. It is a measured snapshot; draw another sample to check your recovery."
       },
       {
         "heading": "Leave before it answers",
-        "body": "Live hearts can build infection while you stay nearby. The effects intensify by stage; extreme exposure has consequences beyond a passing sickness.\n\nLow exposure subsides away from the source. Check the blood record before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart.\n\nThe book remembers its sample. A fresh book must drink for itself."
+        "body": "Live hearts can build infection while you stay nearby. The effects intensify by stage; extreme exposure has consequences beyond a passing sickness.\n\nLow exposure subsides away from the source. Check a fresh assay before another long harvest. A warding effect can reduce exposure, but it is no excuse to ignore a heart.\n\nThe kit remembers its sealed sample. The journal retains only your discoveries."
       }
     ]
   },

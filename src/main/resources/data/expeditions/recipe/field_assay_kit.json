@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {"item": "minecraft:glass_bottle"},
+    {"item": "minecraft:iron_ingot"},
+    {"item": "minecraft:copper_ingot"},
+    {"item": "expeditions:assimilation_essence"}
+  ],
+  "result": {"id": "expeditions:field_assay_kit", "count": 1}
+}

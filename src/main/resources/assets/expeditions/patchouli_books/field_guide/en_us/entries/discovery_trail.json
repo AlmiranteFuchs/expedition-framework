@@ -42,7 +42,7 @@
     {
       "type": "patchouli:text",
       "title": "Blood assay",
-      "text": "Experience Bloom exposure, or sneak-use the journal to give it a small blood sample. Never sample while critically wounded."
+      "text": "Experience Bloom exposure, or draw a sample with a field assay kit."
     },
     {
       "type": "patchouli:text",

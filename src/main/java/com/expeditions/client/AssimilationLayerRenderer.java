@@ -50,7 +50,9 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     static final ResourceLocation MEMBRANE =
             ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_layer.png");
     private static final ResourceLocation ROOT_EMBERS =
-            ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_layer_embers.png");
+            ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_connections_embers.png");
+    private static final ResourceLocation CONNECTED_ROOTS =
+            ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_connections.png");
 
     /** Offset of the skin into the layer cell, off the covered face. */
     static final double EPS = 1.0 / 512.0;
@@ -126,8 +128,12 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         for (Direction d : MultifaceBlock.availableFaces(state)) {
             Direction facing = d.getOpposite();
             BlockState support = level.getBlockState(pos.relative(d));
-            // Per-cell vein rotation so neighboring membranes never tile.
-            int rot = (int) ((net.minecraft.util.Mth.getSeed(pos) + facing.ordinal()) & 7);
+            // Variant interiors share fixed ports; reciprocal edge choices
+            // preserve seams without forcing every face into a square lattice.
+            int mask = com.expeditions.block.AssimilationConnections.veinMask(level, pos, facing);
+            int tile = mask * 4 + (int)(net.minecraft.util.Mth.getSeed(pos) & 3);
+            float u = (tile % 8 * 16 + .01f) / 128, v = (tile / 8 * 16 + .01f) / 128;
+            float span = 15.98f / 128;
             VertexConsumer skin = buffers.getBuffer(
                     RenderType.entityTranslucent(
                             textureFor(level, pos, support, facing)));
@@ -135,14 +141,14 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
             emitQuad(skin, poseStack, facing, (float) EPS,
                     shade, shade, shade, bleaching, light, packedOverlay, 0, 1);
             VertexConsumer vein = buffers.getBuffer(
-                    RenderType.entityTranslucent(MEMBRANE));
+                    RenderType.entityTranslucent(CONNECTED_ROOTS));
             emitQuad(vein, poseStack, facing, (float) EPS * 2, shade, shade,
-                    shade, 1.0f, light, packedOverlay, rot, grow);
+                    shade, 1.0f, light, packedOverlay, 0, grow, u, v, span);
             VertexConsumer glow = buffers.getBuffer(
                     RenderType.eyes(ROOT_EMBERS));
             emitQuad(glow, poseStack, facing, (float) EPS * 3,
                     1.0f, 1.0f, 1.0f,
-                    halo, FULLBRIGHT, packedOverlay, rot, grow);
+                    halo, FULLBRIGHT, packedOverlay, 0, grow, u, v, span);
         }
     }
 
@@ -178,6 +184,12 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
             Direction facing, float plane, float r, float g, float b,
             float alpha, int light, int overlay, int rot, float grow) {
+        emitQuad(consumer, poseStack, facing, plane, r, g, b, alpha, light, overlay, rot, grow, 0, 0, 1);
+    }
+
+    private static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
+            Direction facing, float plane, float r, float g, float b,
+            float alpha, int light, int overlay, int rot, float grow, float u, float v, float span) {
         PoseStack.Pose pose = poseStack.last();
         float[][] corners = switch (facing) {
             case UP -> new float[][] {
@@ -211,7 +223,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
             float z = normalAxis == 2 ? c[2] : 0.5f + (c[2] - 0.5f) * grow;
             consumer.addVertex(pose, x, y, z)
                     .setColor(r, g, b, alpha)
-                    .setUv(uv[i][0], uv[i][1])
+                    .setUv(u + uv[i][0] * span, v + uv[i][1] * span)
                     .setOverlay(overlay)
                     .setLight(light)
                     .setNormal(pose, nx, ny, nz);

@@ -31,7 +31,7 @@ import net.minecraft.core.component.DataComponents;
  * {@code microbiome.infectionRadius} of a live assimilation heart lets
  * the colony take hold of the player. It accrues on a cadence, decays
  * slowly away from hearts, and crosses staged thresholds — whispers
- * (darkness/nausea), grip (slowness/mining fatigue), takeover
+ * (a faint edge pulse), grip (slowness/mining fatigue), takeover
  * (heavier slowness/weakness/poison) — until total assimilation replaces
  * the player with an effigy of themselves standing in the colony.
  *
@@ -93,6 +93,12 @@ public final class Assimilation {
     public static void onPlayerTick(ServerPlayer player) {
         if (suppressedForTests || player.isSpectator()) {
             return;
+        }
+        // Remove the old infection's hidden sensory effects on existing saves.
+        // Ordinary potion/warden effects have different flags and are preserved.
+        if (infection(player) > 0 || player.getPersistentData().getInt(TAG_STAGE) > 0) {
+            clearLegacySensoryEffect(player, MobEffects.CONFUSION);
+            clearLegacySensoryEffect(player, MobEffects.DARKNESS);
         }
         ServerLevel level = player.serverLevel();
         int interval = ExpeditionTuning.integer(level.dimension(),
@@ -203,10 +209,6 @@ public final class Assimilation {
     private static void applyStageEffects(ServerPlayer player, ServerLevel level,
             double infection) {
         int stage = stageOf(level, infection);
-        if (stage >= 1) {
-            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 160, 0, true, false));
-            player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 160, 0, true, false));
-        }
         if (stage >= 2) {
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 160, 0, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 160, 0, true, false));
@@ -216,6 +218,13 @@ public final class Assimilation {
             player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 0, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.POISON, 80, 0, true, false));
         }
+    }
+
+    private static void clearLegacySensoryEffect(ServerPlayer player,
+            net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> type) {
+        var effect = player.getEffect(type);
+        if (effect != null && effect.isAmbient() && !effect.isVisible() && !effect.showIcon()
+                && effect.getAmplifier() == 0 && effect.getDuration() <= 160) player.removeEffect(type);
     }
 
     /**

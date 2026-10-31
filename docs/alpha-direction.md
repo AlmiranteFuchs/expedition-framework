@@ -26,7 +26,7 @@ origins of the organism and ancient infrastructure remain unresolved.
 1. **Wayfinding**: custom compass art in every frame; a held elevation ember and
    right-click attunement. Completed in `ed4cedd`.
 2. **Field guide**: chapter index, discovery-based unlocks, practical recipes,
-   live survey/assay pages, and a matching illustrated journal cover. Preserve
+   live survey pages, a separate assay instrument, and an illustrated cover. Preserve
    progress across death and relog; acquiring another book must not erase it.
    Implemented; build, 131 unit tests and 103 core GameTests pass. Client review
    confirmed readable pages, the new cover icon and working keyboard chapter
@@ -35,8 +35,9 @@ origins of the organism and ancient infrastructure remain unresolved.
    16px book silhouette, pale page block, root spine and single amber clasp.
    The replacement is client-reviewed. Following guidebook feedback, the journal
    now uses Patchouli: a two-page book, category index, search/bookmarks, illustrated
-   recipes and a guardian preview. Dynamic components retain per-stack survey and
-   assay records. Existing discovery bits mirror into hidden advancement gates.
+   recipes and a guardian preview. Dynamic components retain per-stack survey
+   records. Blood sampling and infection status live in the field assay kit.
+   Existing discovery bits mirror into hidden advancement gates.
 3. **Terminal**: make mission choice, prerequisites, stakes and progression
    readable. Preserve server authority and keep unsupported routes fail-closed.
    Implemented a dedicated deployment board with briefing/requirements pages,
@@ -55,7 +56,7 @@ origins of the organism and ancient infrastructure remain unresolved.
 5. **Release audit**: survival recipes, progression chain, guide discoveries,
    multiplayer cleanup, optional dimension compatibility, and an honest list
    of remaining gaps. Passing the old roadmap is not proof of finished polish.
-   Packaged `0.6.0-alpha.3`: 137 unit tests, 116 core GameTests and three actual
+   Packaged `0.6.0-alpha.4`: 137 unit tests, 120 core GameTests and three actual
    installed-dimension biome probes pass. Hardening also fixed reused portal
    addresses, remote sealing cleanup and oversized horde rolls. Remaining
    human/client checks are recorded in `docs/alpha-playtest.md`.

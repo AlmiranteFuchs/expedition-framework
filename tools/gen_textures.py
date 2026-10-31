@@ -275,3 +275,5 @@ if __name__ == "__main__":
     gen_heart(); gen_layer(); gen_terminal(); gen_checkpoint(); gen_exit()
     gen_portal(); gen_device(); gen_compass(); gen_artifact(); gen_sigil()
     gen_essence(); gen_journal()
+    import runpy
+    runpy.run_path(os.path.join(os.path.dirname(__file__), 'gen_infection_art.py'), run_name='__main__')

@@ -41,11 +41,18 @@ public class ExpeditionsClient {
         modEventBus.addListener((EntityRenderersEvent.RegisterLayerDefinitions event) ->
                 event.registerLayerDefinition(GuardianModel.LAYER, GuardianModel::createBodyLayer));
         modEventBus.addListener(ExpeditionsClient::onAddLayers);
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent event) ->
+                event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener)
+                        manager -> InfectionSkinTextures.clear()));
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterGuiLayersEvent event) ->
+                event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("expeditions", "bloom_influence"), BloomVignette::render));
         NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> com.expeditions.item.FieldAssayKitItem.setClientOpener(hand ->
+                net.minecraft.client.Minecraft.getInstance().setScreen(new AssayScreen(hand))));
         event.enqueueWork(() -> com.expeditions.item.ExpeditionFieldJournalItem
                 .setClientOpener(hand -> net.minecraft.client.Minecraft.getInstance()
                         .execute(() -> JournalBook.open(hand))));
