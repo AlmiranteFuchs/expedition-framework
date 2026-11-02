@@ -33,6 +33,8 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.DORMANT_FLAKE.get());output.accept(ModItems.DORMANT_LAYER_ITEM.get());
                         output.accept(ModItems.DORMANT_HEART_ITEM.get());output.accept(ModItems.STILLNESS_DYNAMO_ITEM.get());
                         output.accept(ModItems.ESSENCE_CONDENSER_ITEM.get());
+                        output.accept(ModItems.DORMANT_KNOT.get());output.accept(ModItems.SEVERANCE_CORE.get());
+                        output.accept(ModItems.LIVING_HEART_ENGINE_ITEM.get());output.accept(ModItems.SEVERANCE_GENERATOR_ITEM.get());
                         output.accept(ModItems.ATTUNEMENT_SIGIL.get());
                         output.accept(ModItems.FIELD_ASSAY_KIT.get());
                         output.accept(ModItems.DISRUPTION_CHARM.get());

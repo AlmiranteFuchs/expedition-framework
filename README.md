@@ -9,12 +9,14 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.13)
+## Current starter progression (alpha.14)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
-an early journal, and build a **Stillness Dynamo + Essence Condenser** from vanilla
-materials. Two flakes and the machines produce one essence through standard FE;
-external FE generators also work. Refined essence powers the terminal milestone.
+an early journal, and build a **Stillness Resonator + Essence Condenser** around a
+dormant knot and vanilla materials. The sheltered resonator supplies power without
+fuel; one raw flake plus 4000 Resonance becomes one essence. External FE generators
+also work. A captured-heart engine and guardian-earned severed core extend the
+power progression; see [Resonance power](docs/resonance-power.md). Refined essence powers the terminal milestone.
 The first Field Survey opens remote deployment, without an Overworld boss gate.
 Home experimentation is an optional, powered, reversible local breach.
 
@@ -762,11 +764,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 162 unit tests + 142 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 168 unit tests + 148 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.13.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.14.jar` assembled.
 - `./gradlew test` — 155 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:

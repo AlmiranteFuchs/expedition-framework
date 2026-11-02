@@ -75,7 +75,7 @@ for order, (group, name, icon, description, chapters) in enumerate(groups):
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:expedition_terminal',
                           'text':'Place it facing a safe space. Its portal opens above it.'})
         if key == 'essence':
-            for machine in ['stillness_dynamo','essence_condenser']:
+            for machine in ['dormant_knot','stillness_dynamo','essence_condenser','living_heart_engine','severance_core','severance_generator']:
                 pages.append({'type':'patchouli:crafting','recipe':'expeditions:'+machine})
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:field_assay_kit',
                           'text':'Inspect a sealed sample with use. Sneak-use to draw a fresh, nonlethal sample.'})

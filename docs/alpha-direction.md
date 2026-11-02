@@ -83,6 +83,14 @@ origins of the organism and ancient infrastructure remain unresolved.
    Build, 162 unit tests and 142 core GameTests pass; actual client production,
    GUI and final model geometry were checked. See `stillness-progression.md`.
 
+8. **Power with an identity**: alpha.14 replaces the flywheel/raw-fuel starter
+   with a suspended-knot Stillness Resonator. Sheltered collection, paid contained
+   heartbeats and guardian-earned severed cores form the energy progression.
+   All transport uses native FE. Side/end-grain UVs, deliberate metal/glass mapping
+   and world-lit moving knots refine the adopted palette. Build, 168 unit tests
+   and 148 core GameTests pass; native 20/80 R/t UI, refining, refusal and motion
+   checks are documented. See `resonance-power.md`.
+
 ## Studied references
 
 - [Patchouli discovery locks](https://vazkiimods.github.io/Patchouli/docs/patchouli-basics/advancement-locking/):

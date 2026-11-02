@@ -79,6 +79,7 @@ public class ExpeditionsClient {
     private static void onRegisterRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(), GuardianRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.RESONANCE_MACHINE.get(),ResonanceRenderer::new);
         event.registerBlockEntityRenderer(
                 ModBlockEntities.ASSIMILATION_LAYER.get(),
                 AssimilationLayerRenderer::new);

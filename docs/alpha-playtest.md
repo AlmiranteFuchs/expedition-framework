@@ -1,4 +1,4 @@
-# 0.6.0-alpha.13: playable alpha candidate
+# 0.6.0-alpha.14: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -250,3 +250,21 @@ The actual client produced essence in adjacent machines and displayed the paid
 input, output, energy bar and progress. The final wheel geometry and tilted chart
 lectern were visually checked. Saved screenshots live in
 `docs/art-direction/stillness/`. The wheel geometry is static in this alpha.
+
+
+## Alpha.14 resonance sources
+
+The starter's burnable-flake dynamo is superseded by a passive Stillness Resonator.
+A living-heart engine adds paid containment; guardian-earned, terminal-attuned cores
+supply stable power. Native materials now use directional side/end-grain UVs and
+purposeful glass/metal mapping. Suspended knots and ribs have client animation.
+The source guide is `resonance-power.md`. Build and 168 unit tests pass; the full
+suite passes 148 core GameTests (151 including optional biome probes).
+
+Live alpha.14 review confirmed 20 Resonance/t from sheltered collection, 80 R/t
+from a fueled contained heart, actual essence output, and terminal refusal for an
+unproven core. The latter was intentionally left unattuned in the demo; 120 R/t
+with legitimate proof is covered by the real terminal-interaction GameTest.
+Fixed-camera screenshots show knot/rib motion (141 changed pixels in the selected
+knot region). Native previews are saved in docs/art-direction/stillness. Empty
+cradles omit the core from their selection shape until an item is installed.

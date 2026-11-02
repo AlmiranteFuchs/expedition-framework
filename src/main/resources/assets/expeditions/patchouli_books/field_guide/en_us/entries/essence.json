@@ -7,43 +7,83 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:assimilation_essence",
-      "text": "Dormant flakes hold a little of what the Stillness has suspended. They are raw material, not active essence.",
+      "text": "A dormant knot wants to resume a heartbeat. The Stillness holds it short of that movement. A resonator harvests the tension as Resonance.",
       "title": "What remains"
     },
     {
       "type": "patchouli:text",
-      "title": "Stored change",
-      "text": "The Stillness Dynamo accepts flakes in its left slot and exports Forge Energy from its sides. One flake yields 4000 FE. A neighboring condenser receives the power without a cable. Connect another mod’s FE cables or generator if"
+      "title": "Held change",
+      "text": "Resonance uses the standard FE connection: compatible generators, storage and cables can exchange it directly. It is not another incompatible power network."
     },
     {
       "type": "patchouli:text",
-      "title": "Stored change",
-      "text": "you prefer."
+      "title": "Held change",
+      "text": "The Stillness Resonator draws twenty Resonance per tick from sheltered or liberated ground. Nearby resonators within six blocks share that local field. Give them space. Collection is safe and never weakens home’s protection."
     },
     {
       "type": "patchouli:text",
-      "title": "Condensing a sample",
-      "text": "The Essence Condenser consumes one dormant flake and 4000 FE to produce one assimilation essence. Processing takes ten seconds when powered. The right slot holds the result. Hoppers can supply raw input and take completed essence."
+      "title": "Refining the sample",
+      "text": "The Essence Condenser uses one dormant flake and 4000 Resonance to produce one assimilation essence. Processing takes ten seconds when powered. The left slot holds the sample, the right the result. Hoppers can supply raw input and"
     },
     {
       "type": "patchouli:text",
-      "title": "Condensing a sample",
-      "text": "The full standalone loop therefore needs two flakes per essence: one for fuel, one for the sample. The machines themselves need only vanilla materials."
+      "title": "Refining the sample",
+      "text": "take completed essence."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Refining the sample",
+      "text": "The starter source consumes no ongoing fuel. Its Dormant Knot is part of the crafted instrument. Stored power and paid processing survive saves. A redstone signal pauses generator production."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A contained heartbeat",
+      "text": "Recover a living assimilation heart on an expedition. Build a Living-heart Engine around that specimen and a resonator. The closed chamber can support a heartbeat even under the Stillness."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A contained heartbeat",
+      "text": "One refined essence sustains thirty seconds of running at eighty Resonance per tick. A full power bank pauses upkeep; an unfed engine goes dormant. Containment does not fail into an unannounced outbreak. Opening the world’s"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A contained heartbeat",
+      "text": "protection remains a separate deliberate act."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The severed current",
+      "text": "A true liberation leaves a stable remnant. Craft an Unattuned Severance Core, then use it on a terminal in a dimension whose bound guardian has been defeated and whose expedition has extracted."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The severed current",
+      "text": "Install the attuned core in a Severance Cradle for 120 Resonance per tick without fuel or field crowding. The source remains tied to that dimension’s proven liberation. Routine completions or a wandering hunting echo cannot grant"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The severed current",
+      "text": "it."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The severed current",
+      "text": "The remnant can be carried home or into another frontier. Liberation now provides both an outpost and a practical power source."
     },
     {
       "type": "patchouli:text",
       "title": "Opening the field",
-      "text": "Later, sneak-use an attunement sigil on a charged condenser to reverse the Stillness locally. Opening requires a 4000 FE reserve; the open breach consumes 20 FE per tick. Refining pauses while it is open."
+      "text": "Sneak-use an attunement sigil on a charged condenser to reverse the Stillness locally. Opening requires a 4000 Resonance reserve; sustaining it consumes twenty per tick. Refining pauses while open."
     },
     {
       "type": "patchouli:text",
       "title": "Opening the field",
-      "text": "The breach reaches twenty-four blocks. Inside, live hearts can operate and contact infection is possible. Outside, home remains sheltered. Sneak-use the sigil again to close it; loss of power closes it safely. Living colonies"
+      "text": "The breach reaches twenty-four blocks. A dormant resonator inside it loses the quiet field it draws from; use a contained heart engine, a severed core, or power supplied from outside."
     },
     {
       "type": "patchouli:text",
       "title": "Opening the field",
-      "text": "there become dormant. Liberated dimensions remain silent even inside an attempted breach."
+      "text": "Close the breach with the sigil or remove its power to restore protection. No source opens a breach automatically. Liberated ground stays silent."
     },
     {
       "type": "patchouli:crafting",
@@ -57,11 +97,27 @@
     },
     {
       "type": "patchouli:crafting",
+      "recipe": "expeditions:dormant_knot"
+    },
+    {
+      "type": "patchouli:crafting",
       "recipe": "expeditions:stillness_dynamo"
     },
     {
       "type": "patchouli:crafting",
       "recipe": "expeditions:essence_condenser"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:living_heart_engine"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:severance_core"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:severance_generator"
     },
     {
       "type": "patchouli:crafting",

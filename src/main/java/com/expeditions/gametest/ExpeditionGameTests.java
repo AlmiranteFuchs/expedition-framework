@@ -4032,7 +4032,9 @@ public final class ExpeditionGameTests {
             restored = ExpeditionSavedData.load(data.save(new CompoundTag(), server.registryAccess()), server.registryAccess());
             helper.assertTrue(restored.ledger().activeRun(player.getUUID()).orElseThrow().guardianDefeated(),
                     "confirmed defeat must survive save/load without another fight");
+            helper.assertTrue(!data.hasGuardianLiberation(dim),"guardian death alone must not grant severed-core power before extraction");
             manager.completeRun(player);
+            helper.assertTrue(data.hasGuardianLiberation(dim),"accepted guardian defeat and extraction must grant persistent resonance-source proof");
             helper.assertTrue(data.isDimensionCleared(dim),
                     "beating the Big Bad must win the dimension");
             helper.assertTrue(data.campaignState(dim)

@@ -71,6 +71,11 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> STILLNESS_DYNAMO_ITEM=ITEMS.registerSimpleBlockItem("stillness_dynamo",ModBlocks.STILLNESS_DYNAMO);
     public static final DeferredItem<BlockItem> ESSENCE_CONDENSER_ITEM=ITEMS.registerSimpleBlockItem("essence_condenser",ModBlocks.ESSENCE_CONDENSER);
 
+    public static final DeferredItem<Item> DORMANT_KNOT=ITEMS.registerSimpleItem("dormant_knot");
+    public static final DeferredItem<com.expeditions.item.SeveranceCoreItem> SEVERANCE_CORE=ITEMS.register("severance_core",()->new com.expeditions.item.SeveranceCoreItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<BlockItem> LIVING_HEART_ENGINE_ITEM=ITEMS.registerSimpleBlockItem("living_heart_engine",ModBlocks.LIVING_HEART_ENGINE);
+    public static final DeferredItem<BlockItem> SEVERANCE_GENERATOR_ITEM=ITEMS.registerSimpleBlockItem("severance_generator",ModBlocks.SEVERANCE_GENERATOR);
+
     private ModItems() {
     }
 }

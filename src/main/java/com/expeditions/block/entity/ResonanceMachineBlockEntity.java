@@ -1,6 +1,10 @@
 package com.expeditions.block.entity;
 
 import com.expeditions.core.ResonanceProcessing;
+import com.expeditions.core.ResonancePower;
+import com.expeditions.core.ResonancePower.Kind;
+import com.expeditions.item.SeveranceCoreItem;
+import com.expeditions.server.Stillness;
 import com.expeditions.registry.*;
 import com.expeditions.server.ExpeditionManager;
 import net.minecraft.core.*;
@@ -17,10 +21,13 @@ import net.neoforged.neoforge.items.*;
 
 public final class ResonanceMachineBlockEntity extends BlockEntity {
     public final ItemStackHandler inventory=new ItemStackHandler(2) {
-        @Override public boolean isItemValid(int slot,ItemStack stack) { return slot==0 && stack.is(ModItems.DORMANT_FLAKE.get()); }
+        @Override public boolean isItemValid(int slot,ItemStack stack) { return slot==0 && switch(kind()){
+            case DORMANT->false;case LIVING->stack.is(ModItems.ASSIMILATION_ESSENCE.get());
+            case SEVERED->stack.is(ModItems.SEVERANCE_CORE.get());case CONDENSER->stack.is(ModItems.DORMANT_FLAKE.get());}; }
         @Override protected void onContentsChanged(int slot) { setChanged(); }
     };
-    private int fuelTicks,progress;
+    private int fuelTicks,progress,generationRate,fieldCount=1;
+    private long lastFieldScan=Long.MIN_VALUE;
     private boolean reserved,breach;
     private final Bank bank=new Bank();
     private final IItemHandler automation=new IItemHandler() {
@@ -32,7 +39,29 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
         public boolean isItemValid(int slot,ItemStack stack){return inventory.isItemValid(slot,stack);}
     };
     public ResonanceMachineBlockEntity(BlockPos pos,BlockState state){super(ModBlockEntities.RESONANCE_MACHINE.get(),pos,state);}
-    public boolean dynamo(){return getBlockState().is(ModBlocks.STILLNESS_DYNAMO.get());}
+    public Kind kind(){
+        var state=getBlockState();
+        if(state.is(ModBlocks.STILLNESS_DYNAMO.get()))return Kind.DORMANT;
+        if(state.is(ModBlocks.LIVING_HEART_ENGINE.get()))return Kind.LIVING;
+        if(state.is(ModBlocks.SEVERANCE_GENERATOR.get()))return Kind.SEVERED;
+        return Kind.CONDENSER;
+    }
+    public boolean dynamo(){return kind()!=Kind.CONDENSER;}
+    public int generationRate(){return generationRate;}
+    public String modelName(){return switch(kind()){case DORMANT->"stillness_dynamo";case LIVING->"living_heart_engine";case SEVERED->"severance_generator";case CONDENSER->"essence_condenser";};}
+    private int fieldCount(ServerLevel level){
+        if(lastFieldScan==Long.MIN_VALUE || level.getGameTime()-lastFieldScan>=20){
+            int count=0;
+            for(int x=(worldPosition.getX()-6)>>4;x<=(worldPosition.getX()+6)>>4;x++)
+                for(int z=(worldPosition.getZ()-6)>>4;z<=(worldPosition.getZ()+6)>>4;z++){
+                    var chunk=level.getChunkSource().getChunkNow(x,z);if(chunk==null)continue;
+                    for(var other:chunk.getBlockEntities().values())if(other instanceof ResonanceMachineBlockEntity be
+                            && be.kind()==Kind.DORMANT && be.getBlockPos().distSqr(worldPosition)<=36)count++;
+                }
+            fieldCount=Math.max(1,count);lastFieldScan=level.getGameTime();
+        }
+        return fieldCount;
+    }
     public int energy(){return bank.getEnergyStored();}
     public int progress(){return dynamo()?fuelTicks:progress;}
     public boolean breaching(){return breach && energy()>=20 && !dynamo();}
@@ -41,7 +70,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK,ModBlockEntities.RESONANCE_MACHINE.get(),(be,side)->be.automation);
     }
     private final class Bank extends EnergyStorage {
-        Bank(){super(ResonanceProcessing.CAPACITY,80,80);}
+        Bank(){super(ResonanceProcessing.CAPACITY,80,256);}
         @Override public boolean canReceive(){return !dynamo();}
         @Override public boolean canExtract(){return dynamo();}
         @Override public int receiveEnergy(int amount,boolean simulate){int n=amount>0 && canReceive()?super.receiveEnergy(amount,simulate):0;if(n>0&&!simulate)setChanged();return n;}
@@ -65,11 +94,16 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
             if(be.energy()<20){be.breach=false;ExpeditionManager.get(level.getServer()).savedData().setStillnessBreach(pos,false);be.setChanged();}
             else be.bank.spend(20);
         } else if(be.dynamo()){
-            if(be.fuelTicks==0 && be.energy()<=ResonanceProcessing.CAPACITY-4000 && !be.inventory.getStackInSlot(0).isEmpty()){
-                be.inventory.extractItem(0,1,false);be.fuelTicks=100;
-                level.playSound(null,pos,SoundEvents.COPPER_BULB_TURN_ON,SoundSource.BLOCKS,.35f,.8f);
+            if(be.kind()==Kind.LIVING && be.fuelTicks==0 && be.energy()<ResonanceProcessing.CAPACITY
+                    && !level.hasNeighborSignal(pos) && be.inventory.getStackInSlot(0).is(ModItems.ASSIMILATION_ESSENCE.get())){
+                be.inventory.extractItem(0,1,false);be.fuelTicks=ResonancePower.LIVING_FUEL_TICKS;
+                level.playSound(null,pos,SoundEvents.WARDEN_HEARTBEAT,SoundSource.BLOCKS,.25f,1.2f);
             }
-            if(be.fuelTicks>0 && be.energy()<=ResonanceProcessing.CAPACITY-40){be.bank.add(40);be.fuelTicks--;}
+            boolean quiet=Stillness.suppresses(level,pos) || ExpeditionManager.get(level.getServer()).savedData().isDimensionCleared(level.dimension().location().toString());
+            be.generationRate=level.hasNeighborSignal(pos)?0:ResonancePower.output(be.kind(),quiet,
+                    be.kind()==Kind.DORMANT?be.fieldCount(level):1,be.fuelTicks>0,SeveranceCoreItem.valid(level,be.inventory.getStackInSlot(0)));
+            int made=Math.min(be.generationRate,ResonanceProcessing.CAPACITY-be.energy());
+            if(made>0){be.bank.add(made);if(be.kind()==Kind.LIVING)be.fuelTicks--;}
         } else {
             var output=be.inventory.getStackInSlot(1);
             boolean room=output.isEmpty() || output.is(ModItems.ASSIMILATION_ESSENCE.get()) && output.getCount()<output.getMaxStackSize();
@@ -88,17 +122,24 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
             }
         }
         if(be.dynamo() && be.energy()>0){
-            int budget=Math.min(80,be.energy());
+            int budget=Math.min(160,be.energy());
+            var targets=new java.util.ArrayList<IEnergyStorage>(6);
             for(Direction side:Direction.values()){
                 var target=level.getCapability(Capabilities.EnergyStorage.BLOCK,pos.relative(side),side.getOpposite());
-                if(target==null || !target.canReceive())continue;
-                int moved=target.receiveEnergy(Math.min(budget,be.energy()),false);
-                be.bank.spend(moved);budget-=moved;if(budget<=0)break;
+                if(target!=null && target.canReceive() && target.receiveEnergy(budget,true)>0)targets.add(target);
+            }
+            // Divide stored output across accepting neighbors; one empty bank must not starve every other face.
+            int offset=targets.isEmpty()?0:Math.floorMod(level.getGameTime()+pos.asLong(),targets.size());
+            for(int i=0;i<targets.size() && budget>0;i++){
+                int share=(budget+targets.size()-i-1)/(targets.size()-i);
+                int moved=targets.get((offset+i)%targets.size()).receiveEnergy(Math.min(share,be.energy()),false);
+                if(moved>0)be.bank.spend(moved);budget-=moved;
             }
         }
-        boolean lit=be.breach || be.fuelTicks>0 || be.reserved && be.energy()>0;
-        if(state.getValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE)!=lit)
-            level.setBlock(pos,state.setValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE,lit),3);
+        boolean lit=be.breach || be.dynamo() && be.generationRate>0 && be.energy()<ResonanceProcessing.CAPACITY || be.reserved && be.energy()>0;
+        boolean core=be.kind()==Kind.DORMANT || be.kind()==Kind.LIVING || be.inventory.getStackInSlot(0).is(ModItems.SEVERANCE_CORE.get());
+        if(state.getValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE)!=lit || state.getValue(com.expeditions.block.ResonanceMachineBlock.HAS_CORE)!=core)
+            level.setBlock(pos,state.setValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE,lit).setValue(com.expeditions.block.ResonanceMachineBlock.HAS_CORE,core),3);
     }
     public void dropContents(){
         if(level==null || level.isClientSide)return;
@@ -113,7 +154,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
     }
     @Override protected void loadAdditional(CompoundTag tag,HolderLookup.Provider registries){
         super.loadAdditional(tag,registries);inventory.deserializeNBT(registries,tag.getCompound("Inventory"));bank.restore(tag.getInt("Energy"));
-        fuelTicks=dynamo()?Math.clamp(tag.getInt("Fuel"),0,100):0;reserved=!dynamo()&&tag.getBoolean("Reserved");
+        fuelTicks=kind()==Kind.LIVING?Math.clamp(tag.getInt("Fuel"),0,ResonancePower.LIVING_FUEL_TICKS):0;reserved=!dynamo()&&tag.getBoolean("Reserved");
         progress=ResonanceProcessing.restoredProgress(tag.getInt("Progress"),reserved);breach=!dynamo()&&tag.getBoolean("Breach");
     }
 }

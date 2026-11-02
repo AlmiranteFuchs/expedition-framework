@@ -465,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 162 unit tests + 142/142 core GameTest in-game
+Verified: `build` + 168 unit tests + 148/148 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the
@@ -656,3 +656,41 @@ concept is reference only; native game textures remain 16x16. Five new tests use
 expeditions_stillness; arena comes from the registered Gradle namespace list.
 Verified: build/alphaBundle, 162 unit tests, 142 core GameTests (145 including three
 optional biome probes), plus actual client production/UI and final geometry checks.
+
+
+## Resonance sources (alpha.14)
+
+`ResonancePower` is pure domain policy: sheltered/liberated dormant knots supply
+20 R/t divided among resonators within six blocks, contained hearts supply 80 R/t
+with 600 paid running ticks per essence, and a proven severed core supplies 120 R/t.
+Resonance uses standard FE at 1:1; source types do not open breaches automatically.
+The old stillness_dynamo registry id remains for compatibility; its new name and
+model are Stillness Resonator. No more raw-fuel burning. Dormant Knot recipes need
+only four raw flakes; the condenser still requires one raw sample and 4000 R.
+Living and severed blocks share the machine type but have different item validators.
+Power output is divided across accepting neighbors with a conserved total budget.
+`GuardianLiberations` persists in the same SavedData as win flags/ledger. Only
+accepted bound-guardian death plus successful extraction records new proof. A
+cleared mark alone is insufficient. Known historical boss trophies may migrate;
+unknown history fails closed. An unattuned core is crafted, then bound at a proven
+source terminal. Bound items still revalidate their dimension against server proof.
+Campaign reset removes proof; stored energy remains, but new generation stops.
+No inventory reward is granted at victory, avoiding a separate crash-sensitive
+item-award transaction. The source perk is shared world progress.
+`ResonanceRenderer` adds world-lit suspended knots and flexing ribs; common logic
+never imports it. HAS_CORE and ACTIVE block state synchronize presence/activity;
+no per-frame world edits or extra payloads. Menu data now covers source kind/rate;
+generators have one accessible slot and condensers have two.
+`tools/stillness_art.py` maps side/end grain along actual beam axes and gives glass
+its own UVs. The generic stamped panel and flywheel geometry are superseded.
+Approved layer atlases and user art exports remain untouched. Six interaction tests
+use expeditions_resonance (registered arena namespace); six pure source tests cover
+rates and proof/fuel/field conditions. Real guardian extraction also asserts proof.
+Verified: build/alphaBundle, 168 unit tests, 148 core GameTests (151 including three
+optional biome probes). See docs/resonance-power.md for operating details.
+
+Live alpha.14 checks confirm 20/80 R/t source screens, real refining, moving knots
+and the unproven-core refusal. The demo core remains unattuned; proven 120 R/t
+production and reset behavior use the terminal interaction test. Empty cradles
+exclude the animated-node placeholder from FieldMachineShapes until HAS_CORE.
+The native preview/motion/UI images are under docs/art-direction/stillness.

@@ -34,6 +34,21 @@
       "type": "patchouli:text",
       "title": "A quieter country",
       "text": "guardian sent by the hunt is only an echo: killing it does not sever the dimension."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Power after silence",
+      "text": "Guardian victory and successful extraction leave more than quiet ground. Craft an Unattuned Severance Core and attune it at a terminal here. A Severance Cradle can then draw stable power from the remnant anywhere."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Power after silence",
+      "text": "This proof is shared with the world and persists with the campaign. A count-only cleared mark is not an accepted guardian victory. Existing genuine boss trophies can recover old proof. Resetting a source dimension pauses its cores"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Power after silence",
+      "text": "until liberation is restored."
     }
   ],
   "advancement": "expeditions:journal/liberation"

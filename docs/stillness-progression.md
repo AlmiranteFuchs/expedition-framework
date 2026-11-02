@@ -1,4 +1,4 @@
-# Stillness progression — alpha.13
+# Stillness progression — alpha.14
 
 Home is preparation space. The Overworld is sheltered by default, independently
 of campaign liberation. It has no natural live hearts, Bloom attention or passive
@@ -16,33 +16,18 @@ can linger while it decays. Ordinary vanilla monsters and hazards remain.
    not award finished essence anymore. A dormant heart yields four flakes.
 3. Craft a field journal from a book and a flake. The assay kit also uses raw
    flakes. Collecting raw material unlocks the relevant recipe and guide entries.
-4. Build the Stillness Dynamo and Essence Condenser from vanilla materials.
-   Neither machine requires essence or another mod. Place them adjacent.
-5. Put one flake in each machine. The dynamo converts its flake into 4000 FE;
-   the condenser spends that power and its second flake to produce one regular
-   assimilation essence over 200 ticks (ten seconds at normal server speed).
-6. Refine the essence needed for the expedition terminal. Complete Field Survey
-   to open remote deployments; an attuned sigil remains an alternate proof route.
-   Home does not require a guardian victory before the frontier opens.
+4. Compact four flakes into a Dormant Knot. Build a Stillness Resonator around it
+   using vanilla metals and redstone, then build an Essence Condenser. No refined
+   essence is required for this workshop. Place the machines adjacent.
+5. The sheltered knot supplies 20 Resonance/t without burning flakes. Put one raw
+   flake into the condenser: 4000 Resonance makes one essence in ten seconds.
+6. Refine the essence needed for the terminal. Complete Field Survey to open remote
+   deployments; an attuned sigil remains an alternate proof. Home does not require
+   a guardian victory before the frontier opens.
 
-Thus the standalone loop costs **two raw flakes per essence**. A whole first
-patch supplies several batches. The journal and assay instrument can precede
-those batches. Two machines are a small first workshop, not an essence deadlock.
-
-## Interoperability and ownership
-
-Both machines have 16000 FE storage. The dynamo generates 40 FE/t while burning
-and exports up to 80 FE/t to neighbors. The condenser accepts up to 80 FE/t and
-spends 20 FE/t during a batch. Its power can come from any compatible FE source.
-Capabilities use NeoForge's standard EnergyStorage and ItemHandler interfaces.
-No new library or Create dependency is required. Create inspired the physical
-construction; kinetic-network compatibility is not implied.
-
-Automation inserts flakes into slot 0 and extracts results from slot 1. The GUI
-allows manual inventory handling and displays power/progress. Paid feedstock,
-stored power and processing progress persist with the block entity. A broken
-unfinished condenser returns its reserved raw flake, not a second finished
-product; stored energy is lost on breaking, as a normal placed machine resource.
+After the initial four-flake knot, the loop uses **one raw flake per essence**.
+The source and its FE connections are described in [Resonance power](resonance-power.md).
+That guide also covers captured-heart upkeep and liberation-earned severed cores.
 
 ## Deliberate local reversal
 
@@ -67,7 +52,7 @@ in `art-direction/stillness/`; the image-generation board is only a design guide
 The actual game uses native sprites and custom geometry with matching voxel
 shapes. Approved layer material and editable art exports were preserved.
 
-Build/alphaBundle, 162 unit tests and 142 core GameTests pass (145 reported with
+Build/alphaBundle, 168 unit tests and 148 core GameTests pass (151 reported with
 three optional biome probes). The client verified actual adjacent-machine essence
 production, the processing screen, item sprites and the open models. A final
 focused run rechecked the refined flywheel geometry. Existing-world users need

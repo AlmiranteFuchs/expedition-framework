@@ -28,12 +28,12 @@
     {
       "type": "patchouli:text",
       "title": "From traces to instruments",
-      "text": "Build a Stillness Dynamo and an Essence Condenser from ordinary iron, copper, glass, redstone and a furnace. Place them next to each other. Feed a flake into each: the dynamo burns one into 4000 FE; the condenser spends that power"
+      "text": "Four flakes make a Dormant Knot. Build a Stillness Resonator around that knot using iron, copper and redstone, then build an Essence Condenser from ordinary materials. Place them adjacent. The sheltered knot supplies twenty"
     },
     {
       "type": "patchouli:text",
       "title": "From traces to instruments",
-      "text": "and its second flake to make one assimilation essence in ten seconds. Other FE generators can supply the condenser instead."
+      "text": "Resonance per tick without burning flakes. A single flake and 4000 Resonance become one essence in ten seconds. Other FE generators can supply the condenser instead."
     },
     {
       "type": "patchouli:text",

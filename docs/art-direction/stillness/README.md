@@ -1,5 +1,31 @@
 # Stillness field engineering
 
+## Current resonance sources (alpha.14)
+
+The starter is now a fork-shaped Stillness Resonator with a suspended knot and
+slowly flexing ribs. A contained living heart and a severed-core cradle extend
+the same material language. The flywheel design below is historical.
+
+Wood sides/end grain have separate textures and face UVs follow each beam axis,
+including angled supports. Calm metal fields, wrapped contacts and specific glass
+UVs replace generic stamped panels. The palette and native 16px resolution remain.
+All knot motion is client-only, uses world lighting and does not edit terrain.
+
+Actual client previews:
+
+- `power-family-alpha14.png`: source family and chart lectern. The displayed
+  severance core is unattuned; its output correctly remains locked.
+- `resonator-close-alpha14.png` / `resonator-motion-alpha14.png`: fixed-camera
+  motion check; 141 knot-region pixels changed between the sampled frames.
+- `resonator-ui-alpha14.png`: native 20 Resonance/t source UI.
+- `heart-engine-ui-alpha14.png`: fueled 80 Resonance/t containment UI.
+
+The source generator is still `tools/stillness_art.py`. These refinements were
+authored in the editable native generator; no new AI bitmap is pasted onto the
+models. See `docs/resonance-power.md` for power and progression rules.
+
+## Alpha.13 concept history
+
 The approved palette/material study is `field-engineering-concept.png`.
 The adopted open-frame direction is `open-frame-concept.png`; its real native
 models are shown in `in-game-alpha13.png`. The first board is not used as a

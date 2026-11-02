@@ -10,11 +10,21 @@ import net.minecraft.world.phys.shapes.*;
 public final class FieldMachineShapes {
     private static final Map<String,VoxelShape> CACHE=new ConcurrentHashMap<>();
     private FieldMachineShapes() { }
-    public static VoxelShape shape(String model,Direction facing){return CACHE.computeIfAbsent(model+"/"+facing,key->build(model,facing));}
-    private static VoxelShape build(String name,Direction facing){
+    public static VoxelShape shape(String model,Direction facing){return shape(model,facing,true);}
+    public static VoxelShape shape(String model,Direction facing,boolean core){return CACHE.computeIfAbsent(model+"/"+facing+"/"+core,key->build(model,facing,core));}
+    private static VoxelShape build(String name,Direction facing,boolean core){
         try(var stream=FieldMachineShapes.class.getResourceAsStream("/assets/expeditions/models/block/"+name+".json")){
             if(stream==null)throw new IOException("Missing model "+name);
             var elements=JsonParser.parseReader(new InputStreamReader(stream,StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonArray("elements");
+            if(!core){
+                var visible=new JsonArray();
+                for(var element:elements){
+                    boolean placeholder=element.getAsJsonObject().getAsJsonObject("faces").entrySet().stream()
+                            .allMatch(face->face.getValue().getAsJsonObject().get("texture").getAsString().equals("#empty"));
+                    if(!placeholder)visible.add(element);
+                }
+                elements=visible;
+            }
             VoxelShape result=Shapes.empty();
             for(int x=0;x<16;x++)for(int z=0;z<16;z++){
                 int first=-1;

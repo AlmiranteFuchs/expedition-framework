@@ -3,6 +3,8 @@
   "values": [
     "expeditions:stillness_dynamo",
     "expeditions:essence_condenser",
-    "expeditions:dormant_heart"
+    "expeditions:dormant_heart",
+    "expeditions:living_heart_engine",
+    "expeditions:severance_generator"
   ]
 }

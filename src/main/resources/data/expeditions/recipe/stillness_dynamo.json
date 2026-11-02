@@ -2,9 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CCC",
-    "IFI",
-    "RRR"
+    "C C",
+    "IKI",
+    "CRC"
   ],
   "key": {
     "C": {
@@ -13,8 +13,8 @@
     "I": {
       "item": "minecraft:iron_ingot"
     },
-    "F": {
-      "item": "minecraft:furnace"
+    "K": {
+      "item": "expeditions:dormant_knot"
     },
     "R": {
       "item": "minecraft:redstone"

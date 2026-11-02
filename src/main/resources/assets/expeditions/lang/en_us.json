@@ -118,9 +118,18 @@
   "frontier.expeditions.warning.reckoning": "A guardian is coming. Retreat or fight for time. Only a terminal liberation mission can sever this dimension.",
   "block.expeditions.dormant_layer": "Dormant Bloom",
   "block.expeditions.dormant_heart": "Dormant Heartwood",
-  "block.expeditions.stillness_dynamo": "Stillness Dynamo",
+  "block.expeditions.stillness_dynamo": "Stillness Resonator",
   "block.expeditions.essence_condenser": "Essence Condenser",
   "item.expeditions.dormant_flake": "Dormant Flake",
   "machine.expeditions.breach_changed": "The local Stillness field has changed. Open breaches consume power.",
-  "machine.expeditions.breach_refused": "A condenser needs 4000 FE to open a local Overworld breach. Liberated ground stays silent."
+  "machine.expeditions.breach_refused": "A condenser needs 4000 FE to open a local Overworld breach. Liberated ground stays silent.",
+  "block.expeditions.living_heart_engine": "Living-heart Engine",
+  "block.expeditions.severance_generator": "Severance Cradle",
+  "item.expeditions.dormant_knot": "Dormant Knot",
+  "item.expeditions.severance_core": "Unattuned Severance Core",
+  "item.expeditions.severance_core.bound": "Severed Core",
+  "tooltip.expeditions.core_unbound": "Use at a terminal in a guardian-liberated dimension to attune.",
+  "tooltip.expeditions.core_bound": "Quiet resonance recovered from %s. Install in a Severance Cradle.",
+  "machine.expeditions.core_attuned": "The core holds the severed heartbeat of this dimension.",
+  "machine.expeditions.core_refused": "This terminal needs a proven guardian victory and successful extraction in this dimension."
 }

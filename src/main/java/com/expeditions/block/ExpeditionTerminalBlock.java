@@ -65,6 +65,16 @@ public class ExpeditionTerminalBlock extends Block {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state,
             Level level, BlockPos pos, Player player, InteractionHand hand,
             BlockHitResult hitResult) {
+        if(stack.is(ModItems.SEVERANCE_CORE.get())){
+            if(player instanceof ServerPlayer server){
+                String dim=level.dimension().location().toString();
+                boolean ready=ExpeditionManager.get(server.server).canAttuneCore(dim);
+                if(ready)com.expeditions.item.SeveranceCoreItem.bind(stack,dim);
+                player.displayClientMessage(Component.translatable(ready?"machine.expeditions.core_attuned":"machine.expeditions.core_refused"),true);
+                server.inventoryMenu.broadcastChanges();
+            }
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (!stack.is(ModItems.ATTUNEMENT_SIGIL.get())) {
             return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
         }

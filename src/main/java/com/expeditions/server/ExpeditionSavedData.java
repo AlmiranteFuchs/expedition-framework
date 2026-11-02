@@ -139,6 +139,13 @@ public class ExpeditionSavedData extends SavedData {
     private final ExpeditionLedger ledger = new ExpeditionLedger();
     private final Map<String, Set<BlockPos>> liveMarkers = new HashMap<>();
     private final Set<String> clearedDimensions = new HashSet<>();
+    private final Set<String> guardianLiberations=new HashSet<>();
+    public boolean hasGuardianLiberation(String dimension){return guardianLiberations.contains(dimension);}
+    public void recordGuardianLiberation(String dimension){
+        if(net.minecraft.resources.ResourceLocation.tryParse(dimension)==null)throw new IllegalArgumentException("Invalid dimension");
+        guardianLiberations.add(dimension);setDimensionCleared(dimension);setDirty();
+    }
+
     private final Map<String, Integer> campaignProgress = new HashMap<>();
     private final Map<String, Integer> dimensionPressure = new HashMap<>();
     // Runtime presentation belongs to the world, not the stateless manager facade.
@@ -158,6 +165,9 @@ public class ExpeditionSavedData extends SavedData {
 
     public static ExpeditionSavedData load(CompoundTag tag, HolderLookup.Provider lookup) {
         ExpeditionSavedData data = create();
+        for(Tag value:tag.getList("GuardianLiberations",Tag.TAG_STRING)){
+            String dim=value.getAsString();if(net.minecraft.resources.ResourceLocation.tryParse(dim)!=null)data.guardianLiberations.add(dim);
+        }
         for(long value:java.util.Arrays.stream(tag.getLongArray("StillnessBreaches")).limit(64).toArray())data.stillnessBreaches.add(BlockPos.of(value));
         for (Tag t : tag.getList(TAG_RUNS, Tag.TAG_COMPOUND)) {
             try {
@@ -578,6 +588,7 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_UNLOCKS, unlocks);
+        var severed=new ListTag();for(String dimension:guardianLiberations)severed.add(StringTag.valueOf(dimension));tag.put("GuardianLiberations",severed);
         tag.putLongArray("StillnessBreaches",stillnessBreaches.stream().mapToLong(BlockPos::asLong).toArray());
         ListTag trophies = new ListTag();
         ledger.trophyRecords().forEach((player, trophyIds) -> {
@@ -711,6 +722,7 @@ public class ExpeditionSavedData extends SavedData {
 
     /** Wipes a dimension's campaign — admin path and test cleanup. */
     public void resetCampaign(String dimension) {
+        guardianLiberations.remove(dimension);
         campaignProgress.remove(dimension);
         clearedDimensions.remove(dimension);
         setDirty();

@@ -118,6 +118,11 @@ public final class ModBlocks {
     public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> ESSENCE_CONDENSER=BLOCKS.register("essence_condenser",
             ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
 
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> LIVING_HEART_ENGINE=BLOCKS.register("living_heart_engine",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.COPPER)));
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> SEVERANCE_GENERATOR=BLOCKS.register("severance_generator",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(3f).sound(SoundType.COPPER)));
+
     private ModBlocks() {
     }
 }

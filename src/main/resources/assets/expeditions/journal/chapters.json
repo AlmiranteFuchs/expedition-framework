@@ -8,7 +8,7 @@
       },
       {
         "heading": "From traces to instruments",
-        "body": "A book and a dormant flake make this journal. The assay kit also uses a raw flake rather than active essence. Neither needs a working machine.\n\nBuild a Stillness Dynamo and an Essence Condenser from ordinary iron, copper, glass, redstone and a furnace. Place them next to each other. Feed a flake into each: the dynamo burns one into 4000 FE; the condenser spends that power and its second flake to make one assimilation essence in ten seconds. Other FE generators can supply the condenser instead."
+        "body": "A book and a dormant flake make this journal. The assay kit also uses a raw flake rather than active essence. Neither needs a working machine.\n\nFour flakes make a Dormant Knot. Build a Stillness Resonator around that knot using iron, copper and redstone, then build an Essence Condenser from ordinary materials. Place them adjacent. The sheltered knot supplies twenty Resonance per tick without burning flakes. A single flake and 4000 Resonance become one essence in ten seconds. Other FE generators can supply the condenser instead."
       },
       {
         "heading": "Your first deployment",
@@ -35,16 +35,24 @@
     "unlock_hint": "Collect a dormant flake or a sample of refined assimilation essence.",
     "pages": [
       {
-        "heading": "Stored change",
-        "body": "Dormant flakes hold a little of what the Stillness has suspended. They are raw material, not active essence.\n\nThe Stillness Dynamo accepts flakes in its left slot and exports Forge Energy from its sides. One flake yields 4000 FE. A neighboring condenser receives the power without a cable. Connect another mod’s FE cables or generator if you prefer."
+        "heading": "Held change",
+        "body": "A dormant knot wants to resume a heartbeat. The Stillness holds it short of that movement. A resonator harvests the tension as Resonance.\n\nResonance uses the standard FE connection: compatible generators, storage and cables can exchange it directly. It is not another incompatible power network.\n\nThe Stillness Resonator draws twenty Resonance per tick from sheltered or liberated ground. Nearby resonators within six blocks share that local field. Give them space. Collection is safe and never weakens home’s protection."
       },
       {
-        "heading": "Condensing a sample",
-        "body": "The Essence Condenser consumes one dormant flake and 4000 FE to produce one assimilation essence. Processing takes ten seconds when powered. The right slot holds the result. Hoppers can supply raw input and take completed essence.\n\nThe full standalone loop therefore needs two flakes per essence: one for fuel, one for the sample. The machines themselves need only vanilla materials."
+        "heading": "Refining the sample",
+        "body": "The Essence Condenser uses one dormant flake and 4000 Resonance to produce one assimilation essence. Processing takes ten seconds when powered. The left slot holds the sample, the right the result. Hoppers can supply raw input and take completed essence.\n\nThe starter source consumes no ongoing fuel. Its Dormant Knot is part of the crafted instrument. Stored power and paid processing survive saves. A redstone signal pauses generator production."
+      },
+      {
+        "heading": "A contained heartbeat",
+        "body": "Recover a living assimilation heart on an expedition. Build a Living-heart Engine around that specimen and a resonator. The closed chamber can support a heartbeat even under the Stillness.\n\nOne refined essence sustains thirty seconds of running at eighty Resonance per tick. A full power bank pauses upkeep; an unfed engine goes dormant. Containment does not fail into an unannounced outbreak. Opening the world’s protection remains a separate deliberate act."
+      },
+      {
+        "heading": "The severed current",
+        "body": "A true liberation leaves a stable remnant. Craft an Unattuned Severance Core, then use it on a terminal in a dimension whose bound guardian has been defeated and whose expedition has extracted.\n\nInstall the attuned core in a Severance Cradle for 120 Resonance per tick without fuel or field crowding. The source remains tied to that dimension’s proven liberation. Routine completions or a wandering hunting echo cannot grant it.\n\nThe remnant can be carried home or into another frontier. Liberation now provides both an outpost and a practical power source."
       },
       {
         "heading": "Opening the field",
-        "body": "Later, sneak-use an attunement sigil on a charged condenser to reverse the Stillness locally. Opening requires a 4000 FE reserve; the open breach consumes 20 FE per tick. Refining pauses while it is open.\n\nThe breach reaches twenty-four blocks. Inside, live hearts can operate and contact infection is possible. Outside, home remains sheltered. Sneak-use the sigil again to close it; loss of power closes it safely. Living colonies there become dormant. Liberated dimensions remain silent even inside an attempted breach."
+        "body": "Sneak-use an attunement sigil on a charged condenser to reverse the Stillness locally. Opening requires a 4000 Resonance reserve; sustaining it consumes twenty per tick. Refining pauses while open.\n\nThe breach reaches twenty-four blocks. A dormant resonator inside it loses the quiet field it draws from; use a contained heart engine, a severed core, or power supplied from outside.\n\nClose the breach with the sigil or remove its power to restore protection. No source opens a breach automatically. Liberated ground stays silent."
       }
     ]
   },
@@ -177,6 +185,10 @@
       {
         "heading": "A quieter country",
         "body": "The roots remain. Their orders do not.\n\nRoutine expeditions establish a foothold after two completions. The terminal then offers that dimension’s Sever the Bloom mission, or its authored confrontation. Defeat the mission’s bound guardian and extract to liberate the dimension for everyone. Routine completions alone cannot replace that proof.\n\nLiberation silences ambient heart seeding, growth and infection there; the attention bar and pursuit hunts end. Dormant growth remains as a scar. Ordinary native monsters and vanilla hazards still exist.\n\nCompleting the first Field Survey opens remote terminal deployments. The Stillness already shelters home; its optional confrontations do not gate the frontier. Native portals remain usable earlier, if you accept the danger. A guardian sent by the hunt is only an echo: killing it does not sever the dimension."
+      },
+      {
+        "heading": "Power after silence",
+        "body": "Guardian victory and successful extraction leave more than quiet ground. Craft an Unattuned Severance Core and attune it at a terminal here. A Severance Cradle can then draw stable power from the remnant anywhere.\n\nThis proof is shared with the world and persists with the campaign. A count-only cleared mark is not an accepted guardian victory. Existing genuine boss trophies can recover old proof. Resetting a source dimension pauses its cores until liberation is restored."
       }
     ]
   }

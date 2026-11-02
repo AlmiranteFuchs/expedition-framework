@@ -421,6 +421,16 @@ public final class ExpeditionManager {
         return com.expeditions.core.FrontierProgression.prepare(d,home);
     }
 
+    /** Historical boss trophies can migrate proof; ordinary completion-count clearing cannot. */
+    public boolean canAttuneCore(String dimension){
+        if(!data.isDimensionCleared(dimension))return false;
+        if(data.hasGuardianLiberation(dimension))return true;
+        boolean historical=listStartable().stream().filter(d->d.bigBad() && d.dimension().equals(dimension))
+                .anyMatch(d->ledger.trophyRecords().values().stream().anyMatch(t->t.contains(d.id())));
+        if(historical)data.recordGuardianLiberation(dimension);
+        return historical;
+    }
+
     private boolean isStartable(ExpeditionDefinition definition) {
         ServerLevel level = levelFor(definition.dimension());
         return level != null && ExpeditionAdapters.forLevel(level).isPresent();
@@ -658,7 +668,7 @@ public final class ExpeditionManager {
         // dimension — the same cleared mark the grind threshold sets.
         if (run.definition().bigBad()) {
             JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.LIBERATION);
-            data.setDimensionCleared(run.definition().dimension());
+            data.recordGuardianLiberation(run.definition().dimension());
             for (UUID member : run.party()) {
                 ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
                 if (memberPlayer != null) {

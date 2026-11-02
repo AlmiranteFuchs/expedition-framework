@@ -32,13 +32,13 @@ public final class StillnessTests {
         }finally{end(data);}h.succeed();
     }
     @GameTest(template="arena",batch="stillness_power")
-    public static void twoRawFlakesMakeOneEssenceThroughRealFeCapabilities(GameTestHelper h){
+    public static void shelteredResonanceAndOneRawFlakeMakeEssenceThroughRealFeCapabilities(GameTestHelper h){
         var data=begin(h);var a=machine(h,new BlockPos(3,1,3),true);var b=machine(h,new BlockPos(4,1,3),false);
         try{
-            a.inventory.insertItem(0,new ItemStack(ModItems.DORMANT_FLAKE.get()),false);b.inventory.insertItem(0,new ItemStack(ModItems.DORMANT_FLAKE.get()),false);
+            h.assertTrue(!a.inventory.insertItem(0,new ItemStack(ModItems.DORMANT_FLAKE.get()),false).isEmpty(),"the sheltered resonator does not burn raw material");b.inventory.insertItem(0,new ItemStack(ModItems.DORMANT_FLAKE.get()),false);
             for(int i=0;i<200;i++){tick(h,a,1);tick(h,b,1);}
             h.assertTrue(b.inventory.getStackInSlot(1).is(ModItems.ASSIMILATION_ESSENCE.get()) && b.inventory.getStackInSlot(1).getCount()==1,"adjacent standalone machines must bootstrap one essence");
-            h.assertTrue(a.energy()==0 && b.energy()==0 && a.inventory.getStackInSlot(0).isEmpty(),"one fuel flake must account for exactly 4000 FE");
+            h.assertTrue(a.energy()==0 && b.energy()==0 && a.inventory.getStackInSlot(0).isEmpty(),"one resonator must supply exactly the condenser batch budget");
             var generator=h.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK,a.getBlockPos(),null);var receiver=h.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK,b.getBlockPos(),null);
             h.assertTrue(!generator.canReceive() && !receiver.canExtract(),"energy directions must prevent feedback");
             var item=h.getLevel().getCapability(Capabilities.ItemHandler.BLOCK,a.getBlockPos(),null);a.inventory.insertItem(0,new ItemStack(ModItems.DORMANT_FLAKE.get()),false);
