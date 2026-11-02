@@ -82,18 +82,17 @@ public final class ModBlocks {
                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
 
     /**
-     * The microbiome's nucleus: a solid amber node that is the layer's
-     * only growth organ — sturdy faces let the membrane seed directly
-     * onto it, a block-entity ticker pulses the colony outward up to a
-     * config cap, and breaking it silences the spread for good.
+     * The Shutter Bloom: a folded, non-sturdy colony source. A bounded ticker
+     * seeds supported host terrain and grows the colony to its configured cap.
+     * Its old registry id remains stable for worlds, recipes and colony links.
      */
     public static final DeferredHolder<Block, AssimilationHeartBlock> ASSIMILATION_HEART = BLOCKS.register(
             "assimilation_heart",
             () -> new AssimilationHeartBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_YELLOW)
                     .strength(1.5f, 6.0f)
-                    .sound(SoundType.HONEY_BLOCK)
-                    .lightLevel(state -> 7)));
+                    .sound(SoundType.WOOD).noOcclusion()
+                    .lightLevel(state -> 2+state.getValue(com.expeditions.block.BloomSourceBlock.OPEN))));
 
     /**
      * Temporary teleport marker spawned above a terminal while a run is open
@@ -112,7 +111,7 @@ public final class ModBlocks {
     public static final DeferredHolder<Block,com.expeditions.block.DormantLayerBlock> DORMANT_LAYER=BLOCKS.register("dormant_layer",
             ()->new com.expeditions.block.DormantLayerBlock(BlockBehaviour.Properties.of().strength(.2f).noLootTable().noOcclusion().sound(SoundType.AZALEA_LEAVES).pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
     public static final DeferredHolder<Block,com.expeditions.block.DormantHeartBlock> DORMANT_HEART=BLOCKS.register("dormant_heart",
-            ()->new com.expeditions.block.DormantHeartBlock(BlockBehaviour.Properties.of().strength(1.5f).noLootTable().sound(SoundType.WOOD)));
+            ()->new com.expeditions.block.DormantHeartBlock(BlockBehaviour.Properties.of().strength(1.5f).noLootTable().noOcclusion().sound(SoundType.WOOD)));
     public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> STILLNESS_DYNAMO=BLOCKS.register("stillness_dynamo",
             ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
     public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> ESSENCE_CONDENSER=BLOCKS.register("essence_condenser",

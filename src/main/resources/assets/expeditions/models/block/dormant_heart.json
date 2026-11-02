@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "expeditions:block/dormant_heart"
-  }
+  "parent": "expeditions:block/bloom_shutter_dormant"
 }

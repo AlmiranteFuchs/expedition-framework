@@ -112,3 +112,11 @@ origins of the organism and ancient infrastructure remain unresolved.
    home generation a use on the next trip. Legacy salvage veterans retain access.
    Build, 172 unit tests and 154 core GameTests pass; ward payment, lens reading
    and journal opening were client-verified. See `field-preparation.md`.
+
+10. **A source that belongs to the land (alpha.17)**: Shutter Bloom replaces the
+    cubic heart with low, unequal folded bark fans, dark ribbed undersides and
+    localized resin light. Shared model geometry drives selection/collision;
+    source ownership persists through all five opening poses. Bootstrap attaches
+    to real terrain, including old embedded placements. Cold and contained forms,
+    guide terminology and the actual crouched sigil interaction are covered.
+    See `shutter-bloom.md`.

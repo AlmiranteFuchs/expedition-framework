@@ -465,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 172 unit tests + 154/154 core GameTest in-game
+Verified: `build` + 176 unit tests + 159/159 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the
@@ -698,3 +698,17 @@ The native preview/motion/UI images are under docs/art-direction/stillness.
 Alpha.15 field preparation: `expeditions_preparation` covers six interaction tests, including real Survey + Trace Recovery completions and legacy tutorial-proof migration. Field Ward uses a paid game-time deadline (4000 R / 120s / 8-block sphere); it pauses personal attention accrual and dwell pressure, never clears attention, prevents infection or stops existing hunts. Ward searches only loaded nearby chunk block entities and only at each mechanic cadence. Cells store charge in the synchronized RESONANCE stack component and expose standard FE item capabilities. Starter trace attempt/address persist once in world SavedData; the bounded natural-ground search may refuse ocean/obstructed spawns.
 
 Alpha.16 inventory art: `tools/item_art.py` runs last through `gen_textures.py` -> `stillness_art.py`. It owns all handheld PNGs, 32 compass frames, two tissue inventory icons and ten block-item GUI transforms. Keep world/Bloom atlases separate. `python tools/validate_item_art.py` checks 24 registered models, references and native sprite invariants; `python tools/preview_items.py` writes the native sheet, comparison/animation artifacts and editable ZIP. Preserve compass frame ordering and the existing housing hand transform.
+
+Alpha.17 Shutter Bloom: stable `assimilation_heart`/`dormant_heart` ids now use
+`BloomSourceBlock` (facing + open 0..4), non-sturdy folded fan models and matching
+`FieldMachineShapes` selection/collision. `tools/bloom_source_art.py` owns all
+source models, 16px lining/grain textures and the engine's miniature specimen;
+it runs before `item_art.py` through the normal texture generator. Do not restore
+a full-cube source or six-face aura. Initial colony moves scan the 3x3x3 neighborhood
+and attach only to actual sturdy host faces, including legacy embedded sources.
+Opening preserves the same block entity and saved colony links. Stillness closes
+the same facing into Dormant Bloom; essence reactivation preserves that facing.
+The `expeditions_bloom` namespace adds five GameTests. Verified: build/alphaBundle,
+176 unit tests and 159 core GameTests (162 reported with three optional biome
+probes). Crouch use bypasses ordinary block use: keep AttunementSigilItem.useOn's
+server-side breach fallback, and the real-use open/close regression.

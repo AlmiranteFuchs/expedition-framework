@@ -22,7 +22,7 @@ groups = [
      'Deploy, follow the compass, secure each checkpoint and extract. These pages answer as you put the instruments to use.',
      ['checkpoints', 'cargo', 'defense', 'extraction', 'preparation']),
     ('bloom', 'The living country', 'expeditions:assimilation_heart',
-     'Approach a heart to observe the Bloom. Exposure or a blood sample opens the assay; awareness reveals what the land has learned.',
+     'Approach a Shutter Bloom to observe the colony. Exposure or a blood sample opens the assay; awareness reveals what the land has learned.',
      ['bloom', 'blood', 'pressure']),
     ('thicket', 'Under the bark', 'expeditions:attunement_sigil',
      'File surveys, recover the sealed cargo, then follow the Charter into the thicket. Some truths require more than a sample.',

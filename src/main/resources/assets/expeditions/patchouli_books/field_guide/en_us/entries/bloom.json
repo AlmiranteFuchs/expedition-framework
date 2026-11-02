@@ -7,28 +7,33 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:assimilation_heart",
-      "text": "The pale traces at home are the quiet remains of something held in suspension. Elsewhere the same material can carry an ember-lit heartbeat.",
+      "text": "A Shutter Bloom is where the pale influence gathers into broad folded bark plates. A dark resin-lined space lies inside. Its shutters open in an uneven sequence, then settle with a dry click. This is a colony source, not an",
       "title": "The Bloom"
     },
     {
       "type": "patchouli:text",
-      "title": "A fire under bark",
-      "text": "Living colonies spread from assimilation hearts. Break the heart to stop its colony: attached tissue becomes dormant while preserving its shape. Detached tissue yields dormant flakes rather than finished essence. Cold traces do"
+      "title": "The folding colony",
+      "text": "anatomical organ."
     },
     {
       "type": "patchouli:text",
-      "title": "A fire under bark",
-      "text": "not spread or infect."
+      "title": "The folding colony",
+      "text": "The surrounding infection remains a flat skin on the host terrain. The bloom spreads it across sturdy surfaces around its base; the shell itself has gaps. Break the source to stop that colony. Its remaining supported tissue"
     },
     {
       "type": "patchouli:text",
-      "title": "A fire under bark",
-      "text": "The approved pale and amber material marks the same organism in both states; a living heartbeat makes the difference."
+      "title": "The folding colony",
+      "text": "becomes dormant."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The folding colony",
+      "text": "The Stillness folds a bloom shut and leaves its lining cold. A recovered living specimen can instead be contained in an engine or made into field instruments. Its origin remains unknown."
     },
     {
       "type": "patchouli:text",
       "title": "Work from the edge",
-      "text": "Harvest attached tissue for raw flakes. Recover a heart if you want to build field instruments. Growth lost with its support yields no harvest."
+      "text": "Harvest attached tissue for raw flakes. Recover a bloom if you want to build field instruments. Growth lost with its support yields no harvest."
     },
     {
       "type": "patchouli:text",

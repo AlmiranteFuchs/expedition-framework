@@ -1,0 +1,836 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:cutout",
+  "ambientocclusion": true,
+  "textures": {
+    "bloom_bark": "expeditions:block/bloom_bark",
+    "bloom_bark_cross": "expeditions:block/bloom_bark_cross",
+    "bloom_end": "expeditions:block/bloom_end",
+    "bloom_inner": "expeditions:block/bloom_inner_cold",
+    "bloom_inner_cross": "expeditions:block/bloom_inner_cold_cross",
+    "bloom_resin": "expeditions:block/bloom_inner_cold",
+    "particle": "expeditions:block/bloom_bark"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        0,
+        5
+      ],
+      "to": [
+        11,
+        1,
+        12
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "down": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        1,
+        5
+      ],
+      "to": [
+        11,
+        2,
+        11
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "down": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        2,
+        6
+      ],
+      "to": [
+        10,
+        2.5,
+        10
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_resin",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "down": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "north": {
+          "texture": "#bloom_resin",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_resin",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_resin",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_resin",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        3.5,
+        2
+      ],
+      "to": [
+        10,
+        4.3,
+        5
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark",
+          "uv": [
+            2.2857142857142856,
+            0.0,
+            13.714285714285714,
+            7.384615384615385
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner",
+          "uv": [
+            2.2857142857142856,
+            0.0,
+            13.714285714285714,
+            7.384615384615385
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          3.5,
+          8.5
+        ],
+        "axis": "x",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        4,
+        3.5,
+        5
+      ],
+      "to": [
+        11,
+        4.3,
+        8.5
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0.0,
+            7.384615384615385,
+            16.0,
+            16.0
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner",
+          "uv": [
+            0.0,
+            7.384615384615385,
+            16.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          3.5,
+          8.5
+        ],
+        "axis": "x",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        2,
+        4,
+        6
+      ],
+      "to": [
+        5,
+        4.8,
+        10
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark_cross",
+          "uv": [
+            0.0,
+            2.6666666666666665,
+            7.384615384615385,
+            13.333333333333334
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner_cross",
+          "uv": [
+            0.0,
+            2.6666666666666665,
+            7.384615384615385,
+            13.333333333333334
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8.5,
+          4,
+          8
+        ],
+        "axis": "z",
+        "angle": 22.5
+      }
+    },
+    {
+      "from": [
+        5,
+        4,
+        5
+      ],
+      "to": [
+        8.5,
+        4.8,
+        11
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark_cross",
+          "uv": [
+            7.384615384615385,
+            0.0,
+            16.0,
+            16.0
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner_cross",
+          "uv": [
+            7.384615384615385,
+            0.0,
+            16.0,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8.5,
+          4,
+          8
+        ],
+        "axis": "z",
+        "angle": 22.5
+      }
+    },
+    {
+      "from": [
+        7.5,
+        2.8,
+        4
+      ],
+      "to": [
+        11,
+        3.6,
+        10
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark_cross",
+          "uv": [
+            0.0,
+            0.0,
+            8.615384615384615,
+            16.0
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner_cross",
+          "uv": [
+            0.0,
+            0.0,
+            8.615384615384615,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          7.5,
+          2.8,
+          8
+        ],
+        "axis": "z",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        11,
+        2.8,
+        5
+      ],
+      "to": [
+        14,
+        3.6,
+        9
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark_cross",
+          "uv": [
+            8.615384615384615,
+            2.6666666666666665,
+            16.0,
+            13.333333333333334
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner_cross",
+          "uv": [
+            8.615384615384615,
+            2.6666666666666665,
+            16.0,
+            13.333333333333334
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          7.5,
+          2.8,
+          8
+        ],
+        "axis": "z",
+        "angle": -22.5
+      }
+    },
+    {
+      "from": [
+        5,
+        3,
+        7.5
+      ],
+      "to": [
+        12,
+        3.8,
+        11
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark",
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            8.615384615384615
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner",
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            8.615384615384615
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          3,
+          7.5
+        ],
+        "axis": "x",
+        "angle": 22.5
+      }
+    },
+    {
+      "from": [
+        6,
+        3,
+        11
+      ],
+      "to": [
+        11,
+        3.8,
+        14
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bloom_bark",
+          "uv": [
+            2.2857142857142856,
+            8.615384615384615,
+            13.714285714285714,
+            16.0
+          ]
+        },
+        "down": {
+          "texture": "#bloom_inner",
+          "uv": [
+            2.2857142857142856,
+            8.615384615384615,
+            13.714285714285714,
+            16.0
+          ]
+        },
+        "north": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bloom_end",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          3,
+          7.5
+        ],
+        "axis": "x",
+        "angle": 22.5
+      }
+    }
+  ]
+}

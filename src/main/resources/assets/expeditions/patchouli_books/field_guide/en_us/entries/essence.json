@@ -37,17 +37,17 @@
     },
     {
       "type": "patchouli:text",
-      "title": "A contained heartbeat",
-      "text": "Recover a living assimilation heart on an expedition. Build a Living-heart Engine around that specimen and a resonator. The closed chamber can support a heartbeat even under the Stillness."
+      "title": "Contained shutters",
+      "text": "Recover a living Shutter Bloom on an expedition. Build a Bloom Engine around that specimen and a resonator. Its closed chamber supports the specimen even under the Stillness; the contained shutters open while it works."
     },
     {
       "type": "patchouli:text",
-      "title": "A contained heartbeat",
-      "text": "One refined essence sustains thirty seconds of running at eighty Resonance per tick. A full power bank pauses upkeep; an unfed engine goes dormant. Containment does not fail into an unannounced outbreak. Opening the world’s"
+      "title": "Contained shutters",
+      "text": "One refined essence sustains thirty seconds of running at eighty Resonance per tick. A full power bank pauses upkeep; an unfed engine goes quiet. Containment does not fail into an unannounced outbreak. Opening the world’s"
     },
     {
       "type": "patchouli:text",
-      "title": "A contained heartbeat",
+      "title": "Contained shutters",
       "text": "protection remains a separate deliberate act."
     },
     {
@@ -78,7 +78,7 @@
     {
       "type": "patchouli:text",
       "title": "Opening the field",
-      "text": "The breach reaches twenty-four blocks. A dormant resonator inside it loses the quiet field it draws from; use a contained heart engine, a severed core, or power supplied from outside."
+      "text": "The breach reaches twenty-four blocks. A dormant resonator inside it loses the quiet field it draws from; use a contained bloom engine, a severed core, or power supplied from outside."
     },
     {
       "type": "patchouli:text",

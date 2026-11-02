@@ -1,5 +1,5 @@
 {
-  "parent": "expeditions:block/assimilation_heart",
+  "parent": "expeditions:block/bloom_shutter_4",
   "gui_light": "side",
   "display": {
     "gui": {

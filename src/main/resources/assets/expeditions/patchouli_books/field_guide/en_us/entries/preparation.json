@@ -7,7 +7,7 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:field_ward",
-      "text": "Essence is a workshop material, not the only reason to cross the threshold. A recovered living heart can become a contained engine, a Heartglass Lens, or a Field Ward. Each consumes the specimen during crafting. Choose which",
+      "text": "Essence is a workshop material, not the only reason to cross the threshold. A recovered living bloom can become a contained engine, a Heartglass Lens, or a Field Ward. Each consumes the specimen during crafting. Choose which",
       "title": "What we bring back"
     },
     {
@@ -38,7 +38,7 @@
     {
       "type": "patchouli:text",
       "title": "A moment to regroup",
-      "text": "Craft a Field Ward around a recovered heart. Place it, then use a cell containing at least 4000 Resonance to light it. For two minutes, Bloom attention holds steady and personal dwell pressure pauses within eight blocks. One cell"
+      "text": "Craft a Field Ward around a recovered bloom. Place it, then use a cell containing at least 4000 Resonance to light it. For two minutes, Bloom attention holds steady and personal dwell pressure pauses within eight blocks. One cell"
     },
     {
       "type": "patchouli:text",
@@ -58,7 +58,7 @@
     {
       "type": "patchouli:text",
       "title": "Measure the dark",
-      "text": "A Heartglass Lens uses a recovered heart, essence, copper and amethyst. Carry it with a charged cell while using the issued compass. Finish a reading to spend 200 Resonance and see horizontal distance and signed height to the next"
+      "text": "A Heartglass Lens uses a recovered bloom, essence, copper and amethyst. Carry it with a charged cell while using the issued compass. Finish a reading to spend 200 Resonance and see horizontal distance and signed height to the next"
     },
     {
       "type": "patchouli:text",

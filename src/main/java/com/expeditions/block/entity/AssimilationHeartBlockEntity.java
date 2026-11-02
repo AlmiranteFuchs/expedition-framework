@@ -4,7 +4,6 @@ import com.expeditions.ExpeditionsConfig;
 import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
-import com.expeditions.core.PulseWave;
 import com.expeditions.server.Microbiome;
 import com.expeditions.server.HiveMind;
 import com.expeditions.server.data.ExpeditionTuning;
@@ -32,7 +31,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * The microbiome's nucleus: the only thing that grows the assimilation
  * layer. Every {@code microbiome.growthIntervalTicks} it pulses once —
- * seeding layers against its own faces when the colony is empty,
+ * seeding layers on nearby supported terrain when the colony is empty,
  * otherwise picking one legal covering act across the colony's whole
  * frontier: fillet an uncovered face of a member's own cell (the corner
  * cell that holds both floor and wall), walk the covered face sideways
@@ -142,25 +141,20 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         return covered;
     }
 
-    /** Transient amplitude tracker for the audible lub — never persisted. */
-    private double lastBeatAmp;
-
     /** Block-entity ticker entry point: rate-limits, gates, then pulses. */
     public static void serverTick(ServerLevel level, BlockPos pos,
             BlockState state, AssimilationHeartBlockEntity heart) {
         if(com.expeditions.server.Stillness.suppresses(level,pos)){
-            heart.hibernate(level);level.setBlockAndUpdate(pos,ModBlocks.DORMANT_HEART.get().defaultBlockState());return;
+            heart.hibernate(level);level.setBlockAndUpdate(pos,ModBlocks.DORMANT_HEART.get().defaultBlockState().setValue(com.expeditions.block.BloomSourceBlock.FACING,state.getValue(com.expeditions.block.BloomSourceBlock.FACING)));return;
         }
-        // The heartbeat is audible, not just visible: on the lub's rising
-        // edge the heart itself thumps — the same PulseWave the renderer
-        // glows to, so light and sound never drift apart.
-        double amp = PulseWave.amplitudeAt(level.getGameTime(), 0, pos.asLong());
-        if (amp > 0.8 && heart.lastBeatAmp <= 0.8
-                && Microbiome.enabledAt(level,pos)) {
-            level.playSound(null, pos, SoundEvents.WARDEN_HEARTBEAT,
-                    SoundSource.BLOCKS, 1.0f, 0.95f);
+        int opening=com.expeditions.core.BloomShutter.stage(level.getGameTime(),pos.asLong(),Microbiome.enabledAt(level,pos));
+        int previous=state.getValue(com.expeditions.block.BloomSourceBlock.OPEN);
+        if(opening!=previous){
+            level.setBlock(pos,state.setValue(com.expeditions.block.BloomSourceBlock.OPEN,opening),3);
+            if(previous==0 && opening>0 || opening==0 && previous>0)
+                level.playSound(null,pos,opening>0?SoundEvents.BAMBOO_WOOD_TRAPDOOR_OPEN:SoundEvents.BAMBOO_WOOD_TRAPDOOR_CLOSE,
+                        SoundSource.BLOCKS,.32f,opening>0?.7f:.55f);
         }
-        heart.lastBeatAmp = amp;
         int interval = ExpeditionTuning.integer(level.dimension(),
                 "microbiome.growth_interval_ticks",
                 ExpeditionsConfig.microbiomeGrowthIntervalTicks());
@@ -274,26 +268,14 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         }
     }
 
-    /**
-     * First colony members: the membrane coats the heart itself — every
-     * open face gets a layer cell hugging it — plus the floor face under
-     * each horizontal neighbor, so the carpet ring starts where players
-     * will see it. Multiface cells mean the ring cell can hold the heart's
-     * face AND the floor's at once; nothing blocks the junction anymore.
-     */
+    /** A non-sturdy shell seeds real host surfaces around and below it, never invisible cube faces. */
     private static Set<Move> seedMoves(ServerLevel level, BlockPos heartPos) {
         Set<Move> moves = new LinkedHashSet<>();
-        for (Direction d : Direction.values()) {
-            BlockPos cell = heartPos.relative(d);
-            if (!canHost(level, cell)) {
-                continue;
-            }
-            moves.add(new Move(cell, d.getOpposite()));
-            if (d.getAxis().isHorizontal()
-                    && AssimilationLayerBlock.canAttachTo(
-                            level, cell.below(), Direction.UP)) {
-                moves.add(new Move(cell, Direction.DOWN));
-            }
+        for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++)for(int z=-1;z<=1;z++){
+            BlockPos cell=heartPos.offset(x,y,z);
+            if(!canHost(level,cell))continue;
+            for(Direction face:Direction.values())
+                if(AssimilationLayerBlock.canAttachTo(level,cell.relative(face),face.getOpposite()))propose(moves,level,cell,face,true);
         }
         return moves;
     }

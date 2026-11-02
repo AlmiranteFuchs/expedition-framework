@@ -9,20 +9,20 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.16)
+## Current starter progression (alpha.17)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
 dormant knot and vanilla materials. The sheltered resonator supplies power without
 fuel; one raw flake plus 4000 Resonance becomes one essence. External FE generators
-also work. A captured-heart engine and guardian-earned severed core extend the
+also work. A captured-bloom engine and guardian-earned severed core extend the
 power progression; see [Resonance power](docs/resonance-power.md). Refined essence powers the terminal milestone.
 The first Field Survey opens remote deployment, without an Overworld boss gate.
 Home experimentation is an optional, powered, reversible local breach.
 
 Survey now leads into **Trace Recovery**, a separate cargo tutorial, before Deep
 Salvage. The terminal uses glass instead of amethyst. A one-time bounded search
-records a starter trace near spawn on suitable natural land. Recovered hearts
+records a starter trace near spawn on suitable natural land. Recovered Shutter Blooms
 craft a **Field Ward** or **Heartglass Lens**; carry home-generated power in a
 **Resonance Cell** to use them on the next expedition. See
 [Field preparation](docs/field-preparation.md) for costs and limits.
@@ -33,6 +33,12 @@ See [the complete starter chain](docs/stillness-progression.md) and
 The alpha.16 inventory pass redraws the handheld family and all compass frames,
 adds distinct living/dormant tissue icons, and frames the ten 3D block-item models
 consistently. [See the actual native sprites and in-game inventory](docs/art-direction/items/README.md).
+
+The alpha.17 **Shutter Bloom** replaces the cubic microbiome heart with folded
+pale bark plates, a narrow amber lining and staggered opening poses. Dormant
+specimens fold cold, and colony growth starts on actual nearby terrain. Existing
+block ids and captured-specimen recipes remain compatible. See
+[the source redesign](docs/shutter-bloom.md).
 
 ## Environment
 

@@ -27,6 +27,13 @@ public final class ResonanceRenderer implements BlockEntityRenderer<ResonanceMac
             box(pose,buffers.getBuffer(RenderType.entityCutout(BONE)),-.25f+shift,-.25f,-.07f,-.20f+shift,.12f,.07f,light,overlay);
             box(pose,buffers.getBuffer(RenderType.entityCutout(BONE)),.20f-shift,-.25f,-.07f,.25f-shift,.12f,.07f,light,overlay);
         }
+        if(be.kind()==Kind.LIVING){
+            pose.translate(-.14,-.11,-.14);pose.scale(.28f,.28f,.28f);
+            var specimen=com.expeditions.registry.ModBlocks.ASSIMILATION_HEART.get().defaultBlockState()
+                    .setValue(com.expeditions.block.BloomSourceBlock.OPEN,com.expeditions.core.BloomShutter.stage(time,be.getBlockPos().asLong(),working));
+            net.minecraft.client.Minecraft.getInstance().getBlockRenderer().renderSingleBlock(specimen,pose,buffers,light,overlay);
+            pose.popPose();return;
+        }
         pose.mulPose(Axis.YP.rotationDegrees(breath*8));pose.mulPose(Axis.ZP.rotationDegrees(45));
         float scale=1+breath*.04f;pose.scale(scale,scale,scale);
         box(pose,buffers.getBuffer(RenderType.entityCutout(texture)),-.09f,-.09f,-.075f,.09f,.09f,.075f,light,overlay);

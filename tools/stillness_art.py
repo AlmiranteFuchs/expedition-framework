@@ -130,6 +130,8 @@ def gen():
 
     from field_equipment_art import gen as field_art
     field_art()
+    from bloom_source_art import generate as bloom_source
+    bloom_source()
     from item_art import gen as item_art
     item_art()
 

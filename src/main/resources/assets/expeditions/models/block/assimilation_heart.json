@@ -1,8 +1,3 @@
 {
-  "parent": "minecraft:block/cube_bottom_top",
-  "textures": {
-    "side": "expeditions:block/assimilation_heart",
-    "top": "expeditions:block/assimilation_heart_top",
-    "bottom": "expeditions:block/assimilation_heart_top"
-  }
+  "parent": "expeditions:block/bloom_shutter_0"
 }

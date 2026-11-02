@@ -4189,7 +4189,7 @@ public final class ExpeditionGameTests {
 
         heart.pulse(level);
         helper.assertTrue(heart.colony().size() == 1,
-                "the first pulse must seed a layer on the heart, got "
+                "the first pulse must seed one supported host face, got "
                         + heart.colony().size());
 
         int cap = ExpeditionsConfig.microbiomeMaxColonySize();

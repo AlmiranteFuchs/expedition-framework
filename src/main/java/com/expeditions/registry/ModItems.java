@@ -53,8 +53,8 @@ public final class ModItems {
      * component; used at the terminal it grants that key permanently and
      * is never consumed — the artifact itself is the proof of attunement.
      */
-    public static final DeferredItem<Item> ATTUNEMENT_SIGIL = ITEMS.registerSimpleItem(
-            "attunement_sigil", new Item.Properties().stacksTo(1));
+    public static final DeferredItem<Item> ATTUNEMENT_SIGIL = ITEMS.register(
+            "attunement_sigil", () -> new com.expeditions.item.AttunementSigilItem(new Item.Properties().stacksTo(1)));
 
     /**
      * The survey tool: opens as a book carrying a live report — expedition
