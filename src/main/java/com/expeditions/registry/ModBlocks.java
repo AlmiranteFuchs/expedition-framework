@@ -37,18 +37,22 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, ExpeditionCheckpointBlock> EXPEDITION_CHECKPOINT = BLOCKS.register(
             "expedition_checkpoint",
             () -> new ExpeditionCheckpointBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_CYAN)
+                    .mapColor(MapColor.TERRACOTTA_WHITE)
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
-                    .lightLevel(state -> 11)));
+                    .noOcclusion()
+                    .sound(SoundType.WOOD)
+                    .lightLevel(state -> 9)));
 
     public static final DeferredHolder<Block, ExpeditionExitBlock> EXPEDITION_EXIT = BLOCKS.register(
             "expedition_exit",
             () -> new ExpeditionExitBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_LIGHT_GREEN)
+                    .mapColor(MapColor.TERRACOTTA_WHITE)
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
-                    .lightLevel(state -> 13)));
+                    .noOcclusion()
+                    .sound(SoundType.WOOD)
+                    .lightLevel(state -> 11)));
 
     /**
      * Defense device deployed by a {@code defend_device} objective. Shares

@@ -7,28 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_checkpoint",
-      "text": "Use checkpoints in the order the compass gives. The first closes the party to new arrivals.",
+      "text": "The Charter sets pale split stakes along its routes. An amber seam is held between the two halves; the compass answers that seam. These are witness marks, the checkpoints named in a charter.",
       "title": "Settled marks"
     },
     {
       "type": "patchouli:text",
       "title": "Settle the mark",
-      "text": "Each settled mark banks part of the guaranteed reward for every member. Those secured tokens survive a failed expedition. Extraction settles the remainder and any earned bonuses."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Settle the mark",
-      "text": "Activation can draw company. Leave yourself room to move before touching the instrument."
+      "text": "Use them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward for every member, even if the expedition later fails. Make room before touching one. Its answer can draw company."
     },
     {
       "type": "patchouli:text",
       "title": "An unfinished route",
-      "text": "Death removes a member from the expedition; losing the last member ends it. Already banked tokens remain yours."
+      "text": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours."
     },
     {
       "type": "patchouli:text",
       "title": "An unfinished route",
-      "text": "Disconnecting leaves an unfinished route for later recovery, provided its markers still exist. Reaching the final checkpoint is not extraction. Follow the compass back to the exit and use it."
+      "text": "Disconnecting leaves the route for recovery if its instruments still exist. The last witness mark is not a way home. Follow the new compass bearing to the recall anchor and use it."
     }
   ],
   "advancement": "expeditions:journal/checkpoints"

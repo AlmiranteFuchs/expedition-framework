@@ -172,37 +172,13 @@ def gen_terminal(root):
 
 
 def gen_checkpoint(root):
-    image = wood_face(); metal_frame(image)
-    draw = ImageDraw.Draw(image)
-    draw.rectangle((5, 2, 10, 13), fill=IRON[0])
-    draw.line([(4, 3), (4, 11), (6, 13)], fill=WOOD[4])
-    draw.line([(11, 3), (11, 11), (9, 13)], fill=WOOD[1])
-    draw.polygon([(8, 4), (10, 7), (8, 10), (6, 7)], fill=COPPER[1])
-    draw.line((8, 5, 8, 9), fill=EMBER[3])
-    draw.point((7, 6), fill=EMBER[4])
-    save(root, 'block/expedition_checkpoint', image)
-    top = end_grain(); d = ImageDraw.Draw(top)
-    d.polygon([(8, 3), (12, 8), (8, 12), (3, 8)], fill=IRON[0], outline=COPPER[1])
-    d.line([(6, 8), (8, 5), (10, 8)], fill=EMBER[3])
-    d.point((8, 9), fill=EMBER[1])
-    save(root, 'block/expedition_checkpoint_top', top)
-    base(root); cube_model(root, 'expedition_checkpoint', 'expedition_checkpoint_top')
+    from route_marker_art import generate
+    generate(root)
 
 
 def gen_exit(root):
-    image = wood_face(); metal_frame(image)
-    draw = ImageDraw.Draw(image)
-    draw.rectangle((3, 4, 12, 12), fill=IRON[0])
-    draw.line([(3, 11), (3, 5), (6, 2), (9, 2), (12, 5), (12, 11)], fill=WOOD[4])
-    draw.line([(5, 11), (5, 6), (7, 4), (8, 4), (10, 6), (10, 11)], fill=COPPER[1])
-    draw.line((5, 12, 10, 12), fill=EMBER[3])
-    draw.point((7, 7), fill=EMBER[2]); draw.point((8, 6), fill=EMBER[4])
-    save(root, 'block/expedition_exit', image)
-    top = end_grain(); d = ImageDraw.Draw(top)
-    d.rectangle((4, 4, 11, 11), fill=IRON[0], outline=COPPER[1])
-    for y in (6, 9): d.line([(5, y+1), (7, y-1), (10, y+1)], fill=EMBER[3])
-    save(root, 'block/expedition_exit_top', top)
-    base(root); cube_model(root, 'expedition_exit', 'expedition_exit_top')
+    from route_marker_art import generate
+    generate(root, recall=True)
 
 
 def gen_device(root):

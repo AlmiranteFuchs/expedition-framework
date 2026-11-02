@@ -7,18 +7,13 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_exit",
-      "text": "A route is only a line on the map until somebody returns along it.",
+      "text": "Four pale ribs enclose an amber splinter. The hollow crown repeats the terminal aperture in miniature. This is the recall anchor: the exit named in a charter.",
       "title": "Bring it home"
     },
     {
       "type": "patchouli:text",
-      "title": "Settle the charter",
-      "text": "Use the extraction marker after every checkpoint and required objective is complete. Bring any sealed cargo with you. The party returns home, the delivery settles, and earned rewards are credited. Optional work and timely"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Settle the charter",
-      "text": "completion can add bonuses."
+      "title": "The recall anchor",
+      "text": "Use it after settling every witness mark and required objective. Keep any required cargo with you. The anchor returns the party to its terminal and settles the remaining reward."
     },
     {
       "type": "patchouli:text",

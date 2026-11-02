@@ -570,14 +570,14 @@ public final class ExpeditionManager {
                     toPos(run.checkpoints().get(run.completedCheckpoints() - 2)));
         }
         triggerCheckpointChallenge(run, player);
-        // The activation is a milestone — let it land: a beacon chime and
-        // a column of end-light over the just-lit checkpoint.
+        // The witness answers the compass: wood first, then a restrained chime.
         player.serverLevel().playSound(null, pos,
-                SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS,
-                0.7f, 1.2f);
-        player.serverLevel().sendParticles(ParticleTypes.END_ROD,
+                SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.5f, 0.7f);
+        player.serverLevel().playSound(null, pos,
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.55f, 0.65f);
+        player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
                 pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5,
-                18, 0.25, 1.1, 0.25, 0.015);
+                12, 0.16, 0.3, 0.16, 0.008);
         data.setDirty();
         return run;
     }
@@ -689,19 +689,18 @@ public final class ExpeditionManager {
                 }
             }
         }
-        // Extraction lands the run's stakes — the challenge fanfare for
-        // the whole party and embers rising where the exit stood.
+        // The recall answers in the same register as its route instruments.
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
                 memberPlayer.playNotifySound(
-                        SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
-                        SoundSource.PLAYERS, 0.7f, 1.0f);
+                        SoundEvents.AMETHYST_BLOCK_RESONATE,
+                        SoundSource.PLAYERS, 0.7f, 0.75f);
             }
         }
-        player.serverLevel().sendParticles(ParticleTypes.FLAME,
+        player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
                 player.getX(), player.getY() + 0.6, player.getZ(),
-                24, 0.5, 0.8, 0.5, 0.02);
+                18, 0.3, 0.5, 0.3, 0.01);
         endRun(run);
         return run;
     }

@@ -25,6 +25,34 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class PresentationInteractionTests {
     private PresentationInteractionTests() { }
 
+    @GameTest(template="arena", batch="charter_marker_shapes")
+    public static void routeInstrumentsHaveRealCleftsAndHollowRecallCrown(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var witness = ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState();
+        var recall = ModBlocks.EXPEDITION_EXIT.get().defaultBlockState();
+        var witnessShape = witness.getShape(level, BlockPos.ZERO);
+        var recallShape = recall.getShape(level, BlockPos.ZERO);
+        helper.assertTrue(witnessShape.clip(new Vec3(.03, .5, -1), new Vec3(.03, .5, 2), BlockPos.ZERO) == null,
+                "empty space beside the witness stave must not select an invisible cube");
+        helper.assertTrue(witnessShape.clip(new Vec3(.36, .6, -1), new Vec3(.36, .6, 2), BlockPos.ZERO) != null,
+                "the pale witness stave must remain a usable target");
+        helper.assertTrue(witnessShape.clip(new Vec3(.5, .78, -1), new Vec3(.5, .78, 2), BlockPos.ZERO) == null,
+                "the cleft above the amber seam must remain open");
+        helper.assertTrue(recallShape.clip(new Vec3(.5, .65, -1), new Vec3(.5, .65, 2), BlockPos.ZERO) == null,
+                "the recall frame must have a real open centre");
+        helper.assertTrue(recallShape.clip(new Vec3(.24, .5, -1), new Vec3(.24, .5, 2), BlockPos.ZERO) != null,
+                "the recall pillars must remain selectable");
+        helper.assertTrue(recallShape.clip(new Vec3(.5, 2, .5), new Vec3(.5, .6, .5), BlockPos.ZERO) == null,
+                "the crown aperture must be open from above as well");
+        for (var state : java.util.List.of(witness, recall)) {
+            helper.assertTrue(!state.isCollisionShapeFullBlock(level, BlockPos.ZERO),
+                    "route instruments must not retain cube collision");
+            helper.assertTrue(!state.isFaceSturdy(level, BlockPos.ZERO, Direction.UP),
+                    "a route instrument must not become a full supporting block");
+        }
+        helper.succeed();
+    }
+
     @GameTest(template="arena", batch="journal_recipe_discovery")
     public static void practicalStarterRecipesRemainReadableWhileAdvancedSourcesNeedDiscovery(GameTestHelper helper) throws Exception {
         var entries=new java.util.HashMap<String,com.google.gson.JsonObject>();

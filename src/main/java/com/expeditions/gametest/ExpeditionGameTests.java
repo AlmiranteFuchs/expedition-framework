@@ -2558,12 +2558,14 @@ public final class ExpeditionGameTests {
      */
     @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void defenseSurvivesAndPays(GameTestHelper helper) {
+        // This async siege stays active while later defense tests run. Its
+        // markers must not occupy their authored columns at 64/72/80,64.
         String json = """
                 {
                   "display_name": "Siege Trial",
                   "dimension": "minecraft:overworld",
-                  "checkpoints": [[64, 64], [72, 64]],
-                  "exit": [80, 64],
+                  "checkpoints": [[164, 164], [172, 164]],
+                  "exit": [180, 164],
                   "tokens": 10,
                   "objectives": [
                     {"id": "siege", "description": "Hold the device",

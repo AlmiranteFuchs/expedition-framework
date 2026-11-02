@@ -12,7 +12,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -21,9 +20,9 @@ import net.minecraft.world.phys.BlockHitResult;
  * Right-clicking completes the run only when every checkpoint was activated, and
  * grants the guaranteed token reward exactly once.
  */
-public class ExpeditionExitBlock extends Block {
+public class ExpeditionExitBlock extends RouteMarkerBlock {
     public ExpeditionExitBlock(Properties properties) {
-        super(properties);
+        super(properties, "expedition_exit");
     }
 
     @Override

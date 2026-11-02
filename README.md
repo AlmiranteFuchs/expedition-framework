@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.18)
+## Current starter progression (alpha.19)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -48,6 +48,12 @@ world; the proposed Liquid Resonance factory is documented in
 [Create automation](docs/create-automation.md), with
 [cost/reward rules](docs/resonance-deployment-proposal.md). The fluid and portal
 fuel requirement are proposals, not shipped mechanics.
+
+Alpha.19 replaces the checkpoint and exit cubes with **Witness Marks** and
+**Recall Anchors**: split pale staves, amber seams and a hollow recall crown.
+Their outlines match their geometry, and their sounds and journal descriptions
+belong to the same Charter instruments as the compass. See
+[route instruments](docs/route-instruments.md).
 
 ## Environment
 

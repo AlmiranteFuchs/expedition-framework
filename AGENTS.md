@@ -725,3 +725,17 @@ JournalChapter bits and advancement ids remain unchanged. Guide text must retain
 contact-only infection and the raw-flake assay-kit recipe. The new journal gate
 regression checks these recipe locations; build/alphaBundle, 176 unit tests and
 160 core GameTests pass (163 reported with three optional biome probes).
+
+Alpha.19 route instruments: stable checkpoint/exit ids display as Witness Mark /
+Recall Anchor. `tools/route_marker_art.py` owns native grain and non-cube models,
+called through `heartwood_art.py`. `RouteMarkerBlock` reads those same model
+elements through FieldMachineShapes; no full supporting faces or invisible cube
+selection. Keep both inside a single placement cell. No global activated state:
+different parties may share an address with different progress. Existing server
+activation/extraction authority, rewards, recovery and marker cleanup are unchanged.
+Journal copy connects the names to checkpoints/extraction and keeps practical
+requirements explicit. Activation/recall use restrained amber dust and low chimes.
+The async defenseSurvivesAndPays fixture has unique 164/172/180,164 columns;
+reusing 64/72/80,64 let older cube markers act as accidental floors for later
+tests while that siege was still live. Verified: build/alphaBundle, 176 unit
+tests and 161 core GameTests (164 reported with three optional biome probes).

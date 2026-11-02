@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -17,9 +16,9 @@ import net.minecraft.world.phys.BlockHitResult;
  * position when a run starts. Right-clicking activates it only if it is the
  * next expected checkpoint of that player's run.
  */
-public class ExpeditionCheckpointBlock extends Block {
+public class ExpeditionCheckpointBlock extends RouteMarkerBlock {
     public ExpeditionCheckpointBlock(Properties properties) {
-        super(properties);
+        super(properties, "expedition_checkpoint");
     }
 
     @Override
