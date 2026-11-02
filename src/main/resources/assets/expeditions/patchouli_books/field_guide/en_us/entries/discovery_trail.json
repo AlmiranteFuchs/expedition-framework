@@ -6,68 +6,68 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "title": "The Bloom",
-      "text": "Approach an amber-lined Shutter Bloom within sixteen blocks. The journal records contact, even if you have not crafted it yet."
+      "title": "Folded bark",
+      "text": "Approach a living growth with pale shutters and an amber lining."
     },
     {
       "type": "patchouli:text",
-      "title": "What remains",
-      "text": "Collect a dormant flake or a sample of refined assimilation essence."
+      "title": "A useful residue",
+      "text": "Collect a dormant flake or refine your first essence."
     },
     {
       "type": "patchouli:text",
       "title": "The threshold",
-      "text": "Use an expedition terminal. A deployed terminal is a promise that there is somewhere to come back to."
+      "text": "Use a terminal and examine the charters it can offer."
     },
     {
       "type": "patchouli:text",
-      "title": "Heartwood",
-      "text": "Step through an expedition portal and let the terminal issue your compass."
+      "title": "The compass",
+      "text": "Enter an expedition portal and take its issued compass."
     },
     {
       "type": "patchouli:text",
-      "title": "Checkpoints",
-      "text": "Activate an expedition checkpoint. Merely walking past it does not settle the instrument."
+      "title": "Settled marks",
+      "text": "Use a checkpoint rather than merely passing its light."
     },
     {
       "type": "patchouli:text",
       "title": "Sealed cargo",
-      "text": "Reach a recovery objective and receive the expedition's physical artifact."
+      "text": "Reach a recovery site and take possession of its sealed parcel."
     },
     {
       "type": "patchouli:text",
       "title": "Hold the line",
-      "text": "Deploy a defense device by reaching a checkpoint with a defend-device objective."
+      "text": "Activate a checkpoint whose charter calls for a deployed device."
     },
     {
       "type": "patchouli:text",
-      "title": "Blood assay",
-      "text": "Experience Bloom exposure, or draw a sample with a field assay kit."
+      "title": "A sealed sample",
+      "text": "Draw a sample with an assay kit, or notice the first effects of exposure."
     },
     {
       "type": "patchouli:text",
-      "title": "Awareness",
-      "text": "Endure an infected hunting party, or raise a dimension’s awareness to twenty-five."
+      "title": "Being noticed",
+      "text": "Remain in affected country long enough for it to answer your presence."
     },
     {
       "type": "patchouli:text",
-      "title": "Extraction",
-      "text": "Complete a run by using its extraction marker after satisfying every required objective."
+      "title": "Bring it home",
+      "text": "Use extraction after the charter's required work is complete."
     },
     {
       "type": "patchouli:text",
-      "title": "The guardian",
-      "text": "Deploy into Heart of the Thicket after completing Deep Salvage. Reach the final checkpoint to awaken what guards the roots."
+      "title": "At the last marker",
+      "text": "Follow a confrontation charter until its final mark answers."
     },
     {
       "type": "patchouli:text",
       "title": "After silence",
-      "text": "Stand in a dimension whose major threat has been defeated and whose campaign has been cleared."
+      "text": "Return to country whose campaign has been brought to a close."
     },
     {
       "type": "patchouli:text",
-      "title": "What we bring back",
-      "text": "Recover an Shutter Bloom, or obtain a Heartglass Lens or Field Ward."
+      "title": "Things brought back",
+      "text": "Recover a living Shutter Bloom, or obtain an instrument made from one."
     }
   ]
 }

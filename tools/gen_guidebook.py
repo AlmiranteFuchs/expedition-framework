@@ -16,16 +16,16 @@ def write(path, data):
 
 groups = [
     ('beginnings', 'First roots', 'expeditions:expedition_field_journal',
-     'Begin with a sample of the Bloom. Harvest dormant traces for flakes, then craft the instruments that let you return home.',
+     'Notes on first samples, workshop instruments and a way back.',
      ['first_steps', 'essence', 'terminal', 'wayfinding']),
     ('expeditions', 'Beyond the threshold', 'expeditions:expedition_terminal',
-     'Deploy, follow the compass, secure each checkpoint and extract. These pages answer as you put the instruments to use.',
+     'Route notes, recovered cargo and equipment tested in the field.',
      ['checkpoints', 'cargo', 'defense', 'extraction', 'preparation']),
     ('bloom', 'The living country', 'expeditions:assimilation_heart',
-     'Approach a Shutter Bloom to observe the colony. Exposure or a blood sample opens the assay; awareness reveals what the land has learned.',
+     'Observations from affected ground. Keep measured results separate from assumptions.',
      ['bloom', 'blood', 'pressure']),
     ('thicket', 'Under the bark', 'expeditions:attunement_sigil',
-     'File surveys, recover the sealed cargo, then follow the Charter into the thicket. Some truths require more than a sample.',
+     'Later entries, left unfinished until their subjects have been encountered.',
      ['guardian', 'liberation']),
 ]
 icons = {'first_steps':'expedition_field_journal', 'bloom':'assimilation_heart',
@@ -36,8 +36,8 @@ icons = {'first_steps':'expedition_field_journal', 'bloom':'assimilation_heart',
          'extraction':'expedition_exit', 'guardian':'assimilation_heart', 'liberation':'attunement_sigil', 'preparation':'field_ward'}
 
 write(ROOT / 'data/expeditions/patchouli_books/field_guide/book.json', {
-    'name':'The Charter', 'landing_text':'The frontier remembers.$(br2)'
-    'Explore to unlock entries.$(br2)Browse for crafting and field notes.',
+    'name':'The Charter', 'landing_text':'A field copy of the Charter.$(br2)'
+    'Observations and working recipes.$(br2)Some pages are still unwritten.',
     'subtitle':'Field notes', 'version':'0', 'use_resource_pack':True,
     'nameplate_color':'dfcf91',
     'dont_generate_book':True, 'custom_book_item':'expeditions:expedition_field_journal',
@@ -74,16 +74,20 @@ for order, (group, name, icon, description, chapters) in enumerate(groups):
         if key in ('essence', 'terminal'):
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:expedition_terminal',
                           'text':'Place it facing a safe space. Its portal opens above it.'})
-        if key == 'essence':
-            for machine in ['dormant_knot','stillness_dynamo','essence_condenser','living_heart_engine','severance_core','severance_generator']:
+        if key == 'first_steps':
+            for machine in ['dormant_knot','stillness_dynamo','essence_condenser']:
                 pages.append({'type':'patchouli:crafting','recipe':'expeditions:'+machine})
+        if key == 'essence':
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:field_assay_kit',
                           'text':'Inspect a sealed sample with use. Sneak-use to draw a fresh, nonlethal sample.'})
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:attunement_sigil',
                           'text':'Shapeless. Use the sigil against a terminal; proof is not consumed.'})
         if key == 'preparation':
-            for equipment in ['resonance_cell','field_ward','survey_lens']:
+            for equipment in ['resonance_cell','field_ward','survey_lens','living_heart_engine']:
                 pages.append({'type':'patchouli:crafting','recipe':'expeditions:'+equipment})
+        if key == 'liberation':
+            for machine in ['severance_core','severance_generator']:
+                pages.append({'type':'patchouli:crafting','recipe':'expeditions:'+machine})
         if key == 'guardian':
             pages.append({'type':'patchouli:entity', 'entity':'expeditions:rootbound_guardian',
                           'scale':0.55, 'text':'Read the raised arms. Leave the marked ground before it strikes.'})

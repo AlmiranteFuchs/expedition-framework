@@ -7,48 +7,41 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:attunement_sigil",
-      "text": "The roots remain. Their orders do not.",
+      "text": "The ordinary sounds remain. What is missing takes longer to notice.",
       "title": "After silence"
     },
     {
       "type": "patchouli:text",
-      "title": "A quieter country",
-      "text": "Routine expeditions establish a foothold after two completions. The terminal then offers that dimension’s Sever the Bloom mission, or its authored confrontation. Defeat the mission’s bound guardian and extract to liberate the"
+      "title": "What has stopped",
+      "text": "An accepted guardian victory followed by extraction liberates the dimension for everyone. New colonies stop taking hold, growth ceases, and the pursuit clock falls quiet. Native creatures and ordinary hazards remain. Repeated"
     },
     {
       "type": "patchouli:text",
-      "title": "A quieter country",
-      "text": "dimension for everyone. Routine completions alone cannot replace that proof."
+      "title": "What has stopped",
+      "text": "surveys alone do not produce this change."
     },
     {
       "type": "patchouli:text",
-      "title": "A quieter country",
-      "text": "Liberation silences ambient bloom seeding, growth and infection there; the attention bar and pursuit hunts end. Dormant growth remains as a scar. Ordinary native monsters and vanilla hazards still exist."
+      "title": "A quiet remnant",
+      "text": "A core held against a terminal here can retain something of the quiet. It is a useful result, though these notes offer no explanation for why it travels."
     },
     {
       "type": "patchouli:text",
-      "title": "A quieter country",
-      "text": "Completing the first Field Survey opens remote terminal deployments. The Stillness already shelters home; its optional confrontations do not gate the frontier. Native portals remain usable earlier, if you accept the danger. A"
+      "title": "A quiet remnant",
+      "text": "Craft an Unattuned Severance Core and use it on a terminal in the liberated dimension. Install the attuned core in a Severance Cradle for 120 Resonance per tick without fuel. The terminal must recognise the liberation record; a"
     },
     {
       "type": "patchouli:text",
-      "title": "A quieter country",
-      "text": "guardian sent by the hunt is only an echo: killing it does not sever the dimension."
+      "title": "A quiet remnant",
+      "text": "marked map is not enough."
     },
     {
-      "type": "patchouli:text",
-      "title": "Power after silence",
-      "text": "Guardian victory and successful extraction leave more than quiet ground. Craft an Unattuned Severance Core and attune it at a terminal here. A Severance Cradle can then draw stable power from the remnant anywhere."
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:severance_core"
     },
     {
-      "type": "patchouli:text",
-      "title": "Power after silence",
-      "text": "This proof is shared with the world and persists with the campaign. A count-only cleared mark is not an accepted guardian victory. Existing genuine boss trophies can recover old proof. Resetting a source dimension pauses its cores"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Power after silence",
-      "text": "until liberation is restored."
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:severance_generator"
     }
   ],
   "advancement": "expeditions:journal/liberation"

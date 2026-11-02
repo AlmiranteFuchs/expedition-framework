@@ -1,5 +1,5 @@
 {
-  "name": "What we bring back",
+  "name": "Things brought back",
   "icon": "expeditions:field_ward",
   "category": "expeditions:expeditions",
   "sortnum": 4,
@@ -7,68 +7,73 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:field_ward",
-      "text": "Essence is a workshop material, not the only reason to cross the threshold. A recovered living bloom can become a contained engine, a Heartglass Lens, or a Field Ward. Each consumes the specimen during crafting. Choose which",
-      "title": "What we bring back"
+      "text": "A recovered bloom folds while it is carried. Behind glass, the shutters can be coaxed into their old movement.",
+      "title": "Things brought back"
     },
     {
       "type": "patchouli:text",
-      "title": "The return matters",
-      "text": "capability your next journey needs."
+      "title": "Choose the experiment",
+      "text": "One specimen can become a Bloom Engine, a Field Ward or a Heartglass Lens. Each recipe consumes the specimen. Decide what the next journey lacks before committing it."
     },
     {
       "type": "patchouli:text",
-      "title": "The return matters",
-      "text": "Tokens banked at checkpoints buy supplies or fund later deployments. Successful home training follows Survey, Trace Recovery, Deep Salvage and the guardian. Other dimensions establish footholds before their liberation mission."
+      "title": "A contained source",
+      "text": "The Bloom Engine holds its specimen inside a closed chamber. Supply essence to keep it working. One essence supports thirty running seconds at up to 80 Resonance per tick. A full bank pauses consumption; an unfed chamber goes"
     },
     {
       "type": "patchouli:text",
-      "title": "Carry the current",
-      "text": "Craft a Resonance Cell from a dormant knot, two essence, copper and iron. It holds 16000 Resonance and starts empty. Sneak-use a generator to draw power; use a compatible receiver to supply it. Hold use for repeated transfers."
+      "title": "A contained source",
+      "text": "quiet."
     },
     {
       "type": "patchouli:text",
-      "title": "Carry the current",
-      "text": "Standard FE item chargers can fill it too."
+      "title": "A contained source",
+      "text": "This is a workshop source. Opening the surrounding field is a separate experiment."
     },
     {
       "type": "patchouli:text",
-      "title": "Carry the current",
-      "text": "The cell keeps its charge when carried home, dropped or saved. Spend home power on your next journey instead of building a generator at every stop."
+      "title": "Carry a reserve",
+      "text": "A Resonance Cell holds 16000 Resonance and starts empty. Sneak-use a generator to charge it; use a receiver normally to supply it. Compatible FE chargers also work."
     },
     {
       "type": "patchouli:text",
-      "title": "A moment to regroup",
-      "text": "Craft a Field Ward around a recovered bloom. Place it, then use a cell containing at least 4000 Resonance to light it. For two minutes, Bloom attention holds steady and personal dwell pressure pauses within eight blocks. One cell"
+      "title": "Carry a reserve",
+      "text": "Carry a charged cell rather than assuming there will be a working workshop at the far end."
     },
     {
       "type": "patchouli:text",
-      "title": "A moment to regroup",
-      "text": "holds four charges."
+      "title": "A quiet camp",
+      "text": "Place a Field Ward and use a cell holding at least 4000 Resonance. It holds attention steady within eight blocks for two minutes. Check the remaining time with an empty hand."
     },
     {
       "type": "patchouli:text",
-      "title": "A moment to regroup",
-      "text": "The field does not lower existing attention, stop an existing hunt, prevent infection or block ordinary enemies. Overlapping wards do not multiply the benefit. Check the ward with an empty hand. You can recover the instrument, but"
+      "title": "A quiet camp",
+      "text": "It does not lower attention already gathered, stop an existing hunt, or block infection. Breaking the ward loses its remaining charge. Its two minutes pass even if you leave it behind."
     },
     {
       "type": "patchouli:text",
-      "title": "A moment to regroup",
-      "text": "breaking it loses its remaining charge. Its paid deadline keeps running while the chunk is unloaded."
+      "title": "Measure a bearing",
+      "text": "Carry a Heartglass Lens and a charged cell, then finish a reading with the expedition compass. A measurement costs 200 Resonance and gives horizontal distance and signed height."
     },
     {
       "type": "patchouli:text",
-      "title": "Measure the dark",
-      "text": "A Heartglass Lens uses a recovered bloom, essence, copper and amethyst. Carry it with a charged cell while using the issued compass. Finish a reading to spend 200 Resonance and see horizontal distance and signed height to the next"
+      "title": "Measure a bearing",
+      "text": "Without that charge, the ordinary needle and elevation ember still work. The lens belongs to you after extraction."
     },
     {
       "type": "patchouli:text",
-      "title": "Measure the dark",
-      "text": "checkpoint or extraction."
+      "title": "Opening the field",
+      "text": "For a controlled experiment, sneak-use an attunement sigil on a condenser holding at least 4000 Resonance. The open field reaches twenty-four blocks and consumes 20 Resonance per tick; refining pauses."
     },
     {
       "type": "patchouli:text",
-      "title": "Measure the dark",
-      "text": "The original needle and elevation ember remain useful without either upgrade. A lens gives a measurement, not a path through walls. It is kept after extraction; the terminal only recalls its issued compass."
+      "title": "Opening the field",
+      "text": "Live growth can operate inside it. A dormant resonator there loses the quiet field it draws from, so supply power from outside or use a contained engine. Use the sigil again to close the field. Power loss also restores the"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Opening the field",
+      "text": "Stillness."
     },
     {
       "type": "patchouli:crafting",
@@ -81,6 +86,10 @@
     {
       "type": "patchouli:crafting",
       "recipe": "expeditions:survey_lens"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:living_heart_engine"
     }
   ],
   "advancement": "expeditions:journal/preparation"

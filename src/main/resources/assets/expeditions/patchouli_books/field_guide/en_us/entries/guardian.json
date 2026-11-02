@@ -1,5 +1,5 @@
 {
-  "name": "The guardian",
+  "name": "At the last marker",
   "icon": "expeditions:assimilation_heart",
   "category": "expeditions:thicket",
   "sortnum": 0,
@@ -7,33 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:assimilation_heart",
-      "text": "The crown is not growing from its head. The head is growing around the crown.",
-      "title": "The guardian"
+      "text": "The wood moves around an empty space. The amber inside becomes easier to see just before a strike.",
+      "title": "At the last marker"
     },
     {
       "type": "patchouli:text",
-      "title": "The Rootbound Guardian",
-      "text": "At the final checkpoint of Heart of the Thicket, a guardian takes shape. Defeat it, then use extraction to settle the campaign victory. Reaching the exit while it lives will not clear the dimension."
+      "title": "The bound guardian",
+      "text": "This charter names a particular guardian. Defeat that creature and then extract to settle the confrontation. Reaching the exit while it lives will not finish the work. A different creature killed elsewhere is not proof."
     },
     {
       "type": "patchouli:text",
-      "title": "The Rootbound Guardian",
-      "text": "The approach costs 25 tokens and requires Deep Salvage proof and an established campaign."
+      "title": "Watch the ground",
+      "text": "Raised arms and an ember circle give warning of a sweep. Leave the marked ground before it lands. The exposed core is vulnerable during the windup, if you can attack and still get clear."
     },
     {
       "type": "patchouli:text",
-      "title": "Read the ember circle",
-      "text": "When the guardian roots itself and raises its arms, an ember circle marks its sweep. Leave the circle before the strike. Its exposed core takes extra damage during the windup: a chance to press your attack if you can still escape."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Read the ember circle",
-      "text": "Below half health, its core flares. It alternates sweeps with smaller bursts marked beneath its target. Keep moving out of each new mark."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Read the ember circle",
-      "text": "Every strike has a warning and recovery. It does not tear up the terrain."
+      "title": "Watch the ground",
+      "text": "As the core brightens, smaller warning marks can appear beneath its target. Keep moving out of them. Use the pause after a strike to regain space."
     },
     {
       "type": "patchouli:entity",

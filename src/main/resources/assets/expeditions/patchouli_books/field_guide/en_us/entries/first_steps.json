@@ -1,5 +1,5 @@
 {
-  "name": "A field guide",
+  "name": "A field copy",
   "icon": "expeditions:expedition_field_journal",
   "category": "expeditions:beginnings",
   "sortnum": 0,
@@ -7,73 +7,55 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_field_journal",
-      "text": "The Overworld is sheltered by the Stillness. Live Bloom cannot normally take hold here. Your home needs neither liberation nor fuel to remain sheltered.",
-      "title": "A field guide"
+      "text": "Some patches of ground hold their colour poorly. The scraps found there are cold, light, and slow to crumble. There is no movement in them.",
+      "title": "A field copy"
     },
     {
       "type": "patchouli:text",
-      "title": "A quiet world",
-      "text": "Look for small pale, cold traces on natural ground. Harvest this dormant tissue for flakes. It does not spread or infect. Newly explored Overworld terrain contains these traces; colonies whose blooms are gone leave the same"
+      "title": "Pale traces",
+      "text": "Look for pale traces on natural ground and harvest them for dormant flakes. Cold tissue is safe to handle. If nearby ground has been searched, try newly explored country."
     },
     {
       "type": "patchouli:text",
-      "title": "A quiet world",
-      "text": "dormant material."
+      "title": "A place to begin",
+      "text": "A book and one flake make a field journal. A replacement copy will keep the discoveries you have already made."
     },
     {
       "type": "patchouli:text",
-      "title": "A quiet world",
-      "text": "A one-time search places a starter trace on suitable natural land within 128 blocks of world spawn and records its location on your first visit. An ocean spawn may have no suitable ground; ordinary traces still generate farther"
+      "title": "A place to begin",
+      "text": "Keep several flakes for instruments. Four form a Dormant Knot; the recipes here show how to build a Stillness Resonator and an Essence Condenser. Place those machines next to each other. Their first sample should be a single"
     },
     {
       "type": "patchouli:text",
-      "title": "A quiet world",
-      "text": "afield."
+      "title": "A place to begin",
+      "text": "flake."
     },
     {
       "type": "patchouli:text",
-      "title": "From traces to instruments",
-      "text": "A book and a dormant flake make this journal. The assay kit also uses a raw flake rather than active essence. Neither needs a working machine."
+      "title": "The first charter",
+      "text": "The Overworld is sheltered by what these notes call the Stillness. Ordinary collection does not weaken it; keeping your home quiet requires no maintenance."
     },
     {
       "type": "patchouli:text",
-      "title": "From traces to instruments",
-      "text": "Four flakes make a Dormant Knot. Build a Stillness Resonator around that knot using iron, copper and redstone, then build an Essence Condenser from ordinary materials. Place them adjacent. The sheltered knot supplies twenty"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "From traces to instruments",
-      "text": "Resonance per tick without burning flakes. A single flake and 4000 Resonance become one essence in ten seconds. Other FE generators can supply the condenser instead."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Your first deployment",
-      "text": "Make the terminal using refined essence, then complete Field Survey to open remote deployments. You do not need to defeat an Overworld boss to leave home."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Your first deployment",
-      "text": "The first survey is practice with routes, checkpoints and extraction. The hostile frontier is elsewhere. Other dimensions still require preparation, repeated successful expeditions and their own bound guardian to become safe"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Your first deployment",
-      "text": "outposts."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Your first deployment",
-      "text": "The terminal needs glass rather than amethyst. Complete Field Survey to learn checkpoints, then Trace Recovery to learn carrying bound cargo back to extraction. Together these establish the home campaign and open Deep Salvage;"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Your first deployment",
-      "text": "repeating Survey is unnecessary."
+      "title": "The first charter",
+      "text": "Refine essence, build a terminal, and begin with Field Survey. Follow the offered training charters. Their instructions are worth learning before taking equipment farther afield."
     },
     {
       "type": "patchouli:crafting",
       "recipe": "expeditions:expedition_field_journal",
       "text": "Your discoveries belong to you. A replacement book remembers them."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:dormant_knot"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:stillness_dynamo"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:essence_condenser"
     },
     {
       "type": "expeditions:record_0"

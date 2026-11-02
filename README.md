@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.17)
+## Current starter progression (alpha.18)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -39,6 +39,15 @@ pale bark plates, a narrow amber lining and staggered opening poses. Dormant
 specimens fold cold, and colony growth starts on actual nearby terrain. Existing
 block ids and captured-specimen recipes remain compatible. See
 [the source redesign](docs/shutter-bloom.md).
+
+Alpha.18 restores the preferred angled journal sprite and rewrites the guide as
+field observations with practical instructions. Starter recipes stay readable;
+advanced source recipes move into their earned chapters. Discovery progress is
+preserved. Create item transport and journal/sigil mixing were checked in the dev
+world; the proposed Liquid Resonance factory is documented in
+[Create automation](docs/create-automation.md), with
+[cost/reward rules](docs/resonance-deployment-proposal.md). The fluid and portal
+fuel requirement are proposals, not shipped mechanics.
 
 ## Environment
 

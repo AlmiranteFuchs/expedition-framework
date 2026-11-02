@@ -1,5 +1,5 @@
 {
-  "name": "The Bloom",
+  "name": "Folded bark",
   "icon": "expeditions:assimilation_heart",
   "category": "expeditions:bloom",
   "sortnum": 0,
@@ -7,53 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:assimilation_heart",
-      "text": "A Shutter Bloom is where the pale influence gathers into broad folded bark plates. A dark resin-lined space lies inside. Its shutters open in an uneven sequence, then settle with a dry click. This is a colony source, not an",
-      "title": "The Bloom"
+      "text": "The plates resemble dry bark until they move. One opens, then another; a narrow amber lining appears between them. The surrounding pale skin continues over materials that were never wood.",
+      "title": "Folded bark"
     },
     {
       "type": "patchouli:text",
-      "title": "The folding colony",
-      "text": "anatomical organ."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "The folding colony",
-      "text": "The surrounding infection remains a flat skin on the host terrain. The bloom spreads it across sturdy surfaces around its base; the shell itself has gaps. Break the source to stop that colony. Its remaining supported tissue"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "The folding colony",
-      "text": "becomes dormant."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "The folding colony",
-      "text": "The Stillness folds a bloom shut and leaves its lining cold. A recovered living specimen can instead be contained in an engine or made into field instruments. Its origin remains unknown."
+      "title": "The shutters",
+      "text": "These notes use the name Shutter Bloom. The name describes its shape. It does not explain what is doing the growing."
     },
     {
       "type": "patchouli:text",
       "title": "Work from the edge",
-      "text": "Harvest attached tissue for raw flakes. Recover a bloom if you want to build field instruments. Growth lost with its support yields no harvest."
+      "text": "The surface growth spreads from a nearby bloom. Removing that source stops its colony and leaves supported tissue dormant. Break the tissue itself for flakes; tearing away its support leaves no useful harvest."
     },
     {
       "type": "patchouli:text",
       "title": "Work from the edge",
-      "text": "Infection requires physical contact with living Bloom tissue or an infected body. Merely standing nearby is safe. Leave contact to let early exposure subside."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Work from the edge",
-      "text": "A Disruption Charm, held in the offhand or worn in a Curios charm slot, blocks new infection. String, amethyst, copper and essence make one. It does not cure an infection already established. Infected creatures keep their bodies"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Work from the edge",
-      "text": "but share threats and move as one unsettled mind."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Work from the edge",
-      "text": "This is not proof the Bloom was born here. Only proof it has learned to live here."
+      "text": "Living tissue and infected creatures transmit infection through contact. Standing nearby is not enough. Leave yourself a clear place to step before cutting a sample."
     }
   ],
   "advancement": "expeditions:journal/bloom"

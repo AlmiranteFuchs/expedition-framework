@@ -1,217 +1,221 @@
 {
   "first_steps": {
-    "title": "I. A field guide",
+    "title": "I. A field copy",
     "pages": [
       {
-        "heading": "A quiet world",
-        "body": "The Overworld is sheltered by the Stillness. Live Bloom cannot normally take hold here. Your home needs neither liberation nor fuel to remain sheltered.\n\nLook for small pale, cold traces on natural ground. Harvest this dormant tissue for flakes. It does not spread or infect. Newly explored Overworld terrain contains these traces; colonies whose blooms are gone leave the same dormant material.\n\nA one-time search places a starter trace on suitable natural land within 128 blocks of world spawn and records its location on your first visit. An ocean spawn may have no suitable ground; ordinary traces still generate farther afield."
+        "heading": "Pale traces",
+        "body": "Some patches of ground hold their colour poorly. The scraps found there are cold, light, and slow to crumble. There is no movement in them.\n\nLook for pale traces on natural ground and harvest them for dormant flakes. Cold tissue is safe to handle. If nearby ground has been searched, try newly explored country."
       },
       {
-        "heading": "From traces to instruments",
-        "body": "A book and a dormant flake make this journal. The assay kit also uses a raw flake rather than active essence. Neither needs a working machine.\n\nFour flakes make a Dormant Knot. Build a Stillness Resonator around that knot using iron, copper and redstone, then build an Essence Condenser from ordinary materials. Place them adjacent. The sheltered knot supplies twenty Resonance per tick without burning flakes. A single flake and 4000 Resonance become one essence in ten seconds. Other FE generators can supply the condenser instead."
+        "heading": "A place to begin",
+        "body": "A book and one flake make a field journal. A replacement copy will keep the discoveries you have already made.\n\nKeep several flakes for instruments. Four form a Dormant Knot; the recipes here show how to build a Stillness Resonator and an Essence Condenser. Place those machines next to each other. Their first sample should be a single flake."
       },
       {
-        "heading": "Your first deployment",
-        "body": "Make the terminal using refined essence, then complete Field Survey to open remote deployments. You do not need to defeat an Overworld boss to leave home.\n\nThe first survey is practice with routes, checkpoints and extraction. The hostile frontier is elsewhere. Other dimensions still require preparation, repeated successful expeditions and their own bound guardian to become safe outposts.\n\nThe terminal needs glass rather than amethyst. Complete Field Survey to learn checkpoints, then Trace Recovery to learn carrying bound cargo back to extraction. Together these establish the home campaign and open Deep Salvage; repeating Survey is unnecessary."
+        "heading": "The first charter",
+        "body": "The Overworld is sheltered by what these notes call the Stillness. Ordinary collection does not weaken it; keeping your home quiet requires no maintenance.\n\nRefine essence, build a terminal, and begin with Field Survey. Follow the offered training charters. Their instructions are worth learning before taking equipment farther afield."
       }
     ]
   },
   "bloom": {
-    "title": "II. The Bloom",
-    "unlock_hint": "Approach an amber-lined Shutter Bloom within sixteen blocks. The journal records contact, even if you have not crafted it yet.",
+    "title": "II. Folded bark",
     "pages": [
       {
-        "heading": "The folding colony",
-        "body": "A Shutter Bloom is where the pale influence gathers into broad folded bark plates. A dark resin-lined space lies inside. Its shutters open in an uneven sequence, then settle with a dry click. This is a colony source, not an anatomical organ.\n\nThe surrounding infection remains a flat skin on the host terrain. The bloom spreads it across sturdy surfaces around its base; the shell itself has gaps. Break the source to stop that colony. Its remaining supported tissue becomes dormant.\n\nThe Stillness folds a bloom shut and leaves its lining cold. A recovered living specimen can instead be contained in an engine or made into field instruments. Its origin remains unknown."
+        "heading": "The shutters",
+        "body": "The plates resemble dry bark until they move. One opens, then another; a narrow amber lining appears between them. The surrounding pale skin continues over materials that were never wood.\n\nThese notes use the name Shutter Bloom. The name describes its shape. It does not explain what is doing the growing."
       },
       {
         "heading": "Work from the edge",
-        "body": "Harvest attached tissue for raw flakes. Recover a bloom if you want to build field instruments. Growth lost with its support yields no harvest.\n\nInfection requires physical contact with living Bloom tissue or an infected body. Merely standing nearby is safe. Leave contact to let early exposure subside.\n\nA Disruption Charm, held in the offhand or worn in a Curios charm slot, blocks new infection. String, amethyst, copper and essence make one. It does not cure an infection already established. Infected creatures keep their bodies but share threats and move as one unsettled mind.\n\nThis is not proof the Bloom was born here. Only proof it has learned to live here."
+        "body": "The surface growth spreads from a nearby bloom. Removing that source stops its colony and leaves supported tissue dormant. Break the tissue itself for flakes; tearing away its support leaves no useful harvest.\n\nLiving tissue and infected creatures transmit infection through contact. Standing nearby is not enough. Leave yourself a clear place to step before cutting a sample."
       }
-    ]
+    ],
+    "unlock_hint": "Approach a living growth with pale shutters and an amber lining."
   },
   "essence": {
-    "title": "III. What remains",
-    "unlock_hint": "Collect a dormant flake or a sample of refined assimilation essence.",
+    "title": "III. A useful residue",
     "pages": [
       {
-        "heading": "Held change",
-        "body": "A dormant knot wants to resume a heartbeat. The Stillness holds it short of that movement. A resonator harvests the tension as Resonance.\n\nResonance uses the standard FE connection: compatible generators, storage and cables can exchange it directly. It is not another incompatible power network.\n\nThe Stillness Resonator draws twenty Resonance per tick from sheltered or liberated ground. Nearby resonators within six blocks share that local field. Give them space. Collection is safe and never weakens home’s protection."
+        "heading": "A held movement",
+        "body": "A knot remains still on the bench, yet the resonator draws something from it. The needle settles only while the surrounding field is quiet. Resonance is the workshop name for that difference.\n\nA Stillness Resonator supplies 20 Resonance per tick on sheltered or liberated ground. Nearby instruments share the same field; leave seven blocks between their centres for separate output."
       },
       {
-        "heading": "Refining the sample",
-        "body": "The Essence Condenser uses one dormant flake and 4000 Resonance to produce one assimilation essence. Processing takes ten seconds when powered. The left slot holds the sample, the right the result. Hoppers can supply raw input and take completed essence.\n\nThe starter source consumes no ongoing fuel. Its Dormant Knot is part of the crafted instrument. Stored power and paid processing survive saves. A redstone signal pauses generator production."
+        "heading": "The condenser",
+        "body": "Place a flake in the left slot and supply power. The right slot receives the refined essence. One flake needs 4000 Resonance and ten seconds of powered work.\n\nThe resonator does not burn its knot. Hoppers can feed the condenser and collect its result. Compatible FE equipment can supply power through the same connection. A redstone signal pauses a generator."
       },
       {
-        "heading": "Contained shutters",
-        "body": "Recover a living Shutter Bloom on an expedition. Build a Bloom Engine around that specimen and a resonator. Its closed chamber supports the specimen even under the Stillness; the contained shutters open while it works.\n\nOne refined essence sustains thirty seconds of running at eighty Resonance per tick. A full power bank pauses upkeep; an unfed engine goes quiet. Containment does not fail into an unannounced outbreak. Opening the world’s protection remains a separate deliberate act."
-      },
-      {
-        "heading": "The severed current",
-        "body": "A true liberation leaves a stable remnant. Craft an Unattuned Severance Core, then use it on a terminal in a dimension whose bound guardian has been defeated and whose expedition has extracted.\n\nInstall the attuned core in a Severance Cradle for 120 Resonance per tick without fuel or field crowding. The source remains tied to that dimension’s proven liberation. Routine completions or a wandering hunting echo cannot grant it.\n\nThe remnant can be carried home or into another frontier. Liberation now provides both an outpost and a practical power source."
-      },
-      {
-        "heading": "Opening the field",
-        "body": "Sneak-use an attunement sigil on a charged condenser to reverse the Stillness locally. Opening requires a 4000 Resonance reserve; sustaining it consumes twenty per tick. Refining pauses while open.\n\nThe breach reaches twenty-four blocks. A dormant resonator inside it loses the quiet field it draws from; use a contained bloom engine, a severed core, or power supplied from outside.\n\nClose the breach with the sigil or remove its power to restore protection. No source opens a breach automatically. Liberated ground stays silent."
+        "heading": "Keep a sample",
+        "body": "The refined material holds together better than the scrap it came from. Copper, glass and a little essence are enough for the next instruments.\n\nThe crafting pages record the preparations currently understood. Save a few samples before committing the whole stock to one project."
       }
-    ]
+    ],
+    "unlock_hint": "Collect a dormant flake or refine your first essence."
   },
   "terminal": {
     "title": "IV. The threshold",
-    "unlock_hint": "Use an expedition terminal. A deployed terminal is a promise that there is somewhere to come back to.",
     "pages": [
       {
-        "heading": "An address in the dark",
-        "body": "The terminal does not make the frontier safe. It remembers an address.\n\nUse it to select an expedition, difficulty and route length. Read the mission's requirements before deploying. Some need a sigil, previous expedition proof, tokens, or a more established campaign.\n\nStarting resolves a safe route first. If none can be found, nothing is deployed."
+        "heading": "An address",
+        "body": "The terminal fixes a route through country it has not made safe. A successful deployment is an address and a way back, not a promise about the journey.\n\nChoose a charter, difficulty and route length. Read its requirements, objectives and rewards before starting. A refused route does not deploy markers or take its entry payment."
       },
       {
-        "heading": "Before you step through",
-        "body": "The portal opens above the terminal. Enter it to deploy and receive a compass. Other players may join through it until the first checkpoint seals the party.\n\nTake food, a weapon and room for recovered cargo. The terminal can offer loaded modded dimensions too; their own biome creatures may answer a checkpoint's call.\n\nAn absent dimension cannot host a route."
+        "heading": "Before entry",
+        "body": "The portal opens above the terminal. Take food, a weapon and room for cargo. Entering issues the route compass.\n\nOthers may join through the portal until the first checkpoint seals the party. Complete the offered survey before expecting the terminal to arrange journeys farther from home."
       }
-    ]
+    ],
+    "unlock_hint": "Use a terminal and examine the charters it can offer."
   },
   "wayfinding": {
-    "title": "V. Heartwood",
-    "unlock_hint": "Step through an expedition portal and let the terminal issue your compass.",
+    "title": "V. The compass",
     "pages": [
       {
-        "heading": "Follow the thorn",
-        "body": "The compass points to your next checkpoint, then extraction. It follows a route, not a lodestone.\n\nIts hovering ember tells height: above the needle means the target is higher; below means it is lower. Near your elevation, it settles around the center.\n\nHold use to attune. The ember climbs or sinks and the chimes rise or fall. Release to quiet it."
+        "heading": "Reading the ember",
+        "body": "The thorn follows the next marker. The ember gives the part of the reading the needle cannot: height. Above the needle means higher ground; below it means a lower passage.\n\nHold use to take a steadier reading. The ember and chime rise or fall together. Release when you have your bearing."
       },
       {
-        "heading": "Read the country",
-        "body": "The compass gives a bearing, not a walkable path. Go around cliffs, find a stair through caves, and treat lava as lava.\n\nRoutes are checked against the destination's real terrain. A ceiling is not a surface to stand upon. Dimensions with unfamiliar terrain may still refuse a route safely.\n\nThe terminal recalls its compass when the expedition ends."
+        "heading": "A bearing, not a path",
+        "body": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing.\n\nAfter the checkpoints, it points to extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends."
       }
-    ]
+    ],
+    "unlock_hint": "Enter an expedition portal and take its issued compass."
   },
   "checkpoints": {
-    "title": "VI. Checkpoints",
-    "unlock_hint": "Activate an expedition checkpoint. Merely walking past it does not settle the instrument.",
+    "title": "VI. Settled marks",
     "pages": [
       {
-        "heading": "Wake the instrument",
-        "body": "Use each checkpoint in the order the compass gives. The first checkpoint seals the party.\n\nA checkpoint banks part of the guaranteed token reward for every member. Those secured tokens survive failure. Completion settles what remains, including earned bonuses.\n\nA horde may answer the activation. Expect creatures that belong to this dimension's biome, including unfamiliar ones."
+        "heading": "Settle the mark",
+        "body": "Use checkpoints in the order the compass gives. The first closes the party to new arrivals.\n\nEach settled mark banks part of the guaranteed reward for every member. Those secured tokens survive a failed expedition. Extraction settles the remainder and any earned bonuses.\n\nActivation can draw company. Leave yourself room to move before touching the instrument."
       },
       {
-        "heading": "What failure costs",
-        "body": "Death removes a member from the expedition. The last member lost fails the run. You keep tokens already secured at checkpoints; unfinished bonuses remain at risk.\n\nDisconnecting leaves the run resumable. On return, every marker and the dimension itself must still exist. Missing pieces fail the expedition safely.\n\nExtraction, not the final checkpoint, ends the journey."
+        "heading": "An unfinished route",
+        "body": "Death removes a member from the expedition; losing the last member ends it. Already banked tokens remain yours.\n\nDisconnecting leaves an unfinished route for later recovery, provided its markers still exist. Reaching the final checkpoint is not extraction. Follow the compass back to the exit and use it."
       }
-    ]
+    ],
+    "unlock_hint": "Use a checkpoint rather than merely passing its light."
   },
   "cargo": {
     "title": "VII. Sealed cargo",
-    "unlock_hint": "Reach a recovery objective and receive the expedition's physical artifact.",
     "pages": [
       {
-        "heading": "Something to bring home",
-        "body": "The seal carries the same faint warmth as the journal clasp. Whatever was stored here was meant to travel.\n\nA recovery mission issues its artifact at the named checkpoint. Keep it safe and hold it when using the extraction marker.\n\nThe seal belongs to this expedition. A souvenir from another run cannot satisfy it."
+        "heading": "The seal",
+        "body": "The parcel is warmer at the binding than at its centre. Its seal agrees with the mark on this charter.\n\nA recovery objective issues cargo at its named checkpoint. Keep it with you and bring it to extraction. A parcel from another journey cannot settle this contract."
       },
       {
-        "heading": "Proof has weight",
-        "body": "A recovered artifact is a physical item. Losing it can leave a required recovery unfinished. Return and retrieve it before extracting.\n\nAt successful extraction, the bound cargo is consumed and its objective settles. The journal is a record; it does not stand in for the missing object.\n\nThe frontier has a habit of making paperwork literal."
+        "heading": "Bring the object",
+        "body": "A written record is no substitute for the cargo. If it is lost, retrieve it before attempting to leave. A required recovery remains unfinished without the object.\n\nSuccessful extraction takes the sealed parcel and records its delivery. Loose samples and equipment are yours to bring home."
       }
-    ]
+    ],
+    "unlock_hint": "Reach a recovery site and take possession of its sealed parcel."
   },
   "defense": {
     "title": "VIII. Hold the line",
-    "unlock_hint": "Deploy a defense device by reaching a checkpoint with a defend-device objective.",
     "pages": [
       {
-        "heading": "The machine draws breath",
-        "body": "The extractor's first pulse travels farther than its light. Things in the dark hear it.\n\nA defense objective raises a device beside its checkpoint. Protect it until the countdown finishes. Waves focus the machine; waiting at the next marker will not protect it.\n\nIts remaining integrity matters. Player blows can damage it too."
+        "heading": "An audible machine",
+        "body": "The device is easier to hear once the surrounding movement stops. It seldom stays quiet for long.\n\nA defense charter deploys the machine beside its checkpoint. Keep it intact until the countdown ends. Watch the approaches as well as its remaining integrity; your own blows can damage it."
       },
       {
-        "heading": "Make a place to stand",
-        "body": "Scout the approach before activation. Clear room to move, keep a way back to the device, and bring the equipment you need to interrupt attackers.\n\nIf a required device is destroyed, the expedition fails. An optional device can be lost without ending the route, but its bonus is gone.\n\nA vanished device is treated as destroyed. The terminal never assumes an absent machine survived."
+        "heading": "Before the first wave",
+        "body": "Make room to circle the device and keep a clear way back. Attackers can reach it while you are occupied elsewhere.\n\nLosing a required device fails the expedition. An optional defense can be lost without ending the route, but its bonus is gone. Read which kind you have before starting."
       }
-    ]
+    ],
+    "unlock_hint": "Activate a checkpoint whose charter calls for a deployed device."
   },
   "blood": {
-    "title": "IX. Blood assay",
-    "unlock_hint": "Experience Bloom exposure, or draw a sample with a field assay kit.",
+    "title": "IX. A sealed sample",
     "pages": [
       {
-        "heading": "A sealed answer",
-        "body": "The guide records what the Charter has learned. Blood belongs in the field assay kit.\n\nCraft the kit with a glass bottle, iron ingot, copper ingot and assimilation essence. Sneak-use it to draw a nonlethal sample costing one bloom.\n\nUse normally to inspect the sealed sample: patient, infection percentage, stage and sample age. It is a measured snapshot; draw another sample to check your recovery."
+        "heading": "Take a fresh reading",
+        "body": "Old samples remain sealed and old readings remain old. The kit describes the patient at the moment of collection.\n\nCraft it from a glass bottle, iron, copper and a dormant flake. Sneak-use draws a nonlethal sample costing one heart. Use normally to read its infection level, stage and age. Draw again to check a change."
       },
       {
-        "heading": "Leave before it answers",
-        "body": "Live blooms can build infection while you stay nearby. The effects intensify by stage; extreme exposure has consequences beyond a passing sickness.\n\nLow exposure subsides away from the source. Check a fresh assay before another long harvest. Assimilation Disruption blocks new exposure. A Disruption Charm supplies it while held in the offhand or worn in a Curios charm slot; an existing dose still needs time to subside.\n\nThe kit remembers its sealed sample. The journal retains only your discoveries."
+        "heading": "After contact",
+        "body": "Exposure begins with contact with living tissue or an infected body. Some affected creatures shake even while standing still; several may turn towards the same disturbance.\n\nEarly exposure can subside once contact stops. A Disruption Charm in the offhand or a Curios charm slot blocks new infection. It does not erase a dose already present. Give recovery time, then check a fresh sample."
       }
-    ]
+    ],
+    "unlock_hint": "Draw a sample with an assay kit, or notice the first effects of exposure."
   },
   "pressure": {
-    "title": "X. Awareness",
-    "unlock_hint": "Endure an infected hunting party, or raise a dimension’s awareness to twenty-five.",
+    "title": "X. Being noticed",
     "pages": [
       {
-        "heading": "An answering pulse",
-        "body": "The forest stops pretending it has not seen you.\n\nThe sheltered Overworld has no natural Bloom attention. In an affected frontier dimension, the Bloom tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning. Hunters carry the infection; exposure still requires contact.\n\nThe default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. Establishing a foothold halves its clock. A deliberately opened Overworld breach can also attract attention while you stand inside it. Some dimensions may be tuned differently.\n\nA checkpoint removes 45 seconds of attention. Leaving or resting in the spawn refuge cools it twice as fast as it rises. Logging out or dying does not reset it. A disruption charm prevents new infection, not the hunt.\n\nThe survey’s dimensional pressure is a separate shared measure that strengthens expedition waves. The attention bar measures your personal exposure."
+        "heading": "The answering country",
+        "body": "A sound behind you is ordinary. Several creatures arriving from different directions deserve more attention.\n\nThe bar at the top of the screen shows how closely the country is attending to you. Its next mark is a warning. Prepare to move before it is reached. A charm protects against infection; it does not conceal your presence."
+      },
+      {
+        "heading": "Buy time",
+        "body": "Settling a checkpoint lowers attention. Leaving the dimension lets it subside. Neither death nor logging out wipes the record of your stay.\n\nRepeated successful operations establish a foothold and slow its rise. A liberated dimension no longer pursues you this way. Home is sheltered by the Stillness unless a local field has deliberately been opened."
       }
-    ]
+    ],
+    "unlock_hint": "Remain in affected country long enough for it to answer your presence."
   },
   "extraction": {
-    "title": "XI. Extraction",
-    "unlock_hint": "Complete a run by using its extraction marker after satisfying every required objective.",
+    "title": "XI. Bring it home",
     "pages": [
       {
-        "heading": "Count everyone home",
-        "body": "The terminal's light is a small thing to miss. It looks different when you have earned the return journey.\n\nUse extraction after all checkpoints and required objectives are complete. Hold recovered cargo if the mission requires it. Completion returns the party home and settles rewards.\n\nOptional objectives and fast completion may add bonuses. The mission description tells you the terms."
+        "heading": "Settle the charter",
+        "body": "A route is only a line on the map until somebody returns along it.\n\nUse the extraction marker after every checkpoint and required objective is complete. Bring any sealed cargo with you. The party returns home, the delivery settles, and earned rewards are credited. Optional work and timely completion can add bonuses."
       },
       {
-        "heading": "Build on what survived",
-        "body": "Successful missions leave permanent proof and advance their dimension's campaign. That proof opens harder work at the terminal. A listed mission can remain locked until its other requirements are met.\n\nTokens buy rewards through /expeditions redeem. The reward pool follows the dimension you stand in.\n\nThe field guide remembers your discoveries after death. The frontier should leave you with more than scars."
+        "heading": "What can be used again",
+        "body": "Samples become equipment, and a completed charter becomes a record the terminal can recognise. Check its offerings after a return. Some work needs several forms of preparation.\n\nTokens can be exchanged with /expeditions redeem; the available pool follows the dimension you stand in. Put useful supplies aside before spending the whole balance on another contract."
       }
-    ]
+    ],
+    "unlock_hint": "Use extraction after the charter's required work is complete."
   },
   "guardian": {
-    "title": "XII. The guardian",
-    "unlock_hint": "Deploy into Heart of the Thicket after completing Deep Salvage. Reach the final checkpoint to awaken what guards the roots.",
+    "title": "XII. At the last marker",
     "pages": [
       {
-        "heading": "The Rootbound Guardian",
-        "body": "The crown is not growing from its head. The head is growing around the crown.\n\nAt the final checkpoint of Heart of the Thicket, a guardian takes shape. Defeat it, then use extraction to settle the campaign victory. Reaching the exit while it lives will not clear the dimension.\n\nThe approach costs 25 tokens and requires Deep Salvage proof and an established campaign."
+        "heading": "The bound guardian",
+        "body": "The wood moves around an empty space. The amber inside becomes easier to see just before a strike.\n\nThis charter names a particular guardian. Defeat that creature and then extract to settle the confrontation. Reaching the exit while it lives will not finish the work. A different creature killed elsewhere is not proof."
       },
       {
-        "heading": "Read the ember circle",
-        "body": "When the guardian roots itself and raises its arms, an ember circle marks its sweep. Leave the circle before the strike. Its exposed core takes extra damage during the windup: a chance to press your attack if you can still escape.\n\nBelow half health, its core flares. It alternates sweeps with smaller bursts marked beneath its target. Keep moving out of each new mark.\n\nEvery strike has a warning and recovery. It does not tear up the terrain."
+        "heading": "Watch the ground",
+        "body": "Raised arms and an ember circle give warning of a sweep. Leave the marked ground before it lands. The exposed core is vulnerable during the windup, if you can attack and still get clear.\n\nAs the core brightens, smaller warning marks can appear beneath its target. Keep moving out of them. Use the pause after a strike to regain space."
       }
-    ]
+    ],
+    "unlock_hint": "Follow a confrontation charter until its final mark answers."
   },
   "liberation": {
     "title": "XIII. After silence",
-    "unlock_hint": "Stand in a dimension whose major threat has been defeated and whose campaign has been cleared.",
     "pages": [
       {
-        "heading": "A quieter country",
-        "body": "The roots remain. Their orders do not.\n\nRoutine expeditions establish a foothold after two completions. The terminal then offers that dimension’s Sever the Bloom mission, or its authored confrontation. Defeat the mission’s bound guardian and extract to liberate the dimension for everyone. Routine completions alone cannot replace that proof.\n\nLiberation silences ambient bloom seeding, growth and infection there; the attention bar and pursuit hunts end. Dormant growth remains as a scar. Ordinary native monsters and vanilla hazards still exist.\n\nCompleting the first Field Survey opens remote terminal deployments. The Stillness already shelters home; its optional confrontations do not gate the frontier. Native portals remain usable earlier, if you accept the danger. A guardian sent by the hunt is only an echo: killing it does not sever the dimension."
+        "heading": "What has stopped",
+        "body": "The ordinary sounds remain. What is missing takes longer to notice.\n\nAn accepted guardian victory followed by extraction liberates the dimension for everyone. New colonies stop taking hold, growth ceases, and the pursuit clock falls quiet. Native creatures and ordinary hazards remain. Repeated surveys alone do not produce this change."
       },
       {
-        "heading": "Power after silence",
-        "body": "Guardian victory and successful extraction leave more than quiet ground. Craft an Unattuned Severance Core and attune it at a terminal here. A Severance Cradle can then draw stable power from the remnant anywhere.\n\nThis proof is shared with the world and persists with the campaign. A count-only cleared mark is not an accepted guardian victory. Existing genuine boss trophies can recover old proof. Resetting a source dimension pauses its cores until liberation is restored."
+        "heading": "A quiet remnant",
+        "body": "A core held against a terminal here can retain something of the quiet. It is a useful result, though these notes offer no explanation for why it travels.\n\nCraft an Unattuned Severance Core and use it on a terminal in the liberated dimension. Install the attuned core in a Severance Cradle for 120 Resonance per tick without fuel. The terminal must recognise the liberation record; a marked map is not enough."
       }
-    ]
+    ],
+    "unlock_hint": "Return to country whose campaign has been brought to a close."
   },
   "preparation": {
-    "title": "XIV. What we bring back",
-    "unlock_hint": "Recover an Shutter Bloom, or obtain a Heartglass Lens or Field Ward.",
+    "title": "XIV. Things brought back",
     "pages": [
       {
-        "heading": "The return matters",
-        "body": "Essence is a workshop material, not the only reason to cross the threshold. A recovered living bloom can become a contained engine, a Heartglass Lens, or a Field Ward. Each consumes the specimen during crafting. Choose which capability your next journey needs.\n\nTokens banked at checkpoints buy supplies or fund later deployments. Successful home training follows Survey, Trace Recovery, Deep Salvage and the guardian. Other dimensions establish footholds before their liberation mission."
+        "heading": "Choose the experiment",
+        "body": "A recovered bloom folds while it is carried. Behind glass, the shutters can be coaxed into their old movement.\n\nOne specimen can become a Bloom Engine, a Field Ward or a Heartglass Lens. Each recipe consumes the specimen. Decide what the next journey lacks before committing it."
       },
       {
-        "heading": "Carry the current",
-        "body": "Craft a Resonance Cell from a dormant knot, two essence, copper and iron. It holds 16000 Resonance and starts empty. Sneak-use a generator to draw power; use a compatible receiver to supply it. Hold use for repeated transfers. Standard FE item chargers can fill it too.\n\nThe cell keeps its charge when carried home, dropped or saved. Spend home power on your next journey instead of building a generator at every stop."
+        "heading": "A contained source",
+        "body": "The Bloom Engine holds its specimen inside a closed chamber. Supply essence to keep it working. One essence supports thirty running seconds at up to 80 Resonance per tick. A full bank pauses consumption; an unfed chamber goes quiet.\n\nThis is a workshop source. Opening the surrounding field is a separate experiment."
       },
       {
-        "heading": "A moment to regroup",
-        "body": "Craft a Field Ward around a recovered bloom. Place it, then use a cell containing at least 4000 Resonance to light it. For two minutes, Bloom attention holds steady and personal dwell pressure pauses within eight blocks. One cell holds four charges.\n\nThe field does not lower existing attention, stop an existing hunt, prevent infection or block ordinary enemies. Overlapping wards do not multiply the benefit. Check the ward with an empty hand. You can recover the instrument, but breaking it loses its remaining charge. Its paid deadline keeps running while the chunk is unloaded."
+        "heading": "Carry a reserve",
+        "body": "A Resonance Cell holds 16000 Resonance and starts empty. Sneak-use a generator to charge it; use a receiver normally to supply it. Compatible FE chargers also work.\n\nCarry a charged cell rather than assuming there will be a working workshop at the far end."
       },
       {
-        "heading": "Measure the dark",
-        "body": "A Heartglass Lens uses a recovered bloom, essence, copper and amethyst. Carry it with a charged cell while using the issued compass. Finish a reading to spend 200 Resonance and see horizontal distance and signed height to the next checkpoint or extraction.\n\nThe original needle and elevation ember remain useful without either upgrade. A lens gives a measurement, not a path through walls. It is kept after extraction; the terminal only recalls its issued compass."
+        "heading": "A quiet camp",
+        "body": "Place a Field Ward and use a cell holding at least 4000 Resonance. It holds attention steady within eight blocks for two minutes. Check the remaining time with an empty hand.\n\nIt does not lower attention already gathered, stop an existing hunt, or block infection. Breaking the ward loses its remaining charge. Its two minutes pass even if you leave it behind."
+      },
+      {
+        "heading": "Measure a bearing",
+        "body": "Carry a Heartglass Lens and a charged cell, then finish a reading with the expedition compass. A measurement costs 200 Resonance and gives horizontal distance and signed height.\n\nWithout that charge, the ordinary needle and elevation ember still work. The lens belongs to you after extraction."
+      },
+      {
+        "heading": "Opening the field",
+        "body": "For a controlled experiment, sneak-use an attunement sigil on a condenser holding at least 4000 Resonance. The open field reaches twenty-four blocks and consumes 20 Resonance per tick; refining pauses.\n\nLive growth can operate inside it. A dormant resonator there loses the quiet field it draws from, so supply power from outside or use a contained engine. Use the sigil again to close the field. Power loss also restores the Stillness."
       }
-    ]
+    ],
+    "unlock_hint": "Recover a living Shutter Bloom, or obtain an instrument made from one."
   }
 }

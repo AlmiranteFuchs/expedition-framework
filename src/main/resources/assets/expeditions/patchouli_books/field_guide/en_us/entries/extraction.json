@@ -1,5 +1,5 @@
 {
-  "name": "Extraction",
+  "name": "Bring it home",
   "icon": "expeditions:expedition_exit",
   "category": "expeditions:expeditions",
   "sortnum": 3,
@@ -7,33 +7,28 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_exit",
-      "text": "The terminal's light is a small thing to miss. It looks different when you have earned the return journey.",
-      "title": "Extraction"
+      "text": "A route is only a line on the map until somebody returns along it.",
+      "title": "Bring it home"
     },
     {
       "type": "patchouli:text",
-      "title": "Count everyone home",
-      "text": "Use extraction after all checkpoints and required objectives are complete. Hold recovered cargo if the mission requires it. Completion returns the party home and settles rewards."
+      "title": "Settle the charter",
+      "text": "Use the extraction marker after every checkpoint and required objective is complete. Bring any sealed cargo with you. The party returns home, the delivery settles, and earned rewards are credited. Optional work and timely"
     },
     {
       "type": "patchouli:text",
-      "title": "Count everyone home",
-      "text": "Optional objectives and fast completion may add bonuses. The mission description tells you the terms."
+      "title": "Settle the charter",
+      "text": "completion can add bonuses."
     },
     {
       "type": "patchouli:text",
-      "title": "Build on what survived",
-      "text": "Successful missions leave permanent proof and advance their dimension's campaign. That proof opens harder work at the terminal. A listed mission can remain locked until its other requirements are met."
+      "title": "What can be used again",
+      "text": "Samples become equipment, and a completed charter becomes a record the terminal can recognise. Check its offerings after a return. Some work needs several forms of preparation."
     },
     {
       "type": "patchouli:text",
-      "title": "Build on what survived",
-      "text": "Tokens buy rewards through /expeditions redeem. The reward pool follows the dimension you stand in."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Build on what survived",
-      "text": "The field guide remembers your discoveries after death. The frontier should leave you with more than scars."
+      "title": "What can be used again",
+      "text": "Tokens can be exchanged with /expeditions redeem; the available pool follows the dimension you stand in. Put useful supplies aside before spending the whole balance on another contract."
     }
   ],
   "advancement": "expeditions:journal/extraction"

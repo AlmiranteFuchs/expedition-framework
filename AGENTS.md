@@ -716,3 +716,12 @@ server-side breach fallback, and the real-use open/close regression.
 Journal art preference: the user preferred the pre-alpha.16 angled green leather field journal. It is restored byte-for-byte to commit 2744308; `item_art.py` delegates that sprite to `gen_textures.py:gen_journal`. Keep this exception in subsequent item art passes. The Resonance-funded terminal economy in `docs/resonance-deployment-proposal.md` is a proposal, not an implemented fuel system.
 
 Create investigation: official Create 6.0.10 is installed only in ignored `run/mods` (bundled Flywheel/Ponder/Registrate). Real debug-world checks verified Create chutes feeding and extracting eight essence through our condenser, and a 64-RPM mixer crafting our journal and a sigil with its attunement component intact. `docs/create-automation.md` records fixtures. Liquid Resonance, the proposed Still and terminal fluid cost are NOT implemented; the example JSON stays under docs, never active resources until the native fluid is registered.
+
+Alpha.18 journal copy: keep the guide observational and restrained, with clear
+operating instructions but no early campaign/encounter walkthrough. Starter knot,
+resonator and condenser recipes are always in first_steps. Living-source engine
+recipes belong in preparation; severance recipes belong in liberation. Stable
+JournalChapter bits and advancement ids remain unchanged. Guide text must retain
+contact-only infection and the raw-flake assay-kit recipe. The new journal gate
+regression checks these recipe locations; build/alphaBundle, 176 unit tests and
+160 core GameTests pass (163 reported with three optional biome probes).

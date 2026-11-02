@@ -1,5 +1,5 @@
 {
-  "name": "Heartwood",
+  "name": "The compass",
   "icon": "expeditions:expedition_compass",
   "category": "expeditions:beginnings",
   "sortnum": 3,
@@ -7,33 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_compass",
-      "text": "The compass points to your next checkpoint, then extraction. It follows a route, not a lodestone.",
-      "title": "Heartwood"
+      "text": "The thorn follows the next marker. The ember gives the part of the reading the needle cannot: height. Above the needle means higher ground; below it means a lower passage.",
+      "title": "The compass"
     },
     {
       "type": "patchouli:text",
-      "title": "Follow the thorn",
-      "text": "Its hovering ember tells height: above the needle means the target is higher; below means it is lower. Near your elevation, it settles around the center."
+      "title": "Reading the ember",
+      "text": "Hold use to take a steadier reading. The ember and chime rise or fall together. Release when you have your bearing."
     },
     {
       "type": "patchouli:text",
-      "title": "Follow the thorn",
-      "text": "Hold use to attune. The ember climbs or sinks and the chimes rise or fall. Release to quiet it."
+      "title": "A bearing, not a path",
+      "text": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing."
     },
     {
       "type": "patchouli:text",
-      "title": "Read the country",
-      "text": "The compass gives a bearing, not a walkable path. Go around cliffs, find a stair through caves, and treat lava as lava."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Read the country",
-      "text": "Routes are checked against the destination's real terrain. A ceiling is not a surface to stand upon. Dimensions with unfamiliar terrain may still refuse a route safely."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Read the country",
-      "text": "The terminal recalls its compass when the expedition ends."
+      "title": "A bearing, not a path",
+      "text": "After the checkpoints, it points to extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends."
     }
   ],
   "advancement": "expeditions:journal/wayfinding"

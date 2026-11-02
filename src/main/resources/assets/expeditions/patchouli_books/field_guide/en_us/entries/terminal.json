@@ -7,33 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_terminal",
-      "text": "The terminal does not make the frontier safe. It remembers an address.",
+      "text": "The terminal fixes a route through country it has not made safe. A successful deployment is an address and a way back, not a promise about the journey.",
       "title": "The threshold"
     },
     {
       "type": "patchouli:text",
-      "title": "An address in the dark",
-      "text": "Use it to select an expedition, difficulty and route length. Read the mission's requirements before deploying. Some need a sigil, previous expedition proof, tokens, or a more established campaign."
+      "title": "An address",
+      "text": "Choose a charter, difficulty and route length. Read its requirements, objectives and rewards before starting. A refused route does not deploy markers or take its entry payment."
     },
     {
       "type": "patchouli:text",
-      "title": "An address in the dark",
-      "text": "Starting resolves a safe route first. If none can be found, nothing is deployed."
+      "title": "Before entry",
+      "text": "The portal opens above the terminal. Take food, a weapon and room for cargo. Entering issues the route compass."
     },
     {
       "type": "patchouli:text",
-      "title": "Before you step through",
-      "text": "The portal opens above the terminal. Enter it to deploy and receive a compass. Other players may join through it until the first checkpoint seals the party."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Before you step through",
-      "text": "Take food, a weapon and room for recovered cargo. The terminal can offer loaded modded dimensions too; their own biome creatures may answer a checkpoint's call."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Before you step through",
-      "text": "An absent dimension cannot host a route."
+      "title": "Before entry",
+      "text": "Others may join through the portal until the first checkpoint seals the party. Complete the offered survey before expecting the terminal to arrange journeys farther from home."
     },
     {
       "type": "patchouli:crafting",

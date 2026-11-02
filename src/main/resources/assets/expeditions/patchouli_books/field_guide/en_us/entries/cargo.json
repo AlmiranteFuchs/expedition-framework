@@ -7,33 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_artifact",
-      "text": "The seal carries the same faint warmth as the journal clasp. Whatever was stored here was meant to travel.",
+      "text": "The parcel is warmer at the binding than at its centre. Its seal agrees with the mark on this charter.",
       "title": "Sealed cargo"
     },
     {
       "type": "patchouli:text",
-      "title": "Something to bring home",
-      "text": "A recovery mission issues its artifact at the named checkpoint. Keep it safe and hold it when using the extraction marker."
+      "title": "The seal",
+      "text": "A recovery objective issues cargo at its named checkpoint. Keep it with you and bring it to extraction. A parcel from another journey cannot settle this contract."
     },
     {
       "type": "patchouli:text",
-      "title": "Something to bring home",
-      "text": "The seal belongs to this expedition. A souvenir from another run cannot satisfy it."
+      "title": "Bring the object",
+      "text": "A written record is no substitute for the cargo. If it is lost, retrieve it before attempting to leave. A required recovery remains unfinished without the object."
     },
     {
       "type": "patchouli:text",
-      "title": "Proof has weight",
-      "text": "A recovered artifact is a physical item. Losing it can leave a required recovery unfinished. Return and retrieve it before extracting."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Proof has weight",
-      "text": "At successful extraction, the bound cargo is consumed and its objective settles. The journal is a record; it does not stand in for the missing object."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Proof has weight",
-      "text": "The frontier has a habit of making paperwork literal."
+      "title": "Bring the object",
+      "text": "Successful extraction takes the sealed parcel and records its delivery. Loose samples and equipment are yours to bring home."
     }
   ],
   "advancement": "expeditions:journal/cargo"

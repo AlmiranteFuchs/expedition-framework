@@ -1,5 +1,5 @@
 {
-  "name": "Awareness",
+  "name": "Being noticed",
   "icon": "expeditions:assimilation_heart",
   "category": "expeditions:bloom",
   "sortnum": 2,
@@ -7,38 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:assimilation_heart",
-      "text": "The forest stops pretending it has not seen you.",
-      "title": "Awareness"
+      "text": "A sound behind you is ordinary. Several creatures arriving from different directions deserve more attention.",
+      "title": "Being noticed"
     },
     {
       "type": "patchouli:text",
-      "title": "An answering pulse",
-      "text": "The sheltered Overworld has no natural Bloom attention. In an affected frontier dimension, the Bloom tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning."
+      "title": "The answering country",
+      "text": "The bar at the top of the screen shows how closely the country is attending to you. Its next mark is a warning. Prepare to move before it is reached. A charm protects against infection; it does not conceal your presence."
     },
     {
       "type": "patchouli:text",
-      "title": "An answering pulse",
-      "text": "Hunters carry the infection; exposure still requires contact."
+      "title": "Buy time",
+      "text": "Settling a checkpoint lowers attention. Leaving the dimension lets it subside. Neither death nor logging out wipes the record of your stay."
     },
     {
       "type": "patchouli:text",
-      "title": "An answering pulse",
-      "text": "The default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. Establishing a foothold halves its clock. A deliberately opened Overworld"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "An answering pulse",
-      "text": "breach can also attract attention while you stand inside it. Some dimensions may be tuned differently."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "An answering pulse",
-      "text": "A checkpoint removes 45 seconds of attention. Leaving or resting in the spawn refuge cools it twice as fast as it rises. Logging out or dying does not reset it. A disruption charm prevents new infection, not the hunt."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "An answering pulse",
-      "text": "The survey’s dimensional pressure is a separate shared measure that strengthens expedition waves. The attention bar measures your personal exposure."
+      "title": "Buy time",
+      "text": "Repeated successful operations establish a foothold and slow its rise. A liberated dimension no longer pursues you this way. Home is sheltered by the Stillness unless a local field has deliberately been opened."
     },
     {
       "type": "expeditions:record_1"

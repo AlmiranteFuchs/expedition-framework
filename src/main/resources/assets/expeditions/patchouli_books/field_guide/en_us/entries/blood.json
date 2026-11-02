@@ -1,5 +1,5 @@
 {
-  "name": "Blood assay",
+  "name": "A sealed sample",
   "icon": "expeditions:field_assay_kit",
   "category": "expeditions:bloom",
   "sortnum": 1,
@@ -7,38 +7,23 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:field_assay_kit",
-      "text": "The guide records what the Charter has learned. Blood belongs in the field assay kit.",
-      "title": "Blood assay"
+      "text": "Old samples remain sealed and old readings remain old. The kit describes the patient at the moment of collection.",
+      "title": "A sealed sample"
     },
     {
       "type": "patchouli:text",
-      "title": "A sealed answer",
-      "text": "Craft the kit with a glass bottle, iron ingot, copper ingot and assimilation essence. Sneak-use it to draw a nonlethal sample costing one bloom."
+      "title": "Take a fresh reading",
+      "text": "Craft it from a glass bottle, iron, copper and a dormant flake. Sneak-use draws a nonlethal sample costing one heart. Use normally to read its infection level, stage and age. Draw again to check a change."
     },
     {
       "type": "patchouli:text",
-      "title": "A sealed answer",
-      "text": "Use normally to inspect the sealed sample: patient, infection percentage, stage and sample age. It is a measured snapshot; draw another sample to check your recovery."
+      "title": "After contact",
+      "text": "Exposure begins with contact with living tissue or an infected body. Some affected creatures shake even while standing still; several may turn towards the same disturbance."
     },
     {
       "type": "patchouli:text",
-      "title": "Leave before it answers",
-      "text": "Live blooms can build infection while you stay nearby. The effects intensify by stage; extreme exposure has consequences beyond a passing sickness."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Leave before it answers",
-      "text": "Low exposure subsides away from the source. Check a fresh assay before another long harvest. Assimilation Disruption blocks new exposure. A Disruption Charm supplies it while held in the offhand or worn in a Curios charm slot; an"
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Leave before it answers",
-      "text": "existing dose still needs time to subside."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "Leave before it answers",
-      "text": "The kit remembers its sealed sample. The journal retains only your discoveries."
+      "title": "After contact",
+      "text": "Early exposure can subside once contact stops. A Disruption Charm in the offhand or a Curios charm slot blocks new infection. It does not erase a dose already present. Give recovery time, then check a fresh sample."
     },
     {
       "type": "patchouli:crafting",

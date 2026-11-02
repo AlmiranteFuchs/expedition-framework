@@ -1,5 +1,5 @@
 {
-  "name": "Checkpoints",
+  "name": "Settled marks",
   "icon": "expeditions:expedition_checkpoint",
   "category": "expeditions:expeditions",
   "sortnum": 0,
@@ -7,33 +7,28 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_checkpoint",
-      "text": "Use each checkpoint in the order the compass gives. The first checkpoint seals the party.",
-      "title": "Checkpoints"
+      "text": "Use checkpoints in the order the compass gives. The first closes the party to new arrivals.",
+      "title": "Settled marks"
     },
     {
       "type": "patchouli:text",
-      "title": "Wake the instrument",
-      "text": "A checkpoint banks part of the guaranteed token reward for every member. Those secured tokens survive failure. Completion settles what remains, including earned bonuses."
+      "title": "Settle the mark",
+      "text": "Each settled mark banks part of the guaranteed reward for every member. Those secured tokens survive a failed expedition. Extraction settles the remainder and any earned bonuses."
     },
     {
       "type": "patchouli:text",
-      "title": "Wake the instrument",
-      "text": "A horde may answer the activation. Expect creatures that belong to this dimension's biome, including unfamiliar ones."
+      "title": "Settle the mark",
+      "text": "Activation can draw company. Leave yourself room to move before touching the instrument."
     },
     {
       "type": "patchouli:text",
-      "title": "What failure costs",
-      "text": "Death removes a member from the expedition. The last member lost fails the run. You keep tokens already secured at checkpoints; unfinished bonuses remain at risk."
+      "title": "An unfinished route",
+      "text": "Death removes a member from the expedition; losing the last member ends it. Already banked tokens remain yours."
     },
     {
       "type": "patchouli:text",
-      "title": "What failure costs",
-      "text": "Disconnecting leaves the run resumable. On return, every marker and the dimension itself must still exist. Missing pieces fail the expedition safely."
-    },
-    {
-      "type": "patchouli:text",
-      "title": "What failure costs",
-      "text": "Extraction, not the final checkpoint, ends the journey."
+      "title": "An unfinished route",
+      "text": "Disconnecting leaves an unfinished route for later recovery, provided its markers still exist. Reaching the final checkpoint is not extraction. Follow the compass back to the exit and use it."
     }
   ],
   "advancement": "expeditions:journal/checkpoints"

@@ -25,6 +25,29 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class PresentationInteractionTests {
     private PresentationInteractionTests() { }
 
+    @GameTest(template="arena", batch="journal_recipe_discovery")
+    public static void practicalStarterRecipesRemainReadableWhileAdvancedSourcesNeedDiscovery(GameTestHelper helper) throws Exception {
+        var entries=new java.util.HashMap<String,com.google.gson.JsonObject>();
+        var recipes=new java.util.HashMap<String,java.util.Set<String>>();
+        for(String id:java.util.List.of("first_steps","essence","preparation","liberation")){
+            try(var stream=PresentationInteractionTests.class.getResourceAsStream("/assets/expeditions/patchouli_books/field_guide/en_us/entries/"+id+".json")){
+                var entry=com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(java.util.Objects.requireNonNull(stream),java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+                entries.put(id,entry);var found=new java.util.HashSet<String>();
+                for(var value:entry.getAsJsonArray("pages"))if(value.getAsJsonObject().has("recipe"))found.add(value.getAsJsonObject().get("recipe").getAsString());
+                recipes.put(id,found);
+            }
+        }
+        helper.assertTrue(!entries.get("first_steps").has("advancement")&&recipes.get("first_steps").containsAll(java.util.Set.of("expeditions:dormant_knot","expeditions:stillness_dynamo","expeditions:essence_condenser")),
+                "a first book must teach the complete starter workshop without another discovery gate");
+        for(String id:java.util.List.of("first_steps","essence"))helper.assertTrue(java.util.Collections.disjoint(recipes.get(id),java.util.Set.of("expeditions:living_heart_engine","expeditions:severance_core","expeditions:severance_generator")),
+                "the first flake must not reveal captured-source or liberation recipes");
+        helper.assertTrue(recipes.get("preparation").contains("expeditions:living_heart_engine")&&entries.get("preparation").get("advancement").getAsString().equals("expeditions:journal/preparation"),
+                "the captured-source chapter must teach its engine under the earned preparation gate");
+        helper.assertTrue(recipes.get("liberation").containsAll(java.util.Set.of("expeditions:severance_core","expeditions:severance_generator"))&&entries.get("liberation").get("advancement").getAsString().equals("expeditions:journal/liberation"),
+                "stable remnant power must be explained only in its discovered liberation chapter");
+        helper.succeed();
+    }
+
     @GameTest(template="arena", batch="guide_resource_registry")
     public static void guideIconsRecipesAndEntitiesResolveAgainstRealRegistries(GameTestHelper helper) throws Exception {
         var entries = new java.util.ArrayList<String>();
