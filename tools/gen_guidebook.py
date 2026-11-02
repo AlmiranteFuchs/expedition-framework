@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / 'src/main/resources'
 BOOK = ROOT / 'assets/expeditions/patchouli_books/field_guide'
-CHAPTERS = json.loads((ROOT / 'assets/expeditions/journal/chapters.json').read_text())
+CHAPTERS = json.loads((ROOT / 'assets/expeditions/journal/chapters.json').read_text(encoding='utf-8'))
 
 
 def write(path, data):

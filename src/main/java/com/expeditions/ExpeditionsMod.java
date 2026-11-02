@@ -54,6 +54,9 @@ public class ExpeditionsMod {
         gameBus.addListener(com.expeditions.server.ChallengeOwnership::onLeave);
         gameBus.addListener(com.expeditions.server.ChallengeOwnership::onSplit);
         gameBus.addListener(ExpeditionEventHandler::onLivingHurt);
+        gameBus.addListener(ExpeditionEventHandler::onPlayerClone);
+        gameBus.addListener(ExpeditionEventHandler::onFrontierDrops);
+        gameBus.addListener(ExpeditionEventHandler::onFrontierExperience);
         gameBus.addListener(ExpeditionEventHandler::onAddReloadListener);
         gameBus.addListener(ExpeditionEventHandler::onRegisterCommands);
         LOGGER.info("Expedition Framework initialized");

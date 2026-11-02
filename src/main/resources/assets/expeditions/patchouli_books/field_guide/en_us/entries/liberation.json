@@ -7,18 +7,28 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:attunement_sigil",
-      "text": "The roots have not vanished. The rhythm beneath them has.",
+      "text": "The roots remain. Their orders do not.",
       "title": "After silence"
     },
     {
       "type": "patchouli:text",
       "title": "A quieter country",
-      "text": "Defeating a dimension's campaign threat records that dimension as cleared. Its Bloom seeding is silenced until the campaign is reset. Other dimensions retain their own threats and their own histories."
+      "text": "Routine expeditions establish a foothold after two completions. The terminal then offers that dimension’s Sever the Bloom mission, or its authored confrontation. Defeat the mission’s bound guardian and extract to liberate the"
     },
     {
       "type": "patchouli:text",
       "title": "A quieter country",
-      "text": "Neutralizing a threat is not an explanation for its origin. Leave that page open."
+      "text": "dimension for everyone. Routine completions alone cannot replace that proof."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quieter country",
+      "text": "Liberation silences ambient heart seeding, growth and infection there; the attention bar and pursuit hunts end. Dormant growth remains as a scar. Ordinary native monsters and vanilla hazards still exist."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quieter country",
+      "text": "Liberating the Overworld unlocks remote terminal deployments. Native portals remain usable earlier, if you accept the danger. A guardian sent by the hunt is only an echo: killing it does not sever the dimension."
     }
   ],
   "advancement": "expeditions:journal/liberation"

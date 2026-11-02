@@ -66,6 +66,7 @@ public final class Microbiome {
      */
     public static Optional<BlockPos> trySpawnHeart(ServerLevel level,
             BlockPos center, RandomSource random) {
+        if(!enabled(level) || FrontierThreat.refuge(level,center)) return Optional.empty();
         int min = ExpeditionTuning.integer(level.dimension(), "microbiome.spawn_radius_min",
                 ExpeditionsConfig.microbiomeSpawnRadiusMin());
         int max = ExpeditionTuning.integer(level.dimension(), "microbiome.spawn_radius_max",
@@ -89,6 +90,7 @@ public final class Microbiome {
             return Optional.empty();
         }
         BlockPos heartPos = pos.setY(y.getAsInt()).immutable();
+        if(FrontierThreat.refuge(level,heartPos)) return Optional.empty();
         return level.setBlock(heartPos,
                 ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3)
                 ? Optional.of(heartPos)
@@ -115,7 +117,7 @@ public final class Microbiome {
      */
     public static Optional<BlockPos> seedColonyNear(ServerLevel level,
             BlockPos marker, RandomSource random) {
-        if (seedingSuppressed || !enabled(level)
+        if (seedingSuppressed || !enabled(level) || FrontierThreat.refuge(level,marker)
                 || !ExpeditionTuning.bool(level.dimension(), "microbiome.marker_colonies",
                         ExpeditionsConfig.microbiomeMarkerColonies())) {
             return Optional.empty();

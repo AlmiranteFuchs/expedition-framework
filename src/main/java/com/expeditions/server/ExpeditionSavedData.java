@@ -141,6 +141,9 @@ public class ExpeditionSavedData extends SavedData {
     private final Set<String> clearedDimensions = new HashSet<>();
     private final Map<String, Integer> campaignProgress = new HashMap<>();
     private final Map<String, Integer> dimensionPressure = new HashMap<>();
+    // Runtime presentation belongs to the world, not the stateless manager facade.
+    private final FrontierThreat frontier=new FrontierThreat();
+    public FrontierThreat frontier() { return frontier; }
 
     public static ExpeditionSavedData create() {
         return new ExpeditionSavedData();
@@ -690,7 +693,8 @@ public class ExpeditionSavedData extends SavedData {
      */
     public void recordCampaignCompletion(String dimension) {
         int completions = campaignProgress.merge(dimension, 1, Integer::sum);
-        if (completions >= ExpeditionsConfig.campaignClearedAtCompletions()) {
+        if (!ExpeditionTuning.bool(dimension,"campaign.require_guardian",true)
+                && completions >= ExpeditionsConfig.campaignClearedAtCompletions()) {
             setDimensionCleared(dimension);
         }
         setDirty();

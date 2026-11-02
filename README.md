@@ -750,11 +750,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 155 unit tests + 132 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 159 unit tests + 137 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.11.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.12.jar` assembled.
 - `./gradlew test` — 155 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
@@ -956,3 +956,12 @@ The roadmap's alpha surface is feature-complete; next is hardening and feel:
 1. Client playtest of the visual layer (trace pulse, membrane, colonies).
 2. Third-party dimension smoke (M13's open gap).
 3. Terminal mission-board presentation and wider multiplayer balance testing.
+
+
+Frontier progression in alpha.12 adds a personal attention bar, warned hunting
+parties and pursuing guardians in uncleared dimensions. Checkpoints buy time;
+retreat cools attention. A bound boss victory and extraction liberate a dimension
+for everyone; ordinary repeated runs no longer replace that victory. Home
+liberation opens remote deployments, and dimensions without an authored boss get
+a generated liberation mission. See [the tuning guide](docs/frontier-progression.md)
+for timings, refuge rules, counterplay and datapack settings.

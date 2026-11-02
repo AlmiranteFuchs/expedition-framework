@@ -36,6 +36,16 @@
       "text": "The terminal is your base of operations. Bring it somewhere you can safely return."
     },
     {
+      "type": "patchouli:text",
+      "title": "A place to prepare",
+      "text": "The first 128 blocks around Overworld world spawn are a preparation refuge: ambient hearts do not seed there and Bloom attention cools. Existing or deliberately placed infected tissue still requires care."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A place to prepare",
+      "text": "Survey twice to establish a foothold, recover Deep Salvage, then face Heart of the Thicket. Its extraction liberates the Overworld and opens remote deployments. Dangerous native portals remain accessible before that point."
+    },
+    {
       "type": "patchouli:crafting",
       "recipe": "expeditions:expedition_field_journal",
       "text": "Your discoveries belong to you. A replacement book remembers them."

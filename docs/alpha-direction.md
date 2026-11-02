@@ -65,6 +65,15 @@ origins of the organism and ancient infrastructure remain unresolved.
    ownership. Ten legacy asset designs now share carved heartwood and ember
    materials; the portal uses a transparent root aperture and restrained particles.
 
+6. **Claim the frontier**: alpha.12 introduces warned personal attention,
+   native infected hunts, pursuing guardian echoes and boss-earned liberation.
+   Native portals permit early visits; home liberation opens remote terminal
+   deployments. Checkpoints buy time, retreat cools attention and a spawn refuge
+   protects preparation. Automatic dimensions receive liberation missions.
+   Build, 159 unit tests and 137 core GameTests pass. The corrected HUD and
+   escalation have an accelerated live check; long survival balance remains an
+   alpha playtest task. See `frontier-progression.md` for the tuning table.
+
 ## Studied references
 
 - [Patchouli discovery locks](https://vazkiimods.github.io/Patchouli/docs/patchouli-basics/advancement-locking/):

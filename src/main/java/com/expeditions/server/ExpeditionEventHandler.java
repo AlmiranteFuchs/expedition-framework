@@ -37,6 +37,17 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * and {@code /expeditions} exposes status, balance and abandon subcommands.
  */
 public final class ExpeditionEventHandler {
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        var old=event.getOriginal().getPersistentData();
+        if(old.contains(FrontierThreat.ROOT))event.getEntity().getPersistentData().put(FrontierThreat.ROOT,old.get(FrontierThreat.ROOT).copy());
+    }
+    public static void onFrontierDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
+        if(event.getEntity().getPersistentData().hasUUID(FrontierThreat.OWNER))event.setCanceled(true);
+    }
+    public static void onFrontierExperience(net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event) {
+        if(event.getEntity().getPersistentData().hasUUID(FrontierThreat.OWNER))event.setCanceled(true);
+    }
+
     private ExpeditionEventHandler() {
     }
 
@@ -95,6 +106,7 @@ public final class ExpeditionEventHandler {
     public static void onServerTick(ServerTickEvent.Post event) {
         if (event.getServer().getTickCount() % 20 == 0) {
             ExpeditionManager manager = ExpeditionManager.get(event.getServer());
+            manager.frontier().tick(event.getServer(),manager.savedData());
             manager.tickDefenses();
             manager.sweepChallengeEntities();
         }
@@ -108,7 +120,7 @@ public final class ExpeditionEventHandler {
      */
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (player.tickCount % ExpeditionTuning.integer(
+            if (!player.isCreative() && !player.isSpectator() && player.tickCount % ExpeditionTuning.integer(
                             player.level().dimension(), "microbiome.heart_spawn_interval_ticks",
                             ExpeditionsConfig.microbiomeSpawnIntervalTicks()) == 0
                     && Microbiome.enabled(player.serverLevel())) {
@@ -194,7 +206,7 @@ public final class ExpeditionEventHandler {
     public static void onEntityTick(EntityTickEvent.Post event) {
         if (event.getEntity() instanceof net.minecraft.world.entity.Mob mob
                 && (mob.tickCount + mob.getId()) % 20 == 0
-                && ChallengeOwnership.onTick(mob)) return;
+                && (FrontierThreat.tickHunter(mob) || ChallengeOwnership.onTick(mob))) return;
         if(event.getEntity() instanceof LivingEntity living && living.level() instanceof ServerLevel)
             Assimilation.onLivingTick(living);
         if (!(event.getEntity() instanceof LivingEntity entity)

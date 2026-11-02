@@ -1,4 +1,4 @@
-# 0.6.0-alpha.11: playable alpha candidate
+# 0.6.0-alpha.12: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -217,3 +217,20 @@ Live alpha.11 check: a naturally ticking cow, sheep and husk all converged on on
 protected pig. Temporarily freezing movement and moving the pig from left to
 right made all three heads follow the same host; normal AI was then restored.
 The current client is open in the disposable MCP test world for review.
+
+
+## Alpha.12 frontier progression
+
+See `frontier-progression.md` for the initial balance table. The full isolated
+suite passes 137 core GameTests (140 including optional biome probes), and all
+159 unit tests pass. Runtime HUD state is owned by world SavedData, not the
+stateless manager facade; the live check caught and corrected duplicate bars.
+Campaign liberation requires bound-guardian proof and extraction by default.
+Physical infection and existing reward/recovery invariants remain in force.
+
+The corrected live HUD shows one attention bar. A disposable timing probe reduced
+the guardian threshold to 60 effective seconds; accelerated server ticks verified
+hunting escalation, guardian arrival messaging and ownership records. Temporary
+resistance protected the player during this check. The probe was disabled and
+normal settings restored afterward. This is not a long-form survival balance test.
+HUD proof: `build/mcp-verification/screenshot-1793635703076-0.png`.

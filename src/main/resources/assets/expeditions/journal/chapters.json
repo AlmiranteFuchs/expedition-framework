@@ -9,6 +9,10 @@
       {
         "heading": "Begin at the roots",
         "body": "Look for pale growth and its ember-lit heart. Harvest attached growth for assimilation essence; break its heart to arrest that colony.\n\nA book + one essence makes this journal. Discovering essence also teaches your crafting book the terminal and attunement sigil recipes.\n\nThe terminal is your base of operations. Bring it somewhere you can safely return."
+      },
+      {
+        "heading": "A place to prepare",
+        "body": "The first 128 blocks around Overworld world spawn are a preparation refuge: ambient hearts do not seed there and Bloom attention cools. Existing or deliberately placed infected tissue still requires care.\n\nSurvey twice to establish a foothold, recover Deep Salvage, then face Heart of the Thicket. Its extraction liberates the Overworld and opens remote deployments. Dangerous native portals remain accessible before that point."
       }
     ]
   },
@@ -126,11 +130,11 @@
   },
   "pressure": {
     "title": "X. Awareness",
-    "unlock_hint": "Spend enough time in a dimension for its awareness to reach twenty-five. The survey belongs to the place you stand in.",
+    "unlock_hint": "Endure an infected hunting party, or raise a dimension’s awareness to twenty-five.",
     "pages": [
       {
         "heading": "An answering pulse",
-        "body": "At first the country felt empty. Now the pauses between sounds feel occupied.\n\nAwareness is a per-dimension pressure. Time spent there and expedition activity can raise it; higher pressure can strengthen the hordes. The next page reports this dimension's current reading.\n\nAnother dimension has its own state. Do not judge its safety by the quiet of your home."
+        "body": "The forest stops pretending it has not seen you.\n\nOutside the Overworld spawn refuge, an uncleared dimension tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning. Hunters carry the infection; exposure still requires contact.\n\nThe default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. The Overworld clock runs at half speed; establishing a foothold halves it again. Some dimensions may be tuned differently.\n\nA checkpoint removes 45 seconds of attention. Leaving or resting in the spawn refuge cools it twice as fast as it rises. Logging out or dying does not reset it. A disruption charm prevents new infection, not the hunt.\n\nThe survey’s dimensional pressure is a separate shared measure that strengthens expedition waves. The attention bar measures your personal exposure."
       }
     ]
   },
@@ -168,7 +172,7 @@
     "pages": [
       {
         "heading": "A quieter country",
-        "body": "The roots have not vanished. The rhythm beneath them has.\n\nDefeating a dimension's campaign threat records that dimension as cleared. Its Bloom seeding is silenced until the campaign is reset. Other dimensions retain their own threats and their own histories.\n\nNeutralizing a threat is not an explanation for its origin. Leave that page open."
+        "body": "The roots remain. Their orders do not.\n\nRoutine expeditions establish a foothold after two completions. The terminal then offers that dimension’s Sever the Bloom mission, or its authored confrontation. Defeat the mission’s bound guardian and extract to liberate the dimension for everyone. Routine completions alone cannot replace that proof.\n\nLiberation silences ambient heart seeding, growth and infection there; the attention bar and pursuit hunts end. Dormant growth remains as a scar. Ordinary native monsters and vanilla hazards still exist.\n\nLiberating the Overworld unlocks remote terminal deployments. Native portals remain usable earlier, if you accept the danger. A guardian sent by the hunt is only an echo: killing it does not sever the dimension."
       }
     ]
   }

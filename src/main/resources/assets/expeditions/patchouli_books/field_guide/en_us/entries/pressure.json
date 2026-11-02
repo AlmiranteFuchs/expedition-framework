@@ -7,18 +7,38 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:assimilation_heart",
-      "text": "At first the country felt empty. Now the pauses between sounds feel occupied.",
+      "text": "The forest stops pretending it has not seen you.",
       "title": "Awareness"
     },
     {
       "type": "patchouli:text",
       "title": "An answering pulse",
-      "text": "Awareness is a per-dimension pressure. Time spent there and expedition activity can raise it; higher pressure can strengthen the hordes. The next page reports this dimension's current reading."
+      "text": "Outside the Overworld spawn refuge, an uncleared dimension tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning. Hunters carry the infection; exposure still"
     },
     {
       "type": "patchouli:text",
       "title": "An answering pulse",
-      "text": "Another dimension has its own state. Do not judge its safety by the quiet of your home."
+      "text": "requires contact."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An answering pulse",
+      "text": "The default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. The Overworld clock runs at half speed; establishing a foothold halves it"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An answering pulse",
+      "text": "again. Some dimensions may be tuned differently."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An answering pulse",
+      "text": "A checkpoint removes 45 seconds of attention. Leaving or resting in the spawn refuge cools it twice as fast as it rises. Logging out or dying does not reset it. A disruption charm prevents new infection, not the hunt."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An answering pulse",
+      "text": "The survey’s dimensional pressure is a separate shared measure that strengthens expedition waves. The attention bar measures your personal exposure."
     },
     {
       "type": "expeditions:record_1"

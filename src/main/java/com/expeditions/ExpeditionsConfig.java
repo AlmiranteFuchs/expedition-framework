@@ -251,9 +251,9 @@ public final class ExpeditionsConfig {
             .defineInRange("expeditions.campaign.establishedAtCompletions", 2, 1, 1000);
 
     private static final ModConfigSpec.IntValue CAMPAIGN_CLEARED = BUILDER
-            .comment("Completed expeditions in a dimension before the",
-                    "campaign is won — the dimension flips to \"cleared\"",
-                    "and the microbiome goes silent there.")
+            .comment("Legacy completion-count clearing threshold. Only applies when",
+                    "the dimension datapack opts into campaign.require_guardian=false.",
+                    "By default liberation requires a bound mission guardian and extraction.")
             .defineInRange("expeditions.campaign.clearedAtCompletions", 5, 1, 1000);
 
     private static final ModConfigSpec.IntValue PRESSURE_START = BUILDER
@@ -414,6 +414,19 @@ public final class ExpeditionsConfig {
     private static final ModConfigSpec.IntValue REDEEM_COST = BUILDER
             .comment("Token cost of /expeditions redeem (one supply draw).")
             .defineInRange("expeditions.rewards.redeemCost", 10, 1, 1_000_000);
+
+    private static final ModConfigSpec.BooleanValue FRONTIER_ENABLED=BUILDER
+            .comment("Escalating personal attention, hunts and pursuit guardians in uncleared dimensions.")
+            .define("expeditions.frontier.enabled",true);
+    private static final ModConfigSpec.IntValue FRONTIER_LIMIT=BUILDER
+            .comment("Effective seconds until pursuit guardian; warnings at 20%, hunts at 40%, overrun at 70%.")
+            .defineInRange("expeditions.frontier.guardianAfterSeconds",600,60,7200);
+    private static final ModConfigSpec.IntValue FRONTIER_HOME=BUILDER
+            .comment("Overworld world-spawn refuge radius. Ambient hearts and attention do not begin inside it. 0 disables.")
+            .defineInRange("expeditions.frontier.homeRefugeRadius",128,0,1024);
+    public static boolean frontierEnabled() { return FRONTIER_ENABLED.get(); }
+    public static int frontierLimit() { return FRONTIER_LIMIT.get(); }
+    public static int frontierHomeRadius() { return FRONTIER_HOME.get(); }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 

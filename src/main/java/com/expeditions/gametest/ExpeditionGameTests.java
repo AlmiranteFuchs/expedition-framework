@@ -119,6 +119,7 @@ public final class ExpeditionGameTests {
         // players tick once at the world spawn before teleporting.
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
+        com.expeditions.server.FrontierThreat.suppressForTests(true);
         // Mock players stand near marker colonies for whole tests — without
         // this they'd be converted to effigies mid-assertion.
         Assimilation.suppressForTests(true);
@@ -3526,9 +3527,10 @@ public final class ExpeditionGameTests {
                 data.recordCampaignCompletion(dim);
             }
             helper.assertTrue(data.campaignState(dim)
-                            == com.expeditions.core.CampaignState.CLEARED
-                            && data.isDimensionCleared(dim),
-                    "the cleared threshold must mark the dimension won");
+                            == com.expeditions.core.CampaignState.ESTABLISHED
+                            && !data.isDimensionCleared(dim),
+                    "routine completions must not bypass the liberation guardian");
+            data.setDimensionCleared(dim);
             helper.assertTrue(!Microbiome.enabled(helper.getLevel()),
                     "a won dimension must silence the microbiome");
 

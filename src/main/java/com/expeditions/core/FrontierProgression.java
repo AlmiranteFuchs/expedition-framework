@@ -1,0 +1,22 @@
+package com.expeditions.core;
+
+import java.util.HashSet;
+import java.util.List;
+
+/** Generated campaign missions use the same authoritative requirements and boss proof as authored ones. */
+public final class FrontierProgression {
+    private FrontierProgression() { }
+    public static ExpeditionDefinition prepare(ExpeditionDefinition base,boolean homeLiberated) {
+        if(homeLiberated || base.dimension().equals("minecraft:overworld")) return base;
+        var requires=new HashSet<>(base.requires());requires.add("expeditions:guardian_clear");
+        return new ExpeditionDefinition(base.id(),base.displayName(),base.difficulty(),base.dimension(),base.route(),
+                base.tokenReward(),base.bonusTokens(),base.bonusTimeTicks(),base.objectives(),base.modifiers(),
+                requires,base.grants(),base.costTokens(),base.minCampaignState(),base.bigBad());
+    }
+    public static ExpeditionDefinition liberation(ExpeditionDefinition base) {
+        var route=base.route() instanceof RouteGeneration g?g.withCheckpoints(3):base.route();
+        return new ExpeditionDefinition("expeditions:liberation/"+base.dimension().replace(':','/'),
+                "Sever the Bloom: "+base.displayName(),3,base.dimension(),route,Math.max(60,base.tokenReward()),
+                20,20*900,List.of(),base.modifiers(),base.requires(),base.grants(),10,CampaignState.ESTABLISHED,true);
+    }
+}

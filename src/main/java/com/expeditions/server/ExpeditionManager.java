@@ -152,6 +152,8 @@ public final class ExpeditionManager {
     }
 
     /** The shared world state — campaign records, markers, cleared dims. */
+    public FrontierThreat frontier() { return data.frontier(); }
+
     public ExpeditionSavedData savedData() {
         return data;
     }
@@ -209,6 +211,7 @@ public final class ExpeditionManager {
                         .findFirst()
                         .orElseThrow(() -> new IllegalStateException(
                                 "Unknown or unavailable expedition: " + options.expeditionId()));
+        if(FrontierThreat.rulesActive()) definition=prepareFrontier(definition);
         RequirementCheck requirements = ledger.checkRequirements(
                 player.getUUID(), definition,
                 data.campaignState(definition.dimension()));
@@ -399,7 +402,23 @@ public final class ExpeditionManager {
                     .filter(this::isStartable)
                     .ifPresent(d -> startable.putIfAbsent(d.id(), d));
         }
+        if(FrontierThreat.rulesActive()) {
+            var bosses=new HashSet<String>();
+            for(var d:startable.values()) if(d.bigBad()) bosses.add(d.dimension());
+            for(var d:List.copyOf(startable.values())) {
+                var prepared=prepareFrontier(d);startable.put(d.id(),prepared);
+                if(!bosses.contains(d.dimension()) && ExpeditionTuning.bool(d.dimension(),"campaign.auto_liberation",true)) {
+                    var boss=com.expeditions.core.FrontierProgression.liberation(prepared);
+                    startable.putIfAbsent(boss.id(),boss);bosses.add(d.dimension());
+                }
+            }
+        }
         return List.copyOf(startable.values());
+    }
+
+    private ExpeditionDefinition prepareFrontier(ExpeditionDefinition d) {
+        boolean home=data.isDimensionCleared("minecraft:overworld") || !ExpeditionTuning.bool(d.dimension(),"campaign.require_home_liberation",true);
+        return com.expeditions.core.FrontierProgression.prepare(d,home);
     }
 
     private boolean isStartable(ExpeditionDefinition definition) {
@@ -491,6 +510,10 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             var online = server.getPlayerList().getPlayer(member);
             if (online != null) JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.CHECKPOINTS);
+        }
+        for(UUID member:run.party()) {
+            var online=server.getPlayerList().getPlayer(member);
+            if(online!=null) FrontierThreat.relief(online,run.definition().dimension(),45);
         }
         if (run.completedCheckpoints() == 1) {
             closePortal(run);

@@ -465,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 155 unit tests + 132/132 core GameTest in-game
+Verified: `build` + 159 unit tests + 137/137 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the
@@ -588,3 +588,40 @@ disabled temporarily, all three heads followed that pig from left to right;
 normal AI was restored afterward. Local screenshots are
 `build/mcp-verification/screenshot-1793470484338-0.png` and
 `build/mcp-verification/screenshot-1793470507594-0.png`.
+
+
+## Frontier progression (alpha.12)
+
+`FrontierAttention` and `FrontierProgression` are pure domain policies.
+`FrontierThreat` owns the personal residence clock, native boss-style HUD and
+bounded pursuit waves. Its instance belongs to `ExpeditionSavedData` (runtime
+only): `ExpeditionManager.get()` constructs a stateless facade on every call,
+so putting a stateful HUD service on the manager leaks duplicate boss bars.
+Player residence lives under persistent `expeditions:frontier` and copies on
+PlayerEvent.Clone. Checkpoints grant 45 effective seconds of relief. Retreat
+cools old dimensions; logout/death do not wipe the clock. The Overworld spawn
+refuge prevents ambient heart seeding and attention; infection still requires
+contact. The default clock reaches noticed/hunted/overrun/reckoning at 2/4/7/10
+effective minutes, with Overworld and established-foothold multipliers.
+Pursuit mobs carry owner UUID and expiry, reserve tracked capacity across unloads,
+and discard when ownership/exposure no longer permits them. They award no drops,
+XP or guardian proof. The mission's exact bound guardian remains authoritative.
+Routine completions now establish a foothold but cannot clear a dimension unless
+`campaign.require_guardian=false` explicitly restores legacy count clearing.
+Loaded dimensions without an authored boss receive a generated liberation mission.
+Home liberation opens remote deployment for everyone; native portals remain usable.
+`Microbiome.trySpawnHeart` checks cleared/refuge state itself, not only its caller.
+`expeditions_frontier` adds five GameTests; register its arena through build.gradle.
+The frontier suppression seam has the same gameTestRun JVM-property guard as the
+existing seams. New guide text generation explicitly reads UTF-8 on Windows.
+Verified: build/alphaBundle, 159 unit tests and 137 core GameTests (140 including
+three optional biome probes). Balance is an initial alpha pass; long survival
+and multiplayer balance sessions remain useful.
+
+Live alpha.12 review used a temporary 60-effective-second threshold and accelerated
+server ticks in the disposable MCP world. The corrected HUD displayed one bar;
+Reckoning spawned owned infected hunters and recorded the pursuing guardian.
+Temporary resistance protected the test player, so this verifies presentation and
+escalation, not a human survival balance verdict. The probe datapack was disabled,
+normal timing restored, temporary test effects removed, and Creative restored.
+HUD proof: `build/mcp-verification/screenshot-1793635703076-0.png`.

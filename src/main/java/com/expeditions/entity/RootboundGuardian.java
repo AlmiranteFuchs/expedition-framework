@@ -81,6 +81,8 @@ public final class RootboundGuardian extends Monster {
     @Override public void tick() {
         super.tick();
         if (!(level() instanceof ServerLevel server) || !isAlive() || isNoAi()) return;
+        bossBar.setName(getPersistentData().hasUUID(com.expeditions.server.FrontierThreat.OWNER)
+                ?Component.translatable("frontier.expeditions.pursuer_name"):Component.translatable("entity.expeditions.rootbound_guardian"));
         bossBar.setProgress(Math.max(0, getHealth() / getMaxHealth()));
         bossBar.setColor(enraged() ? BossEvent.BossBarColor.YELLOW : BossEvent.BossBarColor.RED);
         if (!enraged() && getHealth() <= getMaxHealth() * 0.5f) {

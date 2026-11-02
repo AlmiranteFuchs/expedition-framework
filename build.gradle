@@ -61,7 +61,7 @@ def gameTestStructureNamespaces = [
     'expeditions_asm', 'expeditions_prog', 'expeditions_art',
     'expeditions_eco', 'expeditions_party', 'expeditions_obj',
     'expeditions_loot', 'expeditions_opts', 'expeditions_mod',
-    'expeditions_horde', 'expeditions_dim', 'expeditions_modded_horde', 'expeditions_compass', 'expeditions_journal'
+    'expeditions_horde', 'expeditions_dim', 'expeditions_modded_horde', 'expeditions_compass', 'expeditions_journal', 'expeditions_frontier'
 ]
 ext.allGameTestNamespaces = (['expeditions'] + gameTestStructureNamespaces).join(',')
 // Installed mods can send unsupported packets to GameTest mock players.

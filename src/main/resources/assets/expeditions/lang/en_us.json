@@ -101,5 +101,19 @@
   "effect.expeditions.assimilation_disruption": "Assimilation Disruption",
   "item.expeditions.disruption_charm.equip": "Offhand or Curios charm slot",
   "item.expeditions.disruption_charm.protect": "Blocks new assimilation on contact",
-  "item.expeditions.disruption_charm.limit": "Does not cure an existing infection"
+  "item.expeditions.disruption_charm.limit": "Does not cure an existing infection",
+  "frontier.expeditions.bar": "Bloom - %s > %s | %s:%s",
+  "frontier.expeditions.bar_reckoning": "Bloom - Reckoning | The hunt is active",
+  "frontier.expeditions.pursuer_name": "Hunting Echo - retreat or endure",
+  "frontier.expeditions.pursuer": "A hunting echo has arrived. Defeating it buys time but does not liberate the dimension.",
+  "frontier.expeditions.stage.quiet": "Listening",
+  "frontier.expeditions.warning.quiet": "The Bloom is listening. Leave to cool its attention; checkpoints buy time. Liberate this dimension to silence it.",
+  "frontier.expeditions.stage.noticed": "Noticed",
+  "frontier.expeditions.warning.noticed": "The roots have noticed you. A hunting party will follow if you remain.",
+  "frontier.expeditions.stage.hunted": "Hunted",
+  "frontier.expeditions.warning.hunted": "The Bloom has your scent. Infected hunters are searching for you. Retreat or advance the expedition.",
+  "frontier.expeditions.stage.overrun": "Overrun",
+  "frontier.expeditions.warning.overrun": "The hunt is closing in. More hunters answer. A pursuing guardian will follow.",
+  "frontier.expeditions.stage.reckoning": "Reckoning",
+  "frontier.expeditions.warning.reckoning": "A guardian is coming. Retreat or fight for time. Only a terminal liberation mission can sever this dimension."
 }
