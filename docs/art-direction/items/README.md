@@ -1,5 +1,10 @@
 # The Charter — inventory art, alpha.16
 
+Later user preference: the field journal has been restored to the angled leather
+alpha.15 sprite. The contact sheets below record the original alpha.16 pass;
+`journal-restored-preview.png` shows the preferred current journal. Its painter
+remains `tools/gen_textures.py:gen_journal`, delegated by `item_art.py`.
+
 The final sprites are native **16×16** pixel drawings, not crops or downscales of
 the concept illustration. Their editable source is `tools/item_art.py`, called
 last by the existing texture pipeline. Pale bark, warm gray and charcoal define

@@ -712,3 +712,7 @@ The `expeditions_bloom` namespace adds five GameTests. Verified: build/alphaBund
 176 unit tests and 159 core GameTests (162 reported with three optional biome
 probes). Crouch use bypasses ordinary block use: keep AttunementSigilItem.useOn's
 server-side breach fallback, and the real-use open/close regression.
+
+Journal art preference: the user preferred the pre-alpha.16 angled green leather field journal. It is restored byte-for-byte to commit 2744308; `item_art.py` delegates that sprite to `gen_textures.py:gen_journal`. Keep this exception in subsequent item art passes. The Resonance-funded terminal economy in `docs/resonance-deployment-proposal.md` is a proposal, not an implemented fuel system.
+
+Create investigation: official Create 6.0.10 is installed only in ignored `run/mods` (bundled Flywheel/Ponder/Registrate). Real debug-world checks verified Create chutes feeding and extracting eight essence through our condenser, and a 64-RPM mixer crafting our journal and a sigil with its attunement component intact. `docs/create-automation.md` records fixtures. Liquid Resonance, the proposed Still and terminal fluid cost are NOT implemented; the example JSON stays under docs, never active resources until the native fluid is registered.

@@ -30,18 +30,6 @@ def sprite(name, painter):
     im=Image.new('RGBA',(16,16));painter(ImageDraw.Draw(im));save(name,im);return im
 
 
-def journal(d):
-    d.polygon([(4,0),(13,2),(14,4),(14,14),(11,15),(1,12),(1,3)],fill=M[0])
-    d.polygon([(2,11),(11,13),(13,12),(13,14),(11,14),(2,12)],fill=B[3])
-    d.line([(3,11),(11,13),(12,12)],fill=B[5])
-    d.polygon([(4,1),(12,3),(12,11),(10,12),(2,10),(2,3)],fill=M[1])
-    d.line([(4,2),(3,3),(3,9)],fill=M[2])
-    d.polygon([(6,2),(10,3),(10,10),(5,9),(5,4)],fill=B[3])
-    d.line([(6,3),(6,6),(5,7),(5,8)],fill=B[5]);d.line([(9,4),(8,6),(9,9)],fill=B[1])
-    d.line([(4,2),(4,10)],fill=B[1]);d.point((3,3),fill=C[2]);d.point((3,9),fill=C[2])
-    d.rectangle((9,7,13,8),fill=C[0]);d.line((10,7,12,7),fill=C[2]);d.point((11,7),fill=A[3])
-
-
 def assay(d):
     # A hinged case: a dark lid, two glass samples and a short lancet.
     d.polygon([(3,1),(12,1),(14,3),(13,6),(2,6),(1,3)],fill=M[0])
@@ -177,7 +165,10 @@ def rgba(color):
 
 
 def gen():
-    for name,draw in [('expedition_field_journal',journal),('field_assay_kit',assay),('disruption_charm',charm),
+    # Preserve the preferred angled leather journal from the original native painter.
+    from gen_textures import gen_journal
+    gen_journal()
+    for name,draw in [('field_assay_kit',assay),('disruption_charm',charm),
                       ('assimilation_essence',essence),('expedition_artifact',artifact),('attunement_sigil',sigil),
                       ('dormant_flake',flakes),('dormant_knot',knot),('severance_core',core),('resonance_cell',cell),('survey_lens',lens)]:sprite(name,draw)
     sprite('assimilation_layer',lambda d:tissue(d,True));sprite('dormant_layer',lambda d:tissue(d,False))
