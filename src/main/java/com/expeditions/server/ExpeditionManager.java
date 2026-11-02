@@ -417,7 +417,7 @@ public final class ExpeditionManager {
     }
 
     private ExpeditionDefinition prepareFrontier(ExpeditionDefinition d) {
-        boolean home=data.isDimensionCleared("minecraft:overworld") || !ExpeditionTuning.bool(d.dimension(),"campaign.require_home_liberation",true);
+        boolean home=data.campaignCompletions("minecraft:overworld")>0 || data.isDimensionCleared("minecraft:overworld") || !ExpeditionTuning.bool(d.dimension(),"campaign.require_home_liberation",true);
         return com.expeditions.core.FrontierProgression.prepare(d,home);
     }
 

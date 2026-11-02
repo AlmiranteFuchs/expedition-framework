@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * {@code d.getOpposite()} face, and the patch renders on the cell's
  * {@code d} side. A sturdy full face is required — air, fluids, and
  * non-solid or partial faces refuse attachment. The block is only
- * harvested for essence by direct breaking; support loss, piston crush
+ * harvested for dormant flakes by direct breaking; support loss, piston crush
  * and world restoration all drop nothing.
  */
 public class AssimilationLayerBlock extends MultifaceBlock implements EntityBlock {
@@ -53,7 +53,7 @@ public class AssimilationLayerBlock extends MultifaceBlock implements EntityBloc
     @Override
     protected void entityInside(BlockState state,Level level,BlockPos pos,net.minecraft.world.entity.Entity entity) {
         super.entityInside(state,level,pos,entity);
-        if(level instanceof net.minecraft.server.level.ServerLevel server
+        if(!(this instanceof DormantLayerBlock) && level instanceof net.minecraft.server.level.ServerLevel server
                 && entity instanceof net.minecraft.world.entity.LivingEntity living)
             com.expeditions.server.Assimilation.touchLayer(server,pos,state,living);
     }
@@ -134,10 +134,10 @@ public class AssimilationLayerBlock extends MultifaceBlock implements EntityBloc
     }
 
     /**
-     * Exactly one essence per deliberate harvest. {@code playerDestroy} is
+     * Exactly one dormant flake per deliberate harvest. {@code playerDestroy} is
      * only invoked by the game mode after a successful survival break —
      * never in creative, never on support loss or replacement — so the
-     * empty loot table cannot leak a second drop and cleanup stays silent.
+     * empty loot table cannot leak a second raw drop and cleanup stays silent.
      */
     @Override
     public void playerDestroy(Level level, Player player, BlockPos pos,
@@ -145,8 +145,23 @@ public class AssimilationLayerBlock extends MultifaceBlock implements EntityBloc
         super.playerDestroy(level, player, pos, state, blockEntity, tool);
         if (!level.isClientSide) {
             popResource(level, pos,
-                    new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
+                    new ItemStack(ModItems.DORMANT_FLAKE.get()));
         }
+    }
+
+    @Override public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(Level level,BlockState state,net.minecraft.world.level.block.entity.BlockEntityType<T> type){
+        if(level.isClientSide || this instanceof DormantLayerBlock || type!=com.expeditions.registry.ModBlockEntities.ASSIMILATION_LAYER.get())return null;
+        return (world,pos,s,entity)->{
+            if((world.getGameTime()+pos.asLong())%20!=0)return;
+            var be=(AssimilationLayerBlockEntity)entity;var server=(net.minecraft.server.level.ServerLevel)world;var heart=be.heart();
+            if(com.expeditions.server.Stillness.suppresses(server,pos) || heart!=null && world.hasChunkAt(heart) && !world.getBlockState(heart).is(com.expeditions.registry.ModBlocks.ASSIMILATION_HEART.get()))
+                world.setBlockAndUpdate(pos,dormantState(s));
+        };
+    }
+    public static BlockState dormantState(BlockState living){
+        var cold=com.expeditions.registry.ModBlocks.DORMANT_LAYER.get().defaultBlockState();
+        for(Direction face:DIRECTIONS)cold=cold.setValue(MultifaceBlock.getFaceProperty(face),MultifaceBlock.hasFace(living,face));
+        return cold;
     }
 
     @Override

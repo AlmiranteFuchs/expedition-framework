@@ -6,9 +6,9 @@ import java.util.List;
 /** Generated campaign missions use the same authoritative requirements and boss proof as authored ones. */
 public final class FrontierProgression {
     private FrontierProgression() { }
-    public static ExpeditionDefinition prepare(ExpeditionDefinition base,boolean homeLiberated) {
-        if(homeLiberated || base.dimension().equals("minecraft:overworld")) return base;
-        var requires=new HashSet<>(base.requires());requires.add("expeditions:guardian_clear");
+    public static ExpeditionDefinition prepare(ExpeditionDefinition base,boolean homePrepared) {
+        if(homePrepared || base.dimension().equals("minecraft:overworld")) return base;
+        var requires=new HashSet<>(base.requires());requires.add("expeditions:field_clear");
         return new ExpeditionDefinition(base.id(),base.displayName(),base.difficulty(),base.dimension(),base.route(),
                 base.tokenReward(),base.bonusTokens(),base.bonusTimeTicks(),base.objectives(),base.modifiers(),
                 requires,base.grants(),base.costTokens(),base.minCampaignState(),base.bigBad());

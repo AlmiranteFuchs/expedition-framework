@@ -24,7 +24,7 @@ class FrontierAttentionTest {
         var base=new ExpeditionDefinition("test:survey","Survey",0,"test:moon",
                 new RouteGeneration(2,32,64,24,48,4,128,256),20,0,0);
         var locked=FrontierProgression.prepare(base,false);
-        assertTrue(locked.requires().contains("expeditions:guardian_clear"));
+        assertTrue(locked.requires().contains("expeditions:field_clear"));
         assertSame(base,FrontierProgression.prepare(base,true));
         var boss=FrontierProgression.liberation(locked);
         assertTrue(boss.bigBad());assertEquals(CampaignState.ESTABLISHED,boss.minCampaignState());

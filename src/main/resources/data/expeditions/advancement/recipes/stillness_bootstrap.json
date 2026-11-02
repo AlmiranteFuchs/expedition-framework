@@ -1,0 +1,22 @@
+{
+  "criteria": {
+    "sample": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "expeditions:dormant_flake"
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "recipes": [
+      "expeditions:stillness_dynamo",
+      "expeditions:essence_condenser",
+      "expeditions:expedition_field_journal",
+      "expeditions:field_assay_kit"
+    ]
+  }
+}

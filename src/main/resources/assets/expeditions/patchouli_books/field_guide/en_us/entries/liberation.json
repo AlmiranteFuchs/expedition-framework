@@ -28,7 +28,12 @@
     {
       "type": "patchouli:text",
       "title": "A quieter country",
-      "text": "Liberating the Overworld unlocks remote terminal deployments. Native portals remain usable earlier, if you accept the danger. A guardian sent by the hunt is only an echo: killing it does not sever the dimension."
+      "text": "Completing the first Field Survey opens remote terminal deployments. The Stillness already shelters home; its optional confrontations do not gate the frontier. Native portals remain usable earlier, if you accept the danger. A"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quieter country",
+      "text": "guardian sent by the hunt is only an echo: killing it does not sever the dimension."
     }
   ],
   "advancement": "expeditions:journal/liberation"

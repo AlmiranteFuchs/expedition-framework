@@ -1,9 +1,290 @@
 {
-  "parent": "minecraft:block/orientable_with_bottom",
+  "parent": "minecraft:block/block",
   "textures": {
-    "front": "expeditions:block/expedition_terminal",
-    "side": "expeditions:block/expedition_terminal_side",
-    "top": "expeditions:block/expedition_terminal_top",
-    "bottom": "expeditions:block/heartwood_base"
-  }
+    "bone": "expeditions:block/machine_bone",
+    "copper": "expeditions:block/machine_copper",
+    "iron": "expeditions:block/machine_iron",
+    "glass": "expeditions:block/machine_glass",
+    "resin": "expeditions:block/machine_resin",
+    "chart": "expeditions:block/terminal_chart",
+    "particle": "expeditions:block/machine_bone"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        5,
+        2,
+        6
+      ],
+      "faces": {
+        "down": {
+          "texture": "#iron"
+        },
+        "up": {
+          "texture": "#iron"
+        },
+        "north": {
+          "texture": "#iron"
+        },
+        "south": {
+          "texture": "#iron"
+        },
+        "west": {
+          "texture": "#iron"
+        },
+        "east": {
+          "texture": "#iron"
+        }
+      }
+    },
+    {
+      "from": [
+        11,
+        0,
+        10
+      ],
+      "to": [
+        15,
+        2,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#iron"
+        },
+        "up": {
+          "texture": "#iron"
+        },
+        "north": {
+          "texture": "#iron"
+        },
+        "south": {
+          "texture": "#iron"
+        },
+        "west": {
+          "texture": "#iron"
+        },
+        "east": {
+          "texture": "#iron"
+        }
+      }
+    },
+    {
+      "from": [
+        2,
+        2,
+        3
+      ],
+      "to": [
+        4,
+        9,
+        5
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        }
+      }
+    },
+    {
+      "from": [
+        12,
+        2,
+        11
+      ],
+      "to": [
+        14,
+        11,
+        13
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        3,
+        4
+      ],
+      "to": [
+        13,
+        5,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        8,
+        3
+      ],
+      "to": [
+        16,
+        9,
+        14
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#bone"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      }
+    },
+    {
+      "from": [
+        1,
+        9.01,
+        4
+      ],
+      "to": [
+        15,
+        9.05,
+        13
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bone"
+        },
+        "up": {
+          "texture": "#chart"
+        },
+        "north": {
+          "texture": "#bone"
+        },
+        "south": {
+          "texture": "#bone"
+        },
+        "west": {
+          "texture": "#bone"
+        },
+        "east": {
+          "texture": "#bone"
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      }
+    },
+    {
+      "from": [
+        14,
+        7,
+        8
+      ],
+      "to": [
+        16,
+        9,
+        10
+      ],
+      "faces": {
+        "down": {
+          "texture": "#copper"
+        },
+        "up": {
+          "texture": "#copper"
+        },
+        "north": {
+          "texture": "#copper"
+        },
+        "south": {
+          "texture": "#copper"
+        },
+        "west": {
+          "texture": "#copper"
+        },
+        "east": {
+          "texture": "#copper"
+        }
+      }
+    }
+  ],
+  "render_type": "minecraft:cutout",
+  "ambientocclusion": false
 }

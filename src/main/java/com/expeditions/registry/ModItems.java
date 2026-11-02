@@ -65,6 +65,12 @@ public final class ModItems {
             "expedition_field_journal",
             () -> new ExpeditionFieldJournalItem(new Item.Properties().stacksTo(1)));
 
+    public static final DeferredItem<Item> DORMANT_FLAKE=ITEMS.registerSimpleItem("dormant_flake");
+    public static final DeferredItem<BlockItem> DORMANT_LAYER_ITEM=ITEMS.registerSimpleBlockItem("dormant_layer",ModBlocks.DORMANT_LAYER);
+    public static final DeferredItem<BlockItem> DORMANT_HEART_ITEM=ITEMS.registerSimpleBlockItem("dormant_heart",ModBlocks.DORMANT_HEART);
+    public static final DeferredItem<BlockItem> STILLNESS_DYNAMO_ITEM=ITEMS.registerSimpleBlockItem("stillness_dynamo",ModBlocks.STILLNESS_DYNAMO);
+    public static final DeferredItem<BlockItem> ESSENCE_CONDENSER_ITEM=ITEMS.registerSimpleBlockItem("essence_condenser",ModBlocks.ESSENCE_CONDENSER);
+
     private ModItems() {
     }
 }

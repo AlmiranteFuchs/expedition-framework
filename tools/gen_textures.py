@@ -277,3 +277,6 @@ if __name__ == "__main__":
     gen_essence(); gen_journal()
     import runpy
     runpy.run_path(os.path.join(os.path.dirname(__file__), 'gen_infection_art.py'), run_name='__main__')
+
+    from stillness_art import gen as gen_stillness
+    gen_stillness()

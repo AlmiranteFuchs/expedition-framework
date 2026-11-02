@@ -156,7 +156,7 @@ public final class Assimilation {
     /** Queue a real touch until the next cadence, so brief crossings are not missed. */
     public static void onContact(LivingEntity host) {
         if(suppressedForTests || !(host.level() instanceof ServerLevel level) || !host.isAlive()
-                || host instanceof ArmorStand || host.isSpectator() || !Microbiome.enabled(level)
+                || host instanceof ArmorStand || host.isSpectator() || !Microbiome.enabledAt(level,host.blockPosition())
                 || AssimilationProtection.protectedFromInfection(host)) return;
         host.getPersistentData().putBoolean(TAG_CONTACT,true);
     }
@@ -186,7 +186,7 @@ public final class Assimilation {
     }
 
     private static double advance(LivingEntity host,ServerLevel level,double floor,double warding) {
-        boolean contact=host.getPersistentData().getBoolean(TAG_CONTACT) && Microbiome.enabled(level);
+        boolean contact=host.getPersistentData().getBoolean(TAG_CONTACT) && Microbiome.enabledAt(level,host.blockPosition());
         host.getPersistentData().remove(TAG_CONTACT);
         double accrual=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_accrual",ExpeditionsConfig.infectionAccrual());
         double decay=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_decay",ExpeditionsConfig.infectionDecay());
@@ -202,10 +202,12 @@ public final class Assimilation {
         if(entity instanceof Mob mob) {
             int flag=mob.getData(ModAttachments.ASSIMILATED);
             if(flag>0 && infection(mob)<threshold(level,flag)) infect(mob,threshold(level,flag));
+            boolean sheltered=Stillness.suppresses(level,mob.blockPosition());
+            if(sheltered && flag>0){mob.setData(ModAttachments.ASSIMILATED,0);flag=0;}
             int interval=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_interval_ticks",ExpeditionsConfig.infectionIntervalTicks());
             if(mob.tickCount>0 && mob.tickCount%interval==0) {
-                double value=advance(mob,level,flag>0 && Microbiome.enabled(level)?threshold(level,1):0,1);
-                infect(mob,value); int stage=value>0?stageOf(level,value):0;
+                double value=advance(mob,level,flag>0 && Microbiome.enabledAt(level,mob.blockPosition())?threshold(level,1):0,1);
+                infect(mob,value); int stage=!sheltered && value>0?stageOf(level,value):0;
                 if(stage!=flag) mob.setData(ModAttachments.ASSIMILATED,stage);
             }
             HiveMind.tick(mob);

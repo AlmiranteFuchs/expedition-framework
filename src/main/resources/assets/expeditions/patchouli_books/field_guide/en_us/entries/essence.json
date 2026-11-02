@@ -7,33 +7,43 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:assimilation_essence",
-      "text": "The sample cools in water, then warms again in your palm. It seems reluctant to become an ordinary material.",
+      "text": "Dormant flakes hold a little of what the Stillness has suspended. They are raw material, not active essence.",
       "title": "What remains"
     },
     {
       "type": "patchouli:text",
-      "title": "A little borrowed heat",
-      "text": "Assimilation essence comes from harvesting attached growth in survival. The colony must have something left to harvest."
+      "title": "Stored change",
+      "text": "The Stillness Dynamo accepts flakes in its left slot and exports Forge Energy from its sides. One flake yields 4000 FE. A neighboring condenser receives the power without a cable. Connect another mod’s FE cables or generator if"
     },
     {
       "type": "patchouli:text",
-      "title": "A little borrowed heat",
-      "text": "Combine a book with one essence to make another field journal. Your discoveries belong to you; a replacement book remembers them."
+      "title": "Stored change",
+      "text": "you prefer."
     },
     {
       "type": "patchouli:text",
-      "title": "Two useful constructions",
-      "text": "Terminal, in a crafting table:$(br)Iron / Iron / Iron$(br)Essence / Amethyst / Essence$(br)Copper / Redstone / Copper"
+      "title": "Condensing a sample",
+      "text": "The Essence Condenser consumes one dormant flake and 4000 FE to produce one assimilation essence. Processing takes ten seconds when powered. The right slot holds the result. Hoppers can supply raw input and take completed essence."
     },
     {
       "type": "patchouli:text",
-      "title": "Two useful constructions",
-      "text": "Attunement sigil: three essence + one amethyst shard, anywhere in the grid. Use the sigil against a terminal to attest your attunement. It is proof, so it is not consumed."
+      "title": "Condensing a sample",
+      "text": "The full standalone loop therefore needs two flakes per essence: one for fuel, one for the sample. The machines themselves need only vanilla materials."
     },
     {
       "type": "patchouli:text",
-      "title": "Two useful constructions",
-      "text": "The crafting book has both recipes."
+      "title": "Opening the field",
+      "text": "Later, sneak-use an attunement sigil on a charged condenser to reverse the Stillness locally. Opening requires a 4000 FE reserve; the open breach consumes 20 FE per tick. Refining pauses while it is open."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Opening the field",
+      "text": "The breach reaches twenty-four blocks. Inside, live hearts can operate and contact infection is possible. Outside, home remains sheltered. Sneak-use the sigil again to close it; loss of power closes it safely. Living colonies"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Opening the field",
+      "text": "there become dormant. Liberated dimensions remain silent even inside an attempted breach."
     },
     {
       "type": "patchouli:crafting",
@@ -44,6 +54,14 @@
       "type": "patchouli:crafting",
       "recipe": "expeditions:expedition_terminal",
       "text": "Place it facing a safe space. Its portal opens above it."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:stillness_dynamo"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:essence_condenser"
     },
     {
       "type": "patchouli:crafting",

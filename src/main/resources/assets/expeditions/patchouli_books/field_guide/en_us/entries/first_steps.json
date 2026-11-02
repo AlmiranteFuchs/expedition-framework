@@ -7,43 +7,48 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_field_journal",
-      "text": "The cover was warm before you touched it. The blank paper feels almost like bark.",
+      "text": "The Overworld is sheltered by the Stillness. Live Bloom cannot normally take hold here. Your home needs neither liberation nor fuel to remain sheltered.",
       "title": "A field guide"
     },
     {
       "type": "patchouli:text",
-      "title": "The field guide",
-      "text": "This is a working guide to the frontier. Its chapters fill when you find something worth recording. Browse the categories to read your discoveries. The Unwritten pages entry offers hints for the trails still ahead."
+      "title": "A quiet world",
+      "text": "Look for small pale, cold traces on natural ground. Harvest this dormant tissue for flakes. It does not spread or infect. Newly explored Overworld terrain contains these traces; colonies whose hearts are gone leave the same"
     },
     {
       "type": "patchouli:text",
-      "title": "The field guide",
-      "text": "The last page of this chapter records your current expedition."
+      "title": "A quiet world",
+      "text": "dormant material."
     },
     {
       "type": "patchouli:text",
-      "title": "Begin at the roots",
-      "text": "Look for pale growth and its ember-lit heart. Harvest attached growth for assimilation essence; break its heart to arrest that colony."
+      "title": "From traces to instruments",
+      "text": "A book and a dormant flake make this journal. The assay kit also uses a raw flake rather than active essence. Neither needs a working machine."
     },
     {
       "type": "patchouli:text",
-      "title": "Begin at the roots",
-      "text": "A book + one essence makes this journal. Discovering essence also teaches your crafting book the terminal and attunement sigil recipes."
+      "title": "From traces to instruments",
+      "text": "Build a Stillness Dynamo and an Essence Condenser from ordinary iron, copper, glass, redstone and a furnace. Place them next to each other. Feed a flake into each: the dynamo burns one into 4000 FE; the condenser spends that power"
     },
     {
       "type": "patchouli:text",
-      "title": "Begin at the roots",
-      "text": "The terminal is your base of operations. Bring it somewhere you can safely return."
+      "title": "From traces to instruments",
+      "text": "and its second flake to make one assimilation essence in ten seconds. Other FE generators can supply the condenser instead."
     },
     {
       "type": "patchouli:text",
-      "title": "A place to prepare",
-      "text": "The first 128 blocks around Overworld world spawn are a preparation refuge: ambient hearts do not seed there and Bloom attention cools. Existing or deliberately placed infected tissue still requires care."
+      "title": "Your first deployment",
+      "text": "Make the terminal using refined essence, then complete Field Survey to open remote deployments. You do not need to defeat an Overworld boss to leave home."
     },
     {
       "type": "patchouli:text",
-      "title": "A place to prepare",
-      "text": "Survey twice to establish a foothold, recover Deep Salvage, then face Heart of the Thicket. Its extraction liberates the Overworld and opens remote deployments. Dangerous native portals remain accessible before that point."
+      "title": "Your first deployment",
+      "text": "The first survey is practice with routes, checkpoints and extraction. The hostile frontier is elsewhere. Other dimensions still require preparation, repeated successful expeditions and their own bound guardian to become safe"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Your first deployment",
+      "text": "outposts."
     },
     {
       "type": "patchouli:crafting",

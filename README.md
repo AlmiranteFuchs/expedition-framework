@@ -9,6 +9,18 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
+## Current starter progression (alpha.13)
+
+The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
+an early journal, and build a **Stillness Dynamo + Essence Condenser** from vanilla
+materials. Two flakes and the machines produce one essence through standard FE;
+external FE generators also work. Refined essence powers the terminal milestone.
+The first Field Survey opens remote deployment, without an Overworld boss gate.
+Home experimentation is an optional, powered, reversible local breach.
+
+See [the complete starter chain](docs/stillness-progression.md) and
+[the open-frame art direction](docs/art-direction/stillness/README.md).
+
 ## Environment
 
 | Component   | Version                    |
@@ -750,11 +762,11 @@ chunk, and validate on real block state — not heightmap assumptions.
   wood, dark metal and ember accents, with separate block tops and a transparent
   root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
   before/after with `python tools/preview_heartwood.py` (Pillow required).
-- **Tests** — 159 unit tests + 137 core GameTests and 3 optional modded-biome probes.
+- **Tests** — 162 unit tests + 142 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.6.0-alpha.12.jar` assembled.
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.13.jar` assembled.
 - `./gradlew test` — 155 unit tests, 0 failures.
 - `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
@@ -961,7 +973,6 @@ The roadmap's alpha surface is feature-complete; next is hardening and feel:
 Frontier progression in alpha.12 adds a personal attention bar, warned hunting
 parties and pursuing guardians in uncleared dimensions. Checkpoints buy time;
 retreat cools attention. A bound boss victory and extraction liberate a dimension
-for everyone; ordinary repeated runs no longer replace that victory. Home
-liberation opens remote deployments, and dimensions without an authored boss get
-a generated liberation mission. See [the tuning guide](docs/frontier-progression.md)
+for everyone; ordinary repeated runs no longer replace that victory. First-survey proof now opens remote deployments, and dimensions without an authored boss get
+a generated liberation mission. Home is sheltered by the Stillness from alpha.13 onward. See [the tuning guide](docs/frontier-progression.md)
 for timings, refuge rules, counterplay and datapack settings.

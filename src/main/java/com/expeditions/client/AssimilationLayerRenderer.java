@@ -109,6 +109,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         } else {
             amp = 0;
         }
+        if(state.is(ModBlocks.DORMANT_LAYER.get())){living=false;amp=0;}
         float halo = living ? 0.03f + 0.72f * amp : 0;
 
         // Fresh tissue unfurls: a just-grown face scales in over ~10

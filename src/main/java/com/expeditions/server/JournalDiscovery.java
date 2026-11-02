@@ -42,7 +42,7 @@ public final class JournalDiscovery {
                 }
             }
         }
-        if (player.getInventory().items.stream().anyMatch(stack -> stack.is(ModItems.ASSIMILATION_ESSENCE.get()))) {
+        if (player.getInventory().items.stream().anyMatch(stack -> stack.is(ModItems.ASSIMILATION_ESSENCE.get()) || stack.is(ModItems.DORMANT_FLAKE.get()))) {
             unlock(player, JournalChapter.ESSENCE);
         }
         if (Assimilation.infection(player) > 0) unlock(player, JournalChapter.BLOOD);

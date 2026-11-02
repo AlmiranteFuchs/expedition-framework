@@ -27,6 +27,11 @@ public class AssimilationHeartBlock extends Block implements EntityBlock {
         super(properties);
     }
 
+    @Override protected void onRemove(BlockState old,Level level,BlockPos pos,BlockState next,boolean moving){
+        if(old.getBlock()!=next.getBlock() && level instanceof net.minecraft.server.level.ServerLevel server && level.getBlockEntity(pos) instanceof AssimilationHeartBlockEntity be)be.hibernate(server);
+        super.onRemove(old,level,pos,next,moving);
+    }
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {

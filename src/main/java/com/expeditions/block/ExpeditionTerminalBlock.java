@@ -118,5 +118,8 @@ public class ExpeditionTerminalBlock extends Block {
 
     static String format(Waypoint w) {
         return w.x() + ", " + w.y() + ", " + w.z();
+    }    @Override protected net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,net.minecraft.world.level.BlockGetter level,BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){
+        return FieldMachineShapes.shape("expedition_terminal",state.getValue(FACING));
     }
+
 }

@@ -109,6 +109,15 @@ public final class ModBlocks {
                     .noLootTable()
                     .lightLevel(state -> 11)));
 
+    public static final DeferredHolder<Block,com.expeditions.block.DormantLayerBlock> DORMANT_LAYER=BLOCKS.register("dormant_layer",
+            ()->new com.expeditions.block.DormantLayerBlock(BlockBehaviour.Properties.of().strength(.2f).noLootTable().noOcclusion().sound(SoundType.AZALEA_LEAVES).pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
+    public static final DeferredHolder<Block,com.expeditions.block.DormantHeartBlock> DORMANT_HEART=BLOCKS.register("dormant_heart",
+            ()->new com.expeditions.block.DormantHeartBlock(BlockBehaviour.Properties.of().strength(1.5f).noLootTable().sound(SoundType.WOOD)));
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> STILLNESS_DYNAMO=BLOCKS.register("stillness_dynamo",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> ESSENCE_CONDENSER=BLOCKS.register("essence_condenser",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
+
     private ModBlocks() {
     }
 }

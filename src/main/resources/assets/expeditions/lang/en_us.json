@@ -115,5 +115,12 @@
   "frontier.expeditions.stage.overrun": "Overrun",
   "frontier.expeditions.warning.overrun": "The hunt is closing in. More hunters answer. A pursuing guardian will follow.",
   "frontier.expeditions.stage.reckoning": "Reckoning",
-  "frontier.expeditions.warning.reckoning": "A guardian is coming. Retreat or fight for time. Only a terminal liberation mission can sever this dimension."
+  "frontier.expeditions.warning.reckoning": "A guardian is coming. Retreat or fight for time. Only a terminal liberation mission can sever this dimension.",
+  "block.expeditions.dormant_layer": "Dormant Bloom",
+  "block.expeditions.dormant_heart": "Dormant Heartwood",
+  "block.expeditions.stillness_dynamo": "Stillness Dynamo",
+  "block.expeditions.essence_condenser": "Essence Condenser",
+  "item.expeditions.dormant_flake": "Dormant Flake",
+  "machine.expeditions.breach_changed": "The local Stillness field has changed. Open breaches consume power.",
+  "machine.expeditions.breach_refused": "A condenser needs 4000 FE to open a local Overworld breach. Liberated ground stays silent."
 }

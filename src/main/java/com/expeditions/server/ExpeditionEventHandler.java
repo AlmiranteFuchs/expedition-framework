@@ -144,6 +144,7 @@ public final class ExpeditionEventHandler {
      * without fabricating a tick event.
      */
     public static void dwellPressure(ServerPlayer player) {
+        if(Stillness.suppresses(player.serverLevel(),player.blockPosition()))return;
         int interval = ExpeditionTuning.integer(player.level().dimension(),
                 "pressure.dwell_interval_ticks",
                 ExpeditionsConfig.pressureDwellIntervalTicks());

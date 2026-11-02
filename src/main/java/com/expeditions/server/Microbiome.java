@@ -51,11 +51,14 @@ public final class Microbiome {
 
     /** Whether the microbiome may grow or spawn in {@code level}. */
     public static boolean enabled(ServerLevel level) {
-        return ExpeditionTuning.bool(level.dimension(), "microbiome.enabled",
+        return (!Stillness.shelters(level) || Stillness.hasBreach(level))
+                && ExpeditionTuning.bool(level.dimension(), "microbiome.enabled",
                 ExpeditionsConfig.microbiomeEnabled())
                 && !savedData(level).isDimensionCleared(
                         level.dimension().location().toString());
     }
+
+    public static boolean enabledAt(ServerLevel level,BlockPos pos){return enabled(level) && !Stillness.suppresses(level,pos);}
 
     /**
      * Tries to seed a heart on a standable column in a ring around
@@ -66,7 +69,7 @@ public final class Microbiome {
      */
     public static Optional<BlockPos> trySpawnHeart(ServerLevel level,
             BlockPos center, RandomSource random) {
-        if(!enabled(level) || FrontierThreat.refuge(level,center)) return Optional.empty();
+        if(!enabledAt(level,center) || FrontierThreat.refuge(level,center)) return Optional.empty();
         int min = ExpeditionTuning.integer(level.dimension(), "microbiome.spawn_radius_min",
                 ExpeditionsConfig.microbiomeSpawnRadiusMin());
         int max = ExpeditionTuning.integer(level.dimension(), "microbiome.spawn_radius_max",
@@ -90,7 +93,7 @@ public final class Microbiome {
             return Optional.empty();
         }
         BlockPos heartPos = pos.setY(y.getAsInt()).immutable();
-        if(FrontierThreat.refuge(level,heartPos)) return Optional.empty();
+        if(!enabledAt(level,heartPos) || FrontierThreat.refuge(level,heartPos)) return Optional.empty();
         return level.setBlock(heartPos,
                 ModBlocks.ASSIMILATION_HEART.get().defaultBlockState(), 3)
                 ? Optional.of(heartPos)
@@ -117,7 +120,7 @@ public final class Microbiome {
      */
     public static Optional<BlockPos> seedColonyNear(ServerLevel level,
             BlockPos marker, RandomSource random) {
-        if (seedingSuppressed || !enabled(level) || FrontierThreat.refuge(level,marker)
+        if (seedingSuppressed || !enabledAt(level,marker) || FrontierThreat.refuge(level,marker)
                 || !ExpeditionTuning.bool(level.dimension(), "microbiome.marker_colonies",
                         ExpeditionsConfig.microbiomeMarkerColonies())) {
             return Optional.empty();

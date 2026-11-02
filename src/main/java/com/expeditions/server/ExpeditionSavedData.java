@@ -145,12 +145,20 @@ public class ExpeditionSavedData extends SavedData {
     private final FrontierThreat frontier=new FrontierThreat();
     public FrontierThreat frontier() { return frontier; }
 
+    private final Set<BlockPos> stillnessBreaches=new HashSet<>();
+    public Set<BlockPos> stillnessBreaches(){return Set.copyOf(stillnessBreaches);}
+    public boolean setStillnessBreach(BlockPos pos,boolean active){
+        if(active && !stillnessBreaches.contains(pos) && stillnessBreaches.size()>=64)return false;
+        boolean changed=active?stillnessBreaches.add(pos.immutable()):stillnessBreaches.remove(pos);
+        if(changed)setDirty();return true;
+    }
     public static ExpeditionSavedData create() {
         return new ExpeditionSavedData();
     }
 
     public static ExpeditionSavedData load(CompoundTag tag, HolderLookup.Provider lookup) {
         ExpeditionSavedData data = create();
+        for(long value:java.util.Arrays.stream(tag.getLongArray("StillnessBreaches")).limit(64).toArray())data.stillnessBreaches.add(BlockPos.of(value));
         for (Tag t : tag.getList(TAG_RUNS, Tag.TAG_COMPOUND)) {
             try {
                 data.ledger.restoreRun(readRun((CompoundTag) t));
@@ -570,6 +578,7 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_UNLOCKS, unlocks);
+        tag.putLongArray("StillnessBreaches",stillnessBreaches.stream().mapToLong(BlockPos::asLong).toArray());
         ListTag trophies = new ListTag();
         ledger.trophyRecords().forEach((player, trophyIds) -> {
             if (!trophyIds.isEmpty()) {

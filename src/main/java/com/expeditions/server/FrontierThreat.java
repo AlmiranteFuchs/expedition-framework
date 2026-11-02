@@ -35,7 +35,7 @@ public final class FrontierThreat {
     public static void suppressForTests(boolean value) { suppressed=value && Boolean.getBoolean("expeditions.gameTestRun"); }
     public static boolean rulesActive() { return !suppressed; }
     public static boolean enabled(ServerLevel level) {
-        return !suppressed && ExpeditionTuning.bool(level.dimension(),"frontier.enabled",ExpeditionsConfig.frontierEnabled());
+        return !suppressed && (!Stillness.shelters(level) || Stillness.hasBreach(level)) && ExpeditionTuning.bool(level.dimension(),"frontier.enabled",ExpeditionsConfig.frontierEnabled());
     }
     public static int limit(ServerLevel level) {
         return Math.clamp(ExpeditionTuning.integer(level.dimension(),"frontier.guardian_after_seconds",ExpeditionsConfig.frontierLimit()),60,7200);
@@ -72,7 +72,7 @@ public final class FrontierThreat {
         String dim=player.level().dimension().location().toString();var level=player.serverLevel();
         boolean cleared=data.isDimensionCleared(dim);
         boolean exposed=enabled(level) && !cleared && player.isAlive() && !player.isSpectator()
-                && (testSurvival || !player.isCreative()) && !refuge(level,player.blockPosition());
+                && (testSurvival || !player.isCreative()) && !refuge(level,player.blockPosition()) && !Stillness.suppresses(level,player.blockPosition());
         var root=residence(player);
         // Portal hopping cools the old clock instead of resetting it. Offline time never clears attention.
         for(String other:new HashSet<>(root.getAllKeys())) if(!other.equals(dim) && root.get(other) instanceof CompoundTag old)

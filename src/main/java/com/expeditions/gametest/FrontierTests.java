@@ -53,14 +53,15 @@ public final class FrontierTests {
             for(int i=0;i<8;i++)data.recordCampaignCompletion("minecraft:overworld");
             h.assertTrue(!data.isDimensionCleared("minecraft:overworld") && data.campaignState("minecraft:overworld")==CampaignState.ESTABLISHED,
                     "routine farming must never replace defeating the bound guardian");
+            data.resetCampaign("minecraft:overworld");
             var nether=manager.listStartable().stream().filter(d->d.dimension().equals("minecraft:the_nether")).toList();
-            h.assertTrue(!nether.isEmpty() && nether.stream().allMatch(d->d.requires().contains("expeditions:guardian_clear")),
+            h.assertTrue(!nether.isEmpty() && nether.stream().allMatch(d->d.requires().contains("expeditions:field_clear")),
                     "remote deployment must explain home liberation through normal requirements");
             h.assertTrue(nether.stream().anyMatch(d->d.bigBad() && d.minCampaignState()==CampaignState.ESTABLISHED),
                     "an automatic dimension must have a proof-bound liberation mission");
-            data.setDimensionCleared("minecraft:overworld");
+            data.recordCampaignCompletion("minecraft:overworld");
             h.assertTrue(manager.listStartable().stream().filter(d->d.dimension().equals("minecraft:the_nether"))
-                    .anyMatch(d->!d.requires().contains("expeditions:guardian_clear")),"home liberation must open deployments for everyone");
+                    .anyMatch(d->!d.requires().contains("expeditions:field_clear")),"home liberation must open deployments for everyone");
         } finally {end(data);}
         h.succeed();
     }

@@ -13,22 +13,22 @@
     {
       "type": "patchouli:text",
       "title": "An answering pulse",
-      "text": "Outside the Overworld spawn refuge, an uncleared dimension tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning. Hunters carry the infection; exposure still"
+      "text": "The sheltered Overworld has no natural Bloom attention. In an affected frontier dimension, the Bloom tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning."
     },
     {
       "type": "patchouli:text",
       "title": "An answering pulse",
-      "text": "requires contact."
+      "text": "Hunters carry the infection; exposure still requires contact."
     },
     {
       "type": "patchouli:text",
       "title": "An answering pulse",
-      "text": "The default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. The Overworld clock runs at half speed; establishing a foothold halves it"
+      "text": "The default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. Establishing a foothold halves its clock. A deliberately opened Overworld"
     },
     {
       "type": "patchouli:text",
       "title": "An answering pulse",
-      "text": "again. Some dimensions may be tuned differently."
+      "text": "breach can also attract attention while you stand inside it. Some dimensions may be tuned differently."
     },
     {
       "type": "patchouli:text",

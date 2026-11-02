@@ -148,12 +148,15 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     /** Block-entity ticker entry point: rate-limits, gates, then pulses. */
     public static void serverTick(ServerLevel level, BlockPos pos,
             BlockState state, AssimilationHeartBlockEntity heart) {
+        if(com.expeditions.server.Stillness.suppresses(level,pos)){
+            heart.hibernate(level);level.setBlockAndUpdate(pos,ModBlocks.DORMANT_HEART.get().defaultBlockState());return;
+        }
         // The heartbeat is audible, not just visible: on the lub's rising
         // edge the heart itself thumps — the same PulseWave the renderer
         // glows to, so light and sound never drift apart.
         double amp = PulseWave.amplitudeAt(level.getGameTime(), 0, pos.asLong());
         if (amp > 0.8 && heart.lastBeatAmp <= 0.8
-                && Microbiome.enabled(level)) {
+                && Microbiome.enabledAt(level,pos)) {
             level.playSound(null, pos, SoundEvents.WARDEN_HEARTBEAT,
                     SoundSource.BLOCKS, 1.0f, 0.95f);
         }
@@ -162,7 +165,7 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
                 "microbiome.growth_interval_ticks",
                 ExpeditionsConfig.microbiomeGrowthIntervalTicks());
         if ((level.getGameTime() + pos.asLong()) % interval != 0
-                || !Microbiome.enabled(level)) {
+                || !Microbiome.enabledAt(level,pos)) {
             return;
         }
         heart.pulse(level);
@@ -173,7 +176,12 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
      * chosen legal move. Public so game tests can drive pulses directly
      * without waiting on the interval gate.
      */
+    public void hibernate(ServerLevel level){
+        for(long value:colony){var p=BlockPos.of(value);if(level.hasChunkAt(p) && level.getBlockState(p).is(ModBlocks.ASSIMILATION_LAYER.get()))
+            level.setBlockAndUpdate(p,AssimilationLayerBlock.dormantState(level.getBlockState(p)));}
+    }
     public void pulse(ServerLevel level) {
+        if(!Microbiome.enabledAt(level,getBlockPos()))return;
         colony.removeIf(p -> !(level.getBlockState(BlockPos.of(p)).getBlock()
                 instanceof AssimilationLayerBlock));
         if (coverage(level) >= ExpeditionTuning.integer(level.dimension(),
@@ -186,7 +194,8 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         if (moves.isEmpty()) {
             return;
         }
-        apply(level, pickMove(level, new ArrayList<>(moves)));
+        var allowed=new ArrayList<>(moves);allowed.removeIf(m->com.expeditions.server.Stillness.suppresses(level,m.cell()));
+        if(!allowed.isEmpty())apply(level,pickMove(level,allowed));
     }
 
     /**

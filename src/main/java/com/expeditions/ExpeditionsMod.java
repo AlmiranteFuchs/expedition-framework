@@ -29,6 +29,8 @@ public class ExpeditionsMod {
 
     public ExpeditionsMod(IEventBus modEventBus, ModContainer modContainer) {
         ModBlocks.BLOCKS.register(modEventBus);
+        com.expeditions.registry.ModFeatures.FEATURES.register(modEventBus);
+        modEventBus.addListener(com.expeditions.block.entity.ResonanceMachineBlockEntity::registerCapabilities);
         com.expeditions.registry.ModEntities.ENTITIES.register(modEventBus);
         com.expeditions.registry.ModMenus.MENUS.register(modEventBus);
         modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->

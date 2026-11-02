@@ -119,6 +119,8 @@ public final class ExpeditionGameTests {
         // players tick once at the world spawn before teleporting.
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
+        com.expeditions.server.Stillness.suppressForTests(true);
+        com.expeditions.worldgen.DormantScarFeature.suppressForTests(true);
         com.expeditions.server.FrontierThreat.suppressForTests(true);
         // Mock players stand near marker colonies for whole tests — without
         // this they'd be converted to effigies mid-assertion.
@@ -3091,7 +3093,7 @@ public final class ExpeditionGameTests {
         return level.getEntitiesOfClass(
                 net.minecraft.world.entity.item.ItemEntity.class,
                 new net.minecraft.world.phys.AABB(pos).inflate(1.5),
-                e -> e.getItem().is(ModItems.ASSIMILATION_ESSENCE.get())).size();
+                e -> e.getItem().is(ModItems.DORMANT_FLAKE.get())).size();
     }
 
     // ---- checkpoint credits (M9) ----------------------------------------------

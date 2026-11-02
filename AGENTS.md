@@ -465,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 159 unit tests + 137/137 core GameTest in-game
+Verified: `build` + 162 unit tests + 142/142 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the
@@ -625,3 +625,34 @@ Temporary resistance protected the test player, so this verifies presentation an
 escalation, not a human survival balance verdict. The probe datapack was disabled,
 normal timing restored, temporary test effects removed, and Creative restored.
 HUD proof: `build/mcp-verification/screenshot-1793635703076-0.png`.
+
+
+## Stillness and essence bootstrap (alpha.13)
+
+The Overworld is sheltered by default, independently of the cleared flag. Live
+hearts hibernate into dormant heartwood, remaining supported colony faces become
+DormantLayerBlock, and raw flakes replace direct essence harvesting. Natural
+DormantScarFeature adds safe traces in new Overworld chunks. Its suppression seam
+is guarded by gameTestRun; old authored test columns must not gain ambient traces.
+Stillness also suppresses local infection, hive activation and passive pressure.
+`ResonanceProcessing` is pure domain policy; the block entities own paid batches.
+Vanilla-only Dynamo/Condenser recipes bootstrap the FE chain: 4000 FE from one raw
+flake, another flake plus 4000 FE makes one essence over 200 ticks. The standard
+NeoForge EnergyStorage and ItemHandler capabilities expose directional energy and
+input/output automation. No runtime dependency was added. Feedstock reservations,
+power and progress persist; breaking unfinished work returns raw feedstock.
+A charged condenser can open a deliberate 24-block local breach with a sigil.
+It requires a 4000 FE reserve and drains 20 FE/t, pauses processing, and fails
+closed on power loss/removal. Bounded breach positions persist in world SavedData;
+loaded machines validate activity without loading chunks. Cleared flags still win.
+First survey proof now gates remote deployment; no home boss victory is required.
+The journal and assay kit use raw flakes and cannot deadlock on refined essence.
+`tools/stillness_art.py` is the final field-equipment art pass, called last by the
+master generator. It does not touch approved Bloom atlases or user art exports.
+Open-frame models and their rotated selection/collision share native model JSON
+through FieldMachineShapes; keep visible open space. The wheel is currently static.
+New art and actual screenshots live in docs/art-direction/stillness. The generated
+concept is reference only; native game textures remain 16x16. Five new tests use
+expeditions_stillness; arena comes from the registered Gradle namespace list.
+Verified: build/alphaBundle, 162 unit tests, 142 core GameTests (145 including three
+optional biome probes), plus actual client production/UI and final geometry checks.

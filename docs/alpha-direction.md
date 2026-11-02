@@ -74,6 +74,15 @@ origins of the organism and ancient infrastructure remain unresolved.
    escalation have an accelerated live check; long survival balance remains an
    alpha playtest task. See `frontier-progression.md` for the tuning table.
 
+7. **A workshop before the frontier**: alpha.13 shelters the Overworld with the
+   Stillness and introduces safe dormant flakes, vanilla-only dynamo/condenser
+   recipes and standard FE interoperability. The journal and assay kit precede
+   refined essence; first-survey proof opens remote deployment. A powered local
+   breach makes home experimentation optional and reversible. The adopted art
+   uses Create-inspired open frames, a glass vessel and a tilted chart lectern.
+   Build, 162 unit tests and 142 core GameTests pass; actual client production,
+   GUI and final model geometry were checked. See `stillness-progression.md`.
+
 ## Studied references
 
 - [Patchouli discovery locks](https://vazkiimods.github.io/Patchouli/docs/patchouli-basics/advancement-locking/):

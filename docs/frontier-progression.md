@@ -1,5 +1,9 @@
 # Frontier progression: alpha.12 balance pass
 
+**Historical home rules:** alpha.13 replaces home liberation with the Stillness
+and first-survey readiness. See [the current starter chain](stillness-progression.md).
+The other-dimension attention table below remains the frontier reference.
+
 This is an initial playable tuning pass, not a claim of completed long-term balance.
 The player can enter dangerous places early through their native portals. The
 Bloom makes staying costly; liberation makes settling there practical.

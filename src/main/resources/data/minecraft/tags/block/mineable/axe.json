@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "expeditions:stillness_dynamo",
+    "expeditions:essence_condenser",
+    "expeditions:dormant_heart"
+  ]
+}

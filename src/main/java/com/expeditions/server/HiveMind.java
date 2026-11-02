@@ -23,7 +23,8 @@ public final class HiveMind {
         return entity.getData(ModAttachments.ASSIMILATED)>0;
     }
     public static boolean active(Mob mob) {
-        return infected(mob) && mob.isAlive() && !AssimilationProtection.protectedFromInfection(mob);
+        return infected(mob) && mob.isAlive() && !AssimilationProtection.protectedFromInfection(mob)
+                && (!(mob.level() instanceof ServerLevel level) || !Stillness.suppresses(level,mob.blockPosition()));
     }
     public static boolean validHost(Mob mob,LivingEntity candidate) {
         return candidate!=null && candidate!=mob && candidate.isAlive() && candidate.level()==mob.level()

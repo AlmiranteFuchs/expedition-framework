@@ -1,4 +1,4 @@
-# 0.6.0-alpha.12: playable alpha candidate
+# 0.6.0-alpha.13: playable alpha candidate
 
 Minecraft 1.21.1, NeoForge 21.1.x, Java 21. Patchouli 1.21.1-92-NEOFORGE is required
 for the guidebook. `gradlew alphaBundle` stages both required jars in `build/alpha`.
@@ -234,3 +234,19 @@ hunting escalation, guardian arrival messaging and ownership records. Temporary
 resistance protected the player during this check. The probe was disabled and
 normal settings restored afterward. This is not a long-form survival balance test.
 HUD proof: `build/mcp-verification/screenshot-1793635703076-0.png`.
+
+
+## Alpha.13 Stillness and starter workshop
+
+The alpha.12 home-liberation requirement is superseded: home is now sheltered by
+the Stillness, with safe dormant material and no natural Bloom pressure. The new
+starter loop, FE interfaces, local reversal and art are documented in
+`stillness-progression.md`. Build and 162 unit tests pass; all 142 core GameTests
+pass (145 including optional probes). Five Stillness tests cover bootstrap recipes,
+real adjacent FE transfer, external input, processing persistence, cold colony
+conversion, local power-loss protection and natural dormant generation.
+
+The actual client produced essence in adjacent machines and displayed the paid
+input, output, energy bar and progress. The final wheel geometry and tilted chart
+lectern were visually checked. Saved screenshots live in
+`docs/art-direction/stillness/`. The wheel geometry is static in this alpha.

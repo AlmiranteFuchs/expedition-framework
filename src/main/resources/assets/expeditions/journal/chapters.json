@@ -3,16 +3,16 @@
     "title": "I. A field guide",
     "pages": [
       {
-        "heading": "The field guide",
-        "body": "The cover was warm before you touched it. The blank paper feels almost like bark.\n\nThis is a working guide to the frontier. Its chapters fill when you find something worth recording. Browse the categories to read your discoveries. The Unwritten pages entry offers hints for the trails still ahead.\n\nThe last page of this chapter records your current expedition."
+        "heading": "A quiet world",
+        "body": "The Overworld is sheltered by the Stillness. Live Bloom cannot normally take hold here. Your home needs neither liberation nor fuel to remain sheltered.\n\nLook for small pale, cold traces on natural ground. Harvest this dormant tissue for flakes. It does not spread or infect. Newly explored Overworld terrain contains these traces; colonies whose hearts are gone leave the same dormant material."
       },
       {
-        "heading": "Begin at the roots",
-        "body": "Look for pale growth and its ember-lit heart. Harvest attached growth for assimilation essence; break its heart to arrest that colony.\n\nA book + one essence makes this journal. Discovering essence also teaches your crafting book the terminal and attunement sigil recipes.\n\nThe terminal is your base of operations. Bring it somewhere you can safely return."
+        "heading": "From traces to instruments",
+        "body": "A book and a dormant flake make this journal. The assay kit also uses a raw flake rather than active essence. Neither needs a working machine.\n\nBuild a Stillness Dynamo and an Essence Condenser from ordinary iron, copper, glass, redstone and a furnace. Place them next to each other. Feed a flake into each: the dynamo burns one into 4000 FE; the condenser spends that power and its second flake to make one assimilation essence in ten seconds. Other FE generators can supply the condenser instead."
       },
       {
-        "heading": "A place to prepare",
-        "body": "The first 128 blocks around Overworld world spawn are a preparation refuge: ambient hearts do not seed there and Bloom attention cools. Existing or deliberately placed infected tissue still requires care.\n\nSurvey twice to establish a foothold, recover Deep Salvage, then face Heart of the Thicket. Its extraction liberates the Overworld and opens remote deployments. Dangerous native portals remain accessible before that point."
+        "heading": "Your first deployment",
+        "body": "Make the terminal using refined essence, then complete Field Survey to open remote deployments. You do not need to defeat an Overworld boss to leave home.\n\nThe first survey is practice with routes, checkpoints and extraction. The hostile frontier is elsewhere. Other dimensions still require preparation, repeated successful expeditions and their own bound guardian to become safe outposts."
       }
     ]
   },
@@ -22,7 +22,7 @@
     "pages": [
       {
         "heading": "A fire under bark",
-        "body": "Pale veins take hold in stone. The air loses its color. Somewhere nearby, something beats.\n\nA colony grows from an assimilation heart. Its veins spread along sturdy faces; the heart keeps them alive. Fresh growth slowly drains color from its host, leaving the land ashen. Ember knots pulse with the colony while its heart lives. Breaking that heart arrests its colony.\n\nWatch the ember flecks. They are a warning before the land becomes unfamiliar."
+        "body": "The pale traces at home are the quiet remains of something held in suspension. Elsewhere the same material can carry an ember-lit heartbeat.\n\nLiving colonies spread from assimilation hearts. Break the heart to stop its colony: attached tissue becomes dormant while preserving its shape. Detached tissue yields dormant flakes rather than finished essence. Cold traces do not spread or infect.\n\nThe approved pale and amber material marks the same organism in both states; a living heartbeat makes the difference."
       },
       {
         "heading": "Work from the edge",
@@ -32,15 +32,19 @@
   },
   "essence": {
     "title": "III. What remains",
-    "unlock_hint": "Harvest assimilation growth and collect its essence. Carrying a sample is enough to make these pages answer.",
+    "unlock_hint": "Collect a dormant flake or a sample of refined assimilation essence.",
     "pages": [
       {
-        "heading": "A little borrowed heat",
-        "body": "The sample cools in water, then warms again in your palm. It seems reluctant to become an ordinary material.\n\nAssimilation essence comes from harvesting attached growth in survival. The colony must have something left to harvest.\n\nCombine a book with one essence to make another field journal. Your discoveries belong to you; a replacement book remembers them."
+        "heading": "Stored change",
+        "body": "Dormant flakes hold a little of what the Stillness has suspended. They are raw material, not active essence.\n\nThe Stillness Dynamo accepts flakes in its left slot and exports Forge Energy from its sides. One flake yields 4000 FE. A neighboring condenser receives the power without a cable. Connect another mod’s FE cables or generator if you prefer."
       },
       {
-        "heading": "Two useful constructions",
-        "body": "Terminal, in a crafting table:\nIron / Iron / Iron\nEssence / Amethyst / Essence\nCopper / Redstone / Copper\n\nAttunement sigil: three essence + one amethyst shard, anywhere in the grid. Use the sigil against a terminal to attest your attunement. It is proof, so it is not consumed.\n\nThe crafting book has both recipes."
+        "heading": "Condensing a sample",
+        "body": "The Essence Condenser consumes one dormant flake and 4000 FE to produce one assimilation essence. Processing takes ten seconds when powered. The right slot holds the result. Hoppers can supply raw input and take completed essence.\n\nThe full standalone loop therefore needs two flakes per essence: one for fuel, one for the sample. The machines themselves need only vanilla materials."
+      },
+      {
+        "heading": "Opening the field",
+        "body": "Later, sneak-use an attunement sigil on a charged condenser to reverse the Stillness locally. Opening requires a 4000 FE reserve; the open breach consumes 20 FE per tick. Refining pauses while it is open.\n\nThe breach reaches twenty-four blocks. Inside, live hearts can operate and contact infection is possible. Outside, home remains sheltered. Sneak-use the sigil again to close it; loss of power closes it safely. Living colonies there become dormant. Liberated dimensions remain silent even inside an attempted breach."
       }
     ]
   },
@@ -134,7 +138,7 @@
     "pages": [
       {
         "heading": "An answering pulse",
-        "body": "The forest stops pretending it has not seen you.\n\nOutside the Overworld spawn refuge, an uncleared dimension tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning. Hunters carry the infection; exposure still requires contact.\n\nThe default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. The Overworld clock runs at half speed; establishing a foothold halves it again. Some dimensions may be tuned differently.\n\nA checkpoint removes 45 seconds of attention. Leaving or resting in the spawn refuge cools it twice as fast as it rises. Logging out or dying does not reset it. A disruption charm prevents new infection, not the hunt.\n\nThe survey’s dimensional pressure is a separate shared measure that strengthens expedition waves. The attention bar measures your personal exposure."
+        "body": "The forest stops pretending it has not seen you.\n\nThe sheltered Overworld has no natural Bloom attention. In an affected frontier dimension, the Bloom tracks your presence. A top-screen bar counts toward the next escalation: Listening, Noticed, Hunted, Overrun, then Reckoning. Hunters carry the infection; exposure still requires contact.\n\nThe default frontier grants two quiet minutes, sends hunters after four, intensifies at seven, and calls a pursuing guardian after ten effective minutes. Establishing a foothold halves its clock. A deliberately opened Overworld breach can also attract attention while you stand inside it. Some dimensions may be tuned differently.\n\nA checkpoint removes 45 seconds of attention. Leaving or resting in the spawn refuge cools it twice as fast as it rises. Logging out or dying does not reset it. A disruption charm prevents new infection, not the hunt.\n\nThe survey’s dimensional pressure is a separate shared measure that strengthens expedition waves. The attention bar measures your personal exposure."
       }
     ]
   },
@@ -172,7 +176,7 @@
     "pages": [
       {
         "heading": "A quieter country",
-        "body": "The roots remain. Their orders do not.\n\nRoutine expeditions establish a foothold after two completions. The terminal then offers that dimension’s Sever the Bloom mission, or its authored confrontation. Defeat the mission’s bound guardian and extract to liberate the dimension for everyone. Routine completions alone cannot replace that proof.\n\nLiberation silences ambient heart seeding, growth and infection there; the attention bar and pursuit hunts end. Dormant growth remains as a scar. Ordinary native monsters and vanilla hazards still exist.\n\nLiberating the Overworld unlocks remote terminal deployments. Native portals remain usable earlier, if you accept the danger. A guardian sent by the hunt is only an echo: killing it does not sever the dimension."
+        "body": "The roots remain. Their orders do not.\n\nRoutine expeditions establish a foothold after two completions. The terminal then offers that dimension’s Sever the Bloom mission, or its authored confrontation. Defeat the mission’s bound guardian and extract to liberate the dimension for everyone. Routine completions alone cannot replace that proof.\n\nLiberation silences ambient heart seeding, growth and infection there; the attention bar and pursuit hunts end. Dormant growth remains as a scar. Ordinary native monsters and vanilla hazards still exist.\n\nCompleting the first Field Survey opens remote terminal deployments. The Stillness already shelters home; its optional confrontations do not gate the frontier. Native portals remain usable earlier, if you accept the danger. A guardian sent by the hunt is only an echo: killing it does not sever the dimension."
       }
     ]
   }
