@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "expeditions:block/assimilation_layer"
+    "layer0": "expeditions:item/assimilation_layer"
   }
 }

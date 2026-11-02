@@ -130,5 +130,7 @@ def gen():
 
     from field_equipment_art import gen as field_art
     field_art()
+    from item_art import gen as item_art
+    item_art()
 
 if __name__=='__main__':gen()

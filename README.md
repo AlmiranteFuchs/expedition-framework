@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.15)
+## Current starter progression (alpha.16)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -29,6 +29,10 @@ craft a **Field Ward** or **Heartglass Lens**; carry home-generated power in a
 
 See [the complete starter chain](docs/stillness-progression.md) and
 [the open-frame art direction](docs/art-direction/stillness/README.md).
+
+The alpha.16 inventory pass redraws the handheld family and all compass frames,
+adds distinct living/dormant tissue icons, and frames the ten 3D block-item models
+consistently. [See the actual native sprites and in-game inventory](docs/art-direction/items/README.md).
 
 ## Environment
 
