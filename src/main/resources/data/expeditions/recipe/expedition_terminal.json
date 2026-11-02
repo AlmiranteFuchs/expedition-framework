@@ -1,13 +1,30 @@
 {
   "type": "minecraft:crafting_shaped",
   "category": "misc",
-  "pattern": ["III", "EAE", "CRC"],
+  "pattern": [
+    "III",
+    "EAE",
+    "CRC"
+  ],
   "key": {
-    "I": {"item": "minecraft:iron_ingot"},
-    "E": {"item": "expeditions:assimilation_essence"},
-    "A": {"item": "minecraft:amethyst_shard"},
-    "C": {"item": "minecraft:copper_ingot"},
-    "R": {"item": "minecraft:redstone"}
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "E": {
+      "item": "expeditions:assimilation_essence"
+    },
+    "A": {
+      "item": "minecraft:glass"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
   },
-  "result": {"id": "expeditions:expedition_terminal", "count": 1}
+  "result": {
+    "id": "expeditions:expedition_terminal",
+    "count": 1
+  }
 }

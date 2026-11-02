@@ -465,7 +465,7 @@ and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
 load. The cleanup search checks the global visible UUID lookup before bounded
 full-column section storage; never discard a live run's owned horde.
 
-Verified: `build` + 168 unit tests + 148/148 core GameTest in-game
+Verified: `build` + 172 unit tests + 154/154 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
 `WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
 `JournalBook` opens the guide through the client callback and remembers the
@@ -694,3 +694,5 @@ and the unproven-core refusal. The demo core remains unattuned; proven 120 R/t
 production and reset behavior use the terminal interaction test. Empty cradles
 exclude the animated-node placeholder from FieldMachineShapes until HAS_CORE.
 The native preview/motion/UI images are under docs/art-direction/stillness.
+
+Alpha.15 field preparation: `expeditions_preparation` covers six interaction tests, including real Survey + Trace Recovery completions and legacy tutorial-proof migration. Field Ward uses a paid game-time deadline (4000 R / 120s / 8-block sphere); it pauses personal attention accrual and dwell pressure, never clears attention, prevents infection or stops existing hunts. Ward searches only loaded nearby chunk block entities and only at each mechanic cadence. Cells store charge in the synchronized RESONANCE stack component and expose standard FE item capabilities. Starter trace attempt/address persist once in world SavedData; the bounded natural-ground search may refuse ocean/obstructed spawns.

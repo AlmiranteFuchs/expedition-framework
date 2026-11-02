@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "expeditions:block/field_ward"
+    },
+    "lit=true": {
+      "model": "expeditions:block/field_ward_lit"
+    }
+  }
+}

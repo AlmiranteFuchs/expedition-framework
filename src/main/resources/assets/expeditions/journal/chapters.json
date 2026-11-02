@@ -4,7 +4,7 @@
     "pages": [
       {
         "heading": "A quiet world",
-        "body": "The Overworld is sheltered by the Stillness. Live Bloom cannot normally take hold here. Your home needs neither liberation nor fuel to remain sheltered.\n\nLook for small pale, cold traces on natural ground. Harvest this dormant tissue for flakes. It does not spread or infect. Newly explored Overworld terrain contains these traces; colonies whose hearts are gone leave the same dormant material."
+        "body": "The Overworld is sheltered by the Stillness. Live Bloom cannot normally take hold here. Your home needs neither liberation nor fuel to remain sheltered.\n\nLook for small pale, cold traces on natural ground. Harvest this dormant tissue for flakes. It does not spread or infect. Newly explored Overworld terrain contains these traces; colonies whose hearts are gone leave the same dormant material.\n\nA one-time search places a starter trace on suitable natural land within 128 blocks of world spawn and records its location on your first visit. An ocean spawn may have no suitable ground; ordinary traces still generate farther afield."
       },
       {
         "heading": "From traces to instruments",
@@ -12,7 +12,7 @@
       },
       {
         "heading": "Your first deployment",
-        "body": "Make the terminal using refined essence, then complete Field Survey to open remote deployments. You do not need to defeat an Overworld boss to leave home.\n\nThe first survey is practice with routes, checkpoints and extraction. The hostile frontier is elsewhere. Other dimensions still require preparation, repeated successful expeditions and their own bound guardian to become safe outposts."
+        "body": "Make the terminal using refined essence, then complete Field Survey to open remote deployments. You do not need to defeat an Overworld boss to leave home.\n\nThe first survey is practice with routes, checkpoints and extraction. The hostile frontier is elsewhere. Other dimensions still require preparation, repeated successful expeditions and their own bound guardian to become safe outposts.\n\nThe terminal needs glass rather than amethyst. Complete Field Survey to learn checkpoints, then Trace Recovery to learn carrying bound cargo back to extraction. Together these establish the home campaign and open Deep Salvage; repeating Survey is unnecessary."
       }
     ]
   },
@@ -26,7 +26,7 @@
       },
       {
         "heading": "Work from the edge",
-        "body": "Take essence from attached growth before destroying the heart if you need a sample. Growth lost with its support yields no harvest.\n\nInfection requires physical contact with living Bloom tissue or an infected body. Merely standing nearby is safe. Leave contact to let early exposure subside.\n\nA Disruption Charm, held in the offhand or worn in a Curios charm slot, blocks new infection. String, amethyst, copper and essence make one. It does not cure an infection already established. Infected creatures keep their bodies but share threats and move as one unsettled mind.\n\nThis is not proof the Bloom was born here. Only proof it has learned to live here."
+        "body": "Harvest attached tissue for raw flakes. Recover a heart if you want to build field instruments. Growth lost with its support yields no harvest.\n\nInfection requires physical contact with living Bloom tissue or an infected body. Merely standing nearby is safe. Leave contact to let early exposure subside.\n\nA Disruption Charm, held in the offhand or worn in a Curios charm slot, blocks new infection. String, amethyst, copper and essence make one. It does not cure an infection already established. Infected creatures keep their bodies but share threats and move as one unsettled mind.\n\nThis is not proof the Bloom was born here. Only proof it has learned to live here."
       }
     ]
   },
@@ -189,6 +189,28 @@
       {
         "heading": "Power after silence",
         "body": "Guardian victory and successful extraction leave more than quiet ground. Craft an Unattuned Severance Core and attune it at a terminal here. A Severance Cradle can then draw stable power from the remnant anywhere.\n\nThis proof is shared with the world and persists with the campaign. A count-only cleared mark is not an accepted guardian victory. Existing genuine boss trophies can recover old proof. Resetting a source dimension pauses its cores until liberation is restored."
+      }
+    ]
+  },
+  "preparation": {
+    "title": "XIV. What we bring back",
+    "unlock_hint": "Recover an assimilation heart, or obtain a Heartglass Lens or Field Ward.",
+    "pages": [
+      {
+        "heading": "The return matters",
+        "body": "Essence is a workshop material, not the only reason to cross the threshold. A recovered living heart can become a contained engine, a Heartglass Lens, or a Field Ward. Each consumes the specimen during crafting. Choose which capability your next journey needs.\n\nTokens banked at checkpoints buy supplies or fund later deployments. Successful home training follows Survey, Trace Recovery, Deep Salvage and the guardian. Other dimensions establish footholds before their liberation mission."
+      },
+      {
+        "heading": "Carry the current",
+        "body": "Craft a Resonance Cell from a dormant knot, two essence, copper and iron. It holds 16000 Resonance and starts empty. Sneak-use a generator to draw power; use a compatible receiver to supply it. Hold use for repeated transfers. Standard FE item chargers can fill it too.\n\nThe cell keeps its charge when carried home, dropped or saved. Spend home power on your next journey instead of building a generator at every stop."
+      },
+      {
+        "heading": "A moment to regroup",
+        "body": "Craft a Field Ward around a recovered heart. Place it, then use a cell containing at least 4000 Resonance to light it. For two minutes, Bloom attention holds steady and personal dwell pressure pauses within eight blocks. One cell holds four charges.\n\nThe field does not lower existing attention, stop an existing hunt, prevent infection or block ordinary enemies. Overlapping wards do not multiply the benefit. Check the ward with an empty hand. You can recover the instrument, but breaking it loses its remaining charge. Its paid deadline keeps running while the chunk is unloaded."
+      },
+      {
+        "heading": "Measure the dark",
+        "body": "A Heartglass Lens uses a recovered heart, essence, copper and amethyst. Carry it with a charged cell while using the issued compass. Finish a reading to spend 200 Resonance and see horizontal distance and signed height to the next checkpoint or extraction.\n\nThe original needle and elevation ember remain useful without either upgrade. A lens gives a measurement, not a path through walls. It is kept after extraction; the terminal only recalls its issued compass."
       }
     ]
   }

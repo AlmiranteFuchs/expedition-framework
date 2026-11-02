@@ -128,4 +128,7 @@ def gen():
     for x,y in [(52,34),(112,34)]+[(7+c*18,83+r*18) for r in range(3) for c in range(9)]+[(7+c*18,141) for c in range(9)]:d.rectangle((x,y,x+17,y+17),fill=PALE[1]);d.rectangle((x+1,y+1,x+16,y+16),fill=PALE[2]);d.line((x+1,y+17,x+17,y+17),fill=PALE[5])
     d.line((80,42,103,42),fill=PALE[1],width=5);d.polygon([(99,36),(107,42),(99,48)],fill=PALE[1]);save('gui/resonance',gui)
 
+    from field_equipment_art import gen as field_art
+    field_art()
+
 if __name__=='__main__':gen()

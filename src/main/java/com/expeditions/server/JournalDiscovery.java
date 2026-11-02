@@ -45,6 +45,7 @@ public final class JournalDiscovery {
         if (player.getInventory().items.stream().anyMatch(stack -> stack.is(ModItems.ASSIMILATION_ESSENCE.get()) || stack.is(ModItems.DORMANT_FLAKE.get()))) {
             unlock(player, JournalChapter.ESSENCE);
         }
+        if(player.getInventory().items.stream().anyMatch(s->s.is(ModItems.ASSIMILATION_HEART_ITEM.get())||s.is(ModItems.SURVEY_LENS.get())||s.is(ModItems.FIELD_WARD_ITEM.get()))) unlock(player,JournalChapter.PREPARATION);
         if (Assimilation.infection(player) > 0) unlock(player, JournalChapter.BLOOD);
         var manager = ExpeditionManager.get(player.server);
         if (manager.activeRun(player.getUUID()).filter(run -> run.guardianEncounter().isPresent()).isPresent()) {

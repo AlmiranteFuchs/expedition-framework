@@ -1,0 +1,36 @@
+{
+  "dimension": "minecraft:overworld",
+  "display_name": "Trace Recovery",
+  "difficulty": 1,
+  "generate": {
+    "checkpoints": 3,
+    "min_spacing": 40,
+    "max_spacing": 72
+  },
+  "tokens": 30,
+  "bonus_tokens": 10,
+  "bonus_time_seconds": 420,
+  "requires": [
+    "expeditions:field_clear"
+  ],
+  "grants": [
+    "expeditions:recovery_clear"
+  ],
+  "objectives": [
+    {
+      "id": "cargo",
+      "description": "Recover the sealed field sample",
+      "type": "recover_artifact",
+      "checkpoint": 2,
+      "required": true
+    },
+    {
+      "id": "pace",
+      "description": "Extract within six minutes",
+      "type": "time_limit",
+      "seconds": 360,
+      "required": false,
+      "bonus_tokens": 8
+    }
+  ]
+}

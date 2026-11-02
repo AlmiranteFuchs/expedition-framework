@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "CIC",
+    "EKE",
+    "CIC"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "E": {
+      "item": "expeditions:assimilation_essence"
+    },
+    "K": {
+      "item": "expeditions:dormant_knot"
+    }
+  },
+  "result": {
+    "id": "expeditions:resonance_cell",
+    "count": 1
+  }
+}

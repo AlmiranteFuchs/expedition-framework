@@ -63,6 +63,11 @@
       "type": "patchouli:text",
       "title": "After silence",
       "text": "Stand in a dimension whose major threat has been defeated and whose campaign has been cleared."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What we bring back",
+      "text": "Recover an assimilation heart, or obtain a Heartglass Lens or Field Ward."
     }
   ]
 }

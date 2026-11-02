@@ -1,0 +1,22 @@
+{
+  "criteria": {
+    "heart": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "expeditions:assimilation_heart"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "recipes": [
+      "expeditions:field_ward",
+      "expeditions:survey_lens"
+    ]
+  }
+}

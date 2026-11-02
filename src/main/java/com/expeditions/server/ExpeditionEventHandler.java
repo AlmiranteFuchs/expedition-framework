@@ -76,6 +76,12 @@ public final class ExpeditionEventHandler {
             // Runs that ended while the member was offline can leave a compass
             // behind in their inventory.
             manager.sweepCompasses(player);
+            if(manager.unlocks(player.getUUID()).contains("expeditions:salvage_clear") || manager.unlocks(player.getUUID()).contains("expeditions:guardian_clear"))
+                manager.grantUnlock(player.getUUID(),"expeditions:recovery_clear");
+            if(!player.getPersistentData().getBoolean("expeditions:trace_hint")){
+                manager.savedData().firstTrace().ifPresent(p->player.sendSystemMessage(Component.translatable("equipment.expeditions.first_trace",p.getX(),p.getZ())));
+                if(manager.savedData().firstTrace().isPresent())player.getPersistentData().putBoolean("expeditions:trace_hint",true);
+            }
             boolean hadRun = manager.activeRun(player.getUUID()).isPresent();
             manager.resumeOrFail(player).ifPresentOrElse(
                     run -> player.sendSystemMessage(Component.translatable(
@@ -96,6 +102,7 @@ public final class ExpeditionEventHandler {
      */
     public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
         ExpeditionManager.pruneOrphanMarkers(event.getServer());
+        FirstTrace.seed(event.getServer().overworld(),ExpeditionManager.get(event.getServer()).savedData());
     }
 
     /**
@@ -155,7 +162,7 @@ public final class ExpeditionEventHandler {
         }
         int amount = ExpeditionTuning.integer(player.level().dimension(),
                 "pressure.dwell_amount", ExpeditionsConfig.pressureDwellAmount());
-        if (amount <= 0) {
+        if (amount <= 0 || com.expeditions.block.entity.FieldWardBlockEntity.covers(player.serverLevel(),player.blockPosition())) {
             return;
         }
         ExpeditionSavedData data = player.server.overworld().getDataStorage()

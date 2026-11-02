@@ -69,7 +69,7 @@ public final class JournalDiscoveryTests {
         var recipe = (CraftingRecipe) holder.value();
         var input = CraftingInput.of(3, 3, java.util.List.of(
                 new ItemStack(Items.IRON_INGOT), new ItemStack(Items.IRON_INGOT), new ItemStack(Items.IRON_INGOT),
-                new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()), new ItemStack(Items.AMETHYST_SHARD),
+                new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()), new ItemStack(Items.GLASS),
                 new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()), new ItemStack(Items.COPPER_INGOT),
                 new ItemStack(Items.REDSTONE), new ItemStack(Items.COPPER_INGOT)));
         helper.assertTrue(recipe.matches(input, level), "the guide's recipe must match the actual crafting recipe");

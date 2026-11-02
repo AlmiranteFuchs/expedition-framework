@@ -28,6 +28,8 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<com.expeditions.block.entity.ResonanceMachineBlockEntity>> RESONANCE_MACHINE=
             BLOCK_ENTITIES.register("resonance_machine",()->BlockEntityType.Builder.of(com.expeditions.block.entity.ResonanceMachineBlockEntity::new,
                     ModBlocks.STILLNESS_DYNAMO.get(),ModBlocks.ESSENCE_CONDENSER.get(),ModBlocks.LIVING_HEART_ENGINE.get(),ModBlocks.SEVERANCE_GENERATOR.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<com.expeditions.block.entity.FieldWardBlockEntity>> FIELD_WARD=
+            BLOCK_ENTITIES.register("field_ward",()->BlockEntityType.Builder.of(com.expeditions.block.entity.FieldWardBlockEntity::new,ModBlocks.FIELD_WARD.get()).build(null));
     private ModBlockEntities() {
     }
 }

@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.14)
+## Current starter progression (alpha.15)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -19,6 +19,13 @@ also work. A captured-heart engine and guardian-earned severed core extend the
 power progression; see [Resonance power](docs/resonance-power.md). Refined essence powers the terminal milestone.
 The first Field Survey opens remote deployment, without an Overworld boss gate.
 Home experimentation is an optional, powered, reversible local breach.
+
+Survey now leads into **Trace Recovery**, a separate cargo tutorial, before Deep
+Salvage. The terminal uses glass instead of amethyst. A one-time bounded search
+records a starter trace near spawn on suitable natural land. Recovered hearts
+craft a **Field Ward** or **Heartglass Lens**; carry home-generated power in a
+**Resonance Cell** to use them on the next expedition. See
+[Field preparation](docs/field-preparation.md) for costs and limits.
 
 See [the complete starter chain](docs/stillness-progression.md) and
 [the open-frame art direction](docs/art-direction/stillness/README.md).
@@ -645,7 +652,7 @@ chunk, and validate on real block state — not heightmap assumptions.
   armor and a carried attunement sigil delay the take, capped short of
   immunity — you can stall the Bloom, never refuse it.
 - **Field journal** — `expeditions:expedition_field_journal` (book +
-  assimilation essence). Right-click opens a thirteen-chapter field guide.
+  assimilation essence). Right-click opens a fourteen-chapter field guide.
   Chapters unlock from server-observed discoveries and survive death,
   relogging and replacement books. Locked entries explain what to discover.
   Its field-record pages include the active expedition (name, dimension,

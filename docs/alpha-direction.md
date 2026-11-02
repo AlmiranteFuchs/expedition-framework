@@ -104,3 +104,11 @@ origins of the organism and ancient infrastructure remain unresolved.
 - [NeoForge entity renderer documentation](https://github.com/neoforged/Documentation/blob/main/docs/entities/renderer.md):
   custom geometry/layer registration. The implementation targets this project's
   1.21.1 API; newer renderer-state APIs are not used.
+
+9. **Bring preparation forward (alpha.15)**: distinct cargo training replaces the
+   repeated-survey gate; glass simplifies the terminal; a bounded spawn trace
+   provides a first-find address where natural ground exists. Captured hearts
+   craft a finite Field Ward or Heartglass Lens; carried Resonance Cells give
+   home generation a use on the next trip. Legacy salvage veterans retain access.
+   Build, 172 unit tests and 154 core GameTests pass; ward payment, lens reading
+   and journal opening were client-verified. See `field-preparation.md`.

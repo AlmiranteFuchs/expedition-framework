@@ -16,11 +16,11 @@ def write(path, data):
 
 groups = [
     ('beginnings', 'First roots', 'expeditions:expedition_field_journal',
-     'Begin with a sample of the Bloom. Harvest attached growth for essence, then craft the instruments that let you return home.',
+     'Begin with a sample of the Bloom. Harvest dormant traces for flakes, then craft the instruments that let you return home.',
      ['first_steps', 'essence', 'terminal', 'wayfinding']),
     ('expeditions', 'Beyond the threshold', 'expeditions:expedition_terminal',
      'Deploy, follow the compass, secure each checkpoint and extract. These pages answer as you put the instruments to use.',
-     ['checkpoints', 'cargo', 'defense', 'extraction']),
+     ['checkpoints', 'cargo', 'defense', 'extraction', 'preparation']),
     ('bloom', 'The living country', 'expeditions:assimilation_heart',
      'Approach a heart to observe the Bloom. Exposure or a blood sample opens the assay; awareness reveals what the land has learned.',
      ['bloom', 'blood', 'pressure']),
@@ -33,7 +33,7 @@ icons = {'first_steps':'expedition_field_journal', 'bloom':'assimilation_heart',
          'wayfinding':'expedition_compass', 'checkpoints':'expedition_checkpoint',
          'cargo':'expedition_artifact', 'defense':'expedition_checkpoint',
          'blood':'field_assay_kit', 'pressure':'assimilation_heart',
-         'extraction':'expedition_exit', 'guardian':'assimilation_heart', 'liberation':'attunement_sigil'}
+         'extraction':'expedition_exit', 'guardian':'assimilation_heart', 'liberation':'attunement_sigil', 'preparation':'field_ward'}
 
 write(ROOT / 'data/expeditions/patchouli_books/field_guide/book.json', {
     'name':'The Charter', 'landing_text':'The frontier remembers.$(br2)'
@@ -81,6 +81,9 @@ for order, (group, name, icon, description, chapters) in enumerate(groups):
                           'text':'Inspect a sealed sample with use. Sneak-use to draw a fresh, nonlethal sample.'})
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:attunement_sigil',
                           'text':'Shapeless. Use the sigil against a terminal; proof is not consumed.'})
+        if key == 'preparation':
+            for equipment in ['resonance_cell','field_ward','survey_lens']:
+                pages.append({'type':'patchouli:crafting','recipe':'expeditions:'+equipment})
         if key == 'guardian':
             pages.append({'type':'patchouli:entity', 'entity':'expeditions:rootbound_guardian',
                           'scale':0.55, 'text':'Read the raised arms. Leave the marked ground before it strikes.'})
@@ -111,4 +114,4 @@ write(BOOK / 'en_us/entries/discovery_trail.json', {
          'text':chapter['unlock_hint']}
         for chapter in CHAPTERS.values() if 'unlock_hint' in chapter],
 })
-print('Generated four categories, fourteen entries, live record templates and thirteen discovery gates.')
+print(f'Generated {len(groups)} categories, {len(CHAPTERS)+1} entries, live record templates and {len(CHAPTERS)} discovery gates.')

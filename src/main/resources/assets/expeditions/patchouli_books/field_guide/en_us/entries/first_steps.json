@@ -22,6 +22,16 @@
     },
     {
       "type": "patchouli:text",
+      "title": "A quiet world",
+      "text": "A one-time search places a starter trace on suitable natural land within 128 blocks of world spawn and records its location on your first visit. An ocean spawn may have no suitable ground; ordinary traces still generate farther"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quiet world",
+      "text": "afield."
+    },
+    {
+      "type": "patchouli:text",
       "title": "From traces to instruments",
       "text": "A book and a dormant flake make this journal. The assay kit also uses a raw flake rather than active essence. Neither needs a working machine."
     },
@@ -49,6 +59,16 @@
       "type": "patchouli:text",
       "title": "Your first deployment",
       "text": "outposts."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Your first deployment",
+      "text": "The terminal needs glass rather than amethyst. Complete Field Survey to learn checkpoints, then Trace Recovery to learn carrying bound cargo back to extraction. Together these establish the home campaign and open Deep Salvage;"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Your first deployment",
+      "text": "repeating Survey is unnecessary."
     },
     {
       "type": "patchouli:crafting",

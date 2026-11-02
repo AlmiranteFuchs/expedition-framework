@@ -32,6 +32,10 @@ public final class ResonanceMachineBlock extends HorizontalDirectionalBlock impl
             }
             return ItemInteractionResult.sidedSuccess(level.isClientSide);
         }
+        if(stack.is(ModItems.RESONANCE_CELL.get())){
+            com.expeditions.item.ResonanceCellItem.transferToBlock(new net.minecraft.world.item.context.UseOnContext(player,hand,hit));
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
         open(level,p,player);return ItemInteractionResult.sidedSuccess(level.isClientSide);
     }
     @Override protected InteractionResult useWithoutItem(BlockState s,Level l,BlockPos p,Player player,BlockHitResult h){open(l,p,player);return InteractionResult.sidedSuccess(l.isClientSide);}

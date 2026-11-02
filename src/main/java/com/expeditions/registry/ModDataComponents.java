@@ -38,6 +38,10 @@ public final class ModDataComponents {
                             .persistent(Codec.STRING)
                             .build());
 
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> RESONANCE =
+            DATA_COMPONENTS.register("resonance", () -> DataComponentType.<Integer>builder()
+                    .persistent(Codec.INT).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.INT).build());
+
     private ModDataComponents() {
     }
 }

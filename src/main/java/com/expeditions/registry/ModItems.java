@@ -76,6 +76,10 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> LIVING_HEART_ENGINE_ITEM=ITEMS.registerSimpleBlockItem("living_heart_engine",ModBlocks.LIVING_HEART_ENGINE);
     public static final DeferredItem<BlockItem> SEVERANCE_GENERATOR_ITEM=ITEMS.registerSimpleBlockItem("severance_generator",ModBlocks.SEVERANCE_GENERATOR);
 
+    public static final DeferredItem<com.expeditions.item.ResonanceCellItem> RESONANCE_CELL=ITEMS.register("resonance_cell",()->new com.expeditions.item.ResonanceCellItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<com.expeditions.item.SurveyLensItem> SURVEY_LENS=ITEMS.register("survey_lens",()->new com.expeditions.item.SurveyLensItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<BlockItem> FIELD_WARD_ITEM=ITEMS.registerSimpleBlockItem("field_ward",ModBlocks.FIELD_WARD);
+
     private ModItems() {
     }
 }

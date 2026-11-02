@@ -139,6 +139,11 @@ public class ExpeditionSavedData extends SavedData {
     private final ExpeditionLedger ledger = new ExpeditionLedger();
     private final Map<String, Set<BlockPos>> liveMarkers = new HashMap<>();
     private final Set<String> clearedDimensions = new HashSet<>();
+    private boolean firstTraceAttempted;
+    private BlockPos firstTrace;
+    public boolean firstTraceAttempted(){return firstTraceAttempted;}
+    public java.util.Optional<BlockPos> firstTrace(){return java.util.Optional.ofNullable(firstTrace);}
+    public void recordFirstTrace(BlockPos pos){firstTraceAttempted=true;firstTrace=pos==null?null:pos.immutable();setDirty();}
     private final Set<String> guardianLiberations=new HashSet<>();
     public boolean hasGuardianLiberation(String dimension){return guardianLiberations.contains(dimension);}
     public void recordGuardianLiberation(String dimension){
@@ -165,6 +170,8 @@ public class ExpeditionSavedData extends SavedData {
 
     public static ExpeditionSavedData load(CompoundTag tag, HolderLookup.Provider lookup) {
         ExpeditionSavedData data = create();
+        data.firstTraceAttempted=tag.getBoolean("FirstTraceAttempted");
+        if(tag.contains("FirstTrace",Tag.TAG_LONG))data.firstTrace=BlockPos.of(tag.getLong("FirstTrace"));
         for(Tag value:tag.getList("GuardianLiberations",Tag.TAG_STRING)){
             String dim=value.getAsString();if(net.minecraft.resources.ResourceLocation.tryParse(dim)!=null)data.guardianLiberations.add(dim);
         }
@@ -588,6 +595,7 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_UNLOCKS, unlocks);
+        tag.putBoolean("FirstTraceAttempted",firstTraceAttempted);if(firstTrace!=null)tag.putLong("FirstTrace",firstTrace.asLong());
         var severed=new ListTag();for(String dimension:guardianLiberations)severed.add(StringTag.valueOf(dimension));tag.put("GuardianLiberations",severed);
         tag.putLongArray("StillnessBreaches",stillnessBreaches.stream().mapToLong(BlockPos::asLong).toArray());
         ListTag trophies = new ListTag();

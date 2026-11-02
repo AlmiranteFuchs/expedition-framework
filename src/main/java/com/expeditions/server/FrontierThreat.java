@@ -80,7 +80,8 @@ public final class FrontierThreat {
         var entry=record(player,dim);int max=limit(level);int before=Math.clamp(entry.getInt("seconds"),0,max);
         int rate=(level.dimension().equals(Level.OVERWORLD)?2:1)*(data.campaignState(dim)==CampaignState.ESTABLISHED?2:1);
         int cycle=Math.floorMod(entry.getInt("cycle")+1,rate);entry.putInt("cycle",cycle);
-        int after=cleared?0:FrontierAttention.step(before,exposed?(cycle==0?1:0):-2,max);entry.putInt("seconds",after);
+        boolean warded=exposed && com.expeditions.block.entity.FieldWardBlockEntity.covers(level,player.blockPosition());
+        int after=cleared?0:FrontierAttention.step(before,exposed?(warded?0:cycle==0?1:0):-2,max);entry.putInt("seconds",after);
         if(!exposed) { hide(player);cleanupVisible(player,entry,level);return; }
         Stage stage=FrontierAttention.stage(after,max);
         int remaining=Math.max(0,(FrontierAttention.nextThreshold(after,max)-after)*rate);

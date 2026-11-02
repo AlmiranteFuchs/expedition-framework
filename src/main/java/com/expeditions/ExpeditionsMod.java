@@ -31,6 +31,7 @@ public class ExpeditionsMod {
         ModBlocks.BLOCKS.register(modEventBus);
         com.expeditions.registry.ModFeatures.FEATURES.register(modEventBus);
         modEventBus.addListener(com.expeditions.block.entity.ResonanceMachineBlockEntity::registerCapabilities);
+        modEventBus.addListener(com.expeditions.item.ResonanceCellItem::registerCapabilities);
         com.expeditions.registry.ModEntities.ENTITIES.register(modEventBus);
         com.expeditions.registry.ModMenus.MENUS.register(modEventBus);
         modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " C ",
+    "AHA",
+    " E "
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "H": {
+      "item": "expeditions:assimilation_heart"
+    },
+    "E": {
+      "item": "expeditions:assimilation_essence"
+    }
+  },
+  "result": {
+    "id": "expeditions:survey_lens",
+    "count": 1
+  }
+}

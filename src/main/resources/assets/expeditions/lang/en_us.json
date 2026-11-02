@@ -131,5 +131,18 @@
   "tooltip.expeditions.core_unbound": "Use at a terminal in a guardian-liberated dimension to attune.",
   "tooltip.expeditions.core_bound": "Quiet resonance recovered from %s. Install in a Severance Cradle.",
   "machine.expeditions.core_attuned": "The core holds the severed heartbeat of this dimension.",
-  "machine.expeditions.core_refused": "This terminal needs a proven guardian victory and successful extraction in this dimension."
+  "machine.expeditions.core_refused": "This terminal needs a proven guardian victory and successful extraction in this dimension.",
+  "item.expeditions.resonance_cell": "Resonance Cell",
+  "item.expeditions.survey_lens": "Heartglass Lens",
+  "block.expeditions.field_ward": "Field Ward",
+  "equipment.expeditions.cell_charge": "%s / %s Resonance",
+  "equipment.expeditions.cell_hint": "Sneak-use a power source to charge; use a receiver to supply it.",
+  "equipment.expeditions.transfer": "Moved %s R · Cell %s / %s",
+  "equipment.expeditions.lens_hint": "Carry with a charged cell. Finish a compass reading for range and height (200 R).",
+  "equipment.expeditions.reading": "Heartglass: %s blocks away · elevation %s",
+  "equipment.expeditions.reading_empty": "Heartglass needs a cell holding at least 200 Resonance.",
+  "equipment.expeditions.ward_started": "A quiet camp: attention holds within 8 blocks for two minutes.",
+  "equipment.expeditions.ward_refused": "Ward already active, or cell needs 4000 Resonance.",
+  "equipment.expeditions.ward_status": "Quiet field: %s seconds remaining. Monsters and infection can still reach you.",
+  "equipment.expeditions.first_trace": "A pale, cold trace was found near spawn: X %s, Z %s. Harvest it for dormant flakes."
 }

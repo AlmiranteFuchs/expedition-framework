@@ -1,4 +1,4 @@
-# Stillness progression — alpha.14
+# Stillness progression — alpha.15
 
 Home is preparation space. The Overworld is sheltered by default, independently
 of campaign liberation. It has no natural live hearts, Bloom attention or passive
@@ -8,7 +8,8 @@ can linger while it decays. Ordinary vanilla monsters and hazards remain.
 ## The starter chain
 
 1. Explore for small pale dormant scars. They generate in newly explored natural
-   Overworld terrain, roughly one patch per sixteen chunks. They are inert and
+   Overworld terrain, roughly one patch per sixteen chunks. A one-time bounded search also places a
+   starter trace near spawn on suitable natural land and records its coordinates. They are inert and
    noninfective. Existing sheltered hearts and their loaded colonies also become
    dormant. Destroying a live heart converts its remaining supported tissue into
    the same dormant layer; unsupported faces disappear silently.
@@ -23,7 +24,9 @@ can linger while it decays. Ordinary vanilla monsters and hazards remain.
    flake into the condenser: 4000 Resonance makes one essence in ten seconds.
 6. Refine the essence needed for the terminal. Complete Field Survey to open remote
    deployments; an attuned sigil remains an alternate proof. Home does not require
-   a guardian victory before the frontier opens.
+   a guardian victory before the frontier opens. Trace Recovery follows Survey as
+   a distinct cargo tutorial; completing both establishes home and opens Deep Salvage.
+   The terminal now uses glass in place of amethyst.
 
 After the initial four-flake knot, the loop uses **one raw flake per essence**.
 The source and its FE connections are described in [Resonance power](resonance-power.md).
@@ -52,8 +55,8 @@ in `art-direction/stillness/`; the image-generation board is only a design guide
 The actual game uses native sprites and custom geometry with matching voxel
 shapes. Approved layer material and editable art exports were preserved.
 
-Build/alphaBundle, 168 unit tests and 148 core GameTests pass (151 reported with
+Build/alphaBundle, 172 unit tests and 154 core GameTests pass (151 reported with
 three optional biome probes). The client verified actual adjacent-machine essence
-production, the processing screen, item sprites and the open models. A final
-focused run rechecked the refined flywheel geometry. Existing-world users need
+production, the processing screen, item sprites and the open models. The alpha.15
+preparation chain adds carried power, a finite quiet camp and a paid distance lens. Existing-world users need
 new chunks for new worldgen traces, or can recover existing dormant colonies.

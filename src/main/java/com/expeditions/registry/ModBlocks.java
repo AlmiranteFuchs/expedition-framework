@@ -123,6 +123,9 @@ public final class ModBlocks {
     public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> SEVERANCE_GENERATOR=BLOCKS.register("severance_generator",
             ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(3f).sound(SoundType.COPPER)));
 
+    public static final DeferredHolder<Block,com.expeditions.block.FieldWardBlock> FIELD_WARD=BLOCKS.register("field_ward",
+            ()->new com.expeditions.block.FieldWardBlock(BlockBehaviour.Properties.of().strength(1.5f).sound(SoundType.WOOD).noOcclusion().lightLevel(s->s.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)?10:0)));
+
     private ModBlocks() {
     }
 }
