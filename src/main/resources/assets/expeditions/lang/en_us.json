@@ -1,7 +1,7 @@
 {
   "block.expeditions.expedition_terminal": "Expedition Terminal",
-  "block.expeditions.expedition_checkpoint": "Witness Mark",
-  "block.expeditions.expedition_exit": "Recall Anchor",
+  "block.expeditions.expedition_checkpoint": "Witness Stump",
+  "block.expeditions.expedition_exit": "Stillwood Hollow",
   "block.expeditions.expedition_device": "Defense Device",
   "block.expeditions.expedition_portal": "Expedition Portal",
   "block.expeditions.assimilation_layer": "Assimilation Layer",
@@ -21,11 +21,11 @@
   "message.expeditions.assimilation_fades": "The Bloom's grip fades.",
   "itemGroup.expeditions": "Expedition Framework",
   "message.expeditions.expedition_started": "Expedition started: %1$s. Follow the markers!",
-  "message.expeditions.next_checkpoint": "Next witness mark %1$s/%2$s at %3$s.",
+  "message.expeditions.next_checkpoint": "Next witness stump %1$s/%2$s at %3$s.",
   "message.expeditions.checkpoint_reached": "Witness mark %1$s/%2$s settled.",
   "message.expeditions.checkpoint_secured": "Mark settled: +%1$s expedition tokens banked.",
-  "message.expeditions.all_checkpoints": "All marks settled. Use the recall anchor at %1$s to extract.",
-  "message.expeditions.wrong_checkpoint": "The compass is bound to a different witness mark.",
+  "message.expeditions.all_checkpoints": "All marks settled. Return through the Stillwood Hollow at %1$s.",
+  "message.expeditions.wrong_checkpoint": "The compass is bound to a different witness stump.",
   "message.expeditions.not_finished": "Your expedition is not finished yet.",
   "message.expeditions.expedition_completed": "Expedition complete! +%1$s expedition tokens (balance: %2$s).",
   "message.expeditions.expedition_failed": "Your expedition has failed.",
@@ -40,7 +40,7 @@
   "message.expeditions.challenge_horde": "The mark carries farther than the compass. A horde is approaching.",
   "message.expeditions.objective_completed": "Objective complete: %1$s",
   "message.expeditions.objectives_missing": "Required objectives unfinished: %1$s",
-  "message.expeditions.artifact_recovered": "Artifact secured — carry it to the recall anchor.",
+  "message.expeditions.artifact_recovered": "Artifact secured — carry it to the Stillwood Hollow.",
   "message.expeditions.defense_started": "Defense device deployed — protect it for %s seconds!",
   "message.expeditions.device_status": "Device integrity %s/%s — %ss remaining.",
   "message.expeditions.device_destroyed": "The defense device was destroyed!",
@@ -144,5 +144,6 @@
   "equipment.expeditions.ward_started": "A quiet camp: attention holds within 8 blocks for two minutes.",
   "equipment.expeditions.ward_refused": "Ward already active, or cell needs 4000 Resonance.",
   "equipment.expeditions.ward_status": "Quiet field: %s seconds remaining. Monsters and infection can still reach you.",
-  "equipment.expeditions.first_trace": "A pale, cold trace was found near spawn: X %s, Z %s. Harvest it for dormant flakes."
+  "equipment.expeditions.first_trace": "A pale, cold trace was found near spawn: X %s, Z %s. Harvest it for dormant flakes.",
+  "block.expeditions.recall_tree_part": "Stillwood"
 }

@@ -106,7 +106,9 @@ public final class DimensionCompatibilityTests {
         var player = helper.makeMockServerPlayerInLevel();
         player.setGameMode(GameType.CREATIVE);
         // Unique columns keep this probe independent of the shared route tests.
-        for (int x : new int[]{64, 72, 80}) {
+        // The exit is a three-wide hollow; provide its actual footprint in
+        // this synthetic End fixture rather than a single floating column.
+        for (int x : new int[]{64, 72, 79, 80, 81}) {
             end.getChunk(x >> 4, 0);
             for (int y = 101; y < end.getMaxBuildHeight(); y++) {
                 end.setBlock(new BlockPos(x, y, 8), Blocks.AIR.defaultBlockState(), 3);

@@ -1,0 +1,288 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "bark": "expeditions:block/route_bark",
+    "end": "expeditions:block/route_end",
+    "binding": "expeditions:block/route_binding",
+    "amber": "expeditions:block/route_amber",
+    "particle": "expeditions:block/route_bark",
+    "veil": "expeditions:block/stillwood_veil",
+    "twig": "expeditions:block/stillwood_twigs"
+  },
+  "ambientocclusion": true,
+  "render_type": "minecraft:cutout",
+  "elements": [
+    {
+      "from": [
+        3,
+        0,
+        4
+      ],
+      "to": [
+        16,
+        5,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bark",
+          "uv": [
+            3,
+            11,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bark",
+          "uv": [
+            3,
+            11,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bark",
+          "uv": [
+            4,
+            11,
+            14,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bark",
+          "uv": [
+            4,
+            11,
+            14,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#end",
+          "uv": [
+            3,
+            4,
+            16,
+            14
+          ]
+        },
+        "down": {
+          "texture": "#end",
+          "uv": [
+            3,
+            4,
+            16,
+            14
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        7,
+        5,
+        5
+      ],
+      "to": [
+        16,
+        16,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bark",
+          "uv": [
+            7,
+            0,
+            16,
+            11
+          ]
+        },
+        "south": {
+          "texture": "#bark",
+          "uv": [
+            7,
+            0,
+            16,
+            11
+          ]
+        },
+        "east": {
+          "texture": "#bark",
+          "uv": [
+            5,
+            0,
+            13,
+            11
+          ]
+        },
+        "west": {
+          "texture": "#bark",
+          "uv": [
+            5,
+            0,
+            13,
+            11
+          ]
+        },
+        "up": {
+          "texture": "#end",
+          "uv": [
+            7,
+            5,
+            16,
+            13
+          ]
+        },
+        "down": {
+          "texture": "#end",
+          "uv": [
+            7,
+            5,
+            16,
+            13
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        8
+      ],
+      "to": [
+        5,
+        2,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bark",
+          "uv": [
+            0,
+            14,
+            5,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bark",
+          "uv": [
+            0,
+            14,
+            5,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bark",
+          "uv": [
+            8,
+            14,
+            12,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bark",
+          "uv": [
+            8,
+            14,
+            12,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#end",
+          "uv": [
+            0,
+            8,
+            5,
+            12
+          ]
+        },
+        "down": {
+          "texture": "#end",
+          "uv": [
+            0,
+            8,
+            5,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        0,
+        0
+      ],
+      "to": [
+        10,
+        2,
+        6
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bark",
+          "uv": [
+            6,
+            14,
+            10,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#bark",
+          "uv": [
+            6,
+            14,
+            10,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#bark",
+          "uv": [
+            0,
+            14,
+            6,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#bark",
+          "uv": [
+            0,
+            14,
+            6,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#end",
+          "uv": [
+            6,
+            0,
+            10,
+            6
+          ]
+        },
+        "down": {
+          "texture": "#end",
+          "uv": [
+            6,
+            0,
+            10,
+            6
+          ]
+        }
+      }
+    }
+  ]
+}

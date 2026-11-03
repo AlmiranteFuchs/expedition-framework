@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
+    "grown=false": {
       "model": "expeditions:block/expedition_exit"
+    },
+    "grown=true": {
+      "model": "expeditions:block/recall_tree_root"
     }
   }
 }

@@ -71,7 +71,7 @@
       },
       {
         "heading": "A bearing, not a path",
-        "body": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing.\n\nAfter the witness marks, it points to the recall anchor for extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends."
+        "body": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing.\n\nAfter the witness stumps, it points to the Stillwood Hollow for extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends."
       }
     ],
     "unlock_hint": "Enter an expedition portal and take its issued compass."
@@ -81,14 +81,14 @@
     "pages": [
       {
         "heading": "Settle the mark",
-        "body": "The Charter sets pale split stakes along its routes. An amber seam is held between the two halves; the compass answers that seam. These are witness marks, the checkpoints named in a charter.\n\nUse them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward for every member, even if the expedition later fails. Make room before touching one. Its answer can draw company."
+        "body": "Split pale stumps hold a narrow amber seam. Roots spread from the wood, but the cut does not close. The compass answers these witness stumps: the checkpoints named in a charter.\n\nUse them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward, even if the expedition later fails. Make room before touching one. Its answer can draw company."
       },
       {
         "heading": "An unfinished route",
-        "body": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours.\n\nDisconnecting leaves the route for recovery if its instruments still exist. The last witness mark is not a way home. Follow the new compass bearing to the recall anchor and use it."
+        "body": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours.\n\nDisconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree."
       }
     ],
-    "unlock_hint": "Use a split witness mark rather than merely passing its light."
+    "unlock_hint": "Use a split witness stump rather than merely passing its light."
   },
   "cargo": {
     "title": "VII. Sealed cargo",
@@ -150,8 +150,8 @@
     "title": "XI. Bring it home",
     "pages": [
       {
-        "heading": "The recall anchor",
-        "body": "Four pale ribs enclose an amber splinter. The hollow crown repeats the terminal aperture in miniature. This is the recall anchor: the exit named in a charter.\n\nUse it after settling every witness mark and required objective. Keep any required cargo with you. The anchor returns the party to its terminal and settles the remaining reward."
+        "heading": "The Stillwood Hollow",
+        "body": "Pale roots rise around a person-wide hollow. Amber threads hang where the trunk should be. The opening resembles the terminal aperture, though no frame has been fitted to it. These notes call it a Stillwood Hollow: the charter’s exit.\n\nAfter every checkpoint and required objective, step through the hollow or use its wood. Bring any required cargo. The party returns to its terminal and the remaining reward is settled."
       },
       {
         "heading": "What can be used again",

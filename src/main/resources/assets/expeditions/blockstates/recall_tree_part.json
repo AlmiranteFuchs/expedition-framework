@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "part=0": {
+      "model": "expeditions:block/recall_tree_0"
+    },
+    "part=1": {
+      "model": "expeditions:block/recall_tree_1"
+    },
+    "part=2": {
+      "model": "expeditions:block/recall_tree_2"
+    },
+    "part=3": {
+      "model": "expeditions:block/recall_tree_3"
+    },
+    "part=4": {
+      "model": "expeditions:block/recall_tree_4"
+    },
+    "part=5": {
+      "model": "expeditions:block/recall_tree_5"
+    },
+    "part=6": {
+      "model": "expeditions:block/recall_tree_6"
+    },
+    "part=7": {
+      "model": "expeditions:block/recall_tree_7"
+    }
+  }
+}

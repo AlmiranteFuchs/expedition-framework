@@ -739,3 +739,24 @@ The async defenseSurvivesAndPays fixture has unique 164/172/180,164 columns;
 reusing 64/72/80,64 let older cube markers act as accidental floors for later
 tests while that siege was still live. Verified: build/alphaBundle, 176 unit
 tests and 161 core GameTests (164 reported with three optional biome probes).
+
+Alpha.20 supersedes the manufactured route instruments with Witness Stumps and
+the Stillwood Hollow. `RecallTrees` owns a bounded 3x3x1, nine-cell layout (root
+plus eight indexed `recall_tree_part` blocks). Validate the whole footprint and
+three floor cells before any marker write/payment, using bounded adapter retries.
+Never overwrite terrain to fit it. Track every segment in existing liveMarkers;
+active-run references, orphan pruning, recovery and cleanup cover all segments.
+`grown=false` is the exit's default for legacy compact blocks; new deployments
+explicitly set true. Grown recovery requires all expected part indices. Both
+aperture cells have empty collision and forward entity crossings to server recall;
+trunk use forwards the same root. Only the player's matching exit/dimension can
+recall, and all existing objective/cargo/guardian gates still apply. No global
+ready flag may encode a party's progress on these shared world blocks.
+`route_marker_art.py` generates the rooted stump, segment geometry, native animated
+veil, twig silhouettes and whole-tree inventory miniature. Journal language leaves
+the Stillness/Bloom connection observational; the landmarks give no power or
+immunity. Four new GameTests cover refusal/no charge, tracking/recovery cleanup,
+entity callbacks/reward idempotence, trunk use and compact-root validity. Synthetic
+End fixtures need a three-wide floor; post-placement headroom tests permit only
+the exact intact non-colliding upper aperture. Verified: 176 unit tests and 165
+core GameTests (168 reported with the three optional biome probes), build/alphaBundle.

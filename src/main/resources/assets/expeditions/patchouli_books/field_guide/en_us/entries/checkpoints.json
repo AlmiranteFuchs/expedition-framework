@@ -7,13 +7,13 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_checkpoint",
-      "text": "The Charter sets pale split stakes along its routes. An amber seam is held between the two halves; the compass answers that seam. These are witness marks, the checkpoints named in a charter.",
+      "text": "Split pale stumps hold a narrow amber seam. Roots spread from the wood, but the cut does not close. The compass answers these witness stumps: the checkpoints named in a charter.",
       "title": "Settled marks"
     },
     {
       "type": "patchouli:text",
       "title": "Settle the mark",
-      "text": "Use them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward for every member, even if the expedition later fails. Make room before touching one. Its answer can draw company."
+      "text": "Use them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward, even if the expedition later fails. Make room before touching one. Its answer can draw company."
     },
     {
       "type": "patchouli:text",
@@ -23,7 +23,7 @@
     {
       "type": "patchouli:text",
       "title": "An unfinished route",
-      "text": "Disconnecting leaves the route for recovery if its instruments still exist. The last witness mark is not a way home. Follow the new compass bearing to the recall anchor and use it."
+      "text": "Disconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree."
     }
   ],
   "advancement": "expeditions:journal/checkpoints"

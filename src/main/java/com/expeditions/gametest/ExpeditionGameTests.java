@@ -4803,7 +4803,13 @@ public final class ExpeditionGameTests {
                         || at.is(ModBlocks.EXPEDITION_EXIT.get()),
                 "marker must be placed at " + pos);
         BlockState above = level.getBlockState(pos.above());
-        helper.assertTrue(above.isAir() || above.canBeReplaced(),
+        boolean hollowAperture = at.is(ModBlocks.EXPEDITION_EXIT.get())
+                && at.getValue(com.expeditions.block.ExpeditionExitBlock.GROWN)
+                && above.is(ModBlocks.RECALL_TREE_PART.get())
+                && above.getValue(com.expeditions.block.RecallTreePartBlock.PART) == 7
+                && above.getCollisionShape(level, pos.above()).isEmpty()
+                && com.expeditions.server.RecallTrees.intact(level, pos);
+        helper.assertTrue(above.isAir() || above.canBeReplaced() || hollowAperture,
                 "destination must have free headroom at " + pos);
         BlockState floor = level.getBlockState(pos.below());
         helper.assertTrue(floor.isFaceSturdy(level, pos.below(), Direction.UP),

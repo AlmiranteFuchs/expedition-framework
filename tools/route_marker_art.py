@@ -1,7 +1,7 @@
-"""Charter route instruments. Native 16px grain, explicit UVs, no cube casing.
+"""Stillwood route landmarks. Native 16px grain and actual hollow geometry.
 
-Both silhouettes stay inside one route cell. FieldMachineShapes reads these
-same elements for selection and collision; the open spaces are real.
+The witness stays in one cell; the recall tree uses nine tracked cells.
+FieldMachineShapes reads their same elements for selection and collision.
 """
 import json
 from pathlib import Path
@@ -49,12 +49,13 @@ def generate(root, recall=False):
         return {'from': start, 'to': stop, 'faces': faces}
 
     if not recall:
-        # An uneven cleft, held at the foot, with one visible amber splinter.
-        parts = [box([4, 0, 4], [12, 2, 12], 'binding'),
-                 box([5, 2, 6], [7, 13, 10]), box([5, 13, 7], [7, 16, 9]),
-                 box([9, 2, 6], [11, 11, 10]), box([9, 11, 7], [11, 14, 9]),
-                 box([7, 2, 7], [9, 5, 9]), box([7, 6, 7], [9, 11, 9], 'amber'),
-                 box([4, 3, 5], [12, 5, 11], 'binding')]
+        # A rooted, broken sapling. No plinth, bands or manufactured uprights.
+        parts = [box([3, 0, 5], [13, 3, 12]), box([5, 3, 6], [7, 13, 11]),
+                 box([5, 13, 7], [7, 16, 10]), box([9, 3, 6], [12, 11, 11]),
+                 box([9, 11, 7], [11, 14, 10]), box([7, 2, 8], [9, 5, 11]),
+                 box([7, 6, 8], [9, 10, 10], 'amber'),
+                 box([0, 0, 7], [5, 2, 10]), box([11, 0, 8], [16, 2, 12]),
+                 box([6, 0, 1], [9, 2, 7]), box([9, 0, 11], [12, 1, 16])]
         name = 'expedition_checkpoint'
     else:
         # Four inward shoulders form a hollow crown; no painted portal face.
@@ -75,4 +76,75 @@ def generate(root, recall=False):
              'elements': parts}
     model['textures']['particle'] = model['textures']['bark']
     (assets/'models/block'/f'{name}.json').write_text(json.dumps(model, indent=2)+'\n', encoding='utf-8')
+    if recall:
+        tree_models(assets, box, model['textures'])
+
+
+def tree_models(assets, box, textures):
+    """Nine actual block cells make a three-wide, three-high hollow trunk."""
+    # Thin falling resin threads, not an opaque picture filling the hollow.
+    frames = Image.new('RGBA', (16, 64), (37, 41, 33, 35))
+    for frame in range(4):
+        d = ImageDraw.Draw(frames)
+        for x in [1, 4, 11, 14]:
+            y = (x*3 + frame*3) % 16
+            for dy in range(5):
+                yy = frame*16 + (y+dy) % 16
+                d.point((x, yy), fill=(184, 146, 83, 65 + dy*12))
+    frames.save(assets/'textures/block/stillwood_veil.png')
+    (assets/'textures/block/stillwood_veil.png.mcmeta').write_text(json.dumps({
+        'animation': {'frametime': 10, 'interpolate': True}})+'\n', encoding='utf-8')
+    twig = Image.new('RGBA', (16,16)); t = ImageDraw.Draw(twig)
+    for points in [[(1,14),(5,10),(8,9),(11,5),(14,2)], [(5,10),(3,6),(1,5)],
+                   [(8,9),(12,10),(15,8)], [(11,5),(8,3),(7,0)]]:
+        t.line(points,fill=PALE[1],width=2);t.line(points,fill=PALE[3])
+    twig.save(assets/'textures/block/stillwood_twigs.png')
+    tex = dict(textures, veil='expeditions:block/stillwood_veil', twig='expeditions:block/stillwood_twigs')
+
+    def veil():
+        return {'from':[0,0,7.99], 'to':[16,16,8.01], 'shade':False,
+                'faces':{f:{'texture':'#veil','uv':[0,0,16,16]} for f in ['north','south']}}
+
+    def sprig(z):
+        return {'from':[0,0,z], 'to':[16,16,z+.01],
+                'faces':{f:{'texture':'#twig','uv':[0,0,16,16]} for f in ['north','south']}}
+
+    root = [box([0,0,4],[2,3,13]),box([14,0,5],[16,2,14]),veil()]
+    # Roots flare out; the trunk narrows unevenly around a human-sized hollow.
+    parts = [
+        [box([3,0,4],[16,5,14]),box([7,5,5],[16,16,13]),box([0,0,8],[5,2,12]),box([6,0,0],[10,2,6])],
+        [box([0,0,3],[12,4,14]),box([0,4,5],[9,16,13]),box([10,0,8],[16,2,11]),box([4,0,12],[7,2,16])],
+        [box([8,0,5],[16,12,13]),box([10,12,6],[16,16,13]),box([11,2,4],[16,10,5],'amber')],
+        [box([0,0,5],[9,9,13]),box([0,9,6],[7,16,13]),box([0,3,4],[3,10,5],'amber')],
+        [box([8,0,4],[16,10,14]),box([10,10,5],[16,13,14]),box([5,7,6],[10,11,13]),box([3,10,7],[7,14,12]),sprig(9)],
+        [box([0,0,4],[16,10,14]),box([1,10,5],[13,13,14]),box([4,13,6],[11,16,13]),
+         box([2,1,3],[5,9,4]),box([11,0,3],[14,6,4]),box([6,2,3],[8,6,4],'amber')],
+        [box([0,0,4],[9,9,14]),box([0,9,5],[6,12,14]),box([7,6,6],[12,10,13]),box([10,9,7],[14,13,12]),sprig(10)],
+        [veil()]
+    ]
+    def write(name, elements, translucent=False):
+        model={'parent':'minecraft:block/block','textures':tex,'ambientocclusion':True,
+               'render_type':'minecraft:translucent' if translucent else 'minecraft:cutout','elements':elements}
+        (assets/'models/block'/f'{name}.json').write_text(json.dumps(model,indent=2)+'\n',encoding='utf-8')
+    write('recall_tree_root',root,True)
+    for index,elements in enumerate(parts):write('recall_tree_'+str(index),elements,index==7)
+    (assets/'blockstates/recall_tree_part.json').write_text(json.dumps({'variants':{
+        'part='+str(i):{'model':'expeditions:block/recall_tree_'+str(i)} for i in range(8)}},indent=2)+'\n',encoding='utf-8')
+    (assets/'blockstates/expedition_exit.json').write_text(json.dumps({'variants':{
+        'grown=false':{'model':'expeditions:block/expedition_exit'},
+        'grown=true':{'model':'expeditions:block/recall_tree_root'}}},indent=2)+'\n',encoding='utf-8')
+    # The carried icon shows the whole hollow, not the legacy compact instrument.
+    import copy
+    miniature=[]
+    offsets=[(-1,0,0),(1,0,0),(-1,1,0),(1,1,0),(-1,2,0),(0,2,0),(1,2,0),(0,1,0)]
+    for elements,offset in [(root,(0,0,0))]+list(zip(parts,offsets)):
+        for element in elements:
+            if any(face['texture']=='#veil' for face in element['faces'].values()):continue
+            e=copy.deepcopy(element)
+            for key in ['from','to']:
+                e[key]=[(value+offset[axis]*16)/3+(16/3 if axis!=1 else 0) for axis,value in enumerate(e[key])]
+            miniature.append(e)
+    (assets/'models/item/expedition_exit.json').write_text(json.dumps({
+        'parent':'minecraft:block/block','render_type':'minecraft:cutout','textures':tex,
+        'elements':miniature},indent=2)+'\n',encoding='utf-8')
 

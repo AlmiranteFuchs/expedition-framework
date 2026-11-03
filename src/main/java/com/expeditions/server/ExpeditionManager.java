@@ -288,7 +288,10 @@ public final class ExpeditionManager {
                 for (RouteAnchor anchor : candidate.checkpoints()) {
                     positions.add(resolveAnchor(adapter, level, anchor, maxAttempts));
                 }
-                BlockPos exit = resolveAnchor(adapter, level, candidate.exit(), maxAttempts);
+                BlockPos exit = resolveAnchor(adapter, level, candidate.exit(), maxAttempts,
+                        pos -> RecallTrees.fits(level, pos)
+                                && positions.stream().noneMatch(cp -> RecallTrees.contains(pos, cp))
+                                && (level != portalLevel || !RecallTrees.contains(pos, portalPos)));
                 route = candidate;
                 entryPos = candidateEntry != null
                         ? candidateEntry : positions.get(0).above();
@@ -307,13 +310,10 @@ public final class ExpeditionManager {
         for (BlockPos pos : checkpointPositions) {
             level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
             data.trackMarker(dimension, pos);
-            // The microbiome colonizes expedition infrastructure — a
-            // glowing blob near each marker doubles as the route's
-            // landmark. Best-effort; non-viable terrain simply skips it.
-            Microbiome.seedColonyNear(level, pos, level.random);
         }
-        level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
-        data.trackMarker(dimension, exitPos);
+        RecallTrees.place(level, exitPos, data);
+        // Reserve the complete hollow before ambient colony writes begin.
+        for (BlockPos pos : checkpointPositions) Microbiome.seedColonyNear(level, pos, level.random);
         Microbiome.seedColonyNear(level, exitPos, level.random);
         var terminalState = portalLevel.getBlockState(terminalPos);
         var front = terminalState.hasProperty(com.expeditions.block.ExpeditionTerminalBlock.FACING)
@@ -931,7 +931,7 @@ public final class ExpeditionManager {
         return ledger.runs().stream()
                 .filter(ExpeditionRun::isActive)
                 .anyMatch(r -> (r.definition().dimension().equals(dimension)
-                        && (r.checkpoints().contains(waypoint) || r.exit().equals(waypoint)
+                        && (r.checkpoints().contains(waypoint) || RecallTrees.contains(toPos(r.exit()), pos)
                                 || r.defense().map(d -> d.device().equals(waypoint))
                                         .orElse(false)))
                         || (r.portalOpen() && r.portalDimension().equals(dimension)
@@ -951,7 +951,7 @@ public final class ExpeditionManager {
                 return false;
             }
         }
-        return level.getBlockState(toPos(run.exit())).is(ModBlocks.EXPEDITION_EXIT.get());
+        return RecallTrees.intact(level, toPos(run.exit()));
     }
 
     /**
@@ -1725,6 +1725,15 @@ public final class ExpeditionManager {
                         ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
             }
         }
+        // Parts are tracked individually for crash pruning, and retained per position
+        // while any other live route still needs them. Never remove unrelated blocks.
+        for (BlockPos part : RecallTrees.parts(toPos(run.exit()))) {
+            var state = level.getBlockState(part);
+            if (!isReferencedByActiveRun(dimension, part)) {
+                if (state.is(ModBlocks.RECALL_TREE_PART.get())) removeMarkerAt(level, part);
+                data.untrackMarker(dimension, part);
+            }
+        }
         if (!isReferencedByActiveRun(dimension, toPos(run.exit()))) {
             removeMarker(level, run.exit(),
                     ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
@@ -1914,7 +1923,8 @@ public final class ExpeditionManager {
         if (state.is(ModBlocks.EXPEDITION_CHECKPOINT.get())
                 || state.is(ModBlocks.EXPEDITION_EXIT.get())
                 || state.is(ModBlocks.EXPEDITION_PORTAL.get())
-                || state.is(ModBlocks.EXPEDITION_DEVICE.get())) {
+                || state.is(ModBlocks.EXPEDITION_DEVICE.get())
+                || state.is(ModBlocks.RECALL_TREE_PART.get())) {
             level.removeBlock(pos, false);
         }
     }
@@ -1928,10 +1938,15 @@ public final class ExpeditionManager {
      */
     private static BlockPos resolveAnchor(ExpeditionDimensionAdapter adapter, ServerLevel level,
             RouteAnchor anchor, int maxAttempts) {
-        Optional<BlockPos> resolved = adapter.resolveAnchor(level, anchor);
+        return resolveAnchor(adapter, level, anchor, maxAttempts, pos -> true);
+    }
+
+    private static BlockPos resolveAnchor(ExpeditionDimensionAdapter adapter, ServerLevel level,
+            RouteAnchor anchor, int maxAttempts, java.util.function.Predicate<BlockPos> footprint) {
+        Optional<BlockPos> resolved = adapter.resolveAnchor(level, anchor).filter(footprint);
         for (int i = 0; resolved.isEmpty() && i < maxAttempts && i < JITTER.length; i++) {
             resolved = adapter.resolveAnchor(level,
-                    new RouteAnchor(anchor.x() + JITTER[i][0], anchor.z() + JITTER[i][1]));
+                    new RouteAnchor(anchor.x() + JITTER[i][0], anchor.z() + JITTER[i][1])).filter(footprint);
         }
         return resolved.orElseThrow(() -> new IllegalStateException(
                 "No safe expedition route could be resolved in this dimension"));

@@ -54,6 +54,12 @@ public final class ModBlocks {
                     .sound(SoundType.WOOD)
                     .lightLevel(state -> 11)));
 
+    public static final DeferredHolder<Block, com.expeditions.block.RecallTreePartBlock> RECALL_TREE_PART = BLOCKS.register(
+            "recall_tree_part", () -> new com.expeditions.block.RecallTreePartBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(-1.0f, 3_600_000.0f)
+                    .noLootTable().noOcclusion().sound(SoundType.WOOD).lightLevel(state ->
+                            state.getValue(com.expeditions.block.RecallTreePartBlock.PART) == 7 ? 8 : 0)));
+
     /**
      * Defense device deployed by a {@code defend_device} objective. Shares
      * the markers' pickaxe protection — its explicit health lives in the

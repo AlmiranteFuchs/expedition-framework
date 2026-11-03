@@ -7,13 +7,18 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_exit",
-      "text": "Four pale ribs enclose an amber splinter. The hollow crown repeats the terminal aperture in miniature. This is the recall anchor: the exit named in a charter.",
+      "text": "Pale roots rise around a person-wide hollow. Amber threads hang where the trunk should be. The opening resembles the terminal aperture, though no frame has been fitted to it. These notes call it a Stillwood Hollow: the charter’s",
       "title": "Bring it home"
     },
     {
       "type": "patchouli:text",
-      "title": "The recall anchor",
-      "text": "Use it after settling every witness mark and required objective. Keep any required cargo with you. The anchor returns the party to its terminal and settles the remaining reward."
+      "title": "The Stillwood Hollow",
+      "text": "exit."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The Stillwood Hollow",
+      "text": "After every checkpoint and required objective, step through the hollow or use its wood. Bring any required cargo. The party returns to its terminal and the remaining reward is settled."
     },
     {
       "type": "patchouli:text",

@@ -1,5 +1,8 @@
 # Charter route instruments — alpha.19
 
+Historical instrument study. Alpha.20 replaces these manufactured silhouettes
+with [rooted witness stumps and a hollow tree](stillwood-hollow.md).
+
 The route is made legible by instruments from the same workshop as the terminal
 and compass. They use pale longitudinal grain, dark bindings and restrained amber.
 Neither object is a piece of the living Bloom; the Charter contains a small seam
