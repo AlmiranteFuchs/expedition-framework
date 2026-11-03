@@ -10,11 +10,11 @@ public final class ResonanceMenu extends AbstractContainerMenu {
     private final BlockPos pos;private final ContainerData data;
     public final boolean dynamo;
     private final int machineSlots;
-    public ResonanceMenu(int id,Inventory inv,net.minecraft.network.RegistryFriendlyByteBuf buf){this(id,inv,buf.readBlockPos(),buf.readBoolean(),new ItemStackHandler(2),new SimpleContainerData(6));}
+    public ResonanceMenu(int id,Inventory inv,net.minecraft.network.RegistryFriendlyByteBuf buf){this(id,inv,buf.readBlockPos(),buf.readBoolean(),new ItemStackHandler(2),new SimpleContainerData(9));}
     public ResonanceMenu(int id,Inventory inv,ResonanceMachineBlockEntity be){
         this(id,inv,be.getBlockPos(),be.dynamo(),be.inventory,new ContainerData(){
-            public int get(int i){return switch(i){case 0->be.energy();case 1->be.progress();case 2->be.breaching()?1:0;case 4->be.kind().ordinal();case 5->be.generationRate();default->16000;};}
-            public void set(int i,int value){} public int getCount(){return 6;}
+            public int get(int i){return switch(i){case 0->be.energy();case 1->be.progress();case 2->be.breaching()?1:0;case 4->be.kind().ordinal();case 5->be.generationRate();case 6->be.status().ordinal();case 7->be.collectors();case 8->be.actualGeneration();default->16000;};}
+            public void set(int i,int value){} public int getCount(){return 9;}
         });
     }
     private ResonanceMenu(int id,Inventory inv,BlockPos pos,boolean dynamo,IItemHandler items,ContainerData data){
@@ -24,6 +24,13 @@ public final class ResonanceMenu extends AbstractContainerMenu {
         for(int col=0;col<9;col++)addSlot(new Slot(inv,col,8+col*18,142));addDataSlots(data);
     }
     public int sourceKind(){return data.get(4);}
+    public com.expeditions.core.ResonanceStatus status(){return com.expeditions.core.ResonanceStatus.byId(data.get(6));}
+    public int collectors(){return data.get(7);}
+    public int actualGeneration(){return data.get(8);}
+    public int comparatorSignal(){
+        if(dynamo)return com.expeditions.core.ResonanceStatus.fillSignal(energy(),16000);
+        var output=getSlot(1).getItem();return output.isEmpty()?0:com.expeditions.core.ResonanceStatus.fillSignal(output.getCount(),output.getMaxStackSize());
+    }
     public int generationRate(){return data.get(5);}
     public int energy(){return data.get(0);} public int progress(){return data.get(1);} public boolean breaching(){return data.get(2)>0;}
     @Override public boolean stillValid(Player p){return p.level().getBlockState(pos).getBlock() instanceof com.expeditions.block.ResonanceMachineBlock && p.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}

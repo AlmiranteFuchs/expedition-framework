@@ -16,12 +16,13 @@ public final class FieldMachineShapes {
         try(var stream=FieldMachineShapes.class.getResourceAsStream("/assets/expeditions/models/block/"+name+".json")){
             if(stream==null)throw new IOException("Missing model "+name);
             var elements=JsonParser.parseReader(new InputStreamReader(stream,StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonArray("elements");
-            if(!core){
+            {
                 var visible=new JsonArray();
                 for(var element:elements){
+                    if(element.getAsJsonObject().has("expeditions_render_only"))continue;
                     boolean placeholder=element.getAsJsonObject().getAsJsonObject("faces").entrySet().stream()
                             .allMatch(face->face.getValue().getAsJsonObject().get("texture").getAsString().equals("#empty"));
-                    if(!placeholder)visible.add(element);
+                    if(core||!placeholder||element.getAsJsonObject().has("expeditions_collision_only"))visible.add(element);
                 }
                 elements=visible;
             }

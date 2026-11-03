@@ -44,6 +44,10 @@
       {
         "heading": "Keep a sample",
         "body": "The refined material holds together better than the scrap it came from. Copper, glass and a little essence are enough for the next instruments.\n\nThe crafting pages record the preparations currently understood. Save a few samples before committing the whole stock to one project."
+      },
+      {
+        "heading": "Read the instrument",
+        "body": "The machine names what is holding it back. Hover that line for details before adding more fuel.\n\nA comparator against a source reads its stored Resonance. Against a condenser it reads finished essence stock. Use that signal to control a buffer or an automated feed; a full output pauses refining without spending power."
       }
     ],
     "unlock_hint": "Collect a dormant flake or refine your first essence."

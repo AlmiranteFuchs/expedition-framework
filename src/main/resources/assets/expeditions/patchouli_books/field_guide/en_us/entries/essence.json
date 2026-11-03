@@ -36,6 +36,16 @@
       "text": "The crafting pages record the preparations currently understood. Save a few samples before committing the whole stock to one project."
     },
     {
+      "type": "patchouli:text",
+      "title": "Read the instrument",
+      "text": "The machine names what is holding it back. Hover that line for details before adding more fuel."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Read the instrument",
+      "text": "A comparator against a source reads its stored Resonance. Against a condenser it reads finished essence stock. Use that signal to control a buffer or an automated feed; a full output pauses refining without spending power."
+    },
+    {
       "type": "patchouli:crafting",
       "recipe": "expeditions:expedition_field_journal",
       "text": "Your discoveries belong to you. A replacement book remembers them."

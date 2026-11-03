@@ -457,3 +457,149 @@ layer (trace pulse, membrane, heart colonies, compass heartbeat), a
 smoke run against a real third-party modded dimension if one ever joins
 the pack, and any Big Bad *design* pass beyond the current assault-wave
 prototype.
+
+## M16 — Onboarding & UX Improvements (in progress)
+
+Improving player onboarding, feedback, and quality of life to reduce complexity
+barriers while preserving depth.
+
+### Quick wins (immediate implementation)
+
+**Technical Improvements - Test helper updates**
+- Replace deprecated `makeMockServerPlayerInLevel()` with new NeoForge test API
+- Eliminates 100+ deprecation warnings in game tests
+
+**Simplified Early Power - Config option**
+- Add `expeditions.resonance.simple_generators` config flag
+- When true: merge all three generator types into one "Resonance Generator" with reduced output
+- Removes fuel, quiet-ground, and core-binding complexity for casual play
+
+**Quality of Life - Expedition history**
+- Add `/expeditions history` command showing last 10 expeditions with outcomes
+- Useful for debugging failed runs and tracking personal progress
+
+**Better In-Game Feedback - Machine status**
+- Click on resonance machines sends chat message with current status
+- Add "status check" button in GUI showing full state chain
+
+**Better In-Game Feedback - Compass distance**
+- Add distance indicator in compass tooltip ("274 blocks away")
+- Reduces reliance on 3D spatial reasoning
+
+### Medium effort (implementation in progress)
+
+**Better In-Game Feedback - Terminal failure tooltips**
+- Enhanced tooltip showing full requirement tree for locked expeditions
+- Shows campaign state gap, missing keys, token cost in one view
+- Hover over locked expeditions for detailed explanation
+
+**Campaign Pacing - Progress bar**
+- `/expeditions campaign` command shows progress bar to next state
+- "3/5 completions to ESTABLISHED" explicitly
+- Visual feedback on campaign progression
+
+**Progressive System Disclosure - Journal chapter gating**
+- Field guide chapters unlock as systems are discovered:
+  - Chapter 1: Microbiome + dormant flakes (unlocks on first dormant flake pickup)
+  - Chapter 2: Resonance machines (unlocks on first resonator build)
+  - Chapter 3: Field equipment (unlocks on first cell craft)
+  - Chapter 4: Expeditions (unlocks on terminal activation)
+  - Chapter 5: Campaign progression (unlocks after first expedition completion)
+- Reduces upfront complexity
+
+**Campaign Pacing - Dimension summary**
+- Command or GUI showing all visited dimensions with campaign states
+- Lists available expeditions per dimension
+- Shows which Big Bad is unlocked
+
+**Expedition Onboarding - Solo tutorial expedition**
+- "Solo Expedition" option in menu disables party joining
+- Shows waypoint arrow instead of requiring compass interpretation
+- 2 checkpoints instead of 3-5
+- Grants "Expedition Novice" trophy on completion
+
+**Technical Improvements - Chunk-load safety**
+- Safety wrapper in `ExpeditionManager` force-loads chunks before entity lookups
+- Fallback scans `entityManager.sectionStorage` if entity not found
+- Addresses entity visibility caveat for unloaded chunks
+
+### Major features (deferred to future milestones)
+
+**Technical Improvements - SavedData sharding**
+- Split into three files by namespace:
+  - `expeditions-ledger.dat` (balances, unlocks, trophies - per-player, rarely changes)
+  - `expeditions-runs.dat` (active runs, markers - per-world, changes frequently)
+  - `expeditions-campaign.dat` (campaign states, pressure - per-dimension, medium frequency)
+- Reduces hot file contention and partial load times
+- Requires migration path for existing saves
+
+**Gameplay Variety - New objective kinds**
+- `SCOUT`: Visit radius around location without triggering mobs (stealth)
+- `HARVEST`: Extract X blocks of specific type (field-gathering)
+- `RELAY`: Place marker at location (sets up next checkpoint)
+- `SURVIVE`: Stay in region for X seconds without taking damage (endurance)
+- Requires game tests, balancing, datapack schema updates
+
+**Gameplay Variety - Dynamic objective pools**
+- Some expeditions have random objectives from a pool
+- Makes repeat runs less predictable
+- Increases replay value
+
+**Gameplay Variety - Side objectives**
+- Optional mini-tasks awarding bonus tokens without gating completion
+- Examples: "Collect 5 different flowers in this biome"
+- Encourages exploration without blocking progress
+
+**Player Retention - Post-campaign content**
+- Resource expeditions: pure farming, no threat, after dimension cleared
+- Mastery expeditions: harder versions with better rewards
+- Scavenger hunts: find hidden caches placed by the mod
+- Gives reasons to return to cleared dimensions
+
+**Player Retention - Dimensional traits**
+- Unique properties unlocked after clearing each dimension:
+  - Overworld: Dormant knots spawn in villages (trade with villagers)
+  - Nether: Dormant hearts spawn in basalt deltas (special essence variants)
+  - End: Severed cores craftable from ender pearls (alternative source)
+
+**Campaign Pacing - Visual landmarks**
+- Campaign milestones have visual markers:
+  - FRONTIER → ESTABLISHED: Spawn dormant heart cluster near spawn
+  - ESTABLISHED → CLEARED: Remove guardian's ember circle
+- Visual feedback on campaign progress
+
+**Quality of Life - Quick-save during expeditions**
+- Temporary checkpoint marker persists for 10 minutes
+- Emergency save point for long expeditions
+- Reduces frustration from unexpected disconnects
+
+**Quality of Life - Compass waypoint sharing**
+- Party members can see each other's compass targets
+- Improves coordination without requiring voice chat
+- Optional feature (config toggle)
+
+**Quality of Life - Config presets**
+- Include `expeditions-server.toml` templates for playstyles:
+  - Casual: simplified generators, reduced threat
+  - Hardcore: strict requirements, higher rewards
+  - Expert: full complexity, challenging
+- Makes modpack configuration easier
+
+### M16 implementation review — alpha.23
+
+Machine surface repair and operating feedback are implemented and tested. The
+five machine models retain their shapes and palette; their 34 overlapping face
+pairs are now zero. Machine screens show live operating reasons, contextual
+hints, collector sharing and actual output. Comparators read source energy or
+finished condenser stock. Intermittent power gets a short visual hold without
+free processing. `simple_generators` optionally makes all three source variants
+produce 10 R/t without fuel, quiet ground or a bound core; normal rules remain
+the default. Their distinct registry IDs and saved inventories are preserved.
+
+Implementation decisions: use persistent GUI status instead of repeated chat
+messages or a redundant status button. Keep all 14 stable journal discovery IDs
+and the always-readable starter instructions. Do not shard SavedData: reward
+flags, balances, runs and markers must roll back atomically in one file. The
+proposed test-helper replacement is deferred: the supported 1.21.1 helper still
+exposes the deprecated server-player method and has no equivalent replacement.
+History, compass distance and campaign progress are the next M16 slice.

@@ -27,6 +27,30 @@
         6
       ],
       "faces": {
+        "north": {
+          "texture": "#empty",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "expeditions_collision_only": true
+    },
+    {
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        5,
+        2,
+        6
+      ],
+      "faces": {
         "down": {
           "texture": "#iron",
           "uv": [
@@ -35,16 +59,118 @@
             10.0,
             10.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        2,
+        2,
+        6
+      ],
+      "faces": {
         "up": {
           "texture": "#iron",
           "uv": [
             6.0,
             6.0,
+            7.0,
+            10.0
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        4,
+        0,
+        2
+      ],
+      "to": [
+        5,
+        2,
+        6
+      ],
+      "faces": {
+        "up": {
+          "texture": "#iron",
+          "uv": [
+            9.0,
+            6.0,
             10.0,
             10.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        0,
+        2
+      ],
+      "to": [
+        4,
+        2,
+        3
+      ],
+      "faces": {
+        "up": {
+          "texture": "#iron",
+          "uv": [
+            7.0,
+            6.0,
+            9.0,
+            7.0
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        0,
+        5
+      ],
+      "to": [
+        4,
+        2,
+        6
+      ],
+      "faces": {
+        "up": {
+          "texture": "#iron",
+          "uv": [
+            7.0,
+            9.0,
+            9.0,
+            10.0
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        5,
+        2,
+        6
+      ],
+      "faces": {
         "north": {
           "texture": "#iron",
           "uv": [
@@ -53,7 +179,22 @@
             10.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        5,
+        2,
+        6
+      ],
+      "faces": {
         "south": {
           "texture": "#iron",
           "uv": [
@@ -62,7 +203,22 @@
             10.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        5,
+        2,
+        6
+      ],
+      "faces": {
         "west": {
           "texture": "#iron",
           "uv": [
@@ -71,7 +227,22 @@
             10.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        0,
+        2
+      ],
+      "to": [
+        5,
+        2,
+        6
+      ],
+      "faces": {
         "east": {
           "texture": "#iron",
           "uv": [
@@ -81,7 +252,32 @@
             9.0
           ]
         }
-      }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        11,
+        0,
+        10
+      ],
+      "to": [
+        15,
+        2,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#empty",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "expeditions_collision_only": true
     },
     {
       "from": [
@@ -103,16 +299,118 @@
             10.0,
             10.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        11,
+        0,
+        10
+      ],
+      "to": [
+        12,
+        2,
+        14
+      ],
+      "faces": {
         "up": {
           "texture": "#iron",
           "uv": [
             6.0,
             6.0,
+            7.0,
+            10.0
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        14,
+        0,
+        10
+      ],
+      "to": [
+        15,
+        2,
+        14
+      ],
+      "faces": {
+        "up": {
+          "texture": "#iron",
+          "uv": [
+            9.0,
+            6.0,
             10.0,
             10.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        0,
+        10
+      ],
+      "to": [
+        14,
+        2,
+        11
+      ],
+      "faces": {
+        "up": {
+          "texture": "#iron",
+          "uv": [
+            7.0,
+            6.0,
+            9.0,
+            7.0
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        0,
+        13
+      ],
+      "to": [
+        14,
+        2,
+        14
+      ],
+      "faces": {
+        "up": {
+          "texture": "#iron",
+          "uv": [
+            7.0,
+            9.0,
+            9.0,
+            10.0
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        11,
+        0,
+        10
+      ],
+      "to": [
+        15,
+        2,
+        14
+      ],
+      "faces": {
         "north": {
           "texture": "#iron",
           "uv": [
@@ -121,7 +419,22 @@
             10.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        11,
+        0,
+        10
+      ],
+      "to": [
+        15,
+        2,
+        14
+      ],
+      "faces": {
         "south": {
           "texture": "#iron",
           "uv": [
@@ -130,7 +443,22 @@
             10.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        11,
+        0,
+        10
+      ],
+      "to": [
+        15,
+        2,
+        14
+      ],
+      "faces": {
         "west": {
           "texture": "#iron",
           "uv": [
@@ -139,7 +467,22 @@
             10.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        11,
+        0,
+        10
+      ],
+      "to": [
+        15,
+        2,
+        14
+      ],
+      "faces": {
         "east": {
           "texture": "#iron",
           "uv": [
@@ -149,7 +492,8 @@
             9.0
           ]
         }
-      }
+      },
+      "expeditions_render_only": true
     },
     {
       "from": [
@@ -163,15 +507,30 @@
         5
       ],
       "faces": {
-        "down": {
-          "texture": "#end",
+        "north": {
+          "texture": "#empty",
           "uv": [
-            7.0,
-            7.0,
-            9.0,
-            9.0
+            0,
+            0,
+            16,
+            16
           ]
-        },
+        }
+      },
+      "expeditions_collision_only": true
+    },
+    {
+      "from": [
+        2,
+        2,
+        3
+      ],
+      "to": [
+        4,
+        9,
+        5
+      ],
+      "faces": {
         "up": {
           "texture": "#end",
           "uv": [
@@ -180,7 +539,22 @@
             9.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        2,
+        3
+      ],
+      "to": [
+        4,
+        9,
+        5
+      ],
+      "faces": {
         "north": {
           "texture": "#bone",
           "uv": [
@@ -189,16 +563,94 @@
             9.0,
             11.5
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        2,
+        3
+      ],
+      "to": [
+        3,
+        9,
+        5
+      ],
+      "faces": {
         "south": {
           "texture": "#bone",
           "uv": [
             7.0,
             4.5,
+            8.0,
+            11.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        3,
+        2,
+        3
+      ],
+      "to": [
+        4,
+        3,
+        5
+      ],
+      "faces": {
+        "south": {
+          "texture": "#bone",
+          "uv": [
+            8.0,
+            10.5,
             9.0,
             11.5
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        3,
+        5,
+        3
+      ],
+      "to": [
+        4,
+        9,
+        5
+      ],
+      "faces": {
+        "south": {
+          "texture": "#bone",
+          "uv": [
+            8.0,
+            4.5,
+            9.0,
+            8.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        2,
+        3
+      ],
+      "to": [
+        4,
+        9,
+        5
+      ],
+      "faces": {
         "west": {
           "texture": "#bone",
           "uv": [
@@ -207,17 +659,81 @@
             9.0,
             11.5
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        2,
+        3
+      ],
+      "to": [
+        4,
+        9,
+        4
+      ],
+      "faces": {
         "east": {
           "texture": "#bone",
           "uv": [
-            7.0,
+            8.0,
             4.5,
             9.0,
             11.5
           ]
         }
-      }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        2,
+        4
+      ],
+      "to": [
+        4,
+        3,
+        5
+      ],
+      "faces": {
+        "east": {
+          "texture": "#bone",
+          "uv": [
+            7.0,
+            10.5,
+            8.0,
+            11.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        2,
+        5,
+        4
+      ],
+      "to": [
+        4,
+        9,
+        5
+      ],
+      "faces": {
+        "east": {
+          "texture": "#bone",
+          "uv": [
+            7.0,
+            4.5,
+            8.0,
+            8.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
     },
     {
       "from": [
@@ -231,15 +747,30 @@
         13
       ],
       "faces": {
-        "down": {
-          "texture": "#end",
+        "north": {
+          "texture": "#empty",
           "uv": [
-            7.0,
-            7.0,
-            9.0,
-            9.0
+            0,
+            0,
+            16,
+            16
           ]
-        },
+        }
+      },
+      "expeditions_collision_only": true
+    },
+    {
+      "from": [
+        12,
+        2,
+        11
+      ],
+      "to": [
+        14,
+        11,
+        13
+      ],
+      "faces": {
         "up": {
           "texture": "#end",
           "uv": [
@@ -248,16 +779,94 @@
             9.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        13,
+        2,
+        11
+      ],
+      "to": [
+        14,
+        11,
+        13
+      ],
+      "faces": {
         "north": {
           "texture": "#bone",
           "uv": [
             7.0,
             3.5,
+            8.0,
+            12.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        2,
+        11
+      ],
+      "to": [
+        13,
+        3,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bone",
+          "uv": [
+            8.0,
+            11.5,
             9.0,
             12.5
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        5,
+        11
+      ],
+      "to": [
+        13,
+        11,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#bone",
+          "uv": [
+            8.0,
+            3.5,
+            9.0,
+            9.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        2,
+        11
+      ],
+      "to": [
+        14,
+        11,
+        13
+      ],
+      "faces": {
         "south": {
           "texture": "#bone",
           "uv": [
@@ -266,16 +875,94 @@
             9.0,
             12.5
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        2,
+        12
+      ],
+      "to": [
+        14,
+        11,
+        13
+      ],
+      "faces": {
+        "west": {
+          "texture": "#bone",
+          "uv": [
+            8.0,
+            3.5,
+            9.0,
+            12.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        2,
+        11
+      ],
+      "to": [
+        14,
+        3,
+        12
+      ],
+      "faces": {
+        "west": {
+          "texture": "#bone",
+          "uv": [
+            7.0,
+            11.5,
+            8.0,
+            12.5
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        5,
+        11
+      ],
+      "to": [
+        14,
+        11,
+        12
+      ],
+      "faces": {
         "west": {
           "texture": "#bone",
           "uv": [
             7.0,
             3.5,
-            9.0,
-            12.5
+            8.0,
+            9.5
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        2,
+        11
+      ],
+      "to": [
+        14,
+        11,
+        13
+      ],
+      "faces": {
         "east": {
           "texture": "#bone",
           "uv": [
@@ -285,7 +972,8 @@
             12.5
           ]
         }
-      }
+      },
+      "expeditions_render_only": true
     },
     {
       "from": [
@@ -299,74 +987,307 @@
         12
       ],
       "faces": {
+        "north": {
+          "texture": "#empty",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "expeditions_collision_only": true
+    },
+    {
+      "from": [
+        4,
+        3,
+        4
+      ],
+      "to": [
+        12,
+        5,
+        12
+      ],
+      "faces": {
         "down": {
           "texture": "#bone",
           "uv": [
             4.0,
+            4.0,
+            12.0,
+            12.0
+          ],
+          "rotation": 90
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        3,
+        4
+      ],
+      "to": [
+        13,
+        5,
+        11
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bone",
+          "uv": [
+            5.0,
             3.0,
             12.0,
+            4.0
+          ],
+          "rotation": 90
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        3,
+        3,
+        5
+      ],
+      "to": [
+        4,
+        5,
+        12
+      ],
+      "faces": {
+        "down": {
+          "texture": "#bone",
+          "uv": [
+            4.0,
+            12.0,
+            11.0,
             13.0
           ],
           "rotation": 90
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        4,
+        3,
+        4
+      ],
+      "to": [
+        12,
+        5,
+        12
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bone",
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            12.0
+          ],
+          "rotation": 90
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        12,
+        3,
+        4
+      ],
+      "to": [
+        13,
+        5,
+        11
+      ],
+      "faces": {
         "up": {
           "texture": "#bone",
           "uv": [
             4.0,
             3.0,
+            11.0,
+            4.0
+          ],
+          "rotation": 90
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        3,
+        3,
+        5
+      ],
+      "to": [
+        4,
+        5,
+        12
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bone",
+          "uv": [
+            5.0,
+            12.0,
             12.0,
             13.0
           ],
           "rotation": 90
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        4,
+        3,
+        4
+      ],
+      "to": [
+        13,
+        5,
+        12
+      ],
+      "faces": {
         "north": {
           "texture": "#bone",
           "uv": [
             7.0,
-            3.0,
+            4.0,
             9.0,
             13.0
           ],
           "rotation": 90
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        3,
+        3,
+        4
+      ],
+      "to": [
+        12,
+        5,
+        12
+      ],
+      "faces": {
         "south": {
           "texture": "#bone",
           "uv": [
             7.0,
-            3.0,
+            4.0,
             9.0,
             13.0
           ],
           "rotation": 90
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        3,
+        3,
+        5
+      ],
+      "to": [
+        13,
+        5,
+        12
+      ],
+      "faces": {
         "west": {
           "texture": "#end",
           "uv": [
-            4.0,
-            7.0,
-            12.0,
-            9.0
-          ]
-        },
-        "east": {
-          "texture": "#end",
-          "uv": [
-            4.0,
+            5.0,
             7.0,
             12.0,
             9.0
           ]
         }
-      }
+      },
+      "expeditions_render_only": true
     },
     {
       "from": [
-        0,
+        3,
+        3,
+        4
+      ],
+      "to": [
+        13,
+        5,
+        11
+      ],
+      "faces": {
+        "east": {
+          "texture": "#end",
+          "uv": [
+            5.0,
+            7.0,
+            12.0,
+            9.0
+          ]
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        0.25,
         8,
         3
       ],
       "to": [
-        16,
+        15.75,
+        9,
+        14
+      ],
+      "faces": {
+        "north": {
+          "texture": "#empty",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_collision_only": true
+    },
+    {
+      "from": [
+        0.25,
+        8,
+        3
+      ],
+      "to": [
+        15.75,
         9,
         14
       ],
@@ -375,42 +1296,240 @@
           "texture": "#bone",
           "uv": [
             2.5,
-            0.0,
+            0.25,
             13.5,
-            16.0
+            15.75
           ],
           "rotation": 90
-        },
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        0.25,
+        8,
+        3
+      ],
+      "to": [
+        1,
+        9,
+        14
+      ],
+      "faces": {
         "up": {
           "texture": "#bone",
           "uv": [
             2.5,
-            0.0,
+            15.0,
             13.5,
-            16.0
+            15.75
           ],
           "rotation": 90
-        },
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        15,
+        8,
+        3
+      ],
+      "to": [
+        15.75,
+        9,
+        14
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bone",
+          "uv": [
+            2.5,
+            0.25,
+            13.5,
+            1.0
+          ],
+          "rotation": 90
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        8,
+        3
+      ],
+      "to": [
+        15,
+        9,
+        4
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bone",
+          "uv": [
+            2.5,
+            1.0,
+            3.5,
+            15.0
+          ],
+          "rotation": 90
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        8,
+        13
+      ],
+      "to": [
+        15,
+        9,
+        14
+      ],
+      "faces": {
+        "up": {
+          "texture": "#bone",
+          "uv": [
+            12.5,
+            1.0,
+            13.5,
+            15.0
+          ],
+          "rotation": 90
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        0.25,
+        8,
+        3
+      ],
+      "to": [
+        15.75,
+        9,
+        14
+      ],
+      "faces": {
         "north": {
           "texture": "#bone",
           "uv": [
             7.5,
-            0.0,
+            0.25,
             8.5,
-            16.0
+            15.75
           ],
           "rotation": 90
-        },
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        0.25,
+        8,
+        3
+      ],
+      "to": [
+        15.75,
+        9,
+        14
+      ],
+      "faces": {
         "south": {
           "texture": "#bone",
           "uv": [
             7.5,
-            0.0,
+            0.25,
             8.5,
-            16.0
+            15.75
           ],
           "rotation": 90
-        },
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        0.25,
+        8,
+        3
+      ],
+      "to": [
+        15.75,
+        9,
+        14
+      ],
+      "faces": {
         "west": {
           "texture": "#end",
           "uv": [
@@ -419,7 +1538,31 @@
             13.5,
             8.5
           ]
-        },
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        0.25,
+        8,
+        3
+      ],
+      "to": [
+        15.75,
+        9,
+        14
+      ],
+      "faces": {
         "east": {
           "texture": "#end",
           "uv": [
@@ -438,29 +1581,54 @@
         ],
         "axis": "x",
         "angle": -45
-      }
+      },
+      "expeditions_render_only": true
     },
     {
       "from": [
         1,
-        9.01,
+        9,
         4
       ],
       "to": [
         15,
-        9.05,
+        9.125,
         13
       ],
       "faces": {
-        "down": {
-          "texture": "#bone",
+        "north": {
+          "texture": "#empty",
           "uv": [
-            1.0,
-            3.5,
-            15.0,
-            12.5
+            0,
+            0,
+            16,
+            16
           ]
-        },
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_collision_only": true
+    },
+    {
+      "from": [
+        1,
+        9,
+        4
+      ],
+      "to": [
+        15,
+        9.125,
+        13
+      ],
+      "faces": {
         "up": {
           "texture": "#chart",
           "uv": [
@@ -469,41 +1637,38 @@
             15.0,
             12.5
           ]
-        },
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        9,
+        4
+      ],
+      "to": [
+        15,
+        9.125,
+        13
+      ],
+      "faces": {
         "north": {
           "texture": "#bone",
           "uv": [
             1.0,
-            7.9799999999999995,
+            7.9375,
             15.0,
-            8.02
-          ]
-        },
-        "south": {
-          "texture": "#bone",
-          "uv": [
-            1.0,
-            7.9799999999999995,
-            15.0,
-            8.02
-          ]
-        },
-        "west": {
-          "texture": "#bone",
-          "uv": [
-            3.5,
-            7.9799999999999995,
-            12.5,
-            8.02
-          ]
-        },
-        "east": {
-          "texture": "#bone",
-          "uv": [
-            3.5,
-            7.9799999999999995,
-            12.5,
-            8.02
+            8.0625
           ]
         }
       },
@@ -515,7 +1680,131 @@
         ],
         "axis": "x",
         "angle": -45
-      }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        9,
+        4
+      ],
+      "to": [
+        15,
+        9.125,
+        13
+      ],
+      "faces": {
+        "south": {
+          "texture": "#bone",
+          "uv": [
+            1.0,
+            7.9375,
+            15.0,
+            8.0625
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        9,
+        4
+      ],
+      "to": [
+        15,
+        9.125,
+        13
+      ],
+      "faces": {
+        "west": {
+          "texture": "#bone",
+          "uv": [
+            3.5,
+            7.9375,
+            12.5,
+            8.0625
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        1,
+        9,
+        4
+      ],
+      "to": [
+        15,
+        9.125,
+        13
+      ],
+      "faces": {
+        "east": {
+          "texture": "#bone",
+          "uv": [
+            3.5,
+            7.9375,
+            12.5,
+            8.0625
+          ]
+        }
+      },
+      "rotation": {
+        "origin": [
+          8,
+          8,
+          8
+        ],
+        "axis": "x",
+        "angle": -45
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        14,
+        7,
+        8
+      ],
+      "to": [
+        16,
+        9,
+        10
+      ],
+      "faces": {
+        "north": {
+          "texture": "#empty",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      },
+      "expeditions_collision_only": true
     },
     {
       "from": [
@@ -537,7 +1826,22 @@
             9.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        14,
+        7,
+        8
+      ],
+      "to": [
+        16,
+        9,
+        10
+      ],
+      "faces": {
         "up": {
           "texture": "#copper",
           "uv": [
@@ -546,7 +1850,22 @@
             9.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        14,
+        7,
+        8
+      ],
+      "to": [
+        16,
+        9,
+        10
+      ],
+      "faces": {
         "north": {
           "texture": "#copper",
           "uv": [
@@ -555,7 +1874,22 @@
             9.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        14,
+        7,
+        8
+      ],
+      "to": [
+        16,
+        9,
+        10
+      ],
+      "faces": {
         "south": {
           "texture": "#copper",
           "uv": [
@@ -564,7 +1898,22 @@
             9.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        14,
+        7,
+        8
+      ],
+      "to": [
+        16,
+        9,
+        10
+      ],
+      "faces": {
         "west": {
           "texture": "#copper",
           "uv": [
@@ -573,7 +1922,22 @@
             9.0,
             9.0
           ]
-        },
+        }
+      },
+      "expeditions_render_only": true
+    },
+    {
+      "from": [
+        14,
+        7,
+        8
+      ],
+      "to": [
+        16,
+        9,
+        10
+      ],
+      "faces": {
         "east": {
           "texture": "#copper",
           "uv": [
@@ -583,7 +1947,8 @@
             9.0
           ]
         }
-      }
+      },
+      "expeditions_render_only": true
     }
   ],
   "render_type": "minecraft:cutout",

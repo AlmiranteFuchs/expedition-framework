@@ -428,6 +428,12 @@ public final class ExpeditionsConfig {
     public static int frontierLimit() { return FRONTIER_LIMIT.get(); }
     public static int frontierHomeRadius() { return FRONTIER_HOME.get(); }
 
+    private static final ModConfigSpec.BooleanValue SIMPLE_GENERATORS = BUILDER
+            .comment("Optional casual power: all three source types supply 10 R/t without",
+                    "fuel, quiet-ground or core binding. Existing block ids stay unchanged.",
+                    "Off by default; expedition and guardian progression gates are unaffected.")
+            .define("expeditions.resonance.simple_generators", false);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     private static final int TICKS_PER_SECOND = 20;
@@ -628,6 +634,11 @@ public final class ExpeditionsConfig {
     /** Maximum distance from a marker its colony's heart may land. */
     public static int microbiomeMarkerColonyRadius() {
         return MICROBIOME_MARKER_RADIUS.get();
+    }
+
+    /** Whether generators use simplified rules (casual mode). */
+    public static boolean simpleGenerators() {
+        return SIMPLE_GENERATORS.get();
     }
 
     /** Growth pulses applied to a marker colony at seed time. */

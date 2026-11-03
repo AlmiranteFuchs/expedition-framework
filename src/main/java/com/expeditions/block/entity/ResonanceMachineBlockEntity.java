@@ -2,6 +2,8 @@ package com.expeditions.block.entity;
 
 import com.expeditions.core.ResonanceProcessing;
 import com.expeditions.core.ResonancePower;
+import com.expeditions.core.ResonanceStatus;
+import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.ResonancePower.Kind;
 import com.expeditions.item.SeveranceCoreItem;
 import com.expeditions.server.Stillness;
@@ -21,14 +23,28 @@ import net.neoforged.neoforge.items.*;
 
 public final class ResonanceMachineBlockEntity extends BlockEntity {
     public final ItemStackHandler inventory=new ItemStackHandler(2) {
-        @Override public boolean isItemValid(int slot,ItemStack stack) { return slot==0 && switch(kind()){
+        @Override public boolean isItemValid(int slot,ItemStack stack) { return slot==0 && (!dynamo()||!ExpeditionsConfig.simpleGenerators()) && switch(kind()){
             case DORMANT->false;case LIVING->stack.is(ModItems.ASSIMILATION_ESSENCE.get());
             case SEVERED->stack.is(ModItems.SEVERANCE_CORE.get());case CONDENSER->stack.is(ModItems.DORMANT_FLAKE.get());}; }
-        @Override protected void onContentsChanged(int slot) { setChanged(); }
+        @Override protected void onContentsChanged(int slot) { setChanged();updateComparator(); }
     };
     private int fuelTicks,progress,generationRate,fieldCount=1;
     private long lastFieldScan=Long.MIN_VALUE;
     private boolean reserved,breach;
+    private ResonanceStatus status=ResonanceStatus.NO_SAMPLE;
+    private int actualGeneration,lastComparator=-1,activityTail;
+    public ResonanceStatus status(){return status;}
+    public int actualGeneration(){return actualGeneration;}
+    public int collectors(){return fieldCount;}
+    public int comparatorSignal(){
+        if(dynamo())return ResonanceStatus.fillSignal(energy(),ResonanceProcessing.CAPACITY);
+        var output=inventory.getStackInSlot(1);return output.isEmpty()?0:ResonanceStatus.fillSignal(output.getCount(),output.getMaxStackSize());
+    }
+    private void updateComparator(){
+        if(level==null||level.isClientSide)return;
+        int signal=comparatorSignal();
+        if(signal!=lastComparator){lastComparator=signal;level.updateNeighbourForOutputSignal(worldPosition,getBlockState().getBlock());}
+    }
     private final Bank bank=new Bank();
     private final IItemHandler automation=new IItemHandler() {
         public int getSlots(){return 2;}
@@ -73,8 +89,8 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
         Bank(){super(ResonanceProcessing.CAPACITY,80,256);}
         @Override public boolean canReceive(){return !dynamo();}
         @Override public boolean canExtract(){return dynamo();}
-        @Override public int receiveEnergy(int amount,boolean simulate){int n=amount>0 && canReceive()?super.receiveEnergy(amount,simulate):0;if(n>0&&!simulate)setChanged();return n;}
-        @Override public int extractEnergy(int amount,boolean simulate){int n=amount>0 && canExtract()?super.extractEnergy(amount,simulate):0;if(n>0&&!simulate)setChanged();return n;}
+        @Override public int receiveEnergy(int amount,boolean simulate){int n=amount>0 && canReceive()?super.receiveEnergy(amount,simulate):0;if(n>0&&!simulate){setChanged();updateComparator();}return n;}
+        @Override public int extractEnergy(int amount,boolean simulate){int n=amount>0 && canExtract()?super.extractEnergy(amount,simulate):0;if(n>0&&!simulate){setChanged();updateComparator();}return n;}
         void add(int amount){energy=ResonanceProcessing.restoredEnergy(energy+amount);setChanged();}
         void spend(int amount){energy=Math.max(0,energy-amount);setChanged();}
         void restore(int value){energy=ResonanceProcessing.restoredEnergy(value);}
@@ -90,20 +106,25 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
     @Override public void onLoad(){super.onLoad();if(level instanceof ServerLevel server && breach)
         ExpeditionManager.get(server.getServer()).savedData().setStillnessBreach(worldPosition,true);}
     public static void tick(ServerLevel level,BlockPos pos,BlockState state,ResonanceMachineBlockEntity be){
+        be.actualGeneration=0;boolean working=false,quiet=true,proven=false;
+        boolean paused=level.hasNeighborSignal(pos);
+        boolean simple=ExpeditionsConfig.simpleGenerators();
+        if(simple&&be.dynamo()){be.fieldCount=1;be.lastFieldScan=Long.MIN_VALUE;}
         if(be.breach){
             if(be.energy()<20){be.breach=false;ExpeditionManager.get(level.getServer()).savedData().setStillnessBreach(pos,false);be.setChanged();}
-            else be.bank.spend(20);
+            else {be.bank.spend(20);working=true;}
         } else if(be.dynamo()){
-            if(be.kind()==Kind.LIVING && be.fuelTicks==0 && be.energy()<ResonanceProcessing.CAPACITY
-                    && !level.hasNeighborSignal(pos) && be.inventory.getStackInSlot(0).is(ModItems.ASSIMILATION_ESSENCE.get())){
+            if(!simple && be.kind()==Kind.LIVING && be.fuelTicks==0 && be.energy()<ResonanceProcessing.CAPACITY
+                    && !paused && be.inventory.getStackInSlot(0).is(ModItems.ASSIMILATION_ESSENCE.get())){
                 be.inventory.extractItem(0,1,false);be.fuelTicks=ResonancePower.LIVING_FUEL_TICKS;
                 level.playSound(null,pos,SoundEvents.WARDEN_HEARTBEAT,SoundSource.BLOCKS,.25f,1.2f);
             }
-            boolean quiet=Stillness.suppresses(level,pos) || ExpeditionManager.get(level.getServer()).savedData().isDimensionCleared(level.dimension().location().toString());
-            be.generationRate=level.hasNeighborSignal(pos)?0:ResonancePower.output(be.kind(),quiet,
-                    be.kind()==Kind.DORMANT?be.fieldCount(level):1,be.fuelTicks>0,SeveranceCoreItem.valid(level,be.inventory.getStackInSlot(0)));
+            quiet=simple||Stillness.suppresses(level,pos) || ExpeditionManager.get(level.getServer()).savedData().isDimensionCleared(level.dimension().location().toString());
+            proven=!simple&&be.kind()==Kind.SEVERED&&SeveranceCoreItem.valid(level,be.inventory.getStackInSlot(0));
+            be.generationRate=paused?0:ResonancePower.output(be.kind(),quiet,
+                    !simple&&be.kind()==Kind.DORMANT?be.fieldCount(level):1,be.fuelTicks>0,proven,simple);
             int made=Math.min(be.generationRate,ResonanceProcessing.CAPACITY-be.energy());
-            if(made>0){be.bank.add(made);if(be.kind()==Kind.LIVING)be.fuelTicks--;}
+            if(made>0){be.bank.add(made);be.actualGeneration=made;working=true;if(!simple&&be.kind()==Kind.LIVING)be.fuelTicks--;}
         } else {
             var output=be.inventory.getStackInSlot(1);
             boolean room=output.isEmpty() || output.is(ModItems.ASSIMILATION_ESSENCE.get()) && output.getCount()<output.getMaxStackSize();
@@ -112,6 +133,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                     be.inventory.extractItem(0,1,false);be.reserved=true;be.progress=0;
                 }
                 if(be.reserved){
+                    working=true;
                     be.bank.spend(20);be.progress++;
                     if(be.progress>=ResonanceProcessing.PROCESS_TICKS){
                         var next=output.isEmpty()?new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()):output.copyWithCount(output.getCount()+1);
@@ -136,10 +158,26 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                 if(moved>0)be.bank.spend(moved);budget-=moved;
             }
         }
-        boolean lit=be.breach || be.dynamo() && be.generationRate>0 && be.energy()<ResonanceProcessing.CAPACITY || be.reserved && be.energy()>0;
-        boolean core=be.kind()==Kind.DORMANT || be.kind()==Kind.LIVING || be.inventory.getStackInSlot(0).is(ModItems.SEVERANCE_CORE.get());
+        var output=be.inventory.getStackInSlot(1);
+        boolean outputRoom=output.isEmpty()||output.is(ModItems.ASSIMILATION_ESSENCE.get())&&output.getCount()<output.getMaxStackSize();
+        be.status=be.dynamo()?ResonanceStatus.source(be.kind(),be.energy(),paused,quiet,be.fuelTicks>0||be.actualGeneration>0,
+                be.inventory.getStackInSlot(0).is(ModItems.SEVERANCE_CORE.get()),proven,be.fieldCount)
+                :ResonanceStatus.condenser(be.energy(),be.reserved,be.inventory.getStackInSlot(0).is(ModItems.DORMANT_FLAKE.get()),outputRoom,be.breaching());
+        if(!be.dynamo()) {
+            // Keep the readout steady between adjacent paid steps on a slow
+            // supply, but settle promptly after a genuine stall or backpressure.
+            if(be.breach||!be.reserved||!outputRoom)be.activityTail=0;
+            else if(working)be.activityTail=3;
+            else be.activityTail=Math.max(0,be.activityTail-1);
+            if(be.activityTail>0)be.status=ResonanceStatus.REFINING;
+        }
+        if(simple&&be.dynamo())be.status=paused?ResonanceStatus.REDSTONE_PAUSED:be.energy()>=ResonanceProcessing.CAPACITY
+                ?ResonanceStatus.BUFFER_FULL:ResonanceStatus.SIMPLE_GATHERING;
+        boolean lit=working||!be.dynamo()&&be.activityTail>0;
+        boolean core=simple&&be.dynamo() || be.kind()==Kind.DORMANT || be.kind()==Kind.LIVING || be.inventory.getStackInSlot(0).is(ModItems.SEVERANCE_CORE.get());
         if(state.getValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE)!=lit || state.getValue(com.expeditions.block.ResonanceMachineBlock.HAS_CORE)!=core)
             level.setBlock(pos,state.setValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE,lit).setValue(com.expeditions.block.ResonanceMachineBlock.HAS_CORE,core),3);
+        be.updateComparator();
     }
     public void dropContents(){
         if(level==null || level.isClientSide)return;

@@ -15,6 +15,10 @@ import net.minecraft.world.level.block.state.*;
 import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.phys.BlockHitResult;
 public final class ResonanceMachineBlock extends HorizontalDirectionalBlock implements EntityBlock {
+    @Override protected boolean hasAnalogOutputSignal(BlockState state){return true;}
+    @Override protected int getAnalogOutputSignal(BlockState state,Level level,BlockPos pos){
+        return level.getBlockEntity(pos) instanceof ResonanceMachineBlockEntity be?be.comparatorSignal():0;
+    }
     public static final BooleanProperty ACTIVE=BlockStateProperties.LIT;
     public static final BooleanProperty HAS_CORE=BooleanProperty.create("has_core");
     public ResonanceMachineBlock(Properties p){super(p);registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH).setValue(ACTIVE,false).setValue(HAS_CORE,false));}
@@ -44,7 +48,7 @@ public final class ResonanceMachineBlock extends HorizontalDirectionalBlock impl
             server.openMenu(new SimpleMenuProvider((id,inv,who)->new ResonanceMenu(id,inv,be),getName()),buf->{buf.writeBlockPos(p);buf.writeBoolean(be.dynamo());});
     }
     @Override protected void onRemove(BlockState old,Level l,BlockPos p,BlockState next,boolean moving){
-        if(old.getBlock()!=next.getBlock() && l.getBlockEntity(p) instanceof ResonanceMachineBlockEntity be)be.dropContents();
+        if(old.getBlock()!=next.getBlock() && l.getBlockEntity(p) instanceof ResonanceMachineBlockEntity be){be.dropContents();l.updateNeighbourForOutputSignal(p,old.getBlock());}
         super.onRemove(old,l,p,next,moving);
     }    @Override protected net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,net.minecraft.world.level.BlockGetter level,BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){
         return FieldMachineShapes.shape(state.is(ModBlocks.STILLNESS_DYNAMO.get())?"stillness_dynamo":state.is(ModBlocks.LIVING_HEART_ENGINE.get())?"living_heart_engine":state.is(ModBlocks.SEVERANCE_GENERATOR.get())?"severance_generator":"essence_condenser",state.getValue(FACING),state.getValue(HAS_CORE));

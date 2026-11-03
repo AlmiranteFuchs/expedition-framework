@@ -85,8 +85,8 @@ def gen():
         return e
     base=[box([1,1,2],[15,3,14]),box([0,0,1],[3,3,4],'iron'),box([13,0,1],[16,3,4],'iron'),box([0,0,12],[3,3,15],'iron'),box([13,0,12],[16,3,15],'iron')]
     # A fork and suspended knot replace the borrowed flywheel silhouette.
-    dynamo=base+[box([2,3,6],[4,13,10],'bone',{'origin':[3,4,8],'axis':'z','angle':-22.5}),
-        box([12,3,6],[14,13,10],'bone',{'origin':[13,4,8],'axis':'z','angle':22.5}),
+    dynamo=base+[box([2,3,6.25],[4,13,9.75],'bone',{'origin':[3,4,8],'axis':'z','angle':-22.5}),
+        box([12,3,6.25],[14,13,9.75],'bone',{'origin':[13,4,8],'axis':'z','angle':22.5}),
         box([3,3,6],[13,5,10],'iron'),box([4,12,6],[6,14,10],'copper'),box([10,12,6],[12,14,10],'copper'),
         box([6,9,6],[10,13,10],'empty'),box([6,3,10],[10,6,13],'copper')]
     living=base+[box([4,4,4],[12,5,12],'copper'),box([4,14,4],[12,15,12],'copper'),box([5,5,5],[11,14,11],'glass'),
@@ -97,16 +97,19 @@ def gen():
         box([7,3,11],[9,15,13],'bone'),box([4,7,4],[12,8,6],'copper'),box([4,7,10],[12,8,12],'copper'),
         box([4,7,6],[6,8,10],'copper'),box([10,7,6],[12,8,10],'copper'),box([6,9,6],[10,13,10],'empty')]
     condenser=base+[box([8,3,6],[10,5,8],'copper'),box([6,5,4],[12,6,10],'copper'),box([6,13,4],[12,14,10],'copper'),box([7,6,5],[11,13,9],'glass'),box([8,6,6],[10,10,8],'resin'),box([5,4,4],[6,14,5]),box([12,4,9],[13,14,10]),box([8,14,6],[10,16,8],'iron'),box([3,13,6],[8,15,8],'copper'),box([2,8,6],[4,14,8],'copper'),box([2,4,6],[4,8,8]),box([3,7,5],[5,8,7],'copper'),box([3,3,4],[6,5,7],'glass'),box([4,3,5],[5,4,6],'resin')]
-    terminal=[box([1,0,2],[5,2,6],'iron'),box([11,0,10],[15,2,14],'iron'),box([2,2,3],[4,9,5]),box([12,2,11],[14,11,13]),box([3,3,4],[13,5,12]),box([0,8,3],[16,9,14],'bone',{'origin':[8,8,8],'axis':'x','angle':-45}),box([1,9.01,4],[15,9.05,13],'chart',{'origin':[8,8,8],'axis':'x','angle':-45}),box([14,7,8],[16,9,10],'copper')]
+    terminal=[box([1,0,2],[5,2,6],'iron'),box([11,0,10],[15,2,14],'iron'),box([2,2,3],[4,9,5]),box([12,2,11],[14,11,13]),box([3,3,4],[13,5,12]),box([.25,8,3],[15.75,9,14],'bone',{'origin':[8,8,8],'axis':'x','angle':-45}),box([1,9,4],[15,9.125,13],'chart',{'origin':[8,8,8],'axis':'x','angle':-45}),box([14,7,8],[16,9,10],'copper')]
     for face in terminal[6]['faces']:
         terminal[6]['faces'][face]['texture']='#chart' if face=='up' else '#bone'
     for name,elements in [('stillness_dynamo',dynamo),('living_heart_engine',living),('severance_generator',severed),('essence_condenser',condenser),('expedition_terminal',terminal)]:
+        from machine_surface_mesh import exposed
+        elements=exposed(elements)
         model={'parent':'minecraft:block/block','textures':textures,'elements':elements,'render_type':'minecraft:cutout','ambientocclusion':False}
         write(Path('models/block/'+name+'.json'),model)
         if name in ('stillness_dynamo','living_heart_engine','severance_generator'):
             import copy
             item_model=copy.deepcopy(model)
             for element in item_model['elements']:
+                if element.get('expeditions_collision_only'):continue
                 for face in element['faces'].values():
                     if face['texture']=='#empty':face['texture']='#heart' if name=='living_heart_engine' else '#severed' if name=='severance_generator' else '#knot'
             write(Path('models/item/'+name+'.json'),item_model)

@@ -809,3 +809,22 @@ failure clean up the whole deployed structure, preserving all native obstruction
 Verified: build/alphaBundle, 176 unit tests and 169 core GameTests (172 reported
 including the optional biome probes). The original authored build remains intact;
 the pale palette preview is a separate development fixture near 1221,240,1052.
+
+
+## Machine feedback — alpha.23
+
+Machine models are generated through `tools/machine_surface_mesh.py`. Render
+fragments carry `expeditions_render_only`; original collision bodies carry
+`expeditions_collision_only` and one transparent face (the native model parser
+rejects faceless elements). `FieldMachineShapes` must preserve those original
+bodies while excluding render fragments. Run `tools/verify_machine_models.py`
+and `tools/test_machine_surfaces.py` after model changes. Five models now have
+zero coplanar overlaps (34 before repair), with their approved palette intact.
+Resonance screens synchronize operating status, collector count and actual
+output. Source comparators read FE fill; condenser comparators read finished
+stock. `simple_generators` defaults false; enabled sources produce 10 R/t, keep
+saved fuel/core inventories, and restore normal proof checks when disabled.
+Condenser feedback holds at most three ticks across intermittent power; paid
+progress and immediate output backpressure remain authoritative. Verified:
+186 unit tests, 173 core GameTests (176 including optional biome probes), build
+and alphaBundle; native workshop and status proofs in docs/art-direction/machines.
