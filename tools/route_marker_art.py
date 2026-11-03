@@ -147,4 +147,6 @@ def tree_models(assets, box, textures):
     (assets/'models/item/expedition_exit.json').write_text(json.dumps({
         'parent':'minecraft:block/block','render_type':'minecraft:cutout','textures':tex,
         'elements':miniature},indent=2)+'\n',encoding='utf-8')
+    from stillwood_tree_art import generate_art
+    generate_art(assets)
 

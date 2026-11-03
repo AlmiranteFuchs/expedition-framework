@@ -1,6 +1,7 @@
 package com.expeditions.block;
 
 import com.expeditions.server.RecallTrees;
+import com.expeditions.server.RecallTreeLayout;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,7 +19,7 @@ import net.minecraft.world.phys.shapes.*;
 
 /** Every visible segment resolves to its root; no client-supplied address or independent reward path. */
 public final class RecallTreePartBlock extends RouteMarkerBlock {
-    public static final IntegerProperty PART = IntegerProperty.create("part", 0, 7);
+    public static final IntegerProperty PART = IntegerProperty.create("part", 0, RecallTreeLayout.PIECES.size()-1);
 
     public RecallTreePartBlock(Properties properties) {
         super(properties, "recall_tree_0");
@@ -27,10 +28,11 @@ public final class RecallTreePartBlock extends RouteMarkerBlock {
 
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(PART); }
     @Override protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return FieldMachineShapes.shape("recall_tree_" + state.getValue(PART), Direction.NORTH);
+        int part=state.getValue(PART);
+        return RecallTreeLayout.wholeBlock(part)?Shapes.block():FieldMachineShapes.shape(RecallTreeLayout.model(part), Direction.NORTH);
     }
     @Override protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(PART) == 7 ? Shapes.empty() : getShape(state, level, pos, context);
+        return RecallTreeLayout.portal(state.getValue(PART)) ? Shapes.empty() : getShape(state, level, pos, context);
     }
     private static BlockPos root(BlockState state, BlockPos pos) { return pos.subtract(RecallTrees.OFFSETS.get(state.getValue(PART))); }
     @Override protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
@@ -38,10 +40,17 @@ public final class RecallTreePartBlock extends RouteMarkerBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
     @Override protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (state.getValue(PART) == 7 && !level.isClientSide && entity instanceof ServerPlayer player && player.tickCount % 20 == 0)
+        if (RecallTreeLayout.portal(state.getValue(PART)) && !level.isClientSide && entity instanceof ServerPlayer player && player.tickCount % 20 == 0)
             ExpeditionExitBlock.recall(player, root(state, pos), true);
     }
     @Override public void animateTick(BlockState state, Level level, BlockPos pos, net.minecraft.util.RandomSource random) {
-        if (state.getValue(PART) == 7) super.animateTick(state, level, pos, random);
+        if (RecallTreeLayout.portal(state.getValue(PART))) super.animateTick(state, level, pos, random);
+    }
+    @Override public boolean skipRendering(BlockState state, BlockState neighbor, Direction direction) {
+        if (neighbor.is(com.expeditions.registry.ModBlocks.RECALL_TREE_PART.get())
+                && RecallTreeLayout.wholeBlock(state.getValue(PART)) && RecallTreeLayout.wholeBlock(neighbor.getValue(PART)))
+            return RecallTreeLayout.PIECES.get(state.getValue(PART)).kind().equals("leaves")
+                    == RecallTreeLayout.PIECES.get(neighbor.getValue(PART)).kind().equals("leaves");
+        return super.skipRendering(state,neighbor,direction);
     }
 }

@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "bark": "expeditions:block/stillwood_bark",
+    "end": "expeditions:block/stillwood_end",
+    "leaves": "expeditions:block/stillwood_leaves",
+    "veil": "expeditions:block/stillwood_depth",
+    "particle": "expeditions:block/stillwood_bark"
+  },
+  "elements": []
+}

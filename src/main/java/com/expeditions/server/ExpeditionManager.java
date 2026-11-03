@@ -1727,7 +1727,7 @@ public final class ExpeditionManager {
         }
         // Parts are tracked individually for crash pruning, and retained per position
         // while any other live route still needs them. Never remove unrelated blocks.
-        for (BlockPos part : RecallTrees.parts(toPos(run.exit()))) {
+        for (BlockPos part : RecallTrees.allParts(toPos(run.exit()))) {
             var state = level.getBlockState(part);
             if (!isReferencedByActiveRun(dimension, part)) {
                 if (state.is(ModBlocks.RECALL_TREE_PART.get())) removeMarkerAt(level, part);

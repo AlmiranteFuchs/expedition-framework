@@ -760,3 +760,24 @@ entity callbacks/reward idempotence, trunk use and compact-root validity. Synthe
 End fixtures need a three-wide floor; post-placement headroom tests permit only
 the exact intact non-colliding upper aperture. Verified: 176 unit tests and 165
 core GameTests (168 reported with the three optional biome probes), build/alphaBundle.
+
+Alpha.21 corrects the scale: new return landmarks are a full block-built tree,
+114 tracked cells, eight blocks tall, seven-wide canopy and a three-by-three
+hollow trunk. The portal is recessed one block behind the doorway. The user
+explicitly rejected the thin custom-model arch; never describe that as satisfying
+the requested multiblock art. New logs, roots and leaves are full cubes, with
+native bark/endgrain/ash foliage and an animated dark amber portal. Art remains
+subject to user review. `tools/recall_tree_layout.py` generates the canonical
+`assets/expeditions/route/recall_tree.json`; placement, collision semantics,
+blockstate models and inventory miniature share this template. New pieces start
+at index 8; indices 0..7 and full_tree=false preserve the alpha.20 layout.
+FULL_TREE defaults false for legacy saves; new deployments set grown/full_tree
+true. Treat existing indexed offsets as persisted data; future footprint changes
+need another layout version rather than silently reordering them. Cleanup covers
+the union of old/new offsets, recovery validates the correct version, and terrain,
+door clearance, root supports and border checks precede all placement/payment.
+The larger footprint loads at most four covered chunks per candidate. Generated
+routes still use bounded jitter/rerolls. Both synthetic End fixtures provide real
+ground under the tree. A new regression enforces full cube geometry, eight-block
+height and recessed portal collision. Verified: build/alphaBundle, 176 unit tests
+and 166 core GameTests (169 with the optional biome probes).

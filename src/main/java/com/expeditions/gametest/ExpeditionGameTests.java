@@ -360,8 +360,8 @@ public final class ExpeditionGameTests {
         // floor it can resolve, high above any island top.
         int[][] anchors = {{16, 0}, {32, 0}, {48, 0}};
         for (int[] a : anchors) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dz = -2; dz <= 4; dz++) {
                     end.setBlock(new BlockPos(a[0] + dx, 100, a[1] + dz),
                             Blocks.STONE.defaultBlockState(), 3);
                 }

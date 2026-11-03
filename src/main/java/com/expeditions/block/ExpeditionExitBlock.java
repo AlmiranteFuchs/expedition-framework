@@ -27,13 +27,15 @@ import net.minecraft.world.phys.shapes.*;
  */
 public class ExpeditionExitBlock extends RouteMarkerBlock {
     public static final BooleanProperty GROWN = BooleanProperty.create("grown");
+    public static final BooleanProperty FULL_TREE = BooleanProperty.create("full_tree");
     public ExpeditionExitBlock(Properties properties) {
         super(properties, "expedition_exit");
-        registerDefaultState(stateDefinition.any().setValue(GROWN, false));
+        registerDefaultState(stateDefinition.any().setValue(GROWN, false).setValue(FULL_TREE,false));
     }
 
-    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(GROWN); }
+    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(GROWN,FULL_TREE); }
     @Override protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        if(state.getValue(GROWN)&&state.getValue(FULL_TREE))return Shapes.empty();
         return state.getValue(GROWN) ? FieldMachineShapes.shape("recall_tree_root", net.minecraft.core.Direction.NORTH)
                 : super.getShape(state, level, pos, context);
     }
@@ -41,7 +43,7 @@ public class ExpeditionExitBlock extends RouteMarkerBlock {
         return state.getValue(GROWN) ? Shapes.empty() : super.getCollisionShape(state, level, pos, context);
     }
     @Override protected void entityInside(BlockState state, Level level, BlockPos pos, net.minecraft.world.entity.Entity entity) {
-        if (state.getValue(GROWN) && !level.isClientSide && entity instanceof ServerPlayer player && player.tickCount % 20 == 0)
+        if (state.getValue(GROWN) && !state.getValue(FULL_TREE) && !level.isClientSide && entity instanceof ServerPlayer player && player.tickCount % 20 == 0)
             recall(player, pos, true);
     }
 

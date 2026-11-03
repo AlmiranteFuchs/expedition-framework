@@ -106,14 +106,16 @@ public final class DimensionCompatibilityTests {
         var player = helper.makeMockServerPlayerInLevel();
         player.setGameMode(GameType.CREATIVE);
         // Unique columns keep this probe independent of the shared route tests.
-        // The exit is a three-wide hollow; provide its actual footprint in
-        // this synthetic End fixture rather than a single floating column.
-        for (int x : new int[]{64, 72, 79, 80, 81}) {
+        for (int x : new int[]{64, 72}) {
             end.getChunk(x >> 4, 0);
-            for (int y = 101; y < end.getMaxBuildHeight(); y++) {
-                end.setBlock(new BlockPos(x, y, 8), Blocks.AIR.defaultBlockState(), 3);
-            }
-            end.setBlock(new BlockPos(x, 100, 8), Blocks.STONE.defaultBlockState(), 3);
+            for (int y=101;y<end.getMaxBuildHeight();y++) end.setBlock(new BlockPos(x,y,8),Blocks.AIR.defaultBlockState(),3);
+            end.setBlock(new BlockPos(x,100,8),Blocks.STONE.defaultBlockState(),3);
+        }
+        // Supply real terrain under the full-sized tree, not a floating exit column.
+        for(int x=76;x<=84;x++) for(int z=4;z<=12;z++) {
+            end.getChunk(x>>4,z>>4);
+            end.setBlock(new BlockPos(x,100,z),Blocks.STONE.defaultBlockState(),3);
+            for(int y=101;y<end.getMaxBuildHeight();y++) end.setBlock(new BlockPos(x,y,z),Blocks.AIR.defaultBlockState(),3);
         }
         try {
             helper.assertTrue(ExpeditionAdapters.forLevel(end).orElseThrow()

@@ -24,12 +24,33 @@ import net.neoforged.neoforge.gametest.*;
 @PrefixGameTestTemplate(false)
 public final class RecallTreeTests {
     private RecallTreeTests() { }
+
+    @GameTest(template="arena", batch="recall_full_blocks")
+    public static void fullTreeUsesWholeLogsAndLeavesWithARecessedPortal(GameTestHelper helper) {
+        int wood=0,leaves=0,portal=0;
+        for(int i=RecallTreeLayout.LEGACY_COUNT;i<RecallTreeLayout.PIECES.size();i++) {
+            var piece=RecallTreeLayout.PIECES.get(i);
+            var state=ModBlocks.RECALL_TREE_PART.get().defaultBlockState().setValue(RecallTreePartBlock.PART,i);
+            if(piece.kind().equals("portal")) {
+                portal++;
+                helper.assertTrue(piece.offset().getZ()==1&&state.getCollisionShape(helper.getLevel(),BlockPos.ZERO).isEmpty(),
+                        "the walkable portal must be recessed a full block into the trunk");
+            } else {
+                helper.assertTrue(state.isCollisionShapeFullBlock(helper.getLevel(),BlockPos.ZERO),
+                        "each log and leaf must be an actual full block, not a thin enlarged model");
+                if(piece.kind().equals("leaves"))leaves++;else wood++;
+            }
+        }
+        helper.assertTrue(wood>25&&leaves>35&&portal==2,"the tree needs real trunk/root mass, a canopy and a two-high portal");
+        helper.assertTrue(RecallTreeLayout.PIECES.stream().anyMatch(p->p.offset().getY()==7),"the full tree must be eight blocks tall");
+        helper.succeed();
+    }
     private static final String ID = "test:recall_hollow";
     private static void floor(GameTestHelper helper, BlockPos root) {
         var level = helper.getLevel();
-        for (int x=-1;x<=1;x++) {
-            level.setBlockAndUpdate(root.offset(x,-1,0), Blocks.STONE.defaultBlockState());
-            for (int y=0;y<3;y++) level.setBlockAndUpdate(root.offset(x,y,0), Blocks.AIR.defaultBlockState());
+        for (int x=-4;x<=4;x++) for(int z=-3;z<=5;z++) {
+            level.setBlockAndUpdate(root.offset(x,-1,z), Blocks.STONE.defaultBlockState());
+            for (int y=0;y<9;y++) level.setBlockAndUpdate(root.offset(x,y,z), Blocks.AIR.defaultBlockState());
         }
         var cp=root.west(8);
         level.setBlockAndUpdate(cp.below(), Blocks.STONE.defaultBlockState());
@@ -102,14 +123,14 @@ public final class RecallTreeTests {
         try {
             var run=start(helper,player,root);
             player.teleportTo(root.getX()+.5,root.getY(),root.getZ()+.5);player.tickCount=20;
-            level.getBlockState(root).entityInside(level,root,player);
+            level.getBlockState(root.south()).entityInside(level,root.south(),player);
             helper.assertTrue(run.isActive(),"the open-looking hollow must not skip checkpoints");
             manager.activateCheckpoint(player,ExpeditionManager.toPos(run.checkpoints().getFirst()));
             helper.assertTrue(!run.objectiveState("timely").orElseThrow().completed(),
                     "the required timed objective must still await extraction evaluation");
             ExpeditionExitBlock.recall(player,root.east(12),false);
             helper.assertTrue(run.isActive(),"an unrelated exit address must not settle this charter");
-            var aperture=root.above();
+            var aperture=root.above().south();
             level.getBlockState(aperture).entityInside(level,aperture,player);
             helper.assertTrue(run.status()==ExpeditionStatus.COMPLETED,"the upper aperture must recall a fully eligible member");
             int balance=manager.tokenBalance(player.getUUID());

@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.20)
+## Current starter progression (alpha.21)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -49,9 +49,9 @@ world; the proposed Liquid Resonance factory is documented in
 [cost/reward rules](docs/resonance-deployment-proposal.md). The fluid and portal
 fuel requirement are proposals, not shipped mechanics.
 
-Alpha.20 replaces the small route instruments with **Witness Stumps** and a
+Alpha.21 replaces the thin return arch with a full-sized, block-built tree and replaces the small route instruments with **Witness Stumps** and a
 **Stillwood Hollow**: rooted pale growths and a full hollow-tree return aperture.
-The tree has a validated footprint and individually tracked segments; walk through
+The eight-block-tall tree has 114 tracked cells, a broad canopy and a portal recessed into its trunk; walk through
 after meeting the charter's requirements, or use its wood. Existing compact exits
 remain recoverable. See [the hollow-tree redesign](docs/stillwood-hollow.md).
 

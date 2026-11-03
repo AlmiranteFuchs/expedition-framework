@@ -58,7 +58,7 @@ public final class ModBlocks {
             "recall_tree_part", () -> new com.expeditions.block.RecallTreePartBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_WHITE).strength(-1.0f, 3_600_000.0f)
                     .noLootTable().noOcclusion().sound(SoundType.WOOD).lightLevel(state ->
-                            state.getValue(com.expeditions.block.RecallTreePartBlock.PART) == 7 ? 8 : 0)));
+                            com.expeditions.server.RecallTreeLayout.portal(state.getValue(com.expeditions.block.RecallTreePartBlock.PART)) ? 8 : 0)));
 
     /**
      * Defense device deployed by a {@code defend_device} objective. Shares
