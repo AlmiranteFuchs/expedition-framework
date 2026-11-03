@@ -290,8 +290,8 @@ public final class ExpeditionManager {
                 }
                 BlockPos exit = resolveAnchor(adapter, level, candidate.exit(), maxAttempts,
                         pos -> RecallTrees.fits(level, pos)
-                                && positions.stream().noneMatch(cp -> RecallTrees.contains(pos, cp))
-                                && (level != portalLevel || !RecallTrees.contains(pos, portalPos)));
+                                && positions.stream().noneMatch(cp -> RecallTrees.coreContains(pos, cp))
+                                && (level != portalLevel || !RecallTrees.coreContains(pos, portalPos)));
                 route = candidate;
                 entryPos = candidateEntry != null
                         ? candidateEntry : positions.get(0).above();
@@ -923,15 +923,21 @@ public final class ExpeditionManager {
                 }
             }
         }
+        for(var roots:manager.data.recallTreeRoots().entrySet())for(var root:roots.getValue()) {
+            boolean active=manager.ledger.runs().stream().anyMatch(r->r.isActive()
+                    &&r.definition().dimension().equals(roots.getKey())&&toPos(r.exit()).equals(root));
+            if(!active)manager.data.removeRecallTreeParts(roots.getKey(),root);
+        }
         manager.data.setDirty();
     }
 
     private boolean isReferencedByActiveRun(String dimension, BlockPos pos) {
         Waypoint waypoint = toWaypoint(pos);
+        ServerLevel markerLevel=levelFor(dimension);
         return ledger.runs().stream()
                 .filter(ExpeditionRun::isActive)
                 .anyMatch(r -> (r.definition().dimension().equals(dimension)
-                        && (r.checkpoints().contains(waypoint) || RecallTrees.contains(toPos(r.exit()), pos)
+                        && (r.checkpoints().contains(waypoint) || RecallTrees.contains(toPos(r.exit()), pos,data.recallTreeParts(dimension,toPos(r.exit())),markerLevel)
                                 || r.defense().map(d -> d.device().equals(waypoint))
                                         .orElse(false)))
                         || (r.portalOpen() && r.portalDimension().equals(dimension)
@@ -1737,6 +1743,7 @@ public final class ExpeditionManager {
         if (!isReferencedByActiveRun(dimension, toPos(run.exit()))) {
             removeMarker(level, run.exit(),
                     ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+            data.removeRecallTreeParts(dimension,toPos(run.exit()));
         }
     }
 

@@ -28,12 +28,14 @@ import net.minecraft.world.phys.shapes.*;
 public class ExpeditionExitBlock extends RouteMarkerBlock {
     public static final BooleanProperty GROWN = BooleanProperty.create("grown");
     public static final BooleanProperty FULL_TREE = BooleanProperty.create("full_tree");
+    public static final net.minecraft.world.level.block.state.properties.IntegerProperty TREE_LAYOUT =
+            net.minecraft.world.level.block.state.properties.IntegerProperty.create("tree_layout",0,1);
     public ExpeditionExitBlock(Properties properties) {
         super(properties, "expedition_exit");
-        registerDefaultState(stateDefinition.any().setValue(GROWN, false).setValue(FULL_TREE,false));
+        registerDefaultState(stateDefinition.any().setValue(GROWN, false).setValue(FULL_TREE,false).setValue(TREE_LAYOUT,0));
     }
 
-    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(GROWN,FULL_TREE); }
+    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(GROWN,FULL_TREE,TREE_LAYOUT); }
     @Override protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         if(state.getValue(GROWN)&&state.getValue(FULL_TREE))return Shapes.empty();
         return state.getValue(GROWN) ? FieldMachineShapes.shape("recall_tree_root", net.minecraft.core.Direction.NORTH)

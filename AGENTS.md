@@ -781,3 +781,31 @@ routes still use bounded jitter/rerolls. Both synthetic End fixtures provide rea
 ground under the tree. A new regression enforces full cube geometry, eight-block
 height and recessed portal collision. Verified: build/alphaBundle, 176 unit tests
 and 166 core GameTests (169 with the optional biome probes).
+
+Alpha.22 uses the player's captured tree as the authoritative art source.
+`docs/art-direction/player-tree/stillwood_player_source.nbt` preserves all 930
+original non-air block states in a 17x31x17 box, including 169 underground pieces.
+The user explicitly selected the mod's pale bark/amber palette with their exact
+shape. Never run the workshop preparation function over their original build,
+or replace this source with a procedurally invented tree. `recall_tree_layout.py`
+now reads that native NBT; `verify_authored_tree.py` checks every authored voxel,
+source hash, old indices and the mod-independent protected native template under
+data/expeditions/structure. No Twilight Forest runtime dependency is introduced.
+Capture defaults to refusing overwrite; --replace is only for a new requested build.
+
+TREE_LAYOUT=1 identifies the authored layout. Part indices 0..120 retain the old
+arches/procedural tree; authored parts append after them. Legacy absent flags
+still default safely. A clipped deployed tree has an exact placed-index manifest
+in the SAME SavedData file as runs/balances/markers. Placement touches only AIR;
+existing terrain, plants, fluids and other markers clip optional tree pieces
+without drops. Only the doorway, two portal cells and safe floor must fit.
+Record only parts actually placed; recovery requires their exact states plus both
+portal cells. Missing/malformed manifests fail closed, never as legacy. Cleanup
+and orphan pruning remove manifests and actual owned markers without drops;
+survival hardness stays -1. Per-position references use the manifest. Legacy
+fallback reads a candidate old piece's inverse offset, never an imagined new
+footprint that could pin unrelated orphan branches. Both run completion and
+failure clean up the whole deployed structure, preserving all native obstructions.
+Verified: build/alphaBundle, 176 unit tests and 169 core GameTests (172 reported
+including the optional biome probes). The original authored build remains intact;
+the pale palette preview is a separate development fixture near 1221,240,1052.

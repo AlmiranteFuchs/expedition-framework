@@ -46,7 +46,7 @@ def generate_art(assets):
     textures={n:'expeditions:block/stillwood_'+n for n in ['bark','end','leaves']}
     textures['veil']='expeditions:block/stillwood_depth';textures['particle']=textures['bark']
     models={}
-    for kind in ['log_y','log_x','log_z','root_x','root_z','leaves']:
+    for kind in ['log_y','log_x','log_z','root_x','root_y','root_z','leaves']:
         faces={}
         for f in ['north','south','east','west','up','down']:
             along=(kind=='log_y' and f in ['up','down']) or (kind=='log_x' and f in ['east','west']) or (kind=='log_z' and f in ['north','south'])
@@ -58,22 +58,50 @@ def generate_art(assets):
     models['portal']={'parent':'minecraft:block/block','render_type':'minecraft:translucent','ambientocclusion':False,'textures':textures,
                       'elements':[{'from':[0,0,7.99],'to':[16,16,8.01],'shade':False,
                                    'faces':{f:{'texture':'#veil','uv':[0,0,16,16]} for f in ['north','south']}}]}
+    textures['vine']='expeditions:block/stillwood_twigs'
+    for kind in {c[3] for c in layout['cells'] if c[3].startswith('vine_')}:
+        elements=[]
+        for face in kind.removeprefix('vine_').split('_'):
+            a,b,pair={'east':([15,0,0],[16,16,16],['east','west']),
+                      'north':([0,0,0],[16,16,1],['north','south']),
+                      'up':([0,15,0],[16,16,16],['up','down'])}[face]
+            elements.append({'from':a,'to':b,'faces':{f:{'texture':'#vine','uv':[0,0,16,16]} for f in pair}})
+        models[kind]={'parent':'minecraft:block/block','render_type':'minecraft:cutout','textures':textures,'elements':elements}
     models['entrance']={'parent':'minecraft:block/block','textures':textures,'elements':[]}
     for kind,model in models.items():(assets/'models/block'/f'stillwood_{kind}.json').write_text(json.dumps(model,indent=2)+'\n',encoding='utf-8')
     variants={'part='+str(i):{'model':'expeditions:block/recall_tree_'+str(i)} for i in range(8)}
-    for index,(_,_,_,kind) in enumerate(layout['cells'],8):variants['part='+str(index)]={'model':'expeditions:block/stillwood_'+kind}
+    legacy=json.loads((assets/'route/recall_tree_alpha21.json').read_text(encoding='utf-8'))['cells']
+    for index,(_,_,_,kind) in enumerate(legacy+layout['cells'],8):variants['part='+str(index)]={'model':'expeditions:block/stillwood_'+kind}
     (assets/'blockstates/recall_tree_part.json').write_text(json.dumps({'variants':variants},indent=2)+'\n',encoding='utf-8')
     (assets/'blockstates/expedition_exit.json').write_text(json.dumps({'variants':{
         'grown=false':{'model':'expeditions:block/expedition_exit'},
         'grown=true,full_tree=false':{'model':'expeditions:block/recall_tree_root'},
         'grown=true,full_tree=true':{'model':'expeditions:block/stillwood_entrance'}}},indent=2)+'\n',encoding='utf-8')
     miniature=[]
-    for x,y,z,kind in layout['cells']:
+    visible=[c for c in layout['cells'] if c[1]>=0]
+    min_x=min(c[0] for c in visible);max_x=max(c[0] for c in visible)+1
+    min_z=min(c[2] for c in visible);max_z=max(c[2] for c in visible)+1
+    scale=max(max_x-min_x,max_z-min_z,max(c[1] for c in visible)+1)
+    shifts=[8-(min_x+max_x)*8/scale,0,8-(min_z+max_z)*8/scale]
+    for x,y,z,kind in visible:
         if kind=='portal':continue
         for original in models[kind]['elements']:
             element=copy.deepcopy(original)
-            for key in ['from','to']:element[key]=[(v+o*16)/8+(7 if axis==0 else 0 if axis==1 else 5) for axis,(v,o) in enumerate(zip(element[key],[x,y,z]))]
+            for key in ['from','to']:element[key]=[(v+o*16)/scale+shifts[axis] for axis,(v,o) in enumerate(zip(element[key],[x,y,z]))]
             for face in element['faces'].values():face.pop('cullface',None)
             miniature.append(element)
     (assets/'models/item/expedition_exit.json').write_text(json.dumps({'parent':'minecraft:block/block','textures':textures,
         'render_type':'minecraft:cutout','elements':miniature},indent=2)+'\n',encoding='utf-8')
+
+    # Native, mod-independent runtime template; the exact raw source remains in docs.
+    from structure_nbt import structure,write
+    source=assets.parents[4]/'docs/art-direction/player-tree/metadata.json'
+    metadata=json.loads(source.read_text(encoding='utf-8'))
+    origin=metadata['origin'];anchor=metadata['anchor']
+    baked=[]
+    for index,(x,y,z,kind) in enumerate(layout['cells'],8+len(legacy)):
+        pos=[x+anchor[0]-origin[0],y+anchor[1]-origin[1],z+anchor[2]-origin[2]]
+        baked.append((pos,'expeditions:recall_tree_part',{'part':str(index)}))
+    baked.append(([anchor[i]-origin[i] for i in range(3)],'expeditions:expedition_exit',
+                  {'grown':'true','full_tree':'true','tree_layout':'1'}))
+    write(assets.parents[1]/'data/expeditions/structure/stillwood_hollow.nbt',structure(metadata['size'],baked))

@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.21)
+## Current starter progression (alpha.22)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -49,11 +49,13 @@ world; the proposed Liquid Resonance factory is documented in
 [cost/reward rules](docs/resonance-deployment-proposal.md). The fluid and portal
 fuel requirement are proposals, not shipped mechanics.
 
-Alpha.21 replaces the thin return arch with a full-sized, block-built tree and replaces the small route instruments with **Witness Stumps** and a
-**Stillwood Hollow**: rooted pale growths and a full hollow-tree return aperture.
-The eight-block-tall tree has 114 tracked cells, a broad canopy and a portal recessed into its trunk; walk through
-after meeting the charter's requirements, or use its wood. Existing compact exits
-remain recoverable. See [the hollow-tree redesign](docs/stillwood-hollow.md).
+Alpha.22 uses the player's **native Minecraft tree structure** for the Stillwood
+Hollow, preserving its shape with the chosen pale bark/amber palette. The source
+contains 930 blocks including deep roots. Terrain clips obstructed tree pieces
+without drops; the safe portal opening is still required. Deployed pieces remain
+unbreakable in Survival and despawn when the expedition ends. Placed-piece records
+persist with the run for safe recovery. See [the authored structure](docs/stillwood-hollow.md).
+
 
 ## Environment
 

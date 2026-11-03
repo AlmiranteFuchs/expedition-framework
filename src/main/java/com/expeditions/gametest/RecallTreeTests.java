@@ -25,16 +25,91 @@ import net.neoforged.neoforge.gametest.*;
 public final class RecallTreeTests {
     private RecallTreeTests() { }
 
+    @GameTest(template="arena", batch="recall_legacy_orphans")
+    public static void legacyCompactRunDoesNotClaimUnrelatedAuthoredBranches(GameTestHelper helper) {
+        var root=new BlockPos(2400,80,2200);floor(helper,root);
+        var level=helper.getLevel();var player=helper.makeMockServerPlayerInLevel();
+        var manager=ExpeditionManager.get(player.server);
+        try {
+            start(helper,player,root);var data=ExpeditionGameTests.savedData(player.server);
+            for(int i:data.recallTreeParts("minecraft:overworld",root).orElseThrow()) {
+                var p=root.offset(RecallTrees.OFFSETS.get(i));level.removeBlock(p,false);data.untrackMarker("minecraft:overworld",p);
+            }
+            data.removeRecallTreeParts("minecraft:overworld",root);
+            level.setBlockAndUpdate(root,ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+            int stray=java.util.stream.IntStream.range(RecallTreeLayout.AUTHORED_START,RecallTreeLayout.PIECES.size())
+                    .filter(i->RecallTrees.OFFSETS.get(i).getY()>5).findFirst().orElseThrow();
+            var orphan=root.offset(RecallTrees.OFFSETS.get(stray));
+            level.setBlockAndUpdate(orphan,ModBlocks.RECALL_TREE_PART.get().defaultBlockState().setValue(RecallTreePartBlock.PART,stray));
+            data.trackMarker("minecraft:overworld",orphan);
+            ExpeditionManager.pruneOrphanMarkers(player.server);
+            helper.assertTrue(level.getBlockState(orphan).isAir(),"a compact legacy exit must not protect a new-layout orphan by an imagined footprint");
+            helper.assertTrue(manager.resumeOrFail(player).isPresent(),"legacy compact recovery must remain valid");
+        } finally {ExpeditionGameTests.failRunIfActive(manager,player);ExpeditionDefinitions.reload(Map.of());}
+        helper.succeed();
+    }
+
+    @GameTest(template="arena", batch="recall_native_source")
+    public static void authoredNativeStructureLoadsWithoutTwilightForest(GameTestHelper helper) {
+        var template=helper.getLevel().getStructureManager().getOrCreate(ResourceLocation.parse("expeditions:stillwood_hollow"));
+        helper.assertTrue(template.getSize().equals(new net.minecraft.core.Vec3i(17,31,17)),
+                "the native template must preserve the captured tree and its deep roots");
+        helper.assertTrue(RecallTreeLayout.PIECES.size()-RecallTreeLayout.AUTHORED_START==930,
+                "every one of the player's 930 non-air blocks must have a protected placement piece");
+        helper.succeed();
+    }
+
+    @GameTest(template="arena", batch="recall_clipped_terrain")
+    public static void treeYieldsToTerrainAndTracksOnlyPlacedPiecesWithoutDrops(GameTestHelper helper) {
+        var root=new BlockPos(2360,80,2200);floor(helper,root);
+        var level=helper.getLevel();var player=helper.makeMockServerPlayerInLevel();player.setGameMode(GameType.CREATIVE);
+        var manager=ExpeditionManager.get(player.server);var obstruction=root.east();
+        level.setBlockAndUpdate(obstruction,Blocks.DIAMOND_BLOCK.defaultBlockState());
+        try {
+            helper.assertTrue(RecallTrees.fits(level,root),"optional wood yields to terrain while the doorway stays safe");
+            start(helper,player,root);
+            var data=ExpeditionGameTests.savedData(player.server);
+            var placed=data.recallTreeParts("minecraft:overworld",root).orElseThrow();
+            helper.assertTrue(level.getBlockState(obstruction).is(Blocks.DIAMOND_BLOCK),"the dimension's existing block must remain untouched");
+            helper.assertTrue(placed.stream().noneMatch(i->root.offset(RecallTrees.OFFSETS.get(i)).equals(obstruction)),"a clipped piece must never enter the placed manifest");
+            helper.assertTrue(RecallTrees.intact(level,root),"intentional clipping must not look like a damaged tree");
+            var restored=ExpeditionSavedData.load(data.save(new net.minecraft.nbt.CompoundTag(),level.registryAccess()),level.registryAccess());
+            helper.assertTrue(restored.recallTreeParts("minecraft:overworld",root).orElseThrow().equals(placed),"the exact placed manifest must survive save/load");
+            helper.assertTrue(RecallTrees.intact(level,root,restored.recallTreeParts("minecraft:overworld",root)),"a restarted clipped tree must remain valid");
+            helper.assertTrue(!RecallTrees.intact(level,root,java.util.Optional.empty()),"a new clipped tree cannot recover without its placed-piece record");
+            var corrupt=data.save(new net.minecraft.nbt.CompoundTag(),level.registryAccess());
+            for(var value:corrupt.getList("RecallTrees",net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                var tree=(net.minecraft.nbt.CompoundTag)value;
+                if(tree.getInt("x")==root.getX()&&tree.getInt("y")==root.getY()&&tree.getInt("z")==root.getZ())tree.putIntArray("Parts",new int[]{Integer.MAX_VALUE});
+            }
+            var malformed=ExpeditionSavedData.load(corrupt,level.registryAccess());
+            helper.assertTrue(!RecallTrees.intact(level,root,malformed.recallTreeParts("minecraft:overworld",root)),"a malformed manifest must fail closed rather than impersonating a legacy tree");
+            int wood=placed.stream().filter(i->RecallTreeLayout.wholeBlock(i)).findFirst().orElseThrow();
+            var woodPos=root.offset(RecallTrees.OFFSETS.get(wood));
+            helper.assertTrue(level.getBlockState(woodPos).getDestroySpeed(level,woodPos)<0,"survival mining must not break deployed tree pieces");
+            var box=new net.minecraft.world.phys.AABB(root).inflate(20);
+            int items=level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,box).size();
+            manager.failRun(player);
+            helper.assertTrue(level.getBlockState(obstruction).is(Blocks.DIAMOND_BLOCK),"cleanup must preserve the dimension's obstruction");
+            helper.assertTrue(data.recallTreeParts("minecraft:overworld",root).isEmpty(),"run end must discard its placed manifest");
+            for(int i:placed)helper.assertTrue(!level.getBlockState(root.offset(RecallTrees.OFFSETS.get(i))).is(ModBlocks.RECALL_TREE_PART.get()),"every placed tree piece must despawn");
+            helper.assertTrue(level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,box).size()==items,"clipping and despawning must produce no block drops");
+        } finally {ExpeditionGameTests.failRunIfActive(manager,player);ExpeditionDefinitions.reload(Map.of());level.removeBlock(obstruction,false);}
+        helper.succeed();
+    }
+
     @GameTest(template="arena", batch="recall_full_blocks")
     public static void fullTreeUsesWholeLogsAndLeavesWithARecessedPortal(GameTestHelper helper) {
         int wood=0,leaves=0,portal=0;
-        for(int i=RecallTreeLayout.LEGACY_COUNT;i<RecallTreeLayout.PIECES.size();i++) {
+        for(int i=RecallTreeLayout.AUTHORED_START;i<RecallTreeLayout.PIECES.size();i++) {
             var piece=RecallTreeLayout.PIECES.get(i);
             var state=ModBlocks.RECALL_TREE_PART.get().defaultBlockState().setValue(RecallTreePartBlock.PART,i);
             if(piece.kind().equals("portal")) {
                 portal++;
-                helper.assertTrue(piece.offset().getZ()==1&&state.getCollisionShape(helper.getLevel(),BlockPos.ZERO).isEmpty(),
+                helper.assertTrue(piece.offset().getZ()==-1&&state.getCollisionShape(helper.getLevel(),BlockPos.ZERO).isEmpty(),
                         "the walkable portal must be recessed a full block into the trunk");
+            } else if(piece.kind().startsWith("vine_")) {
+                helper.assertTrue(state.getCollisionShape(helper.getLevel(),BlockPos.ZERO).isEmpty(),"the captured hanging detail must retain empty collision");
             } else {
                 helper.assertTrue(state.isCollisionShapeFullBlock(helper.getLevel(),BlockPos.ZERO),
                         "each log and leaf must be an actual full block, not a thin enlarged model");
@@ -42,7 +117,7 @@ public final class RecallTreeTests {
             }
         }
         helper.assertTrue(wood>25&&leaves>35&&portal==2,"the tree needs real trunk/root mass, a canopy and a two-high portal");
-        helper.assertTrue(RecallTreeLayout.PIECES.stream().anyMatch(p->p.offset().getY()==7),"the full tree must be eight blocks tall");
+        helper.assertTrue(RecallTreeLayout.PIECES.stream().anyMatch(p->p.offset().getY()==14),"the authored above-ground canopy must retain its fifteen-block height");
         helper.succeed();
     }
     private static final String ID = "test:recall_hollow";
@@ -75,12 +150,12 @@ public final class RecallTreeTests {
         var root=new BlockPos(2200,80,2200);floor(helper,root);
         var level=helper.getLevel();var player=helper.makeMockServerPlayerInLevel();
         var manager=ExpeditionManager.get(player.server);
-        var obstruction=root.east().above(2);
+        var obstruction=root.above();
         level.setBlockAndUpdate(obstruction,Blocks.DIAMOND_BLOCK.defaultBlockState());
         definition(root);
         ExpeditionGameTests.savedData(player.server).ledger().addTokens(player.getUUID(),10);
         try {
-            helper.assertTrue(!RecallTrees.fits(level,root),"an occupied branch cell must refuse the whole hollow");
+            helper.assertTrue(!RecallTrees.fits(level,root),"an occupied entrance must refuse extraction placement");
             boolean refused=false;
             try {manager.startRun(player,helper.absolutePos(new BlockPos(1,1,1)),new ExpeditionOptions(ID,Difficulty.STANDARD,0,0));}
             catch(IllegalStateException expected){refused=true;}
@@ -101,10 +176,12 @@ public final class RecallTreeTests {
             var data=ExpeditionGameTests.savedData(player.server);
             helper.assertTrue(RecallTrees.intact(level,root),"new routes must place the full hollow");
             var restored=ExpeditionSavedData.load(data.save(new net.minecraft.nbt.CompoundTag(),level.registryAccess()),level.registryAccess());
-            helper.assertTrue(restored.liveMarkers().get("minecraft:overworld").containsAll(RecallTrees.parts(root)),"every branch needs persisted crash tracking");
+            var placed=data.recallTreeParts("minecraft:overworld",root).orElseThrow();
+            helper.assertTrue(restored.liveMarkers().get("minecraft:overworld").containsAll(placed.stream().map(i->root.offset(RecallTrees.OFFSETS.get(i))).toList()),"every placed branch needs persisted crash tracking");
             ExpeditionManager.pruneOrphanMarkers(player.server);
             helper.assertTrue(RecallTrees.intact(level,root)&&manager.resumeOrFail(player).isPresent(),"startup pruning must preserve a live tree");
-            level.removeBlock(root.offset(RecallTrees.OFFSETS.get(4)),false);
+            int missing=placed.stream().filter(i->RecallTreeLayout.wholeBlock(i)&&RecallTrees.OFFSETS.get(i).getY()>1).findFirst().orElseThrow();
+            level.removeBlock(root.offset(RecallTrees.OFFSETS.get(missing)),false);
             helper.assertTrue(manager.resumeOrFail(player).isEmpty(),"a damaged hollow must fail closed on recovery");
             for(var part:RecallTrees.parts(root)) {
                 helper.assertTrue(!level.getBlockState(part).is(ModBlocks.RECALL_TREE_PART.get()),"failed recovery must remove every surviving branch");
@@ -123,14 +200,14 @@ public final class RecallTreeTests {
         try {
             var run=start(helper,player,root);
             player.teleportTo(root.getX()+.5,root.getY(),root.getZ()+.5);player.tickCount=20;
-            level.getBlockState(root.south()).entityInside(level,root.south(),player);
+            level.getBlockState(root.north()).entityInside(level,root.north(),player);
             helper.assertTrue(run.isActive(),"the open-looking hollow must not skip checkpoints");
             manager.activateCheckpoint(player,ExpeditionManager.toPos(run.checkpoints().getFirst()));
             helper.assertTrue(!run.objectiveState("timely").orElseThrow().completed(),
                     "the required timed objective must still await extraction evaluation");
             ExpeditionExitBlock.recall(player,root.east(12),false);
             helper.assertTrue(run.isActive(),"an unrelated exit address must not settle this charter");
-            var aperture=root.above().south();
+            var aperture=root.above().north();
             level.getBlockState(aperture).entityInside(level,aperture,player);
             helper.assertTrue(run.status()==ExpeditionStatus.COMPLETED,"the upper aperture must recall a fully eligible member");
             int balance=manager.tokenBalance(player.getUUID());

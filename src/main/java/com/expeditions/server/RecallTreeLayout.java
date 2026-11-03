@@ -14,11 +14,19 @@ public final class RecallTreeLayout {
     public static final List<BlockPos> OFFSETS;
     public static final List<BlockPos> CLEARANCE;
     public static final List<BlockPos> FLOORS;
+    public static final int AUTHORED_START;
+    public static final Set<BlockPos> COVERAGE;
+    public static final Map<BlockPos,Set<Integer>> PARTS_AT;
     static {
         var pieces=new ArrayList<Piece>();
         for(var p:List.of(new BlockPos(-1,0,0),new BlockPos(1,0,0),new BlockPos(-1,1,0),new BlockPos(1,1,0),
                 new BlockPos(-1,2,0),new BlockPos(0,2,0),new BlockPos(1,2,0),new BlockPos(0,1,0)))pieces.add(new Piece(p,"legacy"));
         try(var stream=RecallTreeLayout.class.getResourceAsStream("/assets/expeditions/route/recall_tree.json")) {
+            try(var legacy=RecallTreeLayout.class.getResourceAsStream("/assets/expeditions/route/recall_tree_alpha21.json")) {
+                var old=JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(legacy),StandardCharsets.UTF_8)).getAsJsonObject();
+                for(var value:old.getAsJsonArray("cells")){var a=value.getAsJsonArray();pieces.add(new Piece(pos(a),a.get(3).getAsString()));}
+            }
+            AUTHORED_START=pieces.size();
             var data=JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(stream),StandardCharsets.UTF_8)).getAsJsonObject();
             for(var value:data.getAsJsonArray("cells")) {
                 var a=value.getAsJsonArray();pieces.add(new Piece(pos(a),a.get(3).getAsString()));
@@ -26,12 +34,16 @@ public final class RecallTreeLayout {
             var clearance=new ArrayList<BlockPos>();for(var value:data.getAsJsonArray("clearance"))clearance.add(pos(value.getAsJsonArray()));
             var floors=new ArrayList<BlockPos>();for(var value:data.getAsJsonArray("floors"))floors.add(pos(value.getAsJsonArray()));
             PIECES=List.copyOf(pieces);OFFSETS=PIECES.stream().map(Piece::offset).toList();
+            COVERAGE=Set.copyOf(OFFSETS);
+            var byPosition=new HashMap<BlockPos,Set<Integer>>();
+            for(int i=0;i<OFFSETS.size();i++)byPosition.computeIfAbsent(OFFSETS.get(i),p->new HashSet<>()).add(i);
+            var index=new HashMap<BlockPos,Set<Integer>>();byPosition.forEach((p,ids)->index.put(p,Set.copyOf(ids)));PARTS_AT=Map.copyOf(index);
             CLEARANCE=List.copyOf(clearance);FLOORS=List.copyOf(floors);
         } catch(Exception e) {throw new IllegalStateException("Unable to read Stillwood block template",e);}
     }
     private RecallTreeLayout() { }
     private static BlockPos pos(com.google.gson.JsonArray a) {return new BlockPos(a.get(0).getAsInt(),a.get(1).getAsInt(),a.get(2).getAsInt());}
     public static boolean portal(int part) {return part==7||PIECES.get(part).kind().equals("portal");}
-    public static boolean wholeBlock(int part) {return part>=LEGACY_COUNT&&!portal(part);}
+    public static boolean wholeBlock(int part) {return part>=LEGACY_COUNT&&!portal(part)&&!PIECES.get(part).kind().startsWith("vine_");}
     public static String model(int part) {return part<LEGACY_COUNT?"recall_tree_"+part:"stillwood_"+PIECES.get(part).kind();}
 }

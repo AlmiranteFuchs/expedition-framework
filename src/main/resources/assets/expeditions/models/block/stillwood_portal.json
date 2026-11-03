@@ -7,7 +7,8 @@
     "end": "expeditions:block/stillwood_end",
     "leaves": "expeditions:block/stillwood_leaves",
     "veil": "expeditions:block/stillwood_depth",
-    "particle": "expeditions:block/stillwood_bark"
+    "particle": "expeditions:block/stillwood_bark",
+    "vine": "expeditions:block/stillwood_twigs"
   },
   "elements": [
     {

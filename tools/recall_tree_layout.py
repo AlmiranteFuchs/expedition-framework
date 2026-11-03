@@ -1,46 +1,37 @@
-"""Block-by-block Stillwood tree. One layout is shared by art and server placement."""
+"""Derive protected placement from the player-authored native NBT source."""
 import json
+import hashlib
 from pathlib import Path
+from structure_nbt import read
 
-ASSETS=Path(__file__).resolve().parents[1]/'src/main/resources/assets/expeditions'
+ROOT=Path(__file__).resolve().parents[1]
+ASSETS=ROOT/'src/main/resources/assets/expeditions'
+SOURCE=ROOT/'docs/art-direction/player-tree'
 
 
 def generate():
-    cells={}
-    def put(x,y,z,kind='log_y'):cells[(x,y,z)]=kind
-    # A solid three-by-three trunk with a chamber carved one block into it.
-    for y in range(4):
-        for x in range(-1,2):
-            for z in range(3):
-                if y==3 and abs(x)==1 and z in [0,2]:continue
-                if x==0 and y<2 and z in [0,1]:continue
-                put(x,y,z)
-    for y in [0,1]:put(0,y,1,'portal')
-    # Roots follow the grain away from the trunk in full block steps.
-    for x,z,kind in [(-2,1,'root_x'),(2,1,'root_x'),(-1,-1,'root_z'),(1,-1,'root_z'),
-                     (-1,3,'root_z'),(1,3,'root_z')]:put(x,0,z,kind)
-    # Uneven fork and lateral limbs connect the crown to the main trunk.
-    for x,y,z,kind in [(0,4,1,'log_y'),(-1,4,1,'log_x'),(-2,4,1,'log_x'),
-                        (1,4,1,'log_x'),(1,4,2,'log_z'),(2,4,2,'log_x'),
-                        (-2,5,1,'log_y'),(2,5,2,'log_y'),(0,5,1,'log_y')]:put(x,y,z,kind)
-    # An offset canopy, broad and broken at the edge, with visible branch tips.
-    for y,radius,cx,cz in [(4,2,-1,1),(5,3,0,1),(6,2,0,1),(7,1,0,1)]:
-        for x in range(cx-radius,cx+radius+1):
-            for z in range(cz-radius,cz+radius+1):
-                if abs(x-cx)+abs(z-cz)>radius+1:continue
-                if (x,y,z) in cells:continue
-                if y==4 and abs(x)<=1 and z in [0,1,2]:continue
-                if (x,z) in [(cx-radius,cz+1),(cx+radius,cz-1)]:continue
-                put(x,y,z,'leaves')
-    # The front doorway is air. A recessed veil sits a full block inside it.
-    cells.pop((0,0,0),None);cells.pop((0,1,0),None)
-    data={'cells':[[x,y,z,kind] for (x,y,z),kind in sorted(cells.items(),key=lambda p:(p[0][1],p[0][2],p[0][0]))],
-          'clearance':[[0,1,0]],'floors':[[0,-1,0],[0,-1,1]]+
-          [[x,-1,z] for (x,y,z),kind in cells.items() if y==0 and kind.startswith(('log','root'))]}
-    path=ASSETS/'route/recall_tree.json';path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(json.dumps(data,indent=2)+'\n',encoding='utf-8')
+    metadata=json.loads((SOURCE/'metadata.json').read_text(encoding='utf-8'))
+    native=read(SOURCE/metadata['source']);origin=metadata['origin'];anchor=metadata['anchor']
+    cells=[]
+    for block in native['blocks']:
+        state=native['palette'][block['state']];name=state['Name'];props=state.get('Properties',{})
+        if name=='minecraft:air':continue
+        if name=='twilightforest:time_log':kind='log_'+props.get('axis','y')
+        elif name in ['twilightforest:time_wood','twilightforest:root']:kind='root_'+props.get('axis','y')
+        elif name=='twilightforest:time_leaves':kind='leaves'
+        elif name=='minecraft:orange_stained_glass':kind='portal'
+        elif name=='minecraft:vine':
+            faces=sorted(k for k,v in props.items() if v=='true');kind='vine_'+'_'.join(faces)
+        else:raise ValueError('Unmapped authored material: '+name)
+        pos=[block['pos'][i]+origin[i]-anchor[i] for i in range(3)]
+        cells.append(pos+[kind])
+    assert len(cells)==metadata['sourceNonAir']
+    assert not any(c[:3]==[0,0,0] for c in cells),'The authored entrance must remain clear'
+    portals=[c[:3] for c in cells if c[3]=='portal'];assert sorted(portals)==[[0,0,-1],[0,1,-1]]
+    data={'source':'player-authored native structure','sourceSha256':hashlib.sha256((SOURCE/metadata['source']).read_bytes()).hexdigest(),
+          'cells':cells,'clearance':[[0,1,0]],'floors':[[0,-1,0],[0,-1,-1]]}
+    (ASSETS/'route/recall_tree.json').write_text(json.dumps(data,indent=2)+'\n',encoding='utf-8')
     return data
 
 
-if __name__=='__main__':
-    data=generate();print('Stillwood tree:',len(data['cells'])+1,'tracked block cells')
+if __name__=='__main__':print('Authored tree:',len(generate()['cells'])+1,'planned marker cells')

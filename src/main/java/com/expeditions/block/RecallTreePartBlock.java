@@ -32,7 +32,8 @@ public final class RecallTreePartBlock extends RouteMarkerBlock {
         return RecallTreeLayout.wholeBlock(part)?Shapes.block():FieldMachineShapes.shape(RecallTreeLayout.model(part), Direction.NORTH);
     }
     @Override protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return RecallTreeLayout.portal(state.getValue(PART)) ? Shapes.empty() : getShape(state, level, pos, context);
+        return RecallTreeLayout.portal(state.getValue(PART))||RecallTreeLayout.PIECES.get(state.getValue(PART)).kind().startsWith("vine_")
+                ? Shapes.empty() : getShape(state, level, pos, context);
     }
     private static BlockPos root(BlockState state, BlockPos pos) { return pos.subtract(RecallTrees.OFFSETS.get(state.getValue(PART))); }
     @Override protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {

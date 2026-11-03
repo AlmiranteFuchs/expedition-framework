@@ -1,0 +1,33 @@
+{
+  "origin": [
+    1242,
+    224,
+    1037
+  ],
+  "size": [
+    17,
+    31,
+    17
+  ],
+  "anchor": [
+    1250,
+    240,
+    1046
+  ],
+  "sourceNonAir": 930,
+  "portalMarkers": [
+    {
+      "x": 1250,
+      "y": 240,
+      "z": 1045
+    },
+    {
+      "x": 1250,
+      "y": 241,
+      "z": 1045
+    }
+  ],
+  "source": "stillwood_player_source.nbt",
+  "author": "F",
+  "palette": "pale bark / amber, explicitly chosen by player"
+}

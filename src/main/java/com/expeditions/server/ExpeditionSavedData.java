@@ -138,6 +138,19 @@ public class ExpeditionSavedData extends SavedData {
 
     private final ExpeditionLedger ledger = new ExpeditionLedger();
     private final Map<String, Set<BlockPos>> liveMarkers = new HashMap<>();
+    private final Map<String,Map<BlockPos,Set<Integer>>> recallParts = new HashMap<>();
+    public java.util.Optional<Set<Integer>> recallTreeParts(String dimension,BlockPos root) {
+        return java.util.Optional.ofNullable(recallParts.getOrDefault(dimension,Map.of()).get(root));
+    }
+    public void recordRecallTreeParts(String dimension,BlockPos root,Set<Integer> parts) {
+        recallParts.computeIfAbsent(dimension,d->new HashMap<>()).put(root.immutable(),Set.copyOf(parts));setDirty();
+    }
+    public void removeRecallTreeParts(String dimension,BlockPos root) {
+        var roots=recallParts.get(dimension);if(roots!=null){roots.remove(root);if(roots.isEmpty())recallParts.remove(dimension);}setDirty();
+    }
+    public Map<String,Set<BlockPos>> recallTreeRoots() {
+        var result=new HashMap<String,Set<BlockPos>>();recallParts.forEach((dim,roots)->result.put(dim,Set.copyOf(roots.keySet())));return Map.copyOf(result);
+    }
     private final Set<String> clearedDimensions = new HashSet<>();
     private boolean firstTraceAttempted;
     private BlockPos firstTrace;
@@ -170,6 +183,20 @@ public class ExpeditionSavedData extends SavedData {
 
     public static ExpeditionSavedData load(CompoundTag tag, HolderLookup.Provider lookup) {
         ExpeditionSavedData data = create();
+        for(Tag value:tag.getList("RecallTrees",Tag.TAG_COMPOUND)) {
+            var tree=(CompoundTag)value;String dim=tree.getString(TAG_DIMENSION);
+            try {
+                if(net.minecraft.resources.ResourceLocation.tryParse(dim)==null)throw new IllegalArgumentException("Invalid tree dimension");
+                var indices=new HashSet<Integer>();int[] raw=tree.getIntArray("Parts");
+                if(raw.length==0||raw.length>4096)throw new IllegalArgumentException("Invalid tree part count");
+                for(int index:raw)if(index<0||index>4095||!indices.add(index))throw new IllegalArgumentException("Invalid tree part index");
+                data.recordRecallTreeParts(dim,readPos(tree),indices);
+            } catch(RuntimeException e) {
+                // Retain an invalid manifest as empty so recovery cannot mistake it for a legacy full tree.
+                data.recordRecallTreeParts(dim,readPos(tree),Set.of());
+                LOGGER.warn("Invalid recall-tree manifest: {}",e.getMessage());
+            }
+        }
         data.firstTraceAttempted=tag.getBoolean("FirstTraceAttempted");
         if(tag.contains("FirstTrace",Tag.TAG_LONG))data.firstTrace=BlockPos.of(tag.getLong("FirstTrace"));
         for(Tag value:tag.getList("GuardianLiberations",Tag.TAG_STRING)){
@@ -637,6 +664,12 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_MARKERS, markers);
+        ListTag trees=new ListTag();
+        recallParts.forEach((dimension,roots)->roots.forEach((root,parts)->{
+            var tree=writePos(root);tree.putString(TAG_DIMENSION,dimension);
+            tree.putIntArray("Parts",parts.stream().sorted().mapToInt(Integer::intValue).toArray());trees.add(tree);
+        }));
+        tag.put("RecallTrees",trees);
         ListTag cleared = new ListTag();
         for (String dimension : clearedDimensions) {
             cleared.add(StringTag.valueOf(dimension));
