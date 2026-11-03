@@ -846,3 +846,22 @@ with attunement, so dormant/other-dimension compasses give no distance or height
 Verified: 193 unit tests, 176 core GameTests (179 including optional biome probes),
 build and alphaBundle. `ExpeditionHistoryTests` covers completion, banked failure,
 party rejoining, malformed save rows, legacy saves and non-operator commands.
+
+
+## First Bearing and private charters — alpha.25
+
+Keep portal lifetime separate from admission: `portalOpen()` controls owner
+entry, sealing, recovery and marker references; `acceptsGuests()` also requires
+`!options.solo()`. A private portal remains a live marker and a rejected guest
+cannot change its run. `Options.Solo` defaults false for old saves. Solo runs
+restore only with one member.
+
+The reserved `expeditions:first_bearing` charter fixes two generated Overworld
+marks, standard difficulty and solo access. It skips optional checkpoint
+hordes. The ordinary extraction transaction grants its permanent trophy and
+field proof; the server refuses replay after extraction. The eight practice
+tokens are an extraction bonus, so failed attempts cannot farm checkpoint
+credits. No normal charter's checkpoint banking was changed.
+`GUIDED_STEP` is presentation metadata on the issued compass; the lodestone
+tracker remains the sole target, and the client cue has no gameplay authority.
+The 14 journal discovery IDs are unchanged.

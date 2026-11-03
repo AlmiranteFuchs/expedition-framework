@@ -42,6 +42,12 @@ public final class ModDataComponents {
             DATA_COMPONENTS.register("resonance", () -> DataComponentType.<Integer>builder()
                     .persistent(Codec.INT).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.INT).build());
 
+    /** Presentation only: 1 and 2 are witness stumps; 3 is the recall tree. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> GUIDED_STEP =
+            DATA_COMPONENTS.register("guided_step", () -> DataComponentType.<Integer>builder()
+                    .persistent(Codec.intRange(1, 3)).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT)
+                    .build());
+
     private ModDataComponents() {
     }
 }

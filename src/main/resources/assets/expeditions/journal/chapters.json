@@ -12,7 +12,7 @@
       },
       {
         "heading": "The first charter",
-        "body": "The Overworld is sheltered by what these notes call the Stillness. Ordinary collection does not weaken it; keeping your home quiet requires no maintenance.\n\nRefine essence, build a terminal, and begin with Field Survey. Follow the offered training charters. Their instructions are worth learning before taking equipment farther afield."
+        "body": "The Overworld is sheltered by what these notes call the Stillness. Ordinary collection does not weaken it; keeping your home quiet requires no maintenance.\n\nRefine essence, build a terminal, and choose First Bearing for a short practice journey, or Field Survey for a regular charter."
       }
     ]
   },
@@ -61,7 +61,7 @@
       },
       {
         "heading": "Before entry",
-        "body": "The portal opens above the terminal. Take food, a weapon and room for cargo. Entering issues the route compass.\n\nOthers may join through the portal until the first checkpoint seals the party. Complete the offered survey before expecting the terminal to arrange journeys farther from home."
+        "body": "The portal opens above the terminal. Take food, a weapon and room for cargo. Entering issues the route compass.\n\nGuests can join an open party until the first checkpoint. Set Party access to Solo Expedition to keep the portal private. First Bearing is always private and teaches two marks and a return."
       }
     ],
     "unlock_hint": "Use a terminal and examine the charters it can offer."
@@ -71,7 +71,7 @@
     "pages": [
       {
         "heading": "Reading the ember",
-        "body": "The thorn follows the next marker. The ember gives the part of the reading the needle cannot: height. Above the needle means higher ground; below it means a lower passage.\n\nHold use to take a steadier reading. The ember and chime rise or fall together. Release when you have your bearing."
+        "body": "The thorn follows the next marker. The ember gives the part of the reading the needle cannot: height. Above the needle means higher ground; below it means a lower passage.\n\nHold use to take a steadier reading. The ember and chime rise or fall together. Release when you have your bearing.\n\nOn First Bearing, hold the compass to see a small thorn and the next mark. Turn until the thorn points ahead. When it settles into an ember, look for the stump or hollow nearby."
       },
       {
         "heading": "A bearing, not a path",

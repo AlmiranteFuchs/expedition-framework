@@ -1,0 +1,26 @@
+{
+  "dimension": "minecraft:overworld",
+  "display_name": "First Bearing",
+  "difficulty": 0,
+  "generate": {
+    "checkpoints": 2,
+    "min_spacing": 22,
+    "max_spacing": 34,
+    "exit_min": 24,
+    "exit_max": 36,
+    "entry_min": 48,
+    "entry_max": 96,
+    "max_attempts": 8
+  },
+  "tokens": 0,
+  "grants": ["expeditions:field_clear"],
+  "objectives": [
+    {
+      "id": "practice_complete",
+      "description": "Use both witness stumps",
+      "type": "visit_checkpoint",
+      "checkpoint": 2,
+      "bonus_tokens": 8
+    }
+  ]
+}

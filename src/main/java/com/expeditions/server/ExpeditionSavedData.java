@@ -478,10 +478,13 @@ public class ExpeditionSavedData extends SavedData {
             return ExpeditionOptions.DEFAULT;
         }
         CompoundTag opt = runTag.getCompound(TAG_OPTIONS);
+        if (opt.contains("Solo") && !opt.contains("Solo", Tag.TAG_BYTE)) {
+            throw new IllegalArgumentException("Malformed solo option");
+        }
         Difficulty tier = Difficulty.byName(opt.getString(TAG_OPT_DIFFICULTY));
         return new ExpeditionOptions(opt.getString(TAG_OPT_EXPEDITION),
                 tier != null ? tier : Difficulty.STANDARD,
-                opt.getInt(TAG_OPT_CHECKPOINTS), opt.getInt(TAG_OPT_TIME_PERCENT));
+                opt.getInt(TAG_OPT_CHECKPOINTS), opt.getInt(TAG_OPT_TIME_PERCENT), opt.getBoolean("Solo"));
     }
 
     /**
@@ -578,6 +581,7 @@ public class ExpeditionSavedData extends SavedData {
             optionsTag.putString(TAG_OPT_DIFFICULTY, run.options().difficulty().name());
             optionsTag.putInt(TAG_OPT_CHECKPOINTS, run.options().checkpoints());
             optionsTag.putInt(TAG_OPT_TIME_PERCENT, run.options().bonusTimePercent());
+            optionsTag.putBoolean("Solo", run.options().solo());
             runTag.put(TAG_OPTIONS, optionsTag);
             runTag.putString(TAG_MOD_WEATHER,
                     run.definition().modifiers().weather().name());

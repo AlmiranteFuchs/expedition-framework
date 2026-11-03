@@ -2,6 +2,7 @@ package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.CheckpointChallenge;
+import com.expeditions.core.Difficulty;
 import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
@@ -151,6 +152,10 @@ public final class ExpeditionManager {
         return ledger.trophies(playerId);
     }
 
+    public boolean trainingComplete(UUID playerId) {
+        return trophies(playerId).contains(ExpeditionOptions.FIRST_BEARING);
+    }
+
     /** The shared world state — campaign records, markers, cleared dims. */
     public FrontierThreat frontier() { return data.frontier(); }
 
@@ -195,23 +200,33 @@ public final class ExpeditionManager {
      * Checkpoints and time options reshape the run's definition defaults.
      */
     public ExpeditionRun startRun(ServerPlayer player, BlockPos terminalPos,
-            ExpeditionOptions options) {
+            ExpeditionOptions requested) {
         if (ledger.activeRun(player.getUUID()).isPresent()) {
             throw new IllegalStateException("You already have an active expedition");
         }
         ServerLevel portalLevel = player.serverLevel();
-        ExpeditionDefinition definition = options.expeditionId().isBlank()
+        ExpeditionDefinition definition = requested.expeditionId().isBlank()
                 ? ExpeditionDefinitions
                         .forDimension(portalLevel.dimension().location().toString())
                         .or(() -> ExpeditionsConfig.definitionFor(portalLevel.dimension()))
                         .orElseThrow(() -> new IllegalStateException(
                                 "No expedition is available in this dimension"))
                 : listStartable().stream()
-                        .filter(d -> d.id().equals(options.expeditionId()))
+                        .filter(d -> d.id().equals(requested.expeditionId()))
                         .findFirst()
                         .orElseThrow(() -> new IllegalStateException(
-                                "Unknown or unavailable expedition: " + options.expeditionId()));
+                                "Unknown or unavailable expedition: " + requested.expeditionId()));
         if(FrontierThreat.rulesActive()) definition=prepareFrontier(definition);
+        boolean guided = ExpeditionOptions.FIRST_BEARING.equals(definition.id());
+        if (guided && trainingComplete(player.getUUID())) {
+            throw new IllegalStateException("First Bearing is already recorded. Try a Field Survey next.");
+        }
+        if (guided && (definition.bigBad() || !definition.dimension().equals("minecraft:overworld")
+                || !(definition.route() instanceof RouteGeneration))) {
+            throw new IllegalStateException("First Bearing needs a generated Overworld survey route");
+        }
+        var options = guided ? new ExpeditionOptions(definition.id(), Difficulty.STANDARD,
+                ExpeditionOptions.GUIDED_CHECKPOINTS, 0, true) : requested;
         RequirementCheck requirements = ledger.checkRequirements(
                 player.getUUID(), definition,
                 data.campaignState(definition.dimension()));
@@ -407,7 +422,8 @@ public final class ExpeditionManager {
             for(var d:startable.values()) if(d.bigBad()) bosses.add(d.dimension());
             for(var d:List.copyOf(startable.values())) {
                 var prepared=prepareFrontier(d);startable.put(d.id(),prepared);
-                if(!bosses.contains(d.dimension()) && ExpeditionTuning.bool(d.dimension(),"campaign.auto_liberation",true)) {
+                if(!ExpeditionOptions.FIRST_BEARING.equals(d.id()) && !bosses.contains(d.dimension())
+                        && ExpeditionTuning.bool(d.dimension(),"campaign.auto_liberation",true)) {
                     var boss=com.expeditions.core.FrontierProgression.liberation(prepared);
                     startable.putIfAbsent(boss.id(),boss);bosses.add(d.dimension());
                 }
@@ -461,6 +477,12 @@ public final class ExpeditionManager {
         }
         ExpeditionRun run = match.get();
         if (!run.isMember(player.getUUID())) {
+            if (!run.acceptsGuests()) {
+                if (player.tickCount % 5 == 0) {
+                    player.displayClientMessage(Component.translatable("message.expeditions.private_portal"), true);
+                }
+                return;
+            }
             if (ledger.activeRun(player.getUUID()).isPresent()) {
                 player.sendSystemMessage(Component.translatable(
                         "message.expeditions.already_in_run"));
@@ -476,8 +498,14 @@ public final class ExpeditionManager {
                     "message.expeditions.party_joined"));
             data.setDirty();
         }
-        if (!hasCompass(player)) {
+        boolean needsCompass = !hasCompass(player);
+        if (needsCompass) {
             grantCompass(player, run);
+        } else {
+            forEachCompass(player, stack -> retarget(stack, run));
+        }
+        if (run.options().guided() && needsCompass) {
+            player.sendSystemMessage(Component.translatable("message.expeditions.guided_entry"));
         }
         // The portal may sit in a different dimension than the expedition;
         // teleport into the run's own level.
@@ -562,7 +590,7 @@ public final class ExpeditionManager {
                         "message.expeditions.checkpoint_secured", share));
             }
         }
-        retargetPartyCompasses(run);
+        retargetPartyCompasses(run, player);
         // The previous challenge spawned around the checkpoint before this
         // one; its chunks may be unloaded now that the party moved on.
         if (run.completedCheckpoints() >= 2) {
@@ -657,6 +685,10 @@ public final class ExpeditionManager {
         }
         for (UUID member : run.party()) {
             ledger.addTrophy(member, run.definition().id());
+        }
+        if (run.options().guided()) {
+            player.sendSystemMessage(Component.translatable("message.expeditions.novice_awarded",
+                    Component.translatable("trophy.expeditions.expedition_novice")));
         }
         data.recordCampaignCompletion(run.definition().dimension());
         ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
@@ -1148,7 +1180,7 @@ public final class ExpeditionManager {
             }
             return;
         }
-        if (!ExpeditionsConfig.challengesEnabled()) {
+        if (run.options().guided() || !ExpeditionsConfig.challengesEnabled()) {
             return;
         }
         ServerLevel level = player.serverLevel();
@@ -1767,20 +1799,18 @@ public final class ExpeditionManager {
      */
     private static void grantCompass(ServerPlayer player, ExpeditionRun run) {
         ItemStack stack = new ItemStack(ModItems.EXPEDITION_COMPASS.get());
-        retarget(stack, runDimension(run), nextTarget(run));
+        retarget(stack, run);
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
     }
 
     /** Points every expedition compass of every online member at the next target. */
-    private void retargetPartyCompasses(ExpeditionRun run) {
-        Waypoint target = nextTarget(run);
-        ResourceKey<Level> dimension = runDimension(run);
+    private void retargetPartyCompasses(ExpeditionRun run, ServerPlayer activator) {
         for (UUID member : run.party()) {
-            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            ServerPlayer memberPlayer = member.equals(activator.getUUID()) ? activator : server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                forEachCompass(memberPlayer, stack -> retarget(stack, dimension, target));
+                forEachCompass(memberPlayer, stack -> retarget(stack, run));
             }
         }
     }
@@ -1896,9 +1926,14 @@ public final class ExpeditionManager {
         return run.nextCheckpoint().orElse(run.exit());
     }
 
-    private static void retarget(ItemStack stack, ResourceKey<Level> dimension, Waypoint target) {
+    private static void retarget(ItemStack stack, ExpeditionRun run) {
         stack.set(DataComponents.LODESTONE_TRACKER, new LodestoneTracker(
-                Optional.of(GlobalPos.of(dimension, toPos(target))), false));
+                Optional.of(GlobalPos.of(runDimension(run), toPos(nextTarget(run)))), false));
+        if (run.options().guided()) {
+            stack.set(ModDataComponents.GUIDED_STEP.get(), run.completedCheckpoints() + 1);
+        } else {
+            stack.remove(ModDataComponents.GUIDED_STEP.get());
+        }
     }
 
     /**

@@ -17,6 +17,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Reading the ember",
+      "text": "On First Bearing, hold the compass to see a small thorn and the next mark. Turn until the thorn points ahead. When it settles into an ember, look for the stump or hollow nearby."
+    },
+    {
+      "type": "patchouli:text",
       "title": "A bearing, not a path",
       "text": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing."
     },

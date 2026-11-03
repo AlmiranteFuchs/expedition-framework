@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.24)
+## Current starter progression (alpha.25)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -17,7 +17,10 @@ dormant knot and vanilla materials. The sheltered resonator supplies power witho
 fuel; one raw flake plus 4000 Resonance becomes one essence. External FE generators
 also work. A captured-bloom engine and guardian-earned severed core extend the
 power progression; see [Resonance power](docs/resonance-power.md). Refined essence powers the terminal milestone.
-The first Field Survey opens remote deployment, without an Overworld boss gate.
+First Bearing is optional private practice: two witness stumps, a compass cue,
+and an Expedition Novice trophy after extraction. First Bearing or Field Survey
+opens remote deployment, without an Overworld boss gate. Regular charters may
+also use a private portal through the terminal’s Party access control.
 Home experimentation is an optional, powered, reversible local breach.
 
 Survey now leads into **Trace Recovery**, a separate cargo tutorial, before Deep

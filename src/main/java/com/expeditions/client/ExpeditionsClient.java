@@ -48,6 +48,8 @@ public class ExpeditionsClient {
                         manager -> InfectionSkinTextures.clear()));
         modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterGuiLayersEvent event) ->
                 event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("expeditions", "bloom_influence"), BloomVignette::render));
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterGuiLayersEvent event) ->
+                event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("expeditions", "guided_bearing"), GuidedBearing::render));
         NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
         NeoForge.EVENT_BUS.addListener(InfectedMobEffects::onClientTick);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);

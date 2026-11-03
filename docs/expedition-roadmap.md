@@ -631,3 +631,27 @@ probes), build and alphaBundle. Remaining M16 proposals above are still proposal
 no solo-arrow/tutorial rewrite, new objective kinds or post-campaign rewards are
 claimed by this release. Existing journal identities, authored tree geometry and
 guardian proof rules are preserved.
+
+
+### M16 onboarding — alpha.25
+
+First Bearing is a short optional Overworld charter, suggested on the home
+terminal for a player without field proof. It offers two witness stumps, a
+private entrance and an amber bearing while holding the issued compass.
+The cue follows the same synchronized target as the needle, labels the next
+mark or hollow and reports height without exposing exact lens measurements.
+Natural terrain and ordinary hazards still matter. It teaches the normal
+checkpoint and extraction interactions without rolling checkpoint hordes.
+
+Extraction grants the Expedition Novice trophy, field proof and eight tokens.
+The payout settles at extraction and the trophy closes the practice charter,
+so failed attempts can be retried without turning practice into a repeatable
+token source. Field Survey remains an alternative. Ordinary charters can use
+the Party access toggle; solo runs preserve their chosen routes and challenges,
+and legacy runs default to open party admission.
+
+Terminal readiness is available on the locked deployment control. The guide
+introduces practice and private portals through existing discovery chapters.
+This slice retains the existing stable journal gates, one-file save model and
+chunk ownership cleanup. New objective types and post-campaign charters remain
+future work.

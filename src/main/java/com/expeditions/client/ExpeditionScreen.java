@@ -29,9 +29,11 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         controls.clear();
         control(leftPos + 12, topPos + 35, 52, 20, "< Mission", ExpeditionMenu.SLOT_PREVIOUS, null);
         control(leftPos + 68, topPos + 35, 58, 20, "Mission >", ExpeditionMenu.SLOT_NEXT, null);
-        control(leftPos + 12, topPos + 69, 114, 29, "Difficulty", ExpeditionMenu.SLOT_DIFFICULTY, null);
-        control(leftPos + 12, topPos + 104, 114, 29, "Route length", ExpeditionMenu.SLOT_CHECKPOINTS, null);
-        control(leftPos + 12, topPos + 139, 114, 29, "Bonus window", ExpeditionMenu.SLOT_TIME, null);
+        int spacing = Math.min(35, Math.max(17, (imageHeight - 88) / 4));
+        control(leftPos + 12, topPos + 69, 114, spacing - 5, "Difficulty", ExpeditionMenu.SLOT_DIFFICULTY, null);
+        control(leftPos + 12, topPos + 69 + spacing, 114, spacing - 5, "Route length", ExpeditionMenu.SLOT_CHECKPOINTS, null);
+        control(leftPos + 12, topPos + 69 + spacing * 2, 114, spacing - 5, "Bonus window", ExpeditionMenu.SLOT_TIME, null);
+        control(leftPos + 12, topPos + 69 + spacing * 3, 114, spacing - 5, "Party access", ExpeditionMenu.SLOT_PARTY, null);
         control(column, topPos + 43, 76, 18, "Briefing", -1, () -> { tab = 0; page = 0; });
         control(column + 80, topPos + 43, 103, 18, "Requirements", -1, () -> { tab = 1; page = 0; });
         control(column, topPos + imageHeight - 50, 28, 16, "<", -1, () -> page = Math.max(0, page - 1));
@@ -84,9 +86,11 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         gui.drawString(font, font.plainSubstrByWidth(line(ExpeditionMenu.SLOT_EXPEDITION, 1, ""), detailWidth),
                 column, topPos + 25, 0xff786b4e, false);
         gui.drawString(font, line(ExpeditionMenu.SLOT_EXPEDITION, 2, ""), leftPos + 15, topPos + 58, 0xffaaa181, false);
-        gui.drawString(font, "Secured tokens", leftPos + 15, topPos + imageHeight - 44, 0xffc8bc95, false);
+        if (imageHeight >= 252) {
+            gui.drawString(font, "Secured tokens", leftPos + 15, topPos + imageHeight - 44, 0xffc8bc95, false);
         gui.drawString(font, "survive failure.", leftPos + 15, topPos + imageHeight - 33, 0xffaaa181, false);
-        gui.drawString(font, "Esc: close", leftPos + 15, topPos + imageHeight - 16, 0xff847e65, false);
+        }
+        if (imageHeight >= 180) gui.drawString(font, "Esc: close", leftPos + 15, topPos + imageHeight - 16, 0xff847e65, false);
         var text = lines();
         page = Math.min(page, pageCount() - 1);
         int y = topPos + 69;
@@ -98,9 +102,10 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
                 topPos + imageHeight - 46, 0xff786b4e, false);
         for (var control : controls) control.render(gui, mouseX, mouseY, partialTick);
         for (var control : controls) {
-            if (control.slot >= ExpeditionMenu.SLOT_DIFFICULTY && control.slot <= ExpeditionMenu.SLOT_TIME
-                    && control.isHoveredOrFocused()) {
-                gui.renderComponentTooltip(font, lore(control.slot), mouseX, mouseY);
+            if (control.isHoveredOrFocused() && (isOption(control.slot)
+                    || control.slot == ExpeditionMenu.SLOT_START && !ready())) {
+                gui.renderComponentTooltip(font, lore(control.slot == ExpeditionMenu.SLOT_START
+                        ? ExpeditionMenu.SLOT_READINESS : control.slot), mouseX, mouseY);
             }
         }
     }
@@ -120,6 +125,11 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         page = Math.max(0, Math.min(pageCount() - 1, page + (dy < 0 ? 1 : -1))); return true;
     }
 
+    private static boolean isOption(int slot) {
+        return slot == ExpeditionMenu.SLOT_DIFFICULTY || slot == ExpeditionMenu.SLOT_CHECKPOINTS
+                || slot == ExpeditionMenu.SLOT_TIME || slot == ExpeditionMenu.SLOT_PARTY;
+    }
+
     private final class BoardButton extends Button {
         final int slot;
         final String label;
@@ -134,15 +144,17 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
             return super.mouseClicked(x, y, button);
         }
         @Override public void renderWidget(GuiGraphics gui, int mouseX, int mouseY, float tick) {
-            boolean option = slot == ExpeditionMenu.SLOT_DIFFICULTY || slot == ExpeditionMenu.SLOT_CHECKPOINTS || slot == ExpeditionMenu.SLOT_TIME;
+            boolean option = isOption(slot);
+            boolean twoLines = option && getHeight() >= 25;
             boolean deploy = slot == ExpeditionMenu.SLOT_START;
             int color = deploy ? ready() ? 0xff795b30 : 0xff704333 : slot >= 0 ? 0xff424637 : 0xffc5b58f;
             if (isHoveredOrFocused()) color = deploy ? 0xff98723d : slot >= 0 ? 0xff5b5c43 : 0xffb7a070;
             gui.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), color);
             String heading = deploy ? ready() ? "Open portal" : "Requirements missing" : label;
+            if (option && !twoLines) heading = label + ": " + line(slot, 0, "");
             gui.drawString(font, font.plainSubstrByWidth(heading, getWidth() - 8), getX() + 5,
-                    getY() + (option ? 4 : (getHeight() - 8) / 2), slot >= 0 ? 0xffeee0b8 : INK, false);
-            if (option) gui.drawString(font, font.plainSubstrByWidth(line(slot, 0, "Default"), getWidth() - 8),
+                    getY() + (twoLines ? 4 : (getHeight() - 8) / 2), slot >= 0 ? 0xffeee0b8 : INK, false);
+            if (twoLines) gui.drawString(font, font.plainSubstrByWidth(line(slot, 0, "Default"), getWidth() - 8),
                     getX() + 5, getY() + 17, 0xffc5bb96, false);
         }
     }

@@ -100,6 +100,17 @@ public final class ExpeditionRun {
         this.artifactIssued = artifactIssued;
         this.challengeEntities = new ArrayList<>(challengeEntities);
         this.options = Objects.requireNonNull(options, "options");
+        if (options.solo() && this.party.size() != 1) {
+            throw new IllegalArgumentException("Solo runs have exactly one member");
+        }
+        if ((options.guided() || ExpeditionOptions.FIRST_BEARING.equals(definition.id()))
+                && (!options.guided() || !ExpeditionOptions.FIRST_BEARING.equals(definition.id())
+                    || !options.solo() || definition.bigBad() || !definition.dimension().equals("minecraft:overworld")
+                    || options.difficulty() != Difficulty.STANDARD || options.bonusTimePercent() != 0
+                    || options.checkpoints() != ExpeditionOptions.GUIDED_CHECKPOINTS
+                    || checkpoints.size() != ExpeditionOptions.GUIDED_CHECKPOINTS)) {
+            throw new IllegalArgumentException("Invalid guided survey");
+        }
         if (portalDimension == null || portalDimension.isBlank()) {
             throw new IllegalArgumentException("Portal dimension must not be blank");
         }
@@ -341,12 +352,14 @@ public final class ExpeditionRun {
     }
 
     /**
-     * Whether the run's portal is open to teleports and new members: active
+     * Whether the run's portal is open to its members: active
      * with no checkpoint reached yet. The first activation seals the party.
      */
     public boolean portalOpen() {
         return status == ExpeditionStatus.ACTIVE && completedCheckpoints == 0;
     }
+
+    public boolean acceptsGuests() { return portalOpen() && !options.solo(); }
 
     /**
      * Adds {@code playerId} to the party. Idempotent for existing members.
@@ -358,9 +371,9 @@ public final class ExpeditionRun {
             return;
         }
         ensureActive();
-        if (!portalOpen()) {
+        if (!acceptsGuests()) {
             throw new IllegalStateException(
-                    "Run " + runId + " is already underway; the party is sealed");
+                    "Run " + runId + " is not accepting guests");
         }
         party.add(playerId);
     }

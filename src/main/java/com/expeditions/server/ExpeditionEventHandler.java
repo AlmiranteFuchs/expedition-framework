@@ -415,7 +415,10 @@ public final class ExpeditionEventHandler {
         player.sendSystemMessage(trophyIds.isEmpty()
                 ? Component.translatable("message.expeditions.trophies_none")
                 : Component.translatable("message.expeditions.trophies",
-                        String.join(", ", trophyIds)));
+                        trophyIds.stream().sorted()
+                                .map(id -> id.equals(ExpeditionOptions.FIRST_BEARING)
+                                        ? Component.translatable("trophy.expeditions.expedition_novice") : Component.literal(id))
+                                .reduce((first, next) -> Component.empty().append(first).append(", ").append(next)).orElseThrow()));
         return 1;
     }
 
@@ -493,6 +496,7 @@ public final class ExpeditionEventHandler {
         player.sendSystemMessage(Component.translatable("message.expeditions.campaign_records"));
         for (String dimension : dimensions) {
             var available = definitions.stream().filter(d -> d.dimension().equals(dimension)
+                    && !(ExpeditionOptions.FIRST_BEARING.equals(d.id()) && manager.trainingComplete(player.getUUID()))
                     && manager.missingRequirements(player.getUUID(), d).isSatisfied()).toList();
             player.sendSystemMessage(Component.translatable("message.expeditions.campaign_dimension", dimension,
                     data.campaignState(dimension).id(), data.campaignCompletions(dimension), available.size()));
