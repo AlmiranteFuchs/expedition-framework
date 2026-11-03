@@ -24,6 +24,11 @@
       "type": "patchouli:text",
       "title": "An unfinished route",
       "text": "Disconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An unfinished route",
+      "text": "The terminal keeps a short record. Use /expeditions history to review the last ten outcomes and the tokens each journey secured."
     }
   ],
   "advancement": "expeditions:journal/checkpoints"

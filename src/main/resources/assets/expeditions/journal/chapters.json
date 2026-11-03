@@ -75,7 +75,7 @@
       },
       {
         "heading": "A bearing, not a path",
-        "body": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing.\n\nAfter the witness stumps, it points to the Stillwood Hollow for extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends."
+        "body": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing.\n\nAfter the witness stumps, it points to the Stillwood Hollow for extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends.\n\nHover the compass for a rough direct range. This is a band, not a path length; the Heartglass Lens can make a precise measurement."
       }
     ],
     "unlock_hint": "Enter an expedition portal and take its issued compass."
@@ -89,7 +89,7 @@
       },
       {
         "heading": "An unfinished route",
-        "body": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours.\n\nDisconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree."
+        "body": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours.\n\nDisconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree.\n\nThe terminal keeps a short record. Use /expeditions history to review the last ten outcomes and the tokens each journey secured."
       }
     ],
     "unlock_hint": "Use a split witness stump rather than merely passing its light."

@@ -828,3 +828,21 @@ Condenser feedback holds at most three ticks across intermittent power; paid
 progress and immediate output backpressure remain authoritative. Verified:
 186 unit tests, 173 core GameTests (176 including optional biome probes), build
 and alphaBundle; native workshop and status proofs in docs/art-direction/machines.
+
+
+## Personal reports and navigation — alpha.24
+
+`ExpeditionHistory` keeps at most ten immutable reports per player, in the same
+SavedData file as runs and balances. These reports are observations, never reward
+authority. Final outcomes are idempotent by run UUID; an open-party departure is
+replaceable if the player rejoins and later finishes. Failure records only that
+member's secured tokens; completion records the full credited share, never just
+the extraction top-up. Missing legacy history is empty; malformed individual
+records are skipped. Commands `history` and `campaign all` require no operator
+permission. Campaign progress distinguishes guardian proof from count thresholds.
+The basic compass tooltip uses `CompassRange` coarse direct bands, preserving
+the paid Heartglass Lens measurement mechanic. Target validation stays shared
+with attunement, so dormant/other-dimension compasses give no distance or height.
+Verified: 193 unit tests, 176 core GameTests (179 including optional biome probes),
+build and alphaBundle. `ExpeditionHistoryTests` covers completion, banked failure,
+party rejoining, malformed save rows, legacy saves and non-operator commands.

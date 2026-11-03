@@ -249,7 +249,12 @@ public class ExpeditionMenu extends ChestMenu {
             if (check.missingTokens() > 0) requirements.add(Component.literal("Earn " + check.missingTokens() + " more tokens."));
             if (!check.currentState().atLeast(check.requiredState())) {
                 requirements.add(Component.literal("Campaign: " + check.currentState().id() + "; needs " + check.requiredState().id() + "."));
-                requirements.add(Component.literal("Complete expeditions in " + selected.dimension() + " to advance its campaign."));
+                if (check.requiredState() == com.expeditions.core.CampaignState.CLEARED
+                        && com.expeditions.server.data.ExpeditionTuning.bool(selected.dimension(), "campaign.require_guardian", true)) {
+                    requirements.add(Component.translatable("message.expeditions.campaign_guardian_gate"));
+                } else {
+                    requirements.add(Component.literal("Complete expeditions in " + selected.dimension() + " to advance its campaign."));
+                }
             }
             if (ready) requirements.add(Component.literal("No missing requirements. Choose your equipment, then open the portal."));
             requirements.add(Component.literal(""));

@@ -9,7 +9,7 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
-## Current starter progression (alpha.23)
+## Current starter progression (alpha.24)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a
@@ -1012,3 +1012,12 @@ retreat cools attention. A bound boss victory and extraction liberate a dimensio
 for everyone; ordinary repeated runs no longer replace that victory. First-survey proof now opens remote deployments, and dimensions without an authored boss get
 a generated liberation mission. Home is sheltered by the Stillness from alpha.13 onward. See [the tuning guide](docs/frontier-progression.md)
 for timings, refuge rules, counterplay and datapack settings.
+
+Personal reports: `/expeditions history` lists your last ten outcomes, checkpoints,
+credited tokens, elapsed time and withdrawal cause. Reports begin when this
+version is installed; existing saves do not gain invented history.
+`/expeditions campaign` explains the next step in the current dimension, while
+`/expeditions campaign all` summarizes dimensions with recorded activity and
+eligible charters. Guardian-required liberation is shown separately from ordinary
+completion counts. The expedition compass tooltip gives a rough direct distance band and
+vertical direction for its synchronized target in the current dimension.

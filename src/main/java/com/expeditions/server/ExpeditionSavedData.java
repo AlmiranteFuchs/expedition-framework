@@ -137,6 +137,11 @@ public class ExpeditionSavedData extends SavedData {
     private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
     private final ExpeditionLedger ledger = new ExpeditionLedger();
+    private final com.expeditions.core.ExpeditionHistory history = new com.expeditions.core.ExpeditionHistory();
+    public com.expeditions.core.ExpeditionHistory history() { return history; }
+    public void recordHistory(UUID player, com.expeditions.core.ExpeditionHistory.Entry entry) {
+        if (history.record(player, entry)) setDirty();
+    }
     private final Map<String, Set<BlockPos>> liveMarkers = new HashMap<>();
     private final Map<String,Map<BlockPos,Set<Integer>>> recallParts = new HashMap<>();
     public java.util.Optional<Set<Integer>> recallTreeParts(String dimension,BlockPos root) {
@@ -183,6 +188,25 @@ public class ExpeditionSavedData extends SavedData {
 
     public static ExpeditionSavedData load(CompoundTag tag, HolderLookup.Provider lookup) {
         ExpeditionSavedData data = create();
+        for (Tag value : tag.getList("History", Tag.TAG_COMPOUND)) {
+            try {
+                var row = (CompoundTag) value;
+                String dim = row.getString("Dimension"), id = row.getString("Expedition");
+                if (net.minecraft.resources.ResourceLocation.tryParse(dim) == null
+                        || net.minecraft.resources.ResourceLocation.tryParse(id) == null)
+                    throw new IllegalArgumentException("Invalid history resource id");
+                for (String required : List.of("Checkpoints", "Total", "Kept"))
+                    if (!row.contains(required, Tag.TAG_INT)) throw new IllegalArgumentException("Missing history count");
+                for (String required : List.of("Elapsed", "Ended"))
+                    if (!row.contains(required, Tag.TAG_LONG)) throw new IllegalArgumentException("Missing history time");
+                if (!row.contains("Final", Tag.TAG_BYTE)) throw new IllegalArgumentException("Missing history result");
+                data.history.record(row.getUUID("Player"), new com.expeditions.core.ExpeditionHistory.Entry(
+                        row.getUUID("Run"), id, row.getString("Name"), dim,
+                        ExpeditionStatus.valueOf(row.getString("Outcome")), row.getInt("Checkpoints"),
+                        row.getInt("Total"), row.getInt("Kept"), row.getLong("Elapsed"), row.getLong("Ended"),
+                        row.getString("Reason"), row.getBoolean("Final")));
+            } catch (RuntimeException e) { LOGGER.warn("Skipping malformed expedition history record", e); }
+        }
         for(Tag value:tag.getList("RecallTrees",Tag.TAG_COMPOUND)) {
             var tree=(CompoundTag)value;String dim=tree.getString(TAG_DIMENSION);
             try {
@@ -491,6 +515,18 @@ public class ExpeditionSavedData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider lookup) {
+        var reports = new ListTag();
+        history.reports().forEach((player, entries) -> entries.forEach(entry -> {
+            var row = new CompoundTag();
+            row.putUUID("Player", player); row.putUUID("Run", entry.runId());
+            row.putString("Expedition", entry.expeditionId()); row.putString("Name", entry.name());
+            row.putString("Dimension", entry.dimension()); row.putString("Outcome", entry.outcome().name());
+            row.putInt("Checkpoints", entry.checkpoints()); row.putInt("Total", entry.totalCheckpoints());
+            row.putInt("Kept", entry.tokensKept()); row.putLong("Elapsed", entry.elapsedTicks());
+            row.putLong("Ended", entry.endedGameTime()); row.putString("Reason", entry.reason());
+            row.putBoolean("Final", entry.finalResult()); reports.add(row);
+        }));
+        tag.put("History", reports);
         ListTag runs = new ListTag();
         for (ExpeditionRun run : ledger.runs()) {
             CompoundTag runTag = new CompoundTag();
@@ -745,6 +781,12 @@ public class ExpeditionSavedData extends SavedData {
     /** Completed expeditions recorded in {@code dimension}. */
     public int campaignCompletions(String dimension) {
         return campaignProgress.getOrDefault(dimension, 0);
+    }
+
+    public Set<String> campaignDimensions() {
+        var dimensions = new HashSet<>(campaignProgress.keySet());
+        dimensions.addAll(clearedDimensions); dimensions.addAll(dimensionPressure.keySet());
+        return Set.copyOf(dimensions);
     }
 
     /**

@@ -603,3 +603,31 @@ flags, balances, runs and markers must roll back atomically in one file. The
 proposed test-helper replacement is deferred: the supported 1.21.1 helper still
 exposes the deprecated server-player method and has no equivalent replacement.
 History, compass distance and campaign progress are the next M16 slice.
+
+### M16 personal reports and navigation — alpha.24
+
+Implemented `/expeditions history`: ten personal reports, including outcome,
+route progress, secured/full credited share, elapsed time and failure cause.
+Reports persist with the ledger in its existing atomic SavedData file; malformed
+entries are skipped individually. A member leaving and rejoining an open party
+gets one updated report when that run ends. Existing saves begin collecting new
+reports without fabricating historical runs.
+
+The compass tooltip shows coarse direct distance bands and the existing ember's
+vertical direction. Exact free distance was deliberately avoided: the recovered
+Heartglass Lens remains the paid precise horizontal-distance and height tool.
+The discovered wayfinding and checkpoint guide pages explain both additions.
+
+`/expeditions campaign` now shows the next completion threshold or required
+confrontation, rather than implying ordinary completions always grant liberation.
+`campaign all` lists dimensions with campaign/pressure records plus the current
+dimension, eligible charter counts and eligible confrontation availability. This
+is a records summary, not a new registry of every visited dimension. The terminal
+readiness panel already lists key, token and campaign requirements; its liberation
+hint now correctly directs players toward a confrontation where required.
+
+Verified: 193 unit tests, 176 core GameTests (179 including optional modded biome
+probes), build and alphaBundle. Remaining M16 proposals above are still proposals;
+no solo-arrow/tutorial rewrite, new objective kinds or post-campaign rewards are
+claimed by this release. Existing journal identities, authored tree geometry and
+guardian proof rules are preserved.

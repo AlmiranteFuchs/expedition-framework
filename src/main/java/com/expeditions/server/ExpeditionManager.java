@@ -787,6 +787,7 @@ public final class ExpeditionManager {
     public ExpeditionRun failRun(ServerPlayer player, String reasonKey) {
         ExpeditionRun run = requireActive(player.getUUID());
         if (run.party().size() > 1) {
+            recordHistory(run, player.getUUID(), false, reasonKey);
             run.leaveParty(player.getUUID());
             removeCompasses(player);
             teleportToTerminal(player, run);
@@ -1018,8 +1019,21 @@ public final class ExpeditionManager {
             }
         }
         cleanupMarkers(run);
+        for (UUID member : run.party()) recordHistory(run, member, true, run.failReason().orElse("ended"));
         broadcastSummary(run);
         data.setDirty();
+    }
+
+    private void recordHistory(ExpeditionRun run, UUID member, boolean finalResult, String reason) {
+        var level = levelFor(run.definition().dimension());
+        boolean completed = finalResult && run.status() == ExpeditionStatus.COMPLETED;
+        data.recordHistory(member, new com.expeditions.core.ExpeditionHistory.Entry(run.runId(),
+                run.definition().id(), run.definition().displayName(), run.definition().dimension(),
+                completed ? ExpeditionStatus.COMPLETED : ExpeditionStatus.FAILED,
+                run.completedCheckpoints(), run.totalCheckpoints(),
+                completed ? Math.max(run.securedTokens(member), run.tokensAwarded()) : run.securedTokens(member),
+                level == null ? -1 : run.elapsedTicks(level.getGameTime()), server.overworld().getGameTime(),
+                reason, finalResult));
     }
 
     /**

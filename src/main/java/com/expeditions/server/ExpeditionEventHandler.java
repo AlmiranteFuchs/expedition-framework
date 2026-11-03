@@ -295,7 +295,9 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem))
                 .then(Commands.literal("unlocks").executes(ExpeditionEventHandler::unlocks))
                 .then(Commands.literal("trophies").executes(ExpeditionEventHandler::trophies))
-                .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign))
+                .then(Commands.literal("history").executes(ExpeditionEventHandler::history))
+                .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign)
+                        .then(Commands.literal("all").executes(ExpeditionEventHandler::campaignAll)))
                 .then(Commands.literal("infection").requires(source -> source.hasPermission(2))
                         .executes(ExpeditionEventHandler::infection))
                 .then(Commands.literal("dimensions").executes(ExpeditionEventHandler::dimensions))
@@ -432,6 +434,73 @@ public final class ExpeditionEventHandler {
                 "message.expeditions.campaign", dimension,
                 data.campaignState(dimension).id(),
                 data.campaignCompletions(dimension)));
+        campaignProgress(player, data, dimension);
+        return 1;
+    }
+
+    private static int history(CommandContext<CommandSourceStack> ctx) {
+        var player = player(ctx);
+        if (player == null) return 0;
+        var entries = ExpeditionManager.get(player.server).savedData().history().entries(player.getUUID());
+        player.sendSystemMessage(Component.translatable(entries.isEmpty()
+                ? "message.expeditions.history_empty" : "message.expeditions.history_title"));
+        for (var entry : entries) {
+            var duration = entry.elapsedTicks() < 0 ? Component.translatable("message.expeditions.history_unknown")
+                    : Component.translatable("message.expeditions.history_duration", entry.elapsedTicks() / 1200,
+                            String.format(java.util.Locale.ROOT, "%02d", entry.elapsedTicks() / 20 % 60));
+            var outcome = Component.translatable("message.expeditions.history_" + entry.outcome().name().toLowerCase(java.util.Locale.ROOT));
+            var row = Component.translatable("message.expeditions.history_row", entry.name(), outcome,
+                    entry.checkpoints(), entry.totalCheckpoints(), entry.tokensKept(), duration, entry.dimension());
+            if (entry.outcome() == com.expeditions.core.ExpeditionStatus.FAILED)
+                row.append(Component.translatable("message.expeditions.history_reason",
+                        Component.translatable("message.expeditions.fail_reason." + entry.reason())));
+            player.sendSystemMessage(row);
+        }
+        return 1;
+    }
+
+    private static void campaignProgress(ServerPlayer player, ExpeditionSavedData data, String dimension) {
+        var state = data.campaignState(dimension);
+        if (state == com.expeditions.core.CampaignState.CLEARED) {
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_liberated"));
+        } else if (state == com.expeditions.core.CampaignState.ESTABLISHED
+                && ExpeditionTuning.bool(dimension, "campaign.require_guardian", true)) {
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_guardian"));
+        } else {
+            boolean clearing = state == com.expeditions.core.CampaignState.ESTABLISHED
+                    || !ExpeditionTuning.bool(dimension, "campaign.require_guardian", true)
+                    && ExpeditionsConfig.campaignClearedAtCompletions() <= ExpeditionsConfig.campaignEstablishedAtCompletions();
+            int target = !clearing
+                    ? ExpeditionsConfig.campaignEstablishedAtCompletions() : ExpeditionsConfig.campaignClearedAtCompletions();
+            int count = Math.min(data.campaignCompletions(dimension), target);
+            int fill = target <= 0 ? 10 : (int) ((long) count * 10 / target);
+            String bar = "[" + "|".repeat(fill) + ".".repeat(10 - fill) + "]";
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_progress", bar, count, target,
+                    clearing ? "CLEARED" : "ESTABLISHED"));
+        }
+        if (dimension.equals("minecraft:overworld"))
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_shelter"));
+    }
+
+    private static int campaignAll(CommandContext<CommandSourceStack> ctx) {
+        var player = player(ctx);
+        if (player == null) return 0;
+        var manager = ExpeditionManager.get(player.server);
+        var data = manager.savedData();
+        var dimensions = new java.util.TreeSet<>(data.campaignDimensions());
+        dimensions.add(player.serverLevel().dimension().location().toString());
+        var definitions = manager.listStartable();
+        player.sendSystemMessage(Component.translatable("message.expeditions.campaign_records"));
+        for (String dimension : dimensions) {
+            var available = definitions.stream().filter(d -> d.dimension().equals(dimension)
+                    && manager.missingRequirements(player.getUUID(), d).isSatisfied()).toList();
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_dimension", dimension,
+                    data.campaignState(dimension).id(), data.campaignCompletions(dimension), available.size()));
+            campaignProgress(player, data, dimension);
+            if (available.stream().anyMatch(com.expeditions.core.ExpeditionDefinition::bigBad)
+                    && data.campaignState(dimension) != com.expeditions.core.CampaignState.CLEARED)
+                player.sendSystemMessage(Component.translatable("message.expeditions.campaign_confrontation"));
+        }
         return 1;
     }
 

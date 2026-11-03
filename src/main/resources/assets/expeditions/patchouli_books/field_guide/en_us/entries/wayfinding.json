@@ -24,6 +24,11 @@
       "type": "patchouli:text",
       "title": "A bearing, not a path",
       "text": "After the witness stumps, it points to the Stillwood Hollow for extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A bearing, not a path",
+      "text": "Hover the compass for a rough direct range. This is a band, not a path length; the Heartglass Lens can make a precise measurement."
     }
   ],
   "advancement": "expeditions:journal/wayfinding"

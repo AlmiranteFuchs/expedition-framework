@@ -51,6 +51,22 @@ public class ExpeditionsClient {
         NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
         NeoForge.EVENT_BUS.addListener(InfectedMobEffects::onClientTick);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);
+        NeoForge.EVENT_BUS.addListener(ExpeditionsClient::onCompassTooltip);
+    }
+
+    private static void onCompassTooltip(net.neoforged.neoforge.event.entity.player.ItemTooltipEvent event) {
+        var player = event.getEntity();
+        if (player == null) return;
+        var target = com.expeditions.item.ExpeditionCompassItem.localTarget(event.getItemStack(), player.level());
+        if (target == null) return;
+        var range = com.expeditions.core.CompassRange.estimate(
+                player.position().distanceTo(net.minecraft.world.phys.Vec3.atCenterOf(target.pos())));
+        event.getToolTip().add(net.minecraft.network.chat.Component.translatable(
+                "tooltip.expeditions.compass_distance", range.minimum(), range.maximum()).withStyle(net.minecraft.ChatFormatting.GOLD));
+        int direction = com.expeditions.core.CompassElevation.direction(target.pos().getY() - player.getY());
+        event.getToolTip().add(net.minecraft.network.chat.Component.translatable("tooltip.expeditions.compass_height_"
+                + (direction > 0 ? "above" : direction < 0 ? "below" : "level"))
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {
