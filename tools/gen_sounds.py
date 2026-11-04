@@ -328,10 +328,10 @@ def squelch(dur, seed, drips=3, f_sweep=(900, 220)):
     mix(out, wet, 0.9)
     for _ in range(drips):
         t = rng.uniform(0.05, dur * 0.8)
-        f = rng.uniform(500, 1400)
-        drip = apply_env(sine(lambda tt, f=f: f * math.exp(-2.2 * tt), 0.09),
-                         decay_tau=0.03, sustain=0.0)
-        mix(out, drip, rng.uniform(0.15, 0.3), t)
+        f = rng.uniform(220, 620)
+        drip = apply_env(sine(lambda tt, f=f: f * math.exp(-1.3 * tt), 0.1),
+                         decay_tau=0.035, sustain=0.0)
+        mix(out, lp(drip, 1200), rng.uniform(0.15, 0.3), t)
     return out
 
 
@@ -376,7 +376,7 @@ def b_terminal_activate():
     """Dying machine acknowledging you: clunk, warbling tone, hiss."""
     out = buf(0.9)
     clunk(out, 0.0, gain=0.9, freq=85)
-    w = apply_env(warble(147, 0.5, vib_hz=6.5, vib_depth=0.025), attack=0.02,
+    w = apply_env(warble(104, 0.5, vib_hz=4.0, vib_depth=0.012), attack=0.02,
                   decay_tau=0.22, sustain=0.0)
     mix(out, lp(w, 1200), 0.4, 0.1)
     mix(out, lp(noise(0.4, 12), 1400), 0.12, 0.12)
@@ -470,10 +470,9 @@ def b_event_start():
     heartbeat underneath — then silence decides."""
     out = buf(2.3)
     mix(out, sub_drop(1.4, 70, 22, 0.9))
-    mix(out, apply_env(drone(1.8, (note(85), note(85) * 2 ** (1 / 12),
-                                  note(88)), wobble_hz=0.7,
-                             wobble_depth=0.004),
-                       attack=0.5, decay_tau=1.0, sustain=0.0), 0.22, 0.3)
+    mix(out, apply_env(drone(1.8, (522.0, 522.0 * 2 ** (1 / 12), 615.0),
+                             wobble_hz=0.7, wobble_depth=0.004),
+                       attack=0.5, decay_tau=1.0, sustain=0.0), 0.16, 0.3)
     mix(out, heartbeat(1.4, lub_f=50, dub_f=40, wet=0.0, seed=57), 0.35, 0.2)
     return finalize(reverb(out, wet=0.35))
 
@@ -492,9 +491,9 @@ def b_event_fail():
     """Everything sags. The pitch gives up mid-note — a machine dying
     with you — then the Bloom grunts from very far away."""
     out = buf(2.2)
-    sag = apply_env(warble(220, 1.6, vib_hz=9.0, vib_depth=0.05, seed=69),
+    sag = apply_env(warble(138, 1.6, vib_hz=5.5, vib_depth=0.03, seed=69),
                     attack=0.01, decay_tau=0.7, sustain=0.0)
-    mix(out, lp(sag, 1500), 0.5)
+    mix(out, lp(sag, 900), 0.5)
     mix(out, lp(sub_drop(1.5, 65, 20), 300), 0.7, 0.3)
     grunt = formant_growl(0.7, 70, 71, formants=(250, 600), trem_hz=11.0)
     mix(out, lp(grunt, 900), 0.4, 1.1)
@@ -507,7 +506,7 @@ def b_event_redeem():
     rng = random.Random(81)
     for i in range(5):
         t = 0.02 + i * 0.07 + rng.uniform(0, 0.03)
-        f = rng.uniform(700, 1400)
+        f = rng.uniform(350, 800)
         knock = apply_env(bp(noise(0.05, 80 + i), f, 4.0),
                           decay_tau=0.02, sustain=0.0)
         mix(out, knock, rng.uniform(0.3, 0.55), t)
@@ -522,8 +521,8 @@ def b_compass_ping():
     knock = apply_env(sine(lambda t: 180 - 260 * t, 0.1),
                       decay_tau=0.03, sustain=0.0)
     mix(out, lp(knock, 1100), 1.0)
-    res = apply_env(sine(340, 0.12), decay_tau=0.05, sustain=0.0)
-    mix(out, res, 0.2, 0.015)
+    res = apply_env(sine(255, 0.12), decay_tau=0.05, sustain=0.0)
+    mix(out, lp(res, 800), 0.2, 0.015)
     tick = apply_env(noise(0.015, 91), decay_tau=0.005, sustain=0.0)
     mix(out, hp(tick, 2500), 0.15)
     return finalize(out)
@@ -533,7 +532,7 @@ def b_compass_chime():
     """Not a chime — a voice humming one note wrong. Breath around a
     slow-vibrato tone; the code sweeps pitch for elevation cues."""
     out = buf(1.3)
-    v = apply_env(warble(392, 1.1, vib_hz=4.5, vib_depth=0.018, seed=93),
+    v = apply_env(warble(183, 1.1, vib_hz=3.5, vib_depth=0.012, seed=93),
                   attack=0.25, decay_tau=0.4, sustain=0.0)
     mix(out, lp(v, 1600), 0.5)
     mix(out, apply_env(bp(noise(1.1, 95), 1400, 1.5), attack=0.3,
@@ -572,7 +571,7 @@ def b_horde_spawn():
     src = [0.0] * n
     for i in range(n):
         t = i / SR
-        f = 1150 - 650 * (t / 1.1)
+        f = 950 - 560 * (t / 1.1)
         ph = (f * t) % 1.0
         src[i] = (2 * ph - 1) + 0.5 * math.sin(2 * math.pi * f * 0.5 * t)
     mix(out, apply_env(bp_sweep(src, 1800, 700, 8), attack=0.02,
@@ -628,20 +627,29 @@ def b_resonance_fuel():
 
 
 def b_resonance_work():
-    """Loopable operating thrum — machine hum with a pulse riding it."""
+    """Loopable operating thrum — beating detuned subs under a low
+    rumble of moving parts, with an irregular laboring pulse. Machine
+    noise, not a chord."""
     dur = 2.0
     n = int(dur * SR)
     out = buf(dur)
-    for f, g in ((55.0, 0.45), (110.0, 0.22), (165.0, 0.08), (220.0, 0.05)):
+    # detuned carriers — the 4.5Hz beat is the labored breathing
+    for f, g in ((52.0, 0.5), (56.5, 0.42), (104.0, 0.14), (127.0, 0.08)):
         cycles = round(f * dur)
         cyc_f = cycles / dur
         for i in range(n):
             out[i] += g * math.sin(2 * math.pi * cyc_f * i / n)
-    pulse = [0.55 + 0.45 * max(0.0, math.sin(2 * math.pi * (3 / dur) *
-                                           i / n)) for i in range(n)]
-    grind = lp(bp(noise(dur, 225), 700, 2.0), 1600)
+    # irregular pulse: two incommensurate LFOs multiplied
+    rng = random.Random(225)
+    ph2 = rng.uniform(0, 6)
+    pulse = [max(0.0, math.sin(2 * math.pi * (3 / dur) * i / n)) *
+             (0.5 + 0.5 * math.sin(2 * math.pi * (7 / dur) * i / n + ph2))
+             for i in range(n)]
+    rumble = lp(noise(dur, 227), 240)
+    grind = lp(bp(noise(dur, 229), 480, 2.0), 900)
     for i in range(n):
-        out[i] = out[i] * (0.6 + 0.4 * pulse[i]) + grind[i] * 0.12 * pulse[i]
+        out[i] = out[i] * (0.55 + 0.45 * pulse[i]) + \
+            rumble[i] * 0.35 + grind[i] * 0.1 * pulse[i]
     return finalize(out)
 
 
@@ -670,10 +678,10 @@ def b_basin_reclaim():
     rng = random.Random(231)
     for i in range(9):
         t = 0.05 + i * 0.09 + rng.uniform(0, 0.05)
-        f = rng.uniform(300, 900)
-        drip = apply_env(sine(lambda tt, f=f: f * (1 - 1.8 * tt), 0.08),
-                         decay_tau=0.03, sustain=0.0)
-        mix(out, drip, rng.uniform(0.15, 0.35), t)
+        f = rng.uniform(180, 480)
+        drip = apply_env(sine(lambda tt, f=f: f * (1 - 1.1 * tt), 0.09),
+                         decay_tau=0.035, sustain=0.0)
+        mix(out, lp(drip, 1000), rng.uniform(0.15, 0.35), t)
     mix(out, squelch(0.6, 233, drips=2, f_sweep=(600, 200)), 0.5, 0.4)
     toll(out, note(45), 0.7, 0.8, 0.18)
     return finalize(out)
@@ -698,7 +706,7 @@ def b_guardian_windup():
     rng = random.Random(253)
     for i in range(4):
         wood_knock(out, 0.1 + i * 0.1 + rng.uniform(0, 0.04),
-                   gain=rng.uniform(0.15, 0.3), freq=rng.uniform(500, 800))
+                   gain=rng.uniform(0.15, 0.3), freq=rng.uniform(300, 520))
     mix(out, apply_env(lp(noise(0.5, 255), 400), attack=0.3,
                      decay_tau=0.3, sustain=0.0), 0.3, 0.15)
     return finalize(out)
