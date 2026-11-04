@@ -64,6 +64,19 @@ class ExpeditionRunTest {
     }
 
     @Test
+    void recoveryBearingTracksTheLatestWitnessAndExpiresWithoutChangingRoute() {
+        var run = newRun();
+        assertTrue(run.recoveryWitness(100).isEmpty());
+        run.activateCheckpoint(CP1, 100);
+        run.activateCheckpoint(CP2, 200);
+        assertEquals(CP2, run.recoveryWitness(12_199).orElseThrow());
+        assertTrue(run.recoveryWitness(12_200).isEmpty());
+        assertEquals(CP3, run.nextCheckpoint().orElseThrow());
+        run.fail();
+        assertTrue(run.recoveryWitness(201).isEmpty());
+    }
+
+    @Test
     void checkpointsMustActivateInOrder() {
         ExpeditionRun run = newRun();
         assertThrows(IllegalStateException.class, () -> run.activateCheckpoint(CP2));

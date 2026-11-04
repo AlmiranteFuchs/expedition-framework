@@ -525,13 +525,9 @@ barriers while preserving depth.
 
 ### Major features (deferred to future milestones)
 
-**Technical Improvements - SavedData sharding**
-- Split into three files by namespace:
-  - `expeditions-ledger.dat` (balances, unlocks, trophies - per-player, rarely changes)
-  - `expeditions-runs.dat` (active runs, markers - per-world, changes frequently)
-  - `expeditions-campaign.dat` (campaign states, pressure - per-dimension, medium frequency)
-- Reduces hot file contention and partial load times
-- Requires migration path for existing saves
+**SavedData sharding — superseded**
+- The ledger, runs, markers and campaign records stay together so rewards and
+  run state roll back atomically. The three-file proposal is closed.
 
 **Gameplay Variety - New objective kinds**
 - `SCOUT`: Visit radius around location without triggering mobs (stealth)
@@ -807,5 +803,8 @@ while generating or refining. Each machine has a distinct cue.
   compass in the expedition dimension to share your current position for
   one minute. The shared reading survives reconnects and is shown in
   `/expeditions status`. The route needle keeps its own target.
+- Reconnect and `/expeditions status` also report the latest activated
+  witness for ten minutes. This bearing refers to the witness already in
+  the world and expires on its original clock across reloads.
 - Next gameplay batch: relay and endurance commissions. Keep markers and
   their rewards in the existing atomic expedition save.

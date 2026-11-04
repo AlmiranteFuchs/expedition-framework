@@ -533,6 +533,7 @@ public final class ExpeditionEventHandler {
         manager.activeRun(player.getUUID()).ifPresentOrElse(
                 run -> {
                     manager.showPartyBearing(player, run);
+                    manager.showRecoveryWitness(player, run);
                     run.nextCheckpoint().ifPresentOrElse(
                         next -> player.sendSystemMessage(Component.translatable(
                                 "message.expeditions.next_checkpoint",

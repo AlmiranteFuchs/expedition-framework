@@ -46,6 +46,21 @@ public final class ExpeditionRun {
     private final long startedGameTime;
     private Waypoint fieldCache;
     private PartyBearing partyBearing;
+    private long lastWitnessAt = -1;
+
+    public long lastWitnessAt() { return lastWitnessAt; }
+
+    public void restoreLastWitnessAt(long tick) {
+        if (tick < 0 || completedCheckpoints == 0) throw new IllegalArgumentException("Invalid witness time");
+        lastWitnessAt = tick;
+    }
+
+    public Optional<Waypoint> recoveryWitness(long now) {
+        if (!isActive() || lastWitnessAt < 0 || now < lastWitnessAt || now - lastWitnessAt >= 12_000) {
+            return Optional.empty();
+        }
+        return Optional.of(checkpoints.get(completedCheckpoints - 1));
+    }
 
     public record PartyBearing(Waypoint position, long expiresAt) {
         public PartyBearing {
@@ -589,7 +604,15 @@ public final class ExpeditionRun {
                     "Run " + runId + " expected checkpoint at " + expected + " but got " + position);
         }
         completedCheckpoints++;
+        lastWitnessAt = -1;
         return completeVisitObjectives(completedCheckpoints);
+    }
+
+    public List<ExpeditionObjective> activateCheckpoint(Waypoint position, long now) {
+        if (now < 0) throw new IllegalArgumentException("Invalid witness time");
+        var completed = activateCheckpoint(position);
+        lastWitnessAt = now;
+        return completed;
     }
 
     /**

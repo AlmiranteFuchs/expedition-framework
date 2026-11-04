@@ -85,6 +85,9 @@ public final class AftergrowthTests {
                     "cache site and claim both survive save and reload");
             helper.assertTrue(restored.partyBearing().equals(run.partyBearing()),
                     "the shared bearing survives a save without extending its expiry");
+            helper.assertTrue(restored.lastWitnessAt() == run.lastWitnessAt()
+                            && restored.recoveryWitness(level.getGameTime()).orElseThrow().equals(run.checkpoints().getLast()),
+                    "recovery points to the last activated witness after loading");
             manager.completeRun(owner);
             helper.assertTrue(!level.getBlockState(cache).is(ModBlocks.FIELD_CACHE.get())
                             && owner.getInventory().countItem(ModItems.EXPEDITION_ARTIFACT.get()) == 0,

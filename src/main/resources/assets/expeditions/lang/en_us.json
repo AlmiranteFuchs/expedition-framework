@@ -36,6 +36,7 @@
   "message.expeditions.status_none": "No active expedition.",
   "message.expeditions.party_bearing": "Shared party bearing · %1$s, %2$s, %3$s",
   "message.expeditions.party_bearing_unavailable": "Hold your expedition compass in the field to share a bearing.",
+  "message.expeditions.recovery_witness": "Last witness · %1$s, %2$s, %3$s",
   "message.expeditions.cache_bearing": "The witness remembers a pale cache to the %s.",
   "message.expeditions.cache_sealed": "The cache stays sealed.",
   "message.expeditions.cache_opened": "A sealed find. Carry it through the Hollow to bring it home.",

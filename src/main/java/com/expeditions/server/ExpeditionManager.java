@@ -150,6 +150,14 @@ public final class ExpeditionManager {
                 });
     }
 
+    public void showRecoveryWitness(ServerPlayer player, ExpeditionRun run) {
+        if (!run.isMember(player.getUUID())
+                || !run.definition().dimension().equals(player.level().dimension().location().toString())) return;
+        run.recoveryWitness(player.serverLevel().getGameTime()).ifPresent(pos ->
+                player.sendSystemMessage(Component.translatable("message.expeditions.recovery_witness",
+                        pos.x(), pos.y(), pos.z())));
+    }
+
     public Optional<ExpeditionRun> latestRun(UUID playerId) {
         return ledger.run(playerId);
     }
@@ -646,7 +654,7 @@ public final class ExpeditionManager {
             devicePos = defenseSite(player.serverLevel(), pos).orElseThrow(
                     () -> new IllegalStateException("message.expeditions.defense_site_blocked"));
         }
-        run.activateCheckpoint(toWaypoint(pos));
+        run.activateCheckpoint(toWaypoint(pos), player.serverLevel().getGameTime());
         JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CHECKPOINTS);
         for (UUID member : run.party()) {
             var online = server.getPlayerList().getPlayer(member);
@@ -991,6 +999,7 @@ public final class ExpeditionManager {
             active.ifPresent(run -> {
                 forEachCompass(player, stack -> retarget(stack, run));
                 showPartyBearing(player, run);
+                showRecoveryWitness(player, run);
             });
             return active;
         }

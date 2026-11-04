@@ -424,6 +424,10 @@ public class ExpeditionSavedData extends SavedData {
                 restored.shareBearing(new ExpeditionRun.PartyBearing(readWaypoint(bearing), bearing.getLong("Expires")));
             }
         }
+        if (restored.isActive() && restored.completedCheckpoints() > 0
+                && runTag.contains("LastWitnessAt", Tag.TAG_LONG) && runTag.getLong("LastWitnessAt") >= 0) {
+            restored.restoreLastWitnessAt(runTag.getLong("LastWitnessAt"));
+        }
         return restored;
     }
 
@@ -585,6 +589,7 @@ public class ExpeditionSavedData extends SavedData {
             runTag.put(TAG_TERMINAL, writeWaypoint(run.terminal()));
             runTag.put(TAG_PORTAL, writeWaypoint(run.portal()));
             runTag.put(TAG_ENTRY, writeWaypoint(run.entry()));
+            if (run.isActive() && run.lastWitnessAt() >= 0) runTag.putLong("LastWitnessAt", run.lastWitnessAt());
             if (run.isActive()) run.partyBearing().ifPresent(bearing -> {
                 var bearingTag = writeWaypoint(bearing.position());
                 bearingTag.putLong("Expires", bearing.expiresAt());
