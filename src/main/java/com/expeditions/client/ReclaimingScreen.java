@@ -21,12 +21,12 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
 
     @Override
     protected void init() {
-        imageWidth = Math.min(330, width - 14);
-        imageHeight = Math.min(250, height - 14);
+        imageWidth = Math.min(252, width - 16);
+        imageHeight = Math.min(162, height - 16);
         super.init();
-        spacing = Math.min(51, Math.max(24, (imageHeight - 56) / 3));
+        spacing = Math.min(33, Math.max(21, (imageHeight - 54) / 3));
         for (int slot = 0; slot < 3; slot++) {
-            addRenderableWidget(new Quote(leftPos + 12, topPos + 37 + slot * spacing, imageWidth - 24, spacing, slot));
+            addRenderableWidget(new Quote(leftPos + 12, topPos + 33 + slot * spacing, imageWidth - 24, spacing, slot));
         }
         addRenderableWidget(new Quote(leftPos + 12, topPos + imageHeight - 17, 90, 14, 18));
         addRenderableWidget(new Quote(leftPos + imageWidth - 102, topPos + imageHeight - 17, 90, 14, 26));
@@ -34,15 +34,8 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
 
     @Override
     public void render(GuiGraphics gui, int mouseX, int mouseY, float tick) {
-        gui.fill(0, 0, width, height, 0xa5231811);
-        gui.fill(leftPos + 3, topPos + 4, leftPos + imageWidth + 3, topPos + imageHeight + 4, 0x802c211a);
-        for (int row = 0; row < imageHeight; row++) {
-            int edge = row == 0 || row == imageHeight - 1 ? 4 : row / 6 % 3;
-            gui.fill(leftPos + edge, topPos + row, leftPos + imageWidth - edge, topPos + row + 1, 0xffdfc69b);
-        }
-        int clip = leftPos + imageWidth / 2;
-        gui.fill(clip - 12, topPos - 2, clip + 12, topPos + 4, 0xff75472c);
-        gui.hLine(clip - 10, clip + 10, topPos - 1, 0xffd4a269);
+        gui.fill(0, 0, width, height, 0x81221912);
+        renderPaper(gui);
         gui.drawString(font, Component.translatable("gui.expeditions.basin_ledger"), leftPos + 12, topPos + 10, INK, false);
         var account = menu.getContainer().getItem(22);
         if (!account.isEmpty()) {
@@ -74,17 +67,53 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
         }
     }
 
+    private void renderPaper(GuiGraphics gui) {
+        int right = leftPos + imageWidth;
+        int bottom = topPos + imageHeight;
+        gui.fill(leftPos - 3, topPos + 3, right + 5, bottom + 6, 0x9b281e18);
+        gui.fill(leftPos - 2, topPos + 1, right + 2, bottom + 3, 0xff6e5942);
+        for (int row = 0; row < imageHeight; row++) {
+            int edge = row == 0 || row == imageHeight - 1 ? 4 : 1 + row / 5 % 3;
+            int y = topPos + row;
+            gui.fill(leftPos + edge, y, right - edge, y + 1, 0xffad8960);
+            gui.fill(leftPos + edge + 2, y, right - edge - 2, y + 1, 0xffdfc69b);
+        }
+        // Wear follows the edge of the leaf and stays out of the text's contrast range.
+        for (int mark = 0; mark < 34; mark++) {
+            int x = leftPos + 6 + (mark * 53) % (imageWidth - 12);
+            int y = topPos + 6 + (mark * 23) % (imageHeight - 12);
+            gui.fill(x, y, x + 1 + mark % 3, y + 1, 0x247d5e3b);
+        }
+        gui.hLine(leftPos + 10, right - 12, bottom - 3, 0xffb2936d);
+        int rootX = right - 34;
+        int rootY = topPos + 6;
+        // Stepped pressure marks left by the graft under the copper clip.
+        for (int step = 0; step < 8; step++) {
+            int x = rootX + step * 3;
+            int y = rootY + step / 2;
+            gui.fill(x, y, x + 4, y + 1, 0x596d5030);
+            if (step % 2 == 0) gui.fill(x + 1, y - 2, x + 2, y, 0x426d5030);
+        }
+        int clip = leftPos + imageWidth / 2;
+        gui.fill(clip - 13, topPos - 4, clip + 13, topPos + 4, 0xff67412b);
+        gui.fill(clip - 11, topPos - 3, clip + 11, topPos + 2, 0xffb47b49);
+        gui.hLine(clip - 9, clip + 9, topPos - 2, 0xffdfad71);
+        gui.fill(clip - 9, topPos, clip - 7, topPos + 2, 0xff795135);
+        gui.fill(clip + 7, topPos, clip + 9, topPos + 2, 0xff795135);
+    }
+
     private void renderSapStain(GuiGraphics gui, int mouseX, int mouseY) {
         int x = leftPos + imageWidth - 70;
         int y = topPos + 20;
         int amount = menu.sapAmount();
         int capacity = SapVesselBlockEntity.BASIN_CAPACITY;
         int filled = Math.clamp(amount * 54 / capacity, 0, 54);
-        gui.fill(x - 2, y - 2, x + 56, y + 9, 0xffb49568);
-        gui.fill(x, y, x + 54, y + 7, 0xffc8a879);
+        gui.fill(x - 2, y - 1, x + 55, y + 8, 0xffc4a06e);
+        gui.fill(x, y + 1, x + 54, y + 7, 0xffd1b383);
         if (filled > 0) {
-            gui.fill(x, y, x + filled, y + 7, 0xff985026);
-            gui.fill(x, y + 1, x + filled, y + 3, 0xffc48443);
+            gui.fill(x, y + 1, x + filled, y + 7, 0xff985026);
+            gui.fill(x, y + 2, x + filled, y + 4, 0xffc48443);
+            gui.fill(x + filled - 1, y, x + filled, y + 8, 0xffa36035);
         }
         for (int mark = 1; mark < 4; mark++) {
             int at = x + mark * 54 / 4;
@@ -144,12 +173,9 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
             gui.fill(getX() + 1, y + 1, getX() + 20, y + 20, 0xffcdb38b);
             gui.renderItem(stack, getX() + 3, y + 3);
             gui.drawString(font, font.plainSubstrByWidth(name, available), x, y, color, false);
-            int fieldLines = 1;
-            for (int line = 0; line < Math.min(fieldLines, notes.size()); line++) {
-                int noteY = y + 10 + 9 * line;
-                if (noteY + 8 >= getY() + getHeight()) break;
-                gui.drawString(font, font.plainSubstrByWidth(notes.get(line).getString(), available),
-                        x, noteY, 0xff765539, false);
+            if (!notes.isEmpty()) {
+                gui.drawString(font, font.plainSubstrByWidth(notes.getFirst().getString(), available),
+                        x, y + 10, 0xff765539, false);
             }
             gui.hLine(getX(), getX() + getWidth() - 1, getY() + getHeight() - 1, 0xffb5986b);
         }

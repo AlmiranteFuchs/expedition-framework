@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "expeditions:block/graft_post"
+    },
+    "axis=z": {
+      "model": "expeditions:block/graft_post",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "expeditions:block/graft_post",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

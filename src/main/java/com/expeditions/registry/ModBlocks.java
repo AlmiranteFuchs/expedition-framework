@@ -35,6 +35,13 @@ public final class ModBlocks {
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.5f)
                             .sound(SoundType.COPPER).noOcclusion()));
 
+    public static final DeferredHolder<Block, Block> GRAFT_POST = BLOCKS.register("graft_post",
+            () -> new net.minecraft.world.level.block.RotatedPillarBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.0f).sound(SoundType.WOOD).noOcclusion()));
+    public static final DeferredHolder<Block, Block> GRAFT_COLLAR = BLOCKS.register("graft_collar",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+                    .strength(2.5f).sound(SoundType.COPPER).noOcclusion()));
+
     public static final DeferredHolder<Block, net.minecraft.world.level.block.LiquidBlock> RETURN_SAP = BLOCKS.register(
             "return_sap", () -> new net.minecraft.world.level.block.LiquidBlock(ModFluids.SAP.get(),
                     BlockBehaviour.Properties.of().noCollission().strength(100).noLootTable().liquid()));

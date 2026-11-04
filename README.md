@@ -9,6 +9,23 @@ mods, with minimal hardcoded assumptions about terrain, mechanics, or registries
 The mod requires Patchouli for its field guide and is suitable for modpacks.
 Dimension mods and MCP tooling are optional.
 
+## Build a grafted Wayroot
+
+Face the desk and build the following front view. The arch sits immediately
+to the right of the Wayroot, at the same floor level.
+
+```text
+  P C P
+  P . P
+W P . P
+```
+
+`W` is the Wayroot, `P` is an upright Pale Graft Post, and `C` is the
+Graft Collar. Both dots must be open air with a solid floor below the doorway.
+The requirements leaf describes the frame's condition. Sealing a charter wakes
+the doorway. The first witness stump closes it and leaves the frame standing.
+A desk without a collar still uses its small overhead aperture.
+
 ## Current starter progression (alpha.25)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make

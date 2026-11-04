@@ -53,7 +53,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "expeditions:expedition_terminal",
-      "text": "Place it facing a safe space. Its portal opens above it."
+      "text": "Place it facing a safe space. A grafted arch can carry the aperture beside the desk."
     },
     {
       "type": "patchouli:crafting",

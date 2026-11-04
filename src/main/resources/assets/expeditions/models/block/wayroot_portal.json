@@ -1,0 +1,77 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "expeditions:block/wayroot_portal_crown",
+    "crown": "expeditions:block/wayroot_portal_crown",
+    "foot": "expeditions:block/wayroot_portal_foot"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        16,
+        7.99
+      ],
+      "to": [
+        16,
+        32,
+        8.01
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#crown",
+          "uv": [
+            16,
+            0,
+            0,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#crown",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        7.99
+      ],
+      "to": [
+        16,
+        16,
+        8.01
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#foot",
+          "uv": [
+            16,
+            0,
+            0,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#foot",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

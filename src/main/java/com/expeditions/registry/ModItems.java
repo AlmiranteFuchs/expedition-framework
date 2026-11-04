@@ -25,6 +25,8 @@ public final class ModItems {
                     new Item.Properties().craftRemainder(net.minecraft.world.item.Items.BUCKET).stacksTo(1)));
     public static final DeferredItem<BlockItem> SAP_JAR = ITEMS.registerSimpleBlockItem("sap_jar", ModBlocks.SAP_JAR);
     public static final DeferredItem<BlockItem> ROOTWICK = ITEMS.registerSimpleBlockItem("rootwick", ModBlocks.ROOTWICK);
+    public static final DeferredItem<BlockItem> GRAFT_POST = ITEMS.registerSimpleBlockItem("graft_post", ModBlocks.GRAFT_POST);
+    public static final DeferredItem<BlockItem> GRAFT_COLLAR = ITEMS.registerSimpleBlockItem("graft_collar", ModBlocks.GRAFT_COLLAR);
 
     public static final DeferredItem<BlockItem> RECLAIMING_BASIN = ITEMS.registerSimpleBlockItem(
             "reclaiming_basin", ModBlocks.RECLAIMING_BASIN);

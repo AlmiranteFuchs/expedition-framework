@@ -235,7 +235,7 @@
   "gui.expeditions.basin_account": "Trace from %s",
   "gui.expeditions.basin_ledger": "Salvage ledger",
   "gui.expeditions.basin_field_note": "Sometimes brings %s.",
-  "gui.expeditions.basin_field_sealed": "The seal holds. Bring back a hard-won trace.",
+  "gui.expeditions.basin_field_sealed": "Sealed. Bring a hard-won trace.",
   "gui.expeditions.basin_field_feed": "Feed the roots %1$s × %2$s.",
   "message.expeditions.basin_reclaimed": "Amber threads draw your supplies through.",
   "message.expeditions.basin_essence": "The basin needs a piece of Essence.",
@@ -262,9 +262,17 @@
   "message.expeditions.sap_brewed": "The knot loosens into amber sap.",
   "gui.expeditions.basin_weighted_0": "Common stock and rarer fragments.",
   "gui.expeditions.basin_weighted_1": "Unusual finds caught in the grain.",
-  "gui.expeditions.basin_weighted_2": "Tools and equipment held in a deeper trace.",
+  "gui.expeditions.basin_weighted_2": "Gear held in a deeper trace.",
   "gui.expeditions.basin_find": "%1$s × %2$s · %3$s%%",
   "gui.expeditions.basin_more": "… and %s other finds",
   "message.expeditions.basin_empty_trace": "This trace holds nothing of that kind.",
-  "message.expeditions.sap_recycled": "The roots break down %s items into sap."
+  "message.expeditions.sap_recycled": "The roots break down %s items into sap.",
+  "block.expeditions.graft_collar": "Graft Collar",
+  "gui.expeditions.wayroot_frame_unbound": "The desk stands alone. A collar can bind it to an arch.",
+  "gui.expeditions.wayroot_frame_ready": "The arch is rooted. The collar will hold.",
+  "gui.expeditions.wayroot_frame_timber": "The collar needs three upright graft posts on each side.",
+  "gui.expeditions.wayroot_frame_floor": "The arch needs solid ground under its opening.",
+  "gui.expeditions.wayroot_frame_blocked": "Clear both blocks beneath the collar.",
+  "gui.expeditions.wayroot_frame_busy": "The arch is holding another charter.",
+  "block.expeditions.graft_post": "Pale Graft Post"
 }

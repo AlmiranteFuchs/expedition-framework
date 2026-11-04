@@ -23,6 +23,8 @@ public final class ModCreativeTabs {
                     .icon(() -> new ItemStack(ModItems.EXPEDITION_TERMINAL_ITEM.get()))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.EXPEDITION_TERMINAL_ITEM.get());
+                        output.accept(ModItems.GRAFT_COLLAR.get());
+                        output.accept(ModItems.GRAFT_POST.get());
                         output.accept(ModItems.RECLAIMING_BASIN.get());
                         output.accept(ModItems.SAP_JAR.get());
                         output.accept(ModItems.ROOTWICK.get());

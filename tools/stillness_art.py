@@ -137,6 +137,36 @@ def gen():
         'parent':'minecraft:block/block','textures':textures,'elements':exposed(basin),
         'render_type':'minecraft:cutout','ambientocclusion':False,
     })
+    collar=[
+        box([0,5,4],[16,11,12],'bone'), box([4,5,0],[12,11,16],'bone'),
+        box([2,4,3],[5,12,13],'copper'), box([11,4,3],[14,12,13],'copper'),
+        box([5,4,2],[11,12,4],'copper'), box([5,4,12],[11,12,14],'copper'),
+        box([5,3,6],[11,5,10],'copper'), box([6,2,6.5],[10,3,9.5],'resin'),
+        box([5,8,3],[11,9,4],'iron'), box([7,6,2.5],[9,10,3],'resin'),
+        box([5,8,12],[11,9,13],'iron'), box([7,6,13],[9,10,13.5],'resin'),
+    ]
+    write(Path('models/block/graft_collar.json'),{
+        'parent':'minecraft:block/block','textures':textures,'elements':exposed(collar),
+        'render_type':'minecraft:cutout','ambientocclusion':False,
+    })
+    write(Path('models/item/graft_collar.json'),{'parent':'expeditions:block/graft_collar'})
+    write(Path('blockstates/graft_collar.json'),{'variants':{'':{'model':'expeditions:block/graft_collar'}}})
+    post=[
+        box([2,0,2],[14,16,14]),
+        box([1,0,5],[3,16,10]), box([13,0,6],[15,16,11]),
+        box([5,0,1],[10,16,3]), box([6,0,13],[11,16,15]),
+        box([4,2,.5],[6,12,2]), box([10,6,14],[12,15,15.5]),
+    ]
+    write(Path('models/block/graft_post.json'),{
+        'parent':'minecraft:block/block','textures':textures,'elements':exposed(post),
+        'render_type':'minecraft:cutout','ambientocclusion':False,
+    })
+    write(Path('models/item/graft_post.json'),{'parent':'expeditions:block/graft_post'})
+    write(Path('blockstates/graft_post.json'),{'variants':{
+        'axis=y':{'model':'expeditions:block/graft_post'},
+        'axis=z':{'model':'expeditions:block/graft_post','x':90},
+        'axis=x':{'model':'expeditions:block/graft_post','x':90,'y':90},
+    }})
     jar=[
         box([2,0,2],[14,2,14],'bone'),
         box([3,2,3],[13,3,13],'copper'), box([3,13,3],[13,14,13],'copper'),

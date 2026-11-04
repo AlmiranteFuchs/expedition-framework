@@ -61,7 +61,11 @@
       },
       {
         "heading": "Before entry",
-        "body": "The portal opens above the terminal. Take food, a weapon and room for cargo. Entering issues the route compass.\n\nGuests can join an open party until the first checkpoint. Set Party access to Solo Expedition to keep the portal private. First Bearing is always private and teaches two marks and a return."
+        "body": "The desk can open a small aperture above itself. A grafted arch draws it down into a doorway. Take food, a weapon and room for cargo. Entering issues the route compass.\n\nGuests can join an open party until the first checkpoint. Set Party access to Solo Expedition to keep the portal private. First Bearing is always private and teaches two marks and a return."
+      },
+      {
+        "heading": "Bind a doorway",
+        "body": "Make the posts from birch logs and a dormant flake. Stand facing the Wayroot. Immediately to your right, build a post three upright Pale Graft Posts tall. Leave a one-block gap, then build a second matching post. Set the Graft Collar at the top of the gap.\n\nKeep both blocks beneath the collar clear, with solid ground at the foot. Seal a charter to wake the arch. The first witness stump closes the aperture, leaving the timber in place."
       }
     ],
     "unlock_hint": "Use a terminal and examine the charters it can offer."

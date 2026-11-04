@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "LEL"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "E": {
+      "item": "expeditions:assimilation_essence"
+    },
+    "L": {
+      "item": "expeditions:graft_post"
+    }
+  },
+  "result": {
+    "id": "expeditions:graft_collar",
+    "count": 1
+  }
+}

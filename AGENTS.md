@@ -169,6 +169,13 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   checkpoint: `portalOpen()`), extends generated routes by
   `party.checkpointsPerExtraMember` legs per join, grants the compass and
   teleports to `run.entry`. Orphaned/sealed portal blocks self-remove.
+- A Graft Collar beside the Wayroot binds a player-built arch. `WayrootFrame`
+  checks the two vertical posts, floor and empty aperture before route writes.
+  A framed run keeps a single tracked marker at desk height two blocks to its
+  right. Its model spans the two-block opening. Frame checks fail open-portal
+  runs when the structure is broken. Sealing or cleanup removes the marker
+  and leaves the player's blocks in place. Unbound desks retain the old
+  overhead portal.
 - `ExpeditionRun` has a mutable-but-invariant party (never empty — last
   member can't `leaveParty`, the run fails instead), plus persisted
   `terminal`/`portal`/`entry` waypoints. Run end (`endRun`) removes portal +

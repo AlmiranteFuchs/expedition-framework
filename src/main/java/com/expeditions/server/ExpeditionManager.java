@@ -247,9 +247,16 @@ public final class ExpeditionManager {
         // Everything below is validated before a single block is placed so a
         // failed start leaves the world untouched. The portal stays in the
         // terminal's dimension even when the expedition runs elsewhere.
-        BlockPos portalPos = findPortalSpot(portalLevel, terminalPos).orElseThrow(
-                () -> new IllegalStateException(
-                        "The expedition terminal needs clear space above it"));
+        var frame = WayrootFrame.inspect(portalLevel, terminalPos);
+        if (!frame.canOpen()) throw new IllegalStateException(Component.translatable(frame.messageKey()).getString());
+        boolean framed = frame == WayrootFrame.Condition.READY;
+        var terminalState = portalLevel.getBlockState(terminalPos);
+        var front = terminalState.hasProperty(com.expeditions.block.ExpeditionTerminalBlock.FACING)
+                ? terminalState.getValue(com.expeditions.block.ExpeditionTerminalBlock.FACING)
+                : player.getDirection();
+        BlockPos portalPos = framed ? WayrootFrame.opening(terminalPos, front)
+                : findPortalSpot(portalLevel, terminalPos).orElseThrow(
+                        () -> new IllegalStateException("The Wayroot needs clear space above it"));
 
         RouteSpec spec = definition.route();
         if (options.checkpoints() > 0 && spec instanceof RouteGeneration g) {
@@ -302,12 +309,16 @@ public final class ExpeditionManager {
                 }
                 List<BlockPos> positions = new ArrayList<>();
                 for (RouteAnchor anchor : candidate.checkpoints()) {
-                    positions.add(resolveAnchor(adapter, level, anchor, maxAttempts));
+                    positions.add(resolveAnchor(adapter, level, anchor, maxAttempts,
+                            pos -> level != portalLevel || !framed
+                                    || !pos.equals(portalPos) && !pos.equals(portalPos.above())));
                 }
                 BlockPos exit = resolveAnchor(adapter, level, candidate.exit(), maxAttempts,
                         pos -> RecallTrees.fits(level, pos)
                                 && positions.stream().noneMatch(cp -> RecallTrees.coreContains(pos, cp))
-                                && (level != portalLevel || !RecallTrees.coreContains(pos, portalPos)));
+                                && (level != portalLevel || (framed
+                                    ? !RecallTrees.contains(pos, portalPos) && !RecallTrees.contains(pos, portalPos.above())
+                                    : !RecallTrees.coreContains(pos, portalPos))));
                 route = candidate;
                 entryPos = candidateEntry != null
                         ? candidateEntry : positions.get(0).above();
@@ -331,14 +342,11 @@ public final class ExpeditionManager {
         // Reserve the complete hollow before ambient colony writes begin.
         for (BlockPos pos : checkpointPositions) Microbiome.seedColonyNear(level, pos, level.random);
         Microbiome.seedColonyNear(level, exitPos, level.random);
-        var terminalState = portalLevel.getBlockState(terminalPos);
-        var front = terminalState.hasProperty(com.expeditions.block.ExpeditionTerminalBlock.FACING)
-                ? terminalState.getValue(com.expeditions.block.ExpeditionTerminalBlock.FACING)
-                : player.getDirection();
         var portalAxis = front.getAxis() == net.minecraft.core.Direction.Axis.X
                 ? net.minecraft.core.Direction.Axis.Z : net.minecraft.core.Direction.Axis.X;
         portalLevel.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState()
-                .setValue(com.expeditions.block.ExpeditionPortalBlock.AXIS, portalAxis), 3);
+                .setValue(com.expeditions.block.ExpeditionPortalBlock.AXIS, portalAxis)
+                .setValue(com.expeditions.block.ExpeditionPortalBlock.FRAMED, framed), 3);
         data.trackMarker(portalDimension, portalPos);
 
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(),
@@ -477,6 +485,7 @@ public final class ExpeditionManager {
             return;
         }
         ExpeditionRun run = match.get();
+        if (isFramedRun(run) && !checkFramedPortal(level, portalPos)) return;
         if (!run.isMember(player.getUUID())) {
             if (!run.acceptsGuests()) {
                 if (player.tickCount % 5 == 0) {
@@ -1003,7 +1012,33 @@ public final class ExpeditionManager {
                                 && r.portal().equals(waypoint)));
     }
 
+    private static boolean isFramedRun(ExpeditionRun run) {
+        int x = Math.abs(run.portal().x() - run.terminal().x());
+        int z = Math.abs(run.portal().z() - run.terminal().z());
+        return run.portal().y() == run.terminal().y() && (x == 2 && z == 0 || z == 2 && x == 0);
+    }
+
+    public boolean checkFramedPortal(ServerLevel level, BlockPos pos) {
+        String dimension = level.dimension().location().toString();
+        var portal = toWaypoint(pos);
+        for (var run : ledger.runs()) {
+            if (!run.portalOpen() || !run.portalDimension().equals(dimension) || !run.portal().equals(portal)) continue;
+            if (WayrootFrame.activeIntact(level, toPos(run.terminal()), pos)) return true;
+            run.fail("site_lost");
+            endRun(run);
+            return false;
+        }
+        removeMarkerAt(level, pos);
+        data.untrackMarker(dimension, pos);
+        data.setDirty();
+        return false;
+    }
+
     private boolean isRunRecoverable(ExpeditionRun run) {
+        if (run.portalOpen() && isFramedRun(run)) {
+            var home = levelFor(run.portalDimension());
+            if (home == null || !WayrootFrame.activeIntact(home, toPos(run.terminal()), toPos(run.portal()))) return false;
+        }
         // An old active boss run already past its final checkpoint has no
         // accountable guardian. Never turn that legacy gap into a free win.
         if (run.definition().bigBad() && run.allCheckpointsDone() && run.guardianEncounter().isEmpty()) return false;

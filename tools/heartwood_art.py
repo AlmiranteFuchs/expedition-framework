@@ -218,9 +218,36 @@ def gen_portal(root):
                       'north':{'texture':'#portal','uv':[16,0,0,16]},
                       'south':{'texture':'#portal','uv':[0,0,16,16]}}}]}
     (Path(root).parent / 'models/block/expedition_portal.json').write_text(json.dumps(model, indent=2)+'\n', encoding='utf-8')
-    (Path(root).parent / 'blockstates/expedition_portal.json').write_text(json.dumps({'variants':{
-        'axis=x':{'model':'expeditions:block/expedition_portal'},
-        'axis=z':{'model':'expeditions:block/expedition_portal', 'y':90}}}, indent=2)+'\n', encoding='utf-8')
+    tall = Image.new('RGBA', (16, 32))
+    d = ImageDraw.Draw(tall)
+    d.line([(8,0),(5,2),(2,4),(1,9),(2,15),(0,22),(1,31)], fill=WOOD[1], width=3)
+    d.line([(8,0),(11,2),(14,5),(14,11),(13,16),(15,23),(14,31)], fill=WOOD[1], width=3)
+    d.line([(8,0),(4,2),(2,6),(2,12),(3,16),(1,23),(2,30)], fill=EMBER[2])
+    d.line([(8,0),(11,2),(13,5),(14,10),(13,16),(14,21),(14,30)], fill=EMBER[2])
+    d.line([(8,0),(8,4),(6,8),(5,10)], fill=EMBER[3])
+    d.line([(3,15),(5,17),(6,20)], fill=WOOD[3])
+    d.line([(13,18),(11,20),(10,23)], fill=WOOD[3])
+    d.line([(1,31),(4,28),(6,27)], fill=EMBER[2])
+    d.line([(14,31),(12,28),(10,27)], fill=EMBER[2])
+    for point in [(8,0),(4,2),(12,3),(2,7),(14,10),(3,16),(14,21),(6,27),(8,19),(9,11)]:
+        d.point(point, fill=EMBER[4])
+    frames = []
+    for name, top, y in [('crown',0,16),('foot',16,0)]:
+        save(root, 'block/wayroot_portal_'+name, tall.crop((0,top,16,top+16)))
+        frames.append({'from':[0,y,7.99],'to':[16,y+16,8.01],'shade':False,'faces':{
+            'north':{'texture':'#'+name,'uv':[16,0,0,16]},
+            'south':{'texture':'#'+name,'uv':[0,0,16,16]}}})
+    framed = {'parent':'minecraft:block/block','ambientocclusion':False,
+              'textures':{'particle':'expeditions:block/wayroot_portal_crown',
+                          'crown':'expeditions:block/wayroot_portal_crown','foot':'expeditions:block/wayroot_portal_foot'},
+              'elements':frames}
+    assets = Path(root).parent
+    (assets / 'models/block/wayroot_portal.json').write_text(json.dumps(framed,indent=2)+'\n',encoding='utf-8')
+    variants = {}
+    for axis, angle in [('x',0),('z',90)]:
+        variants['axis='+axis+',framed=false']={'model':'expeditions:block/expedition_portal','y':angle}
+        variants['axis='+axis+',framed=true']={'model':'expeditions:block/wayroot_portal','y':angle}
+    (assets / 'blockstates/expedition_portal.json').write_text(json.dumps({'variants':variants},indent=2)+'\n',encoding='utf-8')
 
 
 def gen_artifact(root):

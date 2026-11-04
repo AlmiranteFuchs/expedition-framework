@@ -73,7 +73,10 @@ for order, (group, name, icon, description, chapters) in enumerate(groups):
                           'text':'Your discoveries belong to you. A replacement book remembers them.'})
         if key in ('essence', 'terminal'):
             pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:expedition_terminal',
-                          'text':'Place it facing a safe space. Its portal opens above it.'})
+                          'text':'Place it facing a safe space. A grafted arch can carry the aperture beside the desk.'})
+        if key == 'terminal':
+            for part in ['graft_post', 'graft_collar']:
+                pages.append({'type':'patchouli:crafting', 'recipe':'expeditions:' + part})
         if key == 'first_steps':
             for machine in ['dormant_knot','stillness_dynamo','essence_condenser']:
                 pages.append({'type':'patchouli:crafting','recipe':'expeditions:'+machine})

@@ -48,6 +48,7 @@ public class ExpeditionMenu extends ChestMenu {
     private final SimpleContainer container;
     private final ExpeditionManager manager;
     private final BlockPos terminalPos;
+    private final net.minecraft.server.level.ServerLevel terminalLevel;
     private final List<ExpeditionDefinition> startable;
     private final UUID playerId;
     private int expeditionIndex;
@@ -61,7 +62,7 @@ public class ExpeditionMenu extends ChestMenu {
         super(com.expeditions.registry.ModMenus.EXPEDITION.get(), containerId, playerInventory,
                 new SimpleContainer(9 * ROWS), ROWS);
         container = (SimpleContainer) getContainer();
-        manager = null; terminalPos = BlockPos.ZERO; startable = List.of();
+        manager = null; terminalPos = BlockPos.ZERO; terminalLevel = null; startable = List.of();
         playerId = playerInventory.player.getUUID();
     }
 
@@ -72,6 +73,7 @@ public class ExpeditionMenu extends ChestMenu {
         this.container = (SimpleContainer) this.getContainer();
         this.manager = manager;
         this.terminalPos = terminalPos;
+        this.terminalLevel = (net.minecraft.server.level.ServerLevel) playerInventory.player.level();
         this.playerId = playerInventory.player.getUUID();
         this.startable = manager.listStartable();
         // Preselect the expedition of the terminal's own dimension — the
@@ -185,14 +187,20 @@ public class ExpeditionMenu extends ChestMenu {
         }
         try {
             ExpeditionRun run = manager.startRun(player, terminalPos, options());
-            // Follow the actual aperture, including portals raised to clear an obstruction.
             BlockPos portal = ExpeditionManager.toPos(run.portal());
             var graft = net.minecraft.world.phys.Vec3.atBottomCenterOf(terminalPos).add(0, 0.75, 0);
             var aperture = net.minecraft.world.phys.Vec3.atCenterOf(portal);
-            for (int step = 0; step <= 6; step++) {
-                var spark = graft.lerp(aperture, step / 6.0);
-                player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
-                        spark.x, spark.y, spark.z, 2, 0.06, 0.03, 0.06, 0);
+            if (portal.getY() == terminalPos.getY()) {
+                var nearPost = graft.lerp(aperture, 0.5);
+                var crown = aperture.add(0, 1.85, 0);
+                sendSapTrail(player, graft, nearPost);
+                sendSapTrail(player, nearPost, nearPost.add(0, 1.65, 0));
+                sendSapTrail(player, nearPost.add(0, 1.65, 0), crown);
+                sendSapTrail(player, crown, aperture);
+                player.playNotifySound(net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_RESONATE,
+                        net.minecraft.sounds.SoundSource.BLOCKS, 0.55f, 0.7f);
+            } else {
+                sendSapTrail(player, graft, aperture);
             }
             player.closeContainer();
             player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
@@ -201,6 +209,15 @@ public class ExpeditionMenu extends ChestMenu {
                     player.getScoreboardName(), e.getMessage());
             player.sendSystemMessage(Component.literal(e.getMessage()));
             refresh();
+        }
+    }
+
+    private static void sendSapTrail(ServerPlayer player, net.minecraft.world.phys.Vec3 from,
+            net.minecraft.world.phys.Vec3 to) {
+        for (int step = 0; step <= 6; step++) {
+            var spark = from.lerp(to, step / 6.0);
+            player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
+                    spark.x, spark.y, spark.z, 2, 0.06, 0.03, 0.06, 0);
         }
     }
 
@@ -214,7 +231,8 @@ public class ExpeditionMenu extends ChestMenu {
             ExpeditionDefinition selected = startable.get(expeditionIndex);
             RequirementCheck check = manager.missingRequirements(playerId, selected);
             boolean trainingDone = guided() && manager.trainingComplete(playerId);
-            ready = check.isSatisfied() && !trainingDone;
+            var frame = WayrootFrame.inspect(terminalLevel, terminalPos);
+            ready = check.isSatisfied() && !trainingDone && frame.canOpen();
             List<Component> lore = new ArrayList<>();
             lore.add(Component.literal(selected.displayName()));
             lore.add(Component.literal(selected.dimension()));
@@ -279,6 +297,7 @@ public class ExpeditionMenu extends ChestMenu {
             requirements.add(Component.literal(ready ? "READY TO DEPLOY" : "REQUIREMENTS MISSING"));
             requirements.add(Component.literal("Your balance: " + manager.tokenBalance(playerId) + " tokens"));
             requirements.add(Component.literal(""));
+            requirements.add(Component.translatable(frame.messageKey()));
             if (trainingDone) requirements.add(Component.translatable("gui.expeditions.training_done"));
             for (String key : check.missingKeys()) requirements.add(Component.literal(proofHint(key)));
             if (check.missingTokens() > 0) requirements.add(Component.literal("Earn " + check.missingTokens() + " more tokens."));
