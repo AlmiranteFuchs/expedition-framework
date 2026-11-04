@@ -655,3 +655,12 @@ introduces practice and private portals through existing discovery chapters.
 This slice retains the existing stable journal gates, one-file save model and
 chunk ownership cleanup. New objective types and post-campaign charters remain
 future work.
+
+
+### Post-liberation return loop — alpha.27 development
+
+Aftergrowth Surveys are generated for loaded, adapter-supported dimensions
+whose campaign is cleared. The two-mark route uses the normal portal, party,
+navigation, and extraction lifecycle. It omits checkpoint hordes and timed
+bonuses. Extraction yields two Return Knots without advancing campaign counts
+or granting Hard/Brutal gear proof. Ordinary creatures and hazards remain.

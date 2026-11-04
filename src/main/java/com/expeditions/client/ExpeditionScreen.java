@@ -76,7 +76,9 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
 
     @Override public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
         String selected = line(ExpeditionMenu.SLOT_EXPEDITION, 0, "No expeditions available");
-        if (!mission.equals(selected)) { mission = selected; page = 0; }
+        String dimension = line(ExpeditionMenu.SLOT_EXPEDITION, 1, "");
+        String charter = selected + "\n" + dimension;
+        if (!mission.equals(charter)) { mission = charter; page = 0; }
         gui.fill(0, 0, width, height, 0x81221912);
         paper(gui, leftPos + 103, topPos, leftPos + imageWidth, topPos + imageHeight, 0xffe2cda5, 3);
         paper(gui, leftPos, topPos + 5, leftPos + 108, topPos + imageHeight - 4, 0xffd0b48b, 1);
@@ -85,7 +87,7 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         rootImpression(gui, leftPos + imageWidth - 35, topPos + 7);
         gui.drawString(font, Component.translatable("gui.expeditions.terminal"), leftPos + 13, topPos + 16, INK, false);
         gui.drawString(font, font.plainSubstrByWidth(selected, detailWidth - 22), column, topPos + 11, INK, false);
-        gui.drawString(font, font.plainSubstrByWidth(line(ExpeditionMenu.SLOT_EXPEDITION, 1, ""), detailWidth),
+        gui.drawString(font, font.plainSubstrByWidth(dimension, detailWidth),
                 column, topPos + 25, 0xff705539, false);
         gui.drawString(font, line(ExpeditionMenu.SLOT_EXPEDITION, 2, ""), leftPos + 13, topPos + 44, 0xff705539, false);
         gui.hLine(column, column + detailWidth - 1, topPos + 50, 0xffb09468);

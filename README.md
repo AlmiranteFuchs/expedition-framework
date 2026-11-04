@@ -26,6 +26,14 @@ The requirements leaf describes the frame's condition. Sealing a charter wakes
 the doorway. The first witness stump closes it and leaves the frame standing.
 A desk without a collar still uses its small overhead aperture.
 
+## Aftergrowth Surveys
+
+A cleared dimension offers an Aftergrowth Survey. These repeatable charters
+have two marks, no deployment fee and no checkpoint hordes. Natural creatures
+and terrain still shape the journey. Extract to earn two Return Knots for
+the Sap Jar. The survey has a fixed pace and difficulty, and parties can join
+without extending the route.
+
 ## Current starter progression (alpha.26)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make

@@ -3,6 +3,7 @@ package com.expeditions.server;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.CheckpointChallenge;
 import com.expeditions.core.Difficulty;
+import com.expeditions.core.FrontierProgression;
 import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
@@ -217,7 +218,9 @@ public final class ExpeditionManager {
                         .findFirst()
                         .orElseThrow(() -> new IllegalStateException(
                                 "Unknown or unavailable expedition: " + requested.expeditionId()));
-        if(FrontierThreat.rulesActive()) definition=prepareFrontier(definition);
+        if (FrontierThreat.rulesActive() && !FrontierProgression.isAftergrowth(definition)) {
+            definition = prepareFrontier(definition);
+        }
         boolean guided = ExpeditionOptions.FIRST_BEARING.equals(definition.id());
         if (guided && trainingComplete(player.getUUID())) {
             throw new IllegalStateException("First Bearing is already recorded. Try a Field Survey next.");
@@ -226,8 +229,11 @@ public final class ExpeditionManager {
                 || !(definition.route() instanceof RouteGeneration))) {
             throw new IllegalStateException("First Bearing needs a generated Overworld survey route");
         }
+        boolean aftergrowth = FrontierProgression.isAftergrowth(definition);
         var options = guided ? new ExpeditionOptions(definition.id(), Difficulty.STANDARD,
-                ExpeditionOptions.GUIDED_CHECKPOINTS, 0, true) : requested;
+                ExpeditionOptions.GUIDED_CHECKPOINTS, 0, true)
+                : aftergrowth ? new ExpeditionOptions(definition.id(), Difficulty.STANDARD, 2, 0, requested.solo())
+                : requested;
         RequirementCheck requirements = ledger.checkRequirements(
                 player.getUUID(), definition,
                 data.campaignState(definition.dimension()));
@@ -366,9 +372,11 @@ public final class ExpeditionManager {
         ledger.startRun(run);
         // Every expedition stirs the organism a little — pressure is the
         // dimension-wide threat counter hordes and waves read.
-        ExpeditionEventHandler.stirPressure(data, level, definition.dimension(),
-                ExpeditionTuning.integer(definition.dimension(), "pressure.per_run_start",
-                        ExpeditionsConfig.pressurePerRunStart()));
+        if (!aftergrowth) {
+            ExpeditionEventHandler.stirPressure(data, level, definition.dimension(),
+                    ExpeditionTuning.integer(definition.dimension(), "pressure.per_run_start",
+                            ExpeditionsConfig.pressurePerRunStart()));
+        }
         applyMemberEffects(run, player);
         applyWeather(run, level);
         data.setDirty();
@@ -438,7 +446,14 @@ public final class ExpeditionManager {
                 }
             }
         }
-        return List.copyOf(startable.values());
+        var offered = new ArrayList<>(startable.values());
+        for (ServerLevel loaded : server.getAllLevels()) {
+            String dimension = loaded.dimension().location().toString();
+            if (!data.isDimensionCleared(dimension)) continue;
+            var survey = FrontierProgression.aftergrowth(dimension);
+            if (!startable.containsKey(survey.id()) && isStartable(survey)) offered.add(survey);
+        }
+        return List.copyOf(offered);
     }
 
     private ExpeditionDefinition prepareFrontier(ExpeditionDefinition d) {
@@ -501,7 +516,7 @@ public final class ExpeditionManager {
             run.joinParty(player.getUUID());
             applyMemberEffects(run, player);
             ServerLevel runLevel = levelFor(run.definition().dimension());
-            if (runLevel != null) {
+            if (runLevel != null && !FrontierProgression.isAftergrowth(run.definition())) {
                 extendRouteForMember(run, runLevel);
             }
             player.displayClientMessage(Component.translatable(
@@ -696,12 +711,14 @@ public final class ExpeditionManager {
                 ledger.grantUnlock(member, RECLAIMING_GEAR + run.definition().dimension());
             }
         }
-        data.recordCampaignCompletion(run.definition().dimension());
-        ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
-                run.definition().dimension(),
-                ExpeditionTuning.integer(run.definition().dimension(),
-                        "pressure.per_run_completion",
-                        ExpeditionsConfig.pressurePerRunCompletion()));
+        if (!FrontierProgression.isAftergrowth(run.definition())) {
+            data.recordCampaignCompletion(run.definition().dimension());
+            ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
+                    run.definition().dimension(),
+                    ExpeditionTuning.integer(run.definition().dimension(),
+                            "pressure.per_run_completion",
+                            ExpeditionsConfig.pressurePerRunCompletion()));
+        }
         // The Big Bad is the campaign's payoff: beating it wins the
         // dimension — the same cleared mark the grind threshold sets.
         if (run.definition().bigBad()) {
@@ -728,7 +745,7 @@ public final class ExpeditionManager {
                 18, 0.3, 0.5, 0.3, 0.01);
         endRun(run);
         if (awardReturnKnots) {
-            int count = run.options().difficulty() == Difficulty.HARD
+            int count = FrontierProgression.isAftergrowth(run.definition()) || run.options().difficulty() == Difficulty.HARD
                     || run.options().difficulty() == Difficulty.BRUTAL ? 2 : 1;
             for (UUID member : run.party()) {
                 var online = member.equals(player.getUUID()) ? player : server.getPlayerList().getPlayer(member);
@@ -1203,7 +1220,7 @@ public final class ExpeditionManager {
             }
             return;
         }
-        if (run.options().guided() || !ExpeditionsConfig.challengesEnabled()) {
+        if (run.options().guided() || FrontierProgression.isAftergrowth(run.definition()) || !ExpeditionsConfig.challengesEnabled()) {
             return;
         }
         ServerLevel level = player.serverLevel();

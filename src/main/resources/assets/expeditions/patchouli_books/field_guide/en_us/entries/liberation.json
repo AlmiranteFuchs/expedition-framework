@@ -36,6 +36,16 @@
       "text": "marked map is not enough."
     },
     {
+      "type": "patchouli:text",
+      "title": "Quiet ground",
+      "text": "Come back once the Bloom is quiet. The Wayroot can lay a short Aftergrowth Survey through cleared country. Two marks and a hollow. The old creatures still wander there."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Quiet ground",
+      "text": "The hollow leaves two Return Knots when you bring the survey home. The ground remembers the way, even when the Bloom has let it go."
+    },
+    {
       "type": "patchouli:crafting",
       "recipe": "expeditions:severance_core"
     },

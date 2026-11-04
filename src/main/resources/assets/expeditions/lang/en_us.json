@@ -274,5 +274,7 @@
   "gui.expeditions.wayroot_frame_floor": "The arch needs solid ground under its opening.",
   "gui.expeditions.wayroot_frame_blocked": "Clear both blocks beneath the collar.",
   "gui.expeditions.wayroot_frame_busy": "The arch is holding another charter.",
-  "block.expeditions.graft_post": "Pale Graft Post"
+  "block.expeditions.graft_post": "Pale Graft Post",
+  "gui.expeditions.survey_fixed": "This survey has a fixed route and pace.",
+  "gui.expeditions.aftergrowth_brief": "Return to quiet ground. No checkpoint hordes. The hollow yields two Return Knots."
 }

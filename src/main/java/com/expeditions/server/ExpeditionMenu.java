@@ -114,6 +114,12 @@ public class ExpeditionMenu extends ChestMenu {
 
     private boolean guided() { return !startable.isEmpty() && isTraining(startable.get(expeditionIndex)); }
 
+    private boolean aftergrowth() {
+        return !startable.isEmpty() && com.expeditions.core.FrontierProgression.isAftergrowth(startable.get(expeditionIndex));
+    }
+
+    private boolean fixedRoute() { return guided() || aftergrowth(); }
+
     private ExpeditionOptions options() {
         return new ExpeditionOptions(startable.isEmpty()
                 ? "" : startable.get(expeditionIndex).id(),
@@ -158,16 +164,16 @@ public class ExpeditionMenu extends ChestMenu {
                 }
             }
             case SLOT_DIFFICULTY ->
-                { if (!guided()) difficultyIndex = Math.floorMod(difficultyIndex + step, Difficulty.values().length); }
+                { if (!fixedRoute()) difficultyIndex = Math.floorMod(difficultyIndex + step, Difficulty.values().length); }
             case SLOT_CHECKPOINTS -> {
-                if (!guided() && !startable.isEmpty() && startable.get(expeditionIndex).route() instanceof com.expeditions.core.RouteGeneration) {
+                if (!fixedRoute() && !startable.isEmpty() && startable.get(expeditionIndex).route() instanceof com.expeditions.core.RouteGeneration) {
                     int minimum = startable.get(expeditionIndex).objectives().stream().filter(o -> o.required())
                             .mapToInt(o -> o.checkpoint()).max().orElse(1);
                     do { checkpointsIndex = Math.floorMod(checkpointsIndex + step, CHECKPOINT_CHOICES.length); }
                     while (CHECKPOINT_CHOICES[checkpointsIndex] > 0 && CHECKPOINT_CHOICES[checkpointsIndex] < minimum);
                 }
             }
-            case SLOT_TIME -> { if (!guided()) timeIndex = Math.floorMod(timeIndex + step, TIME_CHOICES.length); }
+            case SLOT_TIME -> { if (!fixedRoute()) timeIndex = Math.floorMod(timeIndex + step, TIME_CHOICES.length); }
             case SLOT_PARTY -> { if (!guided()) solo = !solo; }
             case SLOT_START -> {
                 start(player);
@@ -266,11 +272,12 @@ public class ExpeditionMenu extends ChestMenu {
                         "gui.expeditions.expedition", lore));
             }
             List<Component> brief = new ArrayList<>();
-            int checkpoints = guided() ? ExpeditionOptions.GUIDED_CHECKPOINTS
+            int checkpoints = fixedRoute() ? 2
                     : CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]
                     : selected.route() instanceof com.expeditions.core.RouteGeneration generated
                             ? generated.checkpoints() : ((com.expeditions.core.ExpeditionRoute) selected.route()).checkpoints().size();
             brief.add(Component.literal("Route: " + checkpoints + " checkpoints, then extraction"));
+            if (aftergrowth()) brief.add(Component.translatable("gui.expeditions.aftergrowth_brief"));
             int bonuses = selected.bonusTokens() + selected.objectives().stream().mapToInt(o -> o.bonusTokens()).sum();
             if (guided()) {
                 brief.add(Component.translatable("gui.expeditions.training_brief"));
@@ -316,22 +323,22 @@ public class ExpeditionMenu extends ChestMenu {
             container.setItem(SLOT_READINESS, button(ready ? Items.LIME_DYE : Items.RED_DYE,
                     "gui.expeditions.requirements", requirements));
         }
-        Difficulty difficulty = guided() ? Difficulty.STANDARD : Difficulty.values()[difficultyIndex];
+        Difficulty difficulty = fixedRoute() ? Difficulty.STANDARD : Difficulty.values()[difficultyIndex];
         container.setItem(SLOT_DIFFICULTY, button(Items.IRON_SWORD,
                 "gui.expeditions.difficulty",
                 List.of(Component.literal(difficulty.name()),
                         Component.translatable("gui.expeditions.difficulty_hint",
                                 difficulty.hordePercent(), difficulty.rewardPercent()),
-                        Component.translatable(guided() ? "gui.expeditions.training_fixed" : "gui.expeditions.click_cycle"))));
+                        Component.translatable(fixedRoute() ? "gui.expeditions.survey_fixed" : "gui.expeditions.click_cycle"))));
         container.setItem(SLOT_CHECKPOINTS, button(Items.MAP,
                 "gui.expeditions.length",
                 List.of(Component.literal(routeSummary()),
-                        Component.translatable(guided() ? "gui.expeditions.training_fixed" : "gui.expeditions.click_cycle"))));
+                        Component.translatable(fixedRoute() ? "gui.expeditions.survey_fixed" : "gui.expeditions.click_cycle"))));
         container.setItem(SLOT_TIME, button(Items.CLOCK,
                 "gui.expeditions.time",
                 List.of(Component.literal(bonusWindowSummary()),
                         Component.literal("Changes the base time bonus; objective clocks stay fixed."),
-                        Component.translatable(guided() ? "gui.expeditions.training_fixed" : "gui.expeditions.click_cycle"))));
+                        Component.translatable(fixedRoute() ? "gui.expeditions.survey_fixed" : "gui.expeditions.click_cycle"))));
         container.setItem(SLOT_PARTY, button(Items.TRIAL_KEY, "gui.expeditions.party",
                 List.of(Component.translatable(guided() ? "gui.expeditions.party_guided"
                                 : solo ? "gui.expeditions.party_solo" : "gui.expeditions.party_open"),
@@ -353,7 +360,7 @@ public class ExpeditionMenu extends ChestMenu {
 
     private String routeSummary() {
         if (startable.isEmpty()) return "Unavailable";
-        if (guided()) return ExpeditionOptions.GUIDED_CHECKPOINTS + " checkpoints";
+        if (fixedRoute()) return "2 checkpoints";
         var route = startable.get(expeditionIndex).route();
         if (route instanceof com.expeditions.core.ExpeditionRoute authored) return authored.checkpoints().size() + " (authored)";
         int count = CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]

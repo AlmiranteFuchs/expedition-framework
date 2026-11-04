@@ -19,4 +19,20 @@ public final class FrontierProgression {
                 "Sever the Bloom: "+base.displayName(),3,base.dimension(),route,Math.max(60,base.tokenReward()),
                 20,20*900,List.of(),base.modifiers(),base.requires(),base.grants(),10,CampaignState.ESTABLISHED,true);
     }
+
+    public static String aftergrowthId(String dimension) {
+        return "expeditions:aftergrowth/" + dimension.replace(':', '/');
+    }
+
+    public static boolean isAftergrowth(ExpeditionDefinition definition) {
+        return !definition.bigBad() && definition.minCampaignState() == CampaignState.CLEARED
+                && definition.id().equals(aftergrowthId(definition.dimension()));
+    }
+
+    public static ExpeditionDefinition aftergrowth(String dimension) {
+        return new ExpeditionDefinition(aftergrowthId(dimension), "Aftergrowth Survey", 0, dimension,
+                new RouteGeneration(2, 28, 48, 28, 48, 6, 64, 128),
+                4, 0, 0, List.of(), ExpeditionModifiers.NONE,
+                java.util.Set.of(), java.util.Set.of(), 0, CampaignState.CLEARED, false);
+    }
 }
