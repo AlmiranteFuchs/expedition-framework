@@ -1,7 +1,6 @@
 package com.expeditions.block;
 
 import com.expeditions.block.entity.AssimilationHeartBlockEntity;
-import com.expeditions.core.PulseWave;
 import com.expeditions.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -15,16 +14,15 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * The microbiome's nucleus — a pale node that ignites ember on its
- * pulse; the assimilation's only growth organ. A full solid cube (sturdy on every
- * face) so the layer can seed directly onto it and crawl outward.
- * Breakable: destroying the heart is the counterplay — the colony goes
- * inert instantly.
- */
-public class AssimilationHeartBlock extends Block implements EntityBlock {
+/** The Shutter Bloom: a folded woody colony source. Registry identity is retained for old worlds. */
+public class AssimilationHeartBlock extends BloomSourceBlock implements EntityBlock {
     public AssimilationHeartBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override protected void onRemove(BlockState old,Level level,BlockPos pos,BlockState next,boolean moving){
+        if(old.getBlock()!=next.getBlock() && level instanceof net.minecraft.server.level.ServerLevel server && level.getBlockEntity(pos) instanceof AssimilationHeartBlockEntity be)be.hibernate(server);
+        super.onRemove(old,level,pos,next,moving);
     }
 
     @Nullable
@@ -33,33 +31,11 @@ public class AssimilationHeartBlock extends Block implements EntityBlock {
         return new AssimilationHeartBlockEntity(pos, state);
     }
 
-    /**
-     * The colony breathes where it lives: pale ash drifts off the heart,
-     * souls rise out of it, and embers spark only on the lub — the same
-     * beat the renderer glows to. Client display tick only.
-     */
-    @Override
-    public void animateTick(BlockState state, Level level, BlockPos pos,
-            RandomSource random) {
-        if (random.nextFloat() < 0.35f) {
-            level.addParticle(ParticleTypes.WHITE_ASH,
-                    pos.getX() + random.nextDouble(),
-                    pos.getY() + 1.05 + random.nextDouble() * 0.5,
-                    pos.getZ() + random.nextDouble(), 0, 0.004, 0);
-        }
-        if (random.nextFloat() < 0.07f) {
-            level.addParticle(ParticleTypes.SCULK_SOUL,
-                    pos.getX() + 0.5 + (random.nextDouble() - 0.5) * 0.7,
-                    pos.getY() + 0.9,
-                    pos.getZ() + 0.5 + (random.nextDouble() - 0.5) * 0.7,
-                    0, 0.035, 0);
-        }
-        if (PulseWave.amplitudeAt(level.getGameTime(), 0, pos.asLong()) > 0.8
-                && random.nextFloat() < 0.5f) {
-            level.addParticle(ParticleTypes.SMALL_FLAME,
-                    pos.getX() + random.nextDouble(), pos.getY() + 1.02,
-                    pos.getZ() + random.nextDouble(), 0, 0.012, 0);
-        }
+    @Override protected com.mojang.serialization.MapCodec<? extends net.minecraft.world.level.block.HorizontalDirectionalBlock> codec(){return simpleCodec(AssimilationHeartBlock::new);}
+
+    @Override public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        if(state.getValue(OPEN)>0 && random.nextInt(12)==0)
+            level.addParticle(ParticleTypes.WHITE_ASH,pos.getX()+.5,pos.getY()+.3,pos.getZ()+.5,0,.006,0);
     }
 
     @Nullable

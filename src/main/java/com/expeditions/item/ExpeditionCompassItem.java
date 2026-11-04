@@ -54,6 +54,21 @@ public class ExpeditionCompassItem extends Item {
     }
 
     @Override
+    public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
+        var target=localTarget(stack,level);
+        if(!level.isClientSide && target!=null && entity instanceof net.minecraft.server.level.ServerPlayer player
+                && (player.getInventory().contains(new ItemStack(com.expeditions.registry.ModItems.SURVEY_LENS.get())) || player.getOffhandItem().is(com.expeditions.registry.ModItems.SURVEY_LENS.get()))) {
+            if(ResonanceCellItem.spendCarried(player,com.expeditions.core.FieldEquipment.READING_COST)) {
+                long distance=Math.round(Math.hypot(target.pos().getX()+.5-player.getX(),target.pos().getZ()+.5-player.getZ()));
+                int elevation=target.pos().getY()-player.blockPosition().getY();
+                player.displayClientMessage(Component.translatable("equipment.expeditions.reading",distance,elevation>0?"+"+elevation:Integer.toString(elevation)),true);
+                player.containerMenu.broadcastChanges();
+            } else player.displayClientMessage(Component.translatable("equipment.expeditions.reading_empty"),true);
+        }
+        return stack;
+    }
+
+    @Override
     public int getUseDuration(ItemStack stack, LivingEntity entity) {
         return ATTUNEMENT_TICKS;
     }

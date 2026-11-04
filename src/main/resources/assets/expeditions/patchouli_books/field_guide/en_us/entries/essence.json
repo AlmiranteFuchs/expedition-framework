@@ -1,0 +1,70 @@
+{
+  "name": "A useful residue",
+  "icon": "expeditions:assimilation_essence",
+  "category": "expeditions:beginnings",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_essence",
+      "text": "A knot remains still on the bench, yet the resonator draws something from it. The needle settles only while the surrounding field is quiet. Resonance is the workshop name for that difference.",
+      "title": "A useful residue"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A held movement",
+      "text": "A Stillness Resonator supplies 20 Resonance per tick on sheltered or liberated ground. Nearby instruments share the same field; leave seven blocks between their centres for separate output."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The condenser",
+      "text": "Place a flake in the left slot and supply power. The right slot receives the refined essence. One flake needs 4000 Resonance and ten seconds of powered work."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The condenser",
+      "text": "The resonator does not burn its knot. Hoppers can feed the condenser and collect its result. Compatible FE equipment can supply power through the same connection. A redstone signal pauses a generator."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Keep a sample",
+      "text": "The refined material holds together better than the scrap it came from. Copper, glass and a little essence are enough for the next instruments."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Keep a sample",
+      "text": "The crafting pages record the preparations currently understood. Save a few samples before committing the whole stock to one project."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Read the instrument",
+      "text": "The machine names what is holding it back. Hover that line for details before adding more fuel."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Read the instrument",
+      "text": "A comparator against a source reads its stored Resonance. Against a condenser it reads finished essence stock. Use that signal to control a buffer or an automated feed; a full output pauses refining without spending power."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_field_journal",
+      "text": "Your discoveries belong to you. A replacement book remembers them."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_terminal",
+      "text": "Place it facing a safe space. A grafted arch can carry the aperture beside the desk."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:field_assay_kit",
+      "text": "Inspect a sealed sample with use. Sneak-use to draw a fresh, nonlethal sample."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:attunement_sigil",
+      "text": "Shapeless. Use the sigil against a terminal; proof is not consumed."
+    }
+  ],
+  "advancement": "expeditions:journal/essence"
+}

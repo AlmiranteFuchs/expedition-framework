@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:birch_log"
+    },
+    {
+      "item": "minecraft:birch_log"
+    },
+    {
+      "item": "expeditions:dormant_flake"
+    }
+  ],
+  "result": {
+    "id": "expeditions:graft_post",
+    "count": 2
+  }
+}

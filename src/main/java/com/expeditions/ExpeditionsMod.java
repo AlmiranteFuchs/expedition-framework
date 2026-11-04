@@ -28,8 +28,20 @@ public class ExpeditionsMod {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ExpeditionsMod(IEventBus modEventBus, ModContainer modContainer) {
+        com.expeditions.registry.ModFluids.TYPES.register(modEventBus);
+        com.expeditions.registry.ModFluids.FLUIDS.register(modEventBus);
+        modEventBus.addListener(com.expeditions.block.entity.SapVesselBlockEntity::registerCapabilities);
         ModBlocks.BLOCKS.register(modEventBus);
+        com.expeditions.registry.ModFeatures.FEATURES.register(modEventBus);
+        modEventBus.addListener(com.expeditions.block.entity.ResonanceMachineBlockEntity::registerCapabilities);
+        modEventBus.addListener(com.expeditions.item.ResonanceCellItem::registerCapabilities);
+        com.expeditions.registry.ModEntities.ENTITIES.register(modEventBus);
+        com.expeditions.registry.ModMenus.MENUS.register(modEventBus);
+        modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
+                event.put(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(),
+                        com.expeditions.entity.RootboundGuardian.attributes().build()));
         ModItems.ITEMS.register(modEventBus);
+        com.expeditions.registry.ModEffects.EFFECTS.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         ModAttachments.ATTACHMENTS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
@@ -37,14 +49,22 @@ public class ExpeditionsMod {
         modContainer.registerConfig(ModConfig.Type.SERVER, ExpeditionsConfig.SPEC);
 
         IEventBus gameBus = NeoForge.EVENT_BUS;
+        gameBus.addListener(com.expeditions.block.SapVesselBlock::allowRecyclingInteraction);
         gameBus.addListener(ExpeditionEventHandler::onLivingDeath);
         gameBus.addListener(ExpeditionEventHandler::onItemPickup);
+        gameBus.addListener(net.neoforged.bus.api.EventPriority.LOWEST, ExpeditionEventHandler::onBlockHarvested);
         gameBus.addListener(ExpeditionEventHandler::onPlayerLogin);
         gameBus.addListener(ExpeditionEventHandler::onServerStarted);
         gameBus.addListener(ExpeditionEventHandler::onServerTick);
         gameBus.addListener(ExpeditionEventHandler::onPlayerTick);
         gameBus.addListener(ExpeditionEventHandler::onEntityTick);
+        gameBus.addListener(com.expeditions.server.ChallengeOwnership::onJoin);
+        gameBus.addListener(com.expeditions.server.ChallengeOwnership::onLeave);
+        gameBus.addListener(com.expeditions.server.ChallengeOwnership::onSplit);
         gameBus.addListener(ExpeditionEventHandler::onLivingHurt);
+        gameBus.addListener(ExpeditionEventHandler::onPlayerClone);
+        gameBus.addListener(ExpeditionEventHandler::onFrontierDrops);
+        gameBus.addListener(ExpeditionEventHandler::onFrontierExperience);
         gameBus.addListener(ExpeditionEventHandler::onAddReloadListener);
         gameBus.addListener(ExpeditionEventHandler::onRegisterCommands);
         LOGGER.info("Expedition Framework initialized");

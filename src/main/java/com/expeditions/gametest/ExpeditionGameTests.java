@@ -119,6 +119,9 @@ public final class ExpeditionGameTests {
         // players tick once at the world spawn before teleporting.
         Microbiome.suppressSeedingForTests(true);
         Microbiome.suppressTraversalForTests(true);
+        com.expeditions.server.Stillness.suppressForTests(true);
+        com.expeditions.worldgen.DormantScarFeature.suppressForTests(true);
+        com.expeditions.server.FrontierThreat.suppressForTests(true);
         // Mock players stand near marker colonies for whole tests — without
         // this they'd be converted to effigies mid-assertion.
         Assimilation.suppressForTests(true);
@@ -357,8 +360,8 @@ public final class ExpeditionGameTests {
         // floor it can resolve, high above any island top.
         int[][] anchors = {{16, 0}, {32, 0}, {48, 0}};
         for (int[] a : anchors) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dz = -2; dz <= 4; dz++) {
                     end.setBlock(new BlockPos(a[0] + dx, 100, a[1] + dz),
                             Blocks.STONE.defaultBlockState(), 3);
                 }
@@ -1382,7 +1385,8 @@ public final class ExpeditionGameTests {
      * objective's bonus — awarded exactly once.
      */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_loot", batch = "expedition_w")
-    public static void objectivesProgressAndPayOut(GameTestHelper helper) {
+    public static void objectivesProgressAndPayOut(GameTestHelper helper)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         String json = """
                 {
                   "display_name": "Bounty Trial",
@@ -1400,7 +1404,13 @@ public final class ExpeditionGameTests {
                      "type": "collect_items", "tag": "minecraft:logs",
                      "count": 2, "bonus_tokens": 2},
                     {"id": "speedy", "description": "Finish within a minute",
-                     "type": "time_limit", "seconds": 60, "bonus_tokens": 7}
+                     "type": "time_limit", "seconds": 60, "bonus_tokens": 7},
+                    {"id": "bearing", "description": "Take an Overworld bearing",
+                     "type": "scout", "tag": "minecraft:is_overworld"}
+                  ],
+                  "commission_pool": [
+                    {"id": "bark", "description": "Cut a bark sample",
+                     "type": "harvest", "tag": "minecraft:logs", "count": 1}
                   ]
                 }
                 """;
@@ -1412,10 +1422,59 @@ public final class ExpeditionGameTests {
         try {
             ExpeditionDefinitions.reload(entries);
             ExpeditionRun run = startExpedition(helper, manager, player);
-            helper.assertTrue(run.definition().objectives().size() == 4,
-                    "all four objectives must be defined");
-            helper.assertTrue(run.objectiveStates().size() == 4,
+            helper.assertTrue(run.definition().objectives().size() == 6,
+                    "all six objectives must be defined");
+            helper.assertTrue(run.objectiveStates().size() == 6,
                     "every defined objective must be tracked from run start");
+            var restored = roundTrip(helper, helper.getLevel().getServer()).ledger()
+                    .activeRun(player.getUUID()).orElseThrow();
+            helper.assertTrue(restored.definition().commissionPool().isEmpty()
+                            && restored.objectiveState("bark").isPresent(),
+                    "the drawn commission persists as a fixed objective without rerolling");
+
+            var sample = new BlockPos(3, 1, 3);
+            player.setGameMode(GameType.SURVIVAL);
+            helper.setBlock(sample, Blocks.OAK_LOG);
+            player.gameMode.destroyBlock(helper.absolutePos(sample));
+            helper.assertTrue(!run.objectiveState("bark").orElseThrow().completed(),
+                    "cutting a log before entering the portal must not count");
+            manager.surveyBiome(player);
+            helper.assertTrue(!run.objectiveState("bearing").orElseThrow().completed(),
+                    "a bearing taken before entry does not count");
+            manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
+            manager.surveyBiome(player);
+            helper.assertTrue(run.objectiveState("bearing").orElseThrow().completed(),
+                    "surveying a matching biome during a run takes the bearing");
+            var fieldSample = player.blockPosition().above(2);
+            player.serverLevel().setBlockAndUpdate(fieldSample, Blocks.OAK_LOG.defaultBlockState());
+            helper.assertTrue(player.getInventory().countItem(ModItems.EXPEDITION_COMPASS.get()) == 1,
+                    "entering the field issues the compass");
+            helper.assertTrue(player.serverLevel().getBlockState(fieldSample).is(net.minecraft.tags.BlockTags.LOGS),
+                    "the field sample belongs to the loaded logs block tag");
+            helper.assertTrue(player.gameMode.destroyBlock(fieldSample), "the field sample can be harvested");
+            helper.assertTrue(run.objectiveState("bark").orElseThrow().completed(),
+                    "a tagged block harvested in the field must count");
+            var orders = new java.util.ArrayList<Component>();
+            var capture = new net.minecraft.commands.CommandSource() {
+                @Override public void sendSystemMessage(Component text) { orders.add(text); }
+                @Override public boolean acceptsSuccess() { return true; }
+                @Override public boolean acceptsFailure() { return true; }
+                @Override public boolean shouldInformAdmins() { return false; }
+            };
+            helper.getLevel().getServer().getCommands().getDispatcher().execute("expeditions status",
+                    player.createCommandSourceStack().withSource(capture));
+            helper.assertTrue(orders.stream().anyMatch(line -> line.getContents()
+                            instanceof net.minecraft.network.chat.contents.TranslatableContents order
+                            && order.getKey().equals("message.expeditions.field_order_optional")
+                            && order.getArgs()[0].equals("Cut a bark sample")),
+                    "the status command shows the actual field commission");
+            var journal = new ItemStack(ModItems.EXPEDITION_FIELD_JOURNAL.get());
+            player.setItemInHand(InteractionHand.OFF_HAND, journal);
+            journal.getItem().use(helper.getLevel(), player, InteractionHand.OFF_HAND);
+            var report = journal.get(DataComponents.WRITTEN_BOOK_CONTENT);
+            helper.assertTrue(report != null && report.getPages(false).getFirst().getSiblings().stream()
+                            .anyMatch(orders::contains),
+                    "the held journal stores the same resolved orders as the status command");
 
             manager.activateCheckpoint(player,
                     ExpeditionManager.toPos(run.checkpoints().get(0)));
@@ -1692,7 +1751,8 @@ public final class ExpeditionGameTests {
         int drops = 0;
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())) {
+            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())
+                    || stack.is(ModItems.RETURN_KNOT.get())) {
                 continue;
             }
             helper.assertTrue(pool.contains(stack.getItem()),
@@ -1739,7 +1799,8 @@ public final class ExpeditionGameTests {
         int drops = 0;
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())) {
+            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())
+                    || stack.is(ModItems.RETURN_KNOT.get())) {
                 continue;
             }
             helper.assertTrue(pool.contains(stack.getItem()),
@@ -1751,47 +1812,122 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
-    /**
-     * `/expeditions redeem` is the token sink: it deducts the configured cost
-     * exactly once and grants items from the player's current-dimension pool;
-     * with an insufficient balance it refuses without touching the balance.
-     */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_opts", batch = "expedition_x")
-    public static void redeemConvertsTokensToSupplies(GameTestHelper helper) {
-        MinecraftServer server = helper.getLevel().getServer();
-        ExpeditionManager manager = ExpeditionManager.get(server);
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        int cost = ExpeditionsConfig.redeemTokenCost();
-
-        helper.assertTrue(!manager.redeemTokens(player),
-                "redeem with a zero balance must refuse");
-        helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
-                "a refused redeem must not touch the balance");
-
-        savedData(server).ledger().addTokens(player.getUUID(), cost * 2);
-        helper.assertTrue(manager.redeemTokens(player), "first redeem must succeed");
-        helper.assertTrue(manager.tokenBalance(player.getUUID()) == cost,
-                "balance must drop by the redeem cost, was "
-                        + manager.tokenBalance(player.getUUID()));
-
-        List<Item> pool = ItemRewards.pool("minecraft:overworld");
-        int drops = 0;
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty()) {
-                continue;
-            }
-            helper.assertTrue(pool.contains(stack.getItem()),
-                    "redeemed item " + stack.getItem() + " must come from the dimension pool");
-            drops++;
+    public static void basinSettlesOnlyProvenAffordableClaims(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var manager = ExpeditionManager.get(level.getServer());
+        var player = helper.makeMockServerPlayerInLevel();
+        var position = helper.absolutePos(new BlockPos(2, 1, 2));
+        level.setBlockAndUpdate(position, ModBlocks.RECLAIMING_BASIN.get().defaultBlockState());
+        player.moveTo(position.getX() + 0.5, position.getY(), position.getZ() + 1.5);
+        var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(position);
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
+                com.expeditions.registry.ModFluids.SAP.get(), 2000), execute);
+        var ledger = savedData(level.getServer()).ledger();
+        ledger.addTokens(player.getUUID(), 20);
+        var locked = new com.expeditions.server.ReclaimingMenu(1, player.getInventory(), level, position);
+        var pickup = net.minecraft.world.inventory.ClickType.PICKUP;
+        locked.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "unproven traces cannot take sap");
+        ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:overworld");
+        var menu = new com.expeditions.server.ReclaimingMenu(2, player.getInventory(), level, position);
+        menu.clicked(2, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "gear requires the hard charter trace");
+        menu.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 1750, "materials spend 250 mB");
+        var material = player.getInventory().items.stream().filter(stack -> !stack.isEmpty()).findFirst().orElseThrow();
+        helper.assertTrue(!(material.getItem() instanceof net.minecraft.world.item.BlockItem)
+                        && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(material.getItem()).getNamespace().equals("minecraft"),
+                "a vanilla trace yields a non-block item from its owning namespace");
+        player.getInventory().clearContent();
+        ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming_gear/minecraft:overworld");
+        menu.clicked(2, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 750
+                        && player.getInventory().items.stream().anyMatch(stack -> !stack.isEmpty())
+                        && manager.tokenBalance(player.getUUID()) == 20,
+                "unlocked gear spends 1000 mB and leaves charter tokens alone");
+        for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
+            player.getInventory().setItem(slot, new ItemStack(Items.DIRT, 64));
         }
-        helper.assertTrue(drops > 0, "redeem must grant at least one item");
+        menu.clicked(1, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 750, "a full inventory must leave sap intact");
+        helper.succeed();
+    }
 
-        helper.assertTrue(manager.redeemTokens(player), "second redeem must also succeed");
-        helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
-                "balance must reach exactly zero, was " + manager.tokenBalance(player.getUUID()));
-        helper.assertTrue(!manager.redeemTokens(player),
-                "a third redeem must refuse on the drained balance");
+    @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_opts", batch = "sap_workshop")
+    public static void sapBrewsBucketsAndMovesThroughRootwick(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.SURVIVAL);
+        var jar = helper.absolutePos(new BlockPos(1, 1, 2));
+        var wick = jar.east();
+        var bowl = wick.east();
+        level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
+        level.setBlockAndUpdate(bowl, ModBlocks.RECLAIMING_BASIN.get().defaultBlockState());
+        player.moveTo(jar.getX() + 0.5, jar.getY(), jar.getZ() + 1.5);
+        var cap = net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK;
+        var from = level.getCapability(cap, jar, Direction.EAST);
+        var to = level.getCapability(cap, bowl, Direction.WEST);
+        helper.assertTrue(from != null && to != null, "standard block fluid capabilities are available");
+        player.getInventory().setItem(1, new ItemStack(ModItems.RETURN_KNOT.get()));
+        player.getInventory().setItem(2, new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
+        var hand = InteractionHand.MAIN_HAND;
+        player.setItemInHand(hand, new ItemStack(Items.WATER_BUCKET));
+        var jarHit = new BlockHitResult(Vec3.atCenterOf(jar), Direction.UP, jar, false);
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
+        helper.assertTrue(from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET)
+                        && player.getInventory().countItem(ModItems.RETURN_KNOT.get()) == 0
+                        && player.getInventory().countItem(ModItems.ASSIMILATION_ESSENCE.get()) == 0,
+                "water, Essence and a knot brew exactly one bucket");
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
+        helper.assertTrue(player.getItemInHand(hand).is(ModItems.RETURN_SAP_BUCKET.get())
+                        && from.getFluidInTank(0).isEmpty(), "an empty bucket retrieves a full bucket of sap");
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand,
+                new BlockHitResult(Vec3.atCenterOf(bowl), Direction.UP, bowl, false));
+        helper.assertTrue(to.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET),
+                "a sap bucket fills the basin");
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        from.fill(to.drain(1000, execute), execute);
+        level.setBlockAndUpdate(wick, ModBlocks.ROOTWICK.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING, Direction.EAST));
+        helper.succeedWhen(() -> {
+            int moved = to.getFluidInTank(0).getAmount();
+            helper.assertTrue(moved >= 25, "rootwick must deliver sap to the basin");
+            helper.assertTrue(moved <= 50 && moved + from.getFluidInTank(0).getAmount() == 1000,
+                    "rootwick must transfer at its slow rate without creating sap");
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_opts", batch = "sap_recycling")
+    public static void sapJarRecyclesHeldItemsAndHopperInputs(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.SURVIVAL);
+        var jar = helper.absolutePos(new BlockPos(1, 1, 2));
+        level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
+        player.moveTo(jar.getX() + 0.5, jar.getY(), jar.getZ() + 1.5);
+        var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(jar);
+        var hand = InteractionHand.MAIN_HAND;
+        player.setItemInHand(hand, new ItemStack(Items.DIRT, 16));
+        player.setShiftKeyDown(true);
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand,
+                new BlockHitResult(Vec3.atCenterOf(jar), Direction.UP, jar, false));
+        player.setShiftKeyDown(false);
+        helper.assertTrue(player.getItemInHand(hand).isEmpty() && vessel.tank().getFluidAmount() == 16,
+                "sneaking with a held block recycles it instead of placing it");
+        var chute = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK, jar, Direction.UP);
+        var sticks = new ItemStack(Items.STICK, 8);
+        helper.assertTrue(chute != null && chute.insertItem(0, sticks, true).isEmpty()
+                        && vessel.tank().getFluidAmount() == 16, "automation simulation must not brew sap");
+        helper.assertTrue(chute.insertItem(0, sticks, false).isEmpty() && vessel.tank().getFluidAmount() == 24,
+                "top-fed automation consumes the accepted items");
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
+                com.expeditions.registry.ModFluids.SAP.get(), 3975), execute);
+        helper.assertTrue(chute.insertItem(0, sticks, false).getCount() == 7
+                        && vessel.tank().getFluidAmount() == 4000 && sticks.getCount() == 8,
+                "a nearly full jar accepts only whole items that fit and returns the remainder");
         helper.succeed();
     }
 
@@ -2555,12 +2691,14 @@ public final class ExpeditionGameTests {
      */
     @GameTest(template = "arena", timeoutTicks = 600, templateNamespace = "expeditions_def", batch = "expedition_def")
     public static void defenseSurvivesAndPays(GameTestHelper helper) {
+        // This async siege stays active while later defense tests run. Its
+        // markers must not occupy their authored columns at 64/72/80,64.
         String json = """
                 {
                   "display_name": "Siege Trial",
                   "dimension": "minecraft:overworld",
-                  "checkpoints": [[64, 64], [72, 64]],
-                  "exit": [80, 64],
+                  "checkpoints": [[164, 164], [172, 164]],
+                  "exit": [180, 164],
                   "tokens": 10,
                   "objectives": [
                     {"id": "siege", "description": "Hold the device",
@@ -3090,7 +3228,7 @@ public final class ExpeditionGameTests {
         return level.getEntitiesOfClass(
                 net.minecraft.world.entity.item.ItemEntity.class,
                 new net.minecraft.world.phys.AABB(pos).inflate(1.5),
-                e -> e.getItem().is(ModItems.ASSIMILATION_ESSENCE.get())).size();
+                e -> e.getItem().is(ModItems.DORMANT_FLAKE.get())).size();
     }
 
     // ---- checkpoint credits (M9) ----------------------------------------------
@@ -3526,9 +3664,10 @@ public final class ExpeditionGameTests {
                 data.recordCampaignCompletion(dim);
             }
             helper.assertTrue(data.campaignState(dim)
-                            == com.expeditions.core.CampaignState.CLEARED
-                            && data.isDimensionCleared(dim),
-                    "the cleared threshold must mark the dimension won");
+                            == com.expeditions.core.CampaignState.ESTABLISHED
+                            && !data.isDimensionCleared(dim),
+                    "routine completions must not bypass the liberation guardian");
+            data.setDimensionCleared(dim);
             helper.assertTrue(!Microbiome.enabled(helper.getLevel()),
                     "a won dimension must silence the microbiome");
 
@@ -3676,11 +3815,13 @@ public final class ExpeditionGameTests {
             var kinds = salvage.objectives().stream()
                     .map(ExpeditionObjective::kind).toList();
             for (ObjectiveKind kind : List.of(ObjectiveKind.VISIT_CHECKPOINT,
-                    ObjectiveKind.RECOVER_ARTIFACT, ObjectiveKind.DEFEND_DEVICE,
-                    ObjectiveKind.COLLECT_ITEMS, ObjectiveKind.TIME_LIMIT)) {
+                    ObjectiveKind.RECOVER_ARTIFACT, ObjectiveKind.DEFEND_DEVICE)) {
                 helper.assertTrue(kinds.contains(kind),
                         "deep_salvage must compose a " + kind + " objective");
             }
+            helper.assertTrue(salvage.commissionPool().stream().map(ExpeditionObjective::kind).toList()
+                            .equals(List.of(ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT, ObjectiveKind.SCOUT)),
+                    "deep_salvage offers harvest, timed or biome commissions");
             boolean refused = false;
             try {
                 manager.startRun(player, terminalPos,
@@ -3784,6 +3925,7 @@ public final class ExpeditionGameTests {
         String dim = helper.getLevel().dimension().location().toString();
         int interval = ExpeditionsConfig.pressureDwellIntervalTicks();
         int amount = ExpeditionsConfig.pressureDwellAmount();
+        data.resetCampaign(dim);
         data.resetPressure(dim);
         try {
             player.tickCount = interval;
@@ -3815,11 +3957,12 @@ public final class ExpeditionGameTests {
      * colony claimed them. Imbued armor slows the take but can't stop it.
      */
     @GameTest(template = "arena", timeoutTicks = 800, templateNamespace = "expeditions_mic", batch = "expedition_mic")
-    public static void assimilationInfectsNearHeart(GameTestHelper helper) {
+    public static void assimilationRequiresContact(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         BlockPos heartPos = helper.absolutePos(new BlockPos(6, 1, 6));
         int interval = ExpeditionsConfig.infectionIntervalTicks();
+        savedData(level.getServer()).resetCampaign(level.dimension().location().toString());
         try {
             Assimilation.suppressForTests(false);
             level.setBlock(heartPos,
@@ -3835,24 +3978,25 @@ public final class ExpeditionGameTests {
 
             player.tickCount = interval;
             Assimilation.onPlayerTick(player);
-            helper.assertTrue(Assimilation.infection(player) > 0,
-                    "heart proximity must infect the player (hearts="
-                            + AssimilationHeartBlockEntity.liveHearts(
-                                    level.dimension().location().toString())
-                            + ", microbiomeEnabled=" + Microbiome.enabled(level)
-                            + ", pos=" + player.blockPosition() + ")");
+            helper.assertTrue(Assimilation.infection(player) == 0,
+                    "proximity without contact must never infect");
+            Assimilation.onContact(player);
+            Assimilation.onPlayerTick(player);
+            helper.assertTrue(Assimilation.infection(player)>0,"queued direct contact must infect");
 
             Assimilation.infect(player, ExpeditionsConfig.infectionStage1At());
+            Assimilation.onContact(player);
             player.tickCount = interval * 2;
             Assimilation.onPlayerTick(player);
-            helper.assertTrue(player.hasEffect(MobEffects.DARKNESS),
-                    "stage 1 must whisper in the dark");
-            helper.assertTrue(player.hasEffect(MobEffects.CONFUSION),
-                    "stage 1 must disorient");
+            helper.assertTrue(!player.hasEffect(MobEffects.DARKNESS),
+                    "infection must preserve normal view distance");
+            helper.assertTrue(!player.hasEffect(MobEffects.CONFUSION),
+                    "infection must never apply nausea");
             helper.assertTrue(player.getData(ModAttachments.ASSIMILATED) == 1,
                     "stage 1 must mark the player for the client overlay");
 
             Assimilation.infect(player, ExpeditionsConfig.infectionStage3At());
+            Assimilation.onContact(player);
             player.tickCount = interval * 3;
             Assimilation.onPlayerTick(player);
             helper.assertTrue(player.hasEffect(MobEffects.POISON),
@@ -3867,6 +4011,7 @@ public final class ExpeditionGameTests {
                             .getHolderOrThrow(Enchantments.PROTECTION), 1);
             player.setItemSlot(EquipmentSlot.CHEST, chest);
             double before = Assimilation.infection(player);
+            Assimilation.onContact(player);
             player.tickCount = interval * 4;
             Assimilation.onPlayerTick(player);
             helper.assertTrue(Assimilation.infection(player) - before
@@ -3875,6 +4020,7 @@ public final class ExpeditionGameTests {
 
             player.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
             Assimilation.infect(player, ExpeditionsConfig.infectionMax() - 0.5);
+            Assimilation.onContact(player);
             player.tickCount = interval * 5;
             Assimilation.onPlayerTick(player);
             helper.assertTrue(!player.isAlive(),
@@ -3894,14 +4040,12 @@ public final class ExpeditionGameTests {
     }
 
     /**
-     * The field journal: right-click writes a live survey onto its own pages
-     * (dimension pressure is readable as "Awareness"), and the assay page
-     * stays blank until sneak-use spends health on a blood sample — which
-     * must latch on the stack's custom data, not the player.
+     * The journal holds survey records; the separate assay kit pays for and
+     * stores a dated blood measurement without moving the patient.
      */
     @GameTest(template = "arena", templateNamespace = "expeditions",
             timeoutTicks = 200, batch = "expedition_journal")
-    public static void fieldJournalReportsSurveyAndBlood(GameTestHelper helper) {
+    public static void fieldJournalAndAssayHaveSeparateJobs(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         // Mock players report isCreative() true — the journal's bloodletting
@@ -3928,24 +4072,29 @@ public final class ExpeditionGameTests {
                     .map(Component::getString).reduce("", String::concat);
             helper.assertTrue(all.contains("Awareness: 37"),
                     "survey must report the dimension's pressure, got: " + all);
-            helper.assertTrue(all.contains("These pages stay blank"),
-                    "the assay must stay blank before blood is given");
+            helper.assertTrue(report.getPages(false).size() == 2 && !all.contains("Infection:"),
+                    "the journal must contain expedition/survey records, not an infection assay");
 
             player.setShiftKeyDown(true);
             float health = player.getHealth();
             ModItems.EXPEDITION_FIELD_JOURNAL.get()
                     .use(level, player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(player.getHealth() == health, "sneaking with the journal must never draw blood");
+            ItemStack kit = new ItemStack(ModItems.FIELD_ASSAY_KIT.get());
+            player.setItemInHand(InteractionHand.MAIN_HAND, kit);
+            var motionBeforeSample = player.getDeltaMovement();
+            ModItems.FIELD_ASSAY_KIT.get().use(level, player, InteractionHand.MAIN_HAND);
             helper.assertTrue(player.getHealth() < health,
                     "the blood sample must cost blood");
+            helper.assertTrue(player.getDeltaMovement().equals(motionBeforeSample),
+                    "drawing a sample must never knock the patient off a ledge");
             player.setShiftKeyDown(false);
-
-            ModItems.EXPEDITION_FIELD_JOURNAL.get()
-                    .use(level, player, InteractionHand.MAIN_HAND);
-            report = journal.get(DataComponents.WRITTEN_BOOK_CONTENT);
-            all = report.getPages(false).stream()
-                    .map(Component::getString).reduce("", String::concat);
-            helper.assertTrue(all.contains("Infection: 40%"),
-                    "a blooded journal must assay infection, got: " + all);
+            var sample = com.expeditions.item.FieldAssayKitItem.record(kit);
+            helper.assertTrue(sample.getInt("Percent") == 40, "the separate kit must measure infection");
+            Assimilation.infect(player, 0);
+            ModItems.FIELD_ASSAY_KIT.get().use(level, player, InteractionHand.MAIN_HAND);
+            helper.assertTrue(com.expeditions.item.FieldAssayKitItem.record(kit).getInt("Percent") == 40,
+                    "opening a sealed sample must not pretend to take a new live reading");
         } finally {
             Assimilation.infect(player, 0);
             data.resetPressure(dimension);
@@ -3959,7 +4108,7 @@ public final class ExpeditionGameTests {
 
     /**
      * The Big Bad: a flagged expedition turns its final checkpoint into the
-     * boss assault — a buffed pack — and completing the run wins the whole
+     * original guardian encounter; only its confirmed death and extraction win the whole
      * dimension (the cleared mark the microbiome reads).
      */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_mic", batch = "expedition_mic")
@@ -3990,11 +4139,39 @@ public final class ExpeditionGameTests {
             // must field the boss pack, not a standard horde.
             manager.activateCheckpoint(player,
                     ExpeditionManager.toPos(run.checkpoints().get(0)));
-            helper.assertTrue(run.challengeEntities().size()
-                            >= ExpeditionsConfig.bossPackSize(),
-                    "the final checkpoint must field the boss pack, got "
-                            + run.challengeEntities().size());
+            helper.assertTrue(run.guardianEncounter().isPresent(), "the final checkpoint must bind a guardian");
+            UUID guardianId = run.guardianEncounter().orElseThrow().entityId();
+            Entity guardian = findEntity(player.serverLevel(), ExpeditionManager.toPos(run.checkpoints().getFirst()),
+                    ExpeditionsConfig.challengeHordeSpawnRadius(), guardianId);
+            helper.assertTrue(guardian instanceof com.expeditions.entity.RootboundGuardian,
+                    "the encounter must field the original guardian entity");
+            boolean refused = false;
+            try { manager.completeRun(player); } catch (IllegalStateException expected) { refused = true; }
+            helper.assertTrue(refused && run.isActive() && !data.isDimensionCleared(dim),
+                    "extraction before guardian death must not clear or reward the run");
+            var restored = ExpeditionSavedData.load(data.save(new CompoundTag(), server.registryAccess()), server.registryAccess());
+            helper.assertTrue(restored.ledger().activeRun(player.getUUID()).orElseThrow().guardianEncounter().equals(run.guardianEncounter()),
+                    "the bound guardian must survive a SavedData round trip");
+            java.util.function.Consumer<net.neoforged.neoforge.event.entity.living.LivingDeathEvent> veto = event -> {
+                if (event.getEntity() == guardian) event.setCanceled(true);
+            };
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(veto);
+            try {
+                ((com.expeditions.entity.RootboundGuardian) guardian).hurt(player.serverLevel().damageSources().genericKill(), 10000);
+                helper.assertTrue(!run.guardianDefeated(), "a canceled death must never grant guardian proof");
+            } finally {
+                net.neoforged.neoforge.common.NeoForge.EVENT_BUS.unregister(veto);
+            }
+            ((com.expeditions.entity.RootboundGuardian) guardian).setHealth(180);
+            guardian.invulnerableTime = 0;
+            ((com.expeditions.entity.RootboundGuardian) guardian).hurt(player.serverLevel().damageSources().genericKill(), 10000);
+            helper.assertTrue(run.guardianDefeated(), "a real accepted guardian death must unlock extraction");
+            restored = ExpeditionSavedData.load(data.save(new CompoundTag(), server.registryAccess()), server.registryAccess());
+            helper.assertTrue(restored.ledger().activeRun(player.getUUID()).orElseThrow().guardianDefeated(),
+                    "confirmed defeat must survive save/load without another fight");
+            helper.assertTrue(!data.hasGuardianLiberation(dim),"guardian death alone must not grant severed-core power before extraction");
             manager.completeRun(player);
+            helper.assertTrue(data.hasGuardianLiberation(dim),"accepted guardian defeat and extraction must grant persistent resonance-source proof");
             helper.assertTrue(data.isDimensionCleared(dim),
                     "beating the Big Bad must win the dimension");
             helper.assertTrue(data.campaignState(dim)
@@ -4006,6 +4183,41 @@ public final class ExpeditionGameTests {
                 failRunIfActive(manager, player);
             }
             ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", templateNamespace = "expeditions_mic", batch = "guardian_peaceful")
+    public static void aPeacefulToggleCannotDiscardTheRequiredGuardian(GameTestHelper helper) {
+        var guardian = com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get().create(helper.getLevel());
+        var worldData = helper.getLevel().getServer().getWorldData();
+        var previous = worldData.getDifficulty();
+        try {
+            worldData.setDifficulty(net.minecraft.world.Difficulty.PEACEFUL);
+            guardian.checkDespawn();
+            helper.assertTrue(!guardian.isRemoved(), "a required encounter cannot disappear on a peaceful toggle");
+        } finally {
+            worldData.setDifficulty(previous);
+            guardian.discard();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", templateNamespace = "expeditions_mic", batch = "guardian_phase_save")
+    public static void guardianPhaseAndHealthSurviveEntityReload(GameTestHelper helper) {
+        var guardian = com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get().create(helper.getLevel());
+        var copy = com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get().create(helper.getLevel());
+        try {
+            guardian.setArena(helper.absolutePos(new BlockPos(3, 1, 3)));
+            guardian.setHealth(70);
+            guardian.tick();
+            helper.assertTrue(guardian.enraged(), "half health must enter the second phase");
+            copy.load(guardian.saveWithoutId(new CompoundTag()));
+            helper.assertTrue(copy.enraged() && copy.getHealth() == 70,
+                    "entity reload must preserve phase and health");
+            helper.assertTrue(copy.windupTicks() == 0, "reload must restart with a fresh reaction window");
+        } finally {
+            guardian.discard(); copy.discard();
         }
         helper.succeed();
     }
@@ -4114,7 +4326,7 @@ public final class ExpeditionGameTests {
 
         heart.pulse(level);
         helper.assertTrue(heart.colony().size() == 1,
-                "the first pulse must seed a layer on the heart, got "
+                "the first pulse must seed one supported host face, got "
                         + heart.colony().size());
 
         int cap = ExpeditionsConfig.microbiomeMaxColonySize();
@@ -4321,6 +4533,7 @@ public final class ExpeditionGameTests {
         ServerLevel level = helper.getLevel();
         String dim = level.dimension().location().toString();
         ExpeditionSavedData data = savedData(level.getServer());
+        data.resetCampaign(dim);
         try {
             helper.assertTrue(Microbiome.enabled(level),
                     "an unmarked dimension must allow the microbiome");
@@ -4725,7 +4938,13 @@ public final class ExpeditionGameTests {
                         || at.is(ModBlocks.EXPEDITION_EXIT.get()),
                 "marker must be placed at " + pos);
         BlockState above = level.getBlockState(pos.above());
-        helper.assertTrue(above.isAir() || above.canBeReplaced(),
+        boolean hollowAperture = at.is(ModBlocks.EXPEDITION_EXIT.get())
+                && at.getValue(com.expeditions.block.ExpeditionExitBlock.GROWN)
+                && above.is(ModBlocks.RECALL_TREE_PART.get())
+                && above.getValue(com.expeditions.block.RecallTreePartBlock.PART) == 7
+                && above.getCollisionShape(level, pos.above()).isEmpty()
+                && com.expeditions.server.RecallTrees.intact(level, pos);
+        helper.assertTrue(above.isAir() || above.canBeReplaced() || hollowAperture,
                 "destination must have free headroom at " + pos);
         BlockState floor = level.getBlockState(pos.below());
         helper.assertTrue(floor.isFaceSturdy(level, pos.below(), Direction.UP),

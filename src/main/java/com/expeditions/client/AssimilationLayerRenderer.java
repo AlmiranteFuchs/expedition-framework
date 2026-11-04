@@ -2,6 +2,9 @@ package com.expeditions.client;
 
 import com.expeditions.block.entity.AssimilationLayerBlockEntity;
 import com.expeditions.core.PulseWave;
+import com.expeditions.core.BloomSurfacePattern;
+import com.expeditions.core.BloomBoundary;
+import com.expeditions.block.AssimilationConnections;
 import com.expeditions.registry.ModBlocks;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -33,14 +36,13 @@ import net.neoforged.neoforge.client.model.data.ModelData;
  * state, model and any block entity render exactly as before; we simply
  * hide its color under its own grayscale copy.
  *
- * <p>Over the skin, two living passes: the bone-pale vein trace (translucent,
- * alpha riding the colony's heartbeat) and an additive ember halo that
- * blooms on the thump — pale when dormant, ignited when alive, the Pale
- * Garden's dormant/ember duality. The wave originates at the cell's
+ * <p>Over the skin, sparse pale rootlets preserve the host's material identity.
+ * Only the small ember knots pulse; the roots take ordinary world lighting.
+ * The wave originates at the cell's
  * recorded heart and arrives
  * later the farther the cell sits from it — the colony visibly beats
- * outward from its nucleus. A cell whose heart died falls back to the
- * resting thrum; a hand-placed membrane beats a faint solo rhythm.
+ * outward from its nucleus. A cell whose heart died retains an ashen scar
+ * without a pulse; hand-placed growth beats a faint solo rhythm.
  *
  * <p>Blocks whose face exposes no baked sprite (custom renderers, BER-only
  * blocks) get the generic membrane texture instead — the layer still
@@ -50,6 +52,10 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     /** Bundled fallback for faces with no resolvable sprite. */
     static final ResourceLocation MEMBRANE =
             ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_layer.png");
+    private static final ResourceLocation ROOT_EMBERS =
+            ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_connections_embers.png");
+    private static final ResourceLocation CONNECTED_ROOTS =
+            ResourceLocation.fromNamespaceAndPath("expeditions", "textures/block/assimilation_connections.png");
 
     /** Offset of the skin into the layer cell, off the covered face. */
     static final double EPS = 1.0 / 512.0;
@@ -57,7 +63,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     /** Overlay light: always bright, regardless of the cell's lighting. */
     static final int FULLBRIGHT = 0xF000F0;
 
-    /** Ember tint for the additive halo — the heart's ignition color. */
+    /** Shared ignition tint used by the heart's aura. */
     static final float[] EMBER = {1.0f, 0.55f, 0.15f};
 
     /** Directional face shading, lifted from vanilla's factors (down 0.5,
@@ -89,10 +95,11 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
 
         // The wave radiates from the colony's heart: same lub-dub
         // everywhere, delayed per block of distance. A recorded-but-dead
-        // heart leaves only the resting thrum — the film stays, the life
-        // is gone; hand-placed membrane beats a faint solo rhythm.
+        // heart leaves cold roots — the scar stays, the life is gone;
+        // hand-placed growth beats a faint solo rhythm.
         BlockPos heart = entity.heart();
         float amp;
+        boolean living = heart == null || level.getBlockState(heart).is(ModBlocks.ASSIMILATION_HEART.get());
         if (heart != null && level.getBlockState(heart)
                 .is(ModBlocks.ASSIMILATION_HEART.get())) {
             amp = (float) PulseWave.amplitudeAt(
@@ -100,17 +107,22 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         } else if (heart == null) {
             amp = (float) PulseWave.amplitudeAt(time, 0, pos.asLong()) * 0.5f;
         } else {
-            amp = (float) PulseWave.THRUM;
+            amp = 0;
         }
-        float veins = 0.15f + 0.85f * amp;
-        float halo = 0.45f * amp;
+        if(state.is(ModBlocks.DORMANT_LAYER.get())){living=false;amp=0;}
+        float halo = living ? 0.03f + 0.72f * amp : 0;
 
         // Fresh tissue unfurls: a just-grown face scales in over ~10
         // ticks (ease-out) instead of popping — the colony visibly crawls.
         long born = entity.born();
+        // Infection drains the host over a minute. Fresh growth still shows
+        // the original material; the older colony becomes an ashen scar.
+        float maturity = born == AssimilationLayerBlockEntity.BORN_UNKNOWN ? 1.0f
+                : (float) Math.clamp((time - born) / 1200.0, 0, 1);
+        float bleaching = 0.06f + 0.64f * maturity;
         float grow = 1.0f;
         if (born != AssimilationLayerBlockEntity.BORN_UNKNOWN) {
-            float t = Math.min(1.0f, (float) (time - born) / 10.0f);
+            float t = (float) Math.clamp((time - born) / 10.0, 0, 1);
             grow = t * (2.0f - t);
         }
 
@@ -120,23 +132,72 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
         for (Direction d : MultifaceBlock.availableFaces(state)) {
             Direction facing = d.getOpposite();
             BlockState support = level.getBlockState(pos.relative(d));
-            // Per-cell vein rotation so neighboring membranes never tile.
-            int rot = (int) ((pos.asLong() * 31L + facing.ordinal()) & 7);
+            var boundary=BloomBoundary.regions(AssimilationConnections.boundaryMask(level,pos,facing),
+                    (int)(net.minecraft.util.Mth.getSeed(pos)&3));
             VertexConsumer skin = buffers.getBuffer(
                     RenderType.entityTranslucent(
                             textureFor(level, pos, support, facing)));
             float shade = SHADE.get(facing);
-            emitQuad(skin, poseStack, facing, (float) EPS,
-                    shade, shade, shade, 1.0f, light, packedOverlay, 0, grow);
-            VertexConsumer vein = buffers.getBuffer(
-                    RenderType.entityTranslucent(TraceTexture.get()));
-            emitQuad(vein, poseStack, facing, (float) EPS * 2, 1.0f, 1.0f,
-                    1.0f, veins, FULLBRIGHT, packedOverlay, rot, grow);
-            VertexConsumer glow = buffers.getBuffer(
-                    RenderType.eyes(TraceTexture.get()));
-            emitQuad(glow, poseStack, facing, (float) EPS * 3,
-                    EMBER[0], EMBER[1], EMBER[2],
-                    halo, FULLBRIGHT, packedOverlay, rot, grow);
+            emitMasked(skin,poseStack,facing,(float)EPS,shade,shade,shade,bleaching*grow,
+                    light,packedOverlay,boundary,0,0,1,false);
+            // One native 16px tile per face; neighbors share corner labels.
+            int worldU = switch(facing) {
+                case NORTH -> -pos.getX()-1;
+                case WEST -> -pos.getZ()-1;
+                case EAST -> pos.getZ();
+                default -> pos.getX();
+            };
+            int worldV = facing.getAxis()==Direction.Axis.Y ? pos.getZ() : -pos.getY()-1;
+            int plane = switch(facing.getAxis()) {
+                case X -> pos.getX(); case Y -> pos.getY(); case Z -> pos.getZ();
+            };
+            long seed=plane*0x632be59bd9b4e019L+facing.ordinal();
+            var tile=BloomSurfacePattern.at(worldU,worldV,seed);
+            int index=tile.index();
+            float u=(index%8*16+.01f)/128, v=(index/8*16+.01f)/128;
+            VertexConsumer grain = buffers.getBuffer(RenderType.entityTranslucent(CONNECTED_ROOTS));
+            emitMasked(grain,poseStack,facing,(float)EPS*2,shade,shade,shade,
+                    grow,light,packedOverlay,boundary,u,v,15.98f/128,false);
+            if (tile.resin()) {
+                VertexConsumer glow = buffers.getBuffer(RenderType.eyes(ROOT_EMBERS));
+                float heat=halo*grow;
+                emitMasked(glow,poseStack,facing,(float)EPS*3,heat,heat,heat,heat,
+                        FULLBRIGHT,packedOverlay,boundary,u,v,15.98f/128,true);
+            }
+        }
+    }
+
+    /** One shared coverage mask crops all passes; cached horizontal runs avoid a 16x16 quad grid. */
+    private static void emitMasked(VertexConsumer out,PoseStack stack,Direction normal,float plane,
+            float r,float g,float b,float alpha,int light,int overlay,List<BloomBoundary.Region> regions,
+            float textureU,float textureV,float span,boolean emissive) {
+        if(regions.size()==1) {
+            var region=regions.getFirst();
+            if(region.x0()==0 && region.y0()==0 && region.x1()==8 && region.y1()==8 && region.alpha()==1) {
+                emitQuad(out,stack,normal,plane,r,g,b,alpha,light,overlay,0,1,textureU,textureV,span,span);
+                return;
+            }
+        }
+        for(var region:regions) {
+            float tint=emissive?region.alpha():1;
+            for(int i=0;i<4;i++) {
+                // UP uses the opposite chart winding to the other five faces.
+                int corner=normal==Direction.UP?(4-i)%4:i;
+                float u=(corner==1||corner==2?region.x1():region.x0())/8f;
+                float v=(corner>=2?region.y1():region.y0())/8f;
+                float x,y,z;
+                switch(normal) {
+                    case UP -> {x=u;y=plane;z=v;}
+                    case DOWN -> {x=u;y=1-plane;z=v;}
+                    case NORTH -> {x=1-u;y=1-v;z=1-plane;}
+                    case SOUTH -> {x=u;y=1-v;z=plane;}
+                    case WEST -> {x=1-plane;y=1-v;z=1-u;}
+                    default -> {x=plane;y=1-v;z=u;}
+                }
+                out.addVertex(stack.last(),x,y,z).setColor(r*tint,g*tint,b*tint,alpha*region.alpha())
+                        .setUv(textureU+u*span,textureV+v*span).setOverlay(overlay).setLight(light)
+                        .setNormal(stack.last(),normal.getStepX(),normal.getStepY(),normal.getStepZ());
+            }
         }
     }
 
@@ -172,6 +233,12 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
     static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
             Direction facing, float plane, float r, float g, float b,
             float alpha, int light, int overlay, int rot, float grow) {
+        emitQuad(consumer, poseStack, facing, plane, r, g, b, alpha, light, overlay, rot, grow, 0, 0, 1, 1);
+    }
+
+    private static void emitQuad(VertexConsumer consumer, PoseStack poseStack,
+            Direction facing, float plane, float r, float g, float b,
+            float alpha, int light, int overlay, int rot, float grow, float u, float v, float spanU, float spanV) {
         PoseStack.Pose pose = poseStack.last();
         float[][] corners = switch (facing) {
             case UP -> new float[][] {
@@ -205,7 +272,7 @@ public class AssimilationLayerRenderer implements BlockEntityRenderer<Assimilati
             float z = normalAxis == 2 ? c[2] : 0.5f + (c[2] - 0.5f) * grow;
             consumer.addVertex(pose, x, y, z)
                     .setColor(r, g, b, alpha)
-                    .setUv(uv[i][0], uv[i][1])
+                    .setUv(u + uv[i][0] * spanU, v + uv[i][1] * spanV)
                     .setOverlay(overlay)
                     .setLight(light)
                     .setNormal(pose, nx, ny, nz);

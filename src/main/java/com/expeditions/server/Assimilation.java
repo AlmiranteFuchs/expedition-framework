@@ -1,11 +1,14 @@
 package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
-import com.expeditions.block.entity.AssimilationHeartBlockEntity;
 import com.expeditions.registry.ModAttachments;
 import com.expeditions.registry.ModItems;
+import com.expeditions.registry.ModBlocks;
+import com.expeditions.core.InfectionProgress;
+import com.expeditions.core.BloomBoundary;
+import com.expeditions.block.AssimilationConnections;
+import com.expeditions.block.entity.AssimilationLayerBlockEntity;
 import com.expeditions.server.data.ExpeditionTuning;
-import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -18,6 +21,12 @@ import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.MultifaceBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
@@ -26,30 +35,18 @@ import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.core.component.DataComponents;
 
 /**
- * The organism's second reach: infection. Pressure is the dimension's
- * immune response; infection is personal — lingering within
- * {@code microbiome.infectionRadius} of a live assimilation heart lets
- * the colony take hold of the player. It accrues on a cadence, decays
- * slowly away from hearts, and crosses staged thresholds — whispers
- * (darkness/nausea), grip (slowness/mining fatigue), takeover
- * (heavier slowness/weakness/poison) — until total assimilation replaces
- * the player with an effigy of themselves standing in the colony.
- *
- * <p>Warding delays but never immunizes: enchanted (imbued) armor and a
- * carried attunement sigil slow the accrual, capped at
- * {@code infectionWardMax}. A liberated dimension's dead organism can't
- * infect — accrual stops there entirely while existing infections still
- * fade on their own schedule.
- *
- * <p>The infection lives on the player's persistent NBT — it survives
- * death and relog because the fiction is that it's <em>in them</em>;
- * only assimilation itself (or decay to zero) clears it.
+ * Server-authoritative contact infection. Live painted tissue and infected bodies
+ * queue exposure; a cadence consumes it once, so brief contact is not missed.
+ * Heart proximity never causes infection. Disruption blocks new exposure without
+ * curing an existing dose. Native mobs acquire a persistent infected variant and
+ * retain their species; players keep the established stage/effigy lifecycle.
  */
 public final class Assimilation {
     /** Persistent NBT key holding the infection value (double, 0..max). */
     private static final String TAG_INFECTION = "expeditions:assimilation";
     /** Last announced stage — transitions whisper the escalation. */
     private static final String TAG_STAGE = "expeditions:assimilation_stage";
+    private static final String TAG_CONTACT = "expeditions:assimilation_contact";
     /** Entity tag marking the armor-stand effigies conversion leaves. */
     public static final String EFFIGY_TAG = "expeditions:assimilated";
 
@@ -65,14 +62,17 @@ public final class Assimilation {
     private static volatile boolean suppressedForTests;
 
     public static void suppressForTests(boolean suppressed) {
-        suppressedForTests = suppressed;
+        suppressedForTests = suppressed && Boolean.getBoolean("expeditions.gameTestRun");
+    }
+    public static void onAttacked(Mob victim,LivingEntity attacker) {
+        if(!suppressedForTests) HiveMind.alert(victim,attacker);
     }
 
     private Assimilation() {
     }
 
     /** Current infection value for {@code player} (0..infectionMax). */
-    public static double infection(ServerPlayer player) {
+    public static double infection(LivingEntity player) {
         return player.getPersistentData().getDouble(TAG_INFECTION);
     }
 
@@ -80,19 +80,25 @@ public final class Assimilation {
      * Sets the infection value directly — admin/test seam; conversion only
      * happens through {@link #onPlayerTick}, so forcing max here primes it.
      */
-    public static void infect(ServerPlayer player, double value) {
+    public static void infect(LivingEntity player, double value) {
         player.getPersistentData().putDouble(TAG_INFECTION, value);
     }
 
     /**
-     * Per-player tick: on the configured cadence, accrue infection near a
-     * live heart or decay it away from one, then re-apply the stage's
+     * Per-player tick: consume queued physical exposure on cadence,
+     * or let existing exposure decay, then re-apply the stage's
      * debuffs. Off-cadence ticks only keep effects fresh enough to never
      * gap — cheap since infected players are rare.
      */
     public static void onPlayerTick(ServerPlayer player) {
         if (suppressedForTests || player.isSpectator()) {
             return;
+        }
+        // Remove the old infection's hidden sensory effects on existing saves.
+        // Ordinary potion/warden effects have different flags and are preserved.
+        if (infection(player) > 0 || player.getPersistentData().getInt(TAG_STAGE) > 0) {
+            clearLegacySensoryEffect(player, MobEffects.CONFUSION);
+            clearLegacySensoryEffect(player, MobEffects.DARKNESS);
         }
         ServerLevel level = player.serverLevel();
         int interval = ExpeditionTuning.integer(level.dimension(),
@@ -108,19 +114,7 @@ public final class Assimilation {
         }
         double max = ExpeditionTuning.integer(level.dimension(),
                 "microbiome.infection_max", ExpeditionsConfig.infectionMax());
-        if (infection >= max) {
-            return; // already converted; effigy handled at threshold crossing
-        }
-        if (nearHeart(level, player.blockPosition()) && Microbiome.enabled(level)) {
-            double accrual = ExpeditionTuning.integer(level.dimension(),
-                    "microbiome.infection_accrual",
-                    ExpeditionsConfig.infectionAccrual());
-            infection = Math.min(max, infection + accrual * wardingFactor(player));
-        } else if (infection > 0) {
-            infection = Math.max(0, infection - ExpeditionTuning.integer(
-                    level.dimension(), "microbiome.infection_decay",
-                    ExpeditionsConfig.infectionDecay()));
-        }
+        infection = advance(player,level,0,wardingFactor(player));
         player.getPersistentData().putDouble(TAG_INFECTION, infection);
         syncOverlayFlag(player, infection > 0 ? stageOf(level, infection) : 0);
         if (infection >= max) {
@@ -159,20 +153,75 @@ public final class Assimilation {
         }
     }
 
-    /** Any live, loaded heart within infection radius of {@code pos}. */
-    private static boolean nearHeart(ServerLevel level, BlockPos pos) {
-        double radius = ExpeditionTuning.integer(level.dimension(),
-                "microbiome.infection_radius", ExpeditionsConfig.infectionRadius());
-        Set<BlockPos> hearts = AssimilationHeartBlockEntity.liveHearts(
-                level.dimension().location().toString());
-        for (BlockPos heart : hearts) {
-            if (pos.distSqr(heart) <= radius * radius && level.isLoaded(heart)
-                    && level.getBlockEntity(heart)
-                            instanceof AssimilationHeartBlockEntity) {
-                return true;
+    /** Queue a real touch until the next cadence, so brief crossings are not missed. */
+    public static void onContact(LivingEntity host) {
+        if(suppressedForTests || !(host.level() instanceof ServerLevel level) || !host.isAlive()
+                || host instanceof ArmorStand || host.isSpectator() || !Microbiome.enabledAt(level,host.blockPosition())
+                || AssimilationProtection.protectedFromInfection(host)) return;
+        host.getPersistentData().putBoolean(TAG_CONTACT,true);
+    }
+
+    /** The actual painted surface, including its frayed boundary, is the contact volume. */
+    public static void touchLayer(ServerLevel level,BlockPos pos,BlockState state,LivingEntity host) {
+        if(level.getBlockEntity(pos) instanceof AssimilationLayerBlockEntity layer && layer.heart()!=null
+                && (!level.isLoaded(layer.heart()) || !level.getBlockState(layer.heart()).is(ModBlocks.ASSIMILATION_HEART.get()))) return;
+        AABB body=host.getBoundingBox().move(-pos.getX(),-pos.getY(),-pos.getZ());
+        for(Direction support:MultifaceBlock.availableFaces(state)) {
+            Direction normal=support.getOpposite();
+            var mask=BloomBoundary.regions(AssimilationConnections.boundaryMask(level,pos,normal),
+                    (int)(net.minecraft.util.Mth.getSeed(pos)&3));
+            for(var r:mask) {
+                double u0=r.x0()/8.0,u1=r.x1()/8.0,v0=r.y0()/8.0,v1=r.y1()/8.0,t=1.0/16;
+                AABB face=switch(normal) {
+                    case UP -> new AABB(u0,0,v0,u1,t,v1);
+                    case DOWN -> new AABB(u0,1-t,v0,u1,1,v1);
+                    case NORTH -> new AABB(1-u1,1-v1,1-t,1-u0,1-v0,1);
+                    case SOUTH -> new AABB(u0,1-v1,0,u1,1-v0,t);
+                    case WEST -> new AABB(1-t,1-v1,1-u1,1,1-v0,1-u0);
+                    case EAST -> new AABB(0,1-v1,u0,t,1-v0,u1);
+                };
+                if(body.intersects(face)) { onContact(host); return; }
             }
         }
-        return false;
+    }
+
+    private static double advance(LivingEntity host,ServerLevel level,double floor,double warding) {
+        boolean contact=host.getPersistentData().getBoolean(TAG_CONTACT) && Microbiome.enabledAt(level,host.blockPosition());
+        host.getPersistentData().remove(TAG_CONTACT);
+        double accrual=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_accrual",ExpeditionsConfig.infectionAccrual());
+        double decay=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_decay",ExpeditionsConfig.infectionDecay());
+        double maximum=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_max",ExpeditionsConfig.infectionMax());
+        return InfectionProgress.step(infection(host),contact,AssimilationProtection.protectedFromInfection(host),
+                accrual*warding,decay,maximum,Math.min(floor,maximum));
+    }
+
+    /** Non-player hosts keep their native entity type and acquire the persistent infected variant. */
+    public static void onLivingTick(LivingEntity entity) {
+        AssimilationProtection.tick(entity);
+        if(suppressedForTests || !(entity.level() instanceof ServerLevel level) || !entity.isAlive()) return;
+        if(entity instanceof Mob mob) {
+            int flag=mob.getData(ModAttachments.ASSIMILATED);
+            if(flag>0 && infection(mob)<threshold(level,flag)) infect(mob,threshold(level,flag));
+            boolean sheltered=Stillness.suppresses(level,mob.blockPosition());
+            if(sheltered && flag>0){mob.setData(ModAttachments.ASSIMILATED,0);flag=0;}
+            int interval=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_interval_ticks",ExpeditionsConfig.infectionIntervalTicks());
+            if(mob.tickCount>0 && mob.tickCount%interval==0) {
+                double value=advance(mob,level,flag>0 && Microbiome.enabledAt(level,mob.blockPosition())?threshold(level,1):0,1);
+                infect(mob,value); int stage=!sheltered && value>0?stageOf(level,value):0;
+                if(stage!=flag) mob.setData(ModAttachments.ASSIMILATED,stage);
+            }
+            HiveMind.tick(mob);
+        }
+        if(entity.getData(ModAttachments.ASSIMILATED)>0 && (entity.tickCount+entity.getId())%4==0) {
+            AABB touch=entity.getBoundingBox().inflate(1.0/64);
+            for(LivingEntity other:level.getEntitiesOfClass(LivingEntity.class,touch,
+                    e->e!=entity && e.isAlive() && !(e instanceof ArmorStand))) onContact(other);
+        }
+    }
+
+    private static int threshold(ServerLevel level,int stage) {
+        return ExpeditionTuning.integer(level.dimension(),"microbiome.infection_stage"+stage+"_at",
+                stage==1?ExpeditionsConfig.infectionStage1At():stage==2?ExpeditionsConfig.infectionStage2At():ExpeditionsConfig.infectionStage3At());
     }
 
     /**
@@ -203,10 +252,6 @@ public final class Assimilation {
     private static void applyStageEffects(ServerPlayer player, ServerLevel level,
             double infection) {
         int stage = stageOf(level, infection);
-        if (stage >= 1) {
-            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 160, 0, true, false));
-            player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 160, 0, true, false));
-        }
         if (stage >= 2) {
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 160, 0, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 160, 0, true, false));
@@ -216,6 +261,13 @@ public final class Assimilation {
             player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 160, 0, true, false));
             player.addEffect(new MobEffectInstance(MobEffects.POISON, 80, 0, true, false));
         }
+    }
+
+    private static void clearLegacySensoryEffect(ServerPlayer player,
+            net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> type) {
+        var effect = player.getEffect(type);
+        if (effect != null && effect.isAmbient() && !effect.isVisible() && !effect.showIcon()
+                && effect.getAmplifier() == 0 && effect.getDuration() <= 160) player.removeEffect(type);
     }
 
     /**

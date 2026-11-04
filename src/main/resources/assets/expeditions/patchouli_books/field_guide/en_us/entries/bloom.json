@@ -1,0 +1,30 @@
+{
+  "name": "Folded bark",
+  "icon": "expeditions:assimilation_heart",
+  "category": "expeditions:bloom",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_heart",
+      "text": "The plates resemble dry bark until they move. One opens, then another; a narrow amber lining appears between them. The surrounding pale skin continues over materials that were never wood.",
+      "title": "Folded bark"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The shutters",
+      "text": "These notes use the name Shutter Bloom. The name describes its shape. It does not explain what is doing the growing."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Work from the edge",
+      "text": "The surface growth spreads from a nearby bloom. Removing that source stops its colony and leaves supported tissue dormant. Break the tissue itself for flakes; tearing away its support leaves no useful harvest."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Work from the edge",
+      "text": "Living tissue and infected creatures transmit infection through contact. Standing nearby is not enough. Leave yourself a clear place to step before cutting a sample."
+    }
+  ],
+  "advancement": "expeditions:journal/bloom"
+}

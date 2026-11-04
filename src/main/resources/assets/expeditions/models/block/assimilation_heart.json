@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "expeditions:block/assimilation_heart"
-  }
+  "parent": "expeditions:block/bloom_shutter_0"
 }

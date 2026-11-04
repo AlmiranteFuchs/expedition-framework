@@ -1,0 +1,35 @@
+{
+  "name": "A sealed sample",
+  "icon": "expeditions:field_assay_kit",
+  "category": "expeditions:bloom",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:field_assay_kit",
+      "text": "Old samples remain sealed and old readings remain old. The kit describes the patient at the moment of collection.",
+      "title": "A sealed sample"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Take a fresh reading",
+      "text": "Craft it from a glass bottle, iron, copper and a dormant flake. Sneak-use draws a nonlethal sample costing one heart. Use normally to read its infection level, stage and age. Draw again to check a change."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "After contact",
+      "text": "Exposure begins with contact with living tissue or an infected body. Some affected creatures shake even while standing still; several may turn towards the same disturbance."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "After contact",
+      "text": "Early exposure can subside once contact stops. A Disruption Charm in the offhand or a Curios charm slot blocks new infection. It does not erase a dose already present. Give recovery time, then check a fresh sample."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:field_assay_kit",
+      "text": "The journal teaches the assay; the kit holds the blood and measured result."
+    }
+  ],
+  "advancement": "expeditions:journal/blood"
+}

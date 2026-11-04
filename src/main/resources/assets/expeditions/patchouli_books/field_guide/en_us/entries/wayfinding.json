@@ -1,0 +1,40 @@
+{
+  "name": "The compass",
+  "icon": "expeditions:expedition_compass",
+  "category": "expeditions:beginnings",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_compass",
+      "text": "The thorn follows the next marker. The ember gives the part of the reading the needle cannot: height. Above the needle means higher ground; below it means a lower passage.",
+      "title": "The compass"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Reading the ember",
+      "text": "Hold use to take a steadier reading. The ember and chime rise or fall together. Release when you have your bearing."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Reading the ember",
+      "text": "On First Bearing, hold the compass to see a small thorn and the next mark. Turn until the thorn points ahead. When it settles into an ember, look for the stump or hollow nearby."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A bearing, not a path",
+      "text": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A bearing, not a path",
+      "text": "After the witness stumps, it points to the Stillwood Hollow for extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A bearing, not a path",
+      "text": "Hover the compass for a rough direct range. This is a band, not a path length; the Heartglass Lens can make a precise measurement."
+    }
+  ],
+  "advancement": "expeditions:journal/wayfinding"
+}

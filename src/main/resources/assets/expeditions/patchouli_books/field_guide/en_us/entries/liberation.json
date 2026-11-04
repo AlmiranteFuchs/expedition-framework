@@ -1,0 +1,58 @@
+{
+  "name": "After silence",
+  "icon": "expeditions:attunement_sigil",
+  "category": "expeditions:thicket",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:attunement_sigil",
+      "text": "The ordinary sounds remain. What is missing takes longer to notice.",
+      "title": "After silence"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What has stopped",
+      "text": "An accepted guardian victory followed by extraction liberates the dimension for everyone. New colonies stop taking hold, growth ceases, and the pursuit clock falls quiet. Native creatures and ordinary hazards remain. Repeated"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What has stopped",
+      "text": "surveys alone do not produce this change."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quiet remnant",
+      "text": "A core held against a terminal here can retain something of the quiet. It is a useful result, though these notes offer no explanation for why it travels."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quiet remnant",
+      "text": "Craft an Unattuned Severance Core and use it on a terminal in the liberated dimension. Install the attuned core in a Severance Cradle for 120 Resonance per tick without fuel. The terminal must recognise the liberation record; a"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A quiet remnant",
+      "text": "marked map is not enough."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Quiet ground",
+      "text": "Come back once the Bloom is quiet. The Wayroot can lay a short Aftergrowth Survey through cleared country. Two marks and a hollow. The old creatures still wander there."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Quiet ground",
+      "text": "The hollow leaves two Return Knots when you bring the survey home. The ground remembers the way, even when the Bloom has let it go."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:severance_core"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:severance_generator"
+    }
+  ],
+  "advancement": "expeditions:journal/liberation"
+}

@@ -36,16 +36,64 @@ public class ExpeditionsClient {
     public ExpeditionsClient(IEventBus modEventBus, ModContainer container) {
         modEventBus.addListener(ExpeditionsClient::onClientSetup);
         modEventBus.addListener(ExpeditionsClient::onRegisterRenderers);
+        modEventBus.addListener((net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent event) ->
+                event.registerFluidType(new net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions() {
+                    @Override public ResourceLocation getStillTexture() {
+                        return ResourceLocation.withDefaultNamespace("block/water_still");
+                    }
+                    @Override public ResourceLocation getFlowingTexture() {
+                        return ResourceLocation.withDefaultNamespace("block/water_flow");
+                    }
+                    @Override public int getTintColor() { return 0xffbe7734; }
+                }, com.expeditions.registry.ModFluids.SAP_TYPE.get()));
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) -> {
+                event.register(com.expeditions.registry.ModMenus.EXPEDITION.get(), ExpeditionScreen::new);
+                event.register(com.expeditions.registry.ModMenus.RECLAIMING.get(), ReclaimingScreen::new);
+                event.register(com.expeditions.registry.ModMenus.RESONANCE.get(),ResonanceScreen::new);
+        });
+        modEventBus.addListener((EntityRenderersEvent.RegisterLayerDefinitions event) ->
+                event.registerLayerDefinition(GuardianModel.LAYER, GuardianModel::createBodyLayer));
         modEventBus.addListener(ExpeditionsClient::onAddLayers);
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent event) ->
+                event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener)
+                        manager -> InfectionSkinTextures.clear()));
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterGuiLayersEvent event) ->
+                event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("expeditions", "bloom_influence"), BloomVignette::render));
+        modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterGuiLayersEvent event) ->
+                event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("expeditions", "guided_bearing"), GuidedBearing::render));
         NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
+        NeoForge.EVENT_BUS.addListener(InfectedMobEffects::onClientTick);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);
+        NeoForge.EVENT_BUS.addListener(ExpeditionsClient::onCompassTooltip);
+    }
+
+    private static void onCompassTooltip(net.neoforged.neoforge.event.entity.player.ItemTooltipEvent event) {
+        var player = event.getEntity();
+        if (player == null) return;
+        var target = com.expeditions.item.ExpeditionCompassItem.localTarget(event.getItemStack(), player.level());
+        if (target == null) return;
+        var range = com.expeditions.core.CompassRange.estimate(
+                player.position().distanceTo(net.minecraft.world.phys.Vec3.atCenterOf(target.pos())));
+        event.getToolTip().add(net.minecraft.network.chat.Component.translatable(
+                "tooltip.expeditions.compass_distance", range.minimum(), range.maximum()).withStyle(net.minecraft.ChatFormatting.GOLD));
+        int direction = com.expeditions.core.CompassElevation.direction(target.pos().getY() - player.getY());
+        event.getToolTip().add(net.minecraft.network.chat.Component.translatable("tooltip.expeditions.compass_height_"
+                + (direction > 0 ? "above" : direction < 0 ? "below" : "level"))
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> com.expeditions.item.FieldAssayKitItem.setClientOpener(hand ->
+                net.minecraft.client.Minecraft.getInstance().setScreen(new AssayScreen(hand))));
+        event.enqueueWork(() -> com.expeditions.item.ExpeditionFieldJournalItem
+                .setClientOpener(hand -> net.minecraft.client.Minecraft.getInstance()
+                        .execute(() -> JournalBook.open(hand))));
         // The layer's translucent membrane mesh needs the translucent
         // render layer; the desaturated skin is drawn by the BER.
         event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(
                 ModBlocks.ASSIMILATION_LAYER.get(), RenderType.translucent()));
+        event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(
+                ModBlocks.EXPEDITION_PORTAL.get(), RenderType.cutout()));
         event.enqueueWork(() -> ItemProperties.register(
                 ModItems.EXPEDITION_COMPASS.get(),
                 ResourceLocation.withDefaultNamespace("angle"),
@@ -59,6 +107,8 @@ public class ExpeditionsClient {
 
     private static void onRegisterRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(), GuardianRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.RESONANCE_MACHINE.get(),ResonanceRenderer::new);
         event.registerBlockEntityRenderer(
                 ModBlockEntities.ASSIMILATION_LAYER.get(),
                 AssimilationLayerRenderer::new);

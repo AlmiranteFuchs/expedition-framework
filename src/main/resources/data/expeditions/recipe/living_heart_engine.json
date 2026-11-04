@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ICI",
+    "EHE",
+    "IRI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "E": {
+      "item": "expeditions:assimilation_essence"
+    },
+    "H": {
+      "item": "expeditions:assimilation_heart"
+    },
+    "R": {
+      "item": "expeditions:stillness_dynamo"
+    }
+  },
+  "result": {
+    "id": "expeditions:living_heart_engine",
+    "count": 1
+  }
+}

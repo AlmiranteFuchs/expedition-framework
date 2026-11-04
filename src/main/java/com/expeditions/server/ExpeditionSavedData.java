@@ -137,17 +137,96 @@ public class ExpeditionSavedData extends SavedData {
     private static final String DEFAULT_DIMENSION = "minecraft:overworld";
 
     private final ExpeditionLedger ledger = new ExpeditionLedger();
+    private final com.expeditions.core.ExpeditionHistory history = new com.expeditions.core.ExpeditionHistory();
+    public com.expeditions.core.ExpeditionHistory history() { return history; }
+    public void recordHistory(UUID player, com.expeditions.core.ExpeditionHistory.Entry entry) {
+        if (history.record(player, entry)) setDirty();
+    }
     private final Map<String, Set<BlockPos>> liveMarkers = new HashMap<>();
+    private final Map<String,Map<BlockPos,Set<Integer>>> recallParts = new HashMap<>();
+    public java.util.Optional<Set<Integer>> recallTreeParts(String dimension,BlockPos root) {
+        return java.util.Optional.ofNullable(recallParts.getOrDefault(dimension,Map.of()).get(root));
+    }
+    public void recordRecallTreeParts(String dimension,BlockPos root,Set<Integer> parts) {
+        recallParts.computeIfAbsent(dimension,d->new HashMap<>()).put(root.immutable(),Set.copyOf(parts));setDirty();
+    }
+    public void removeRecallTreeParts(String dimension,BlockPos root) {
+        var roots=recallParts.get(dimension);if(roots!=null){roots.remove(root);if(roots.isEmpty())recallParts.remove(dimension);}setDirty();
+    }
+    public Map<String,Set<BlockPos>> recallTreeRoots() {
+        var result=new HashMap<String,Set<BlockPos>>();recallParts.forEach((dim,roots)->result.put(dim,Set.copyOf(roots.keySet())));return Map.copyOf(result);
+    }
     private final Set<String> clearedDimensions = new HashSet<>();
+    private boolean firstTraceAttempted;
+    private BlockPos firstTrace;
+    public boolean firstTraceAttempted(){return firstTraceAttempted;}
+    public java.util.Optional<BlockPos> firstTrace(){return java.util.Optional.ofNullable(firstTrace);}
+    public void recordFirstTrace(BlockPos pos){firstTraceAttempted=true;firstTrace=pos==null?null:pos.immutable();setDirty();}
+    private final Set<String> guardianLiberations=new HashSet<>();
+    public boolean hasGuardianLiberation(String dimension){return guardianLiberations.contains(dimension);}
+    public void recordGuardianLiberation(String dimension){
+        if(net.minecraft.resources.ResourceLocation.tryParse(dimension)==null)throw new IllegalArgumentException("Invalid dimension");
+        guardianLiberations.add(dimension);setDimensionCleared(dimension);setDirty();
+    }
+
     private final Map<String, Integer> campaignProgress = new HashMap<>();
     private final Map<String, Integer> dimensionPressure = new HashMap<>();
+    // Runtime presentation belongs to the world, not the stateless manager facade.
+    private final FrontierThreat frontier=new FrontierThreat();
+    public FrontierThreat frontier() { return frontier; }
 
+    private final Set<BlockPos> stillnessBreaches=new HashSet<>();
+    public Set<BlockPos> stillnessBreaches(){return Set.copyOf(stillnessBreaches);}
+    public boolean setStillnessBreach(BlockPos pos,boolean active){
+        if(active && !stillnessBreaches.contains(pos) && stillnessBreaches.size()>=64)return false;
+        boolean changed=active?stillnessBreaches.add(pos.immutable()):stillnessBreaches.remove(pos);
+        if(changed)setDirty();return true;
+    }
     public static ExpeditionSavedData create() {
         return new ExpeditionSavedData();
     }
 
     public static ExpeditionSavedData load(CompoundTag tag, HolderLookup.Provider lookup) {
         ExpeditionSavedData data = create();
+        for (Tag value : tag.getList("History", Tag.TAG_COMPOUND)) {
+            try {
+                var row = (CompoundTag) value;
+                String dim = row.getString("Dimension"), id = row.getString("Expedition");
+                if (net.minecraft.resources.ResourceLocation.tryParse(dim) == null
+                        || net.minecraft.resources.ResourceLocation.tryParse(id) == null)
+                    throw new IllegalArgumentException("Invalid history resource id");
+                for (String required : List.of("Checkpoints", "Total", "Kept"))
+                    if (!row.contains(required, Tag.TAG_INT)) throw new IllegalArgumentException("Missing history count");
+                for (String required : List.of("Elapsed", "Ended"))
+                    if (!row.contains(required, Tag.TAG_LONG)) throw new IllegalArgumentException("Missing history time");
+                if (!row.contains("Final", Tag.TAG_BYTE)) throw new IllegalArgumentException("Missing history result");
+                data.history.record(row.getUUID("Player"), new com.expeditions.core.ExpeditionHistory.Entry(
+                        row.getUUID("Run"), id, row.getString("Name"), dim,
+                        ExpeditionStatus.valueOf(row.getString("Outcome")), row.getInt("Checkpoints"),
+                        row.getInt("Total"), row.getInt("Kept"), row.getLong("Elapsed"), row.getLong("Ended"),
+                        row.getString("Reason"), row.getBoolean("Final")));
+            } catch (RuntimeException e) { LOGGER.warn("Skipping malformed expedition history record", e); }
+        }
+        for(Tag value:tag.getList("RecallTrees",Tag.TAG_COMPOUND)) {
+            var tree=(CompoundTag)value;String dim=tree.getString(TAG_DIMENSION);
+            try {
+                if(net.minecraft.resources.ResourceLocation.tryParse(dim)==null)throw new IllegalArgumentException("Invalid tree dimension");
+                var indices=new HashSet<Integer>();int[] raw=tree.getIntArray("Parts");
+                if(raw.length==0||raw.length>4096)throw new IllegalArgumentException("Invalid tree part count");
+                for(int index:raw)if(index<0||index>4095||!indices.add(index))throw new IllegalArgumentException("Invalid tree part index");
+                data.recordRecallTreeParts(dim,readPos(tree),indices);
+            } catch(RuntimeException e) {
+                // Retain an invalid manifest as empty so recovery cannot mistake it for a legacy full tree.
+                data.recordRecallTreeParts(dim,readPos(tree),Set.of());
+                LOGGER.warn("Invalid recall-tree manifest: {}",e.getMessage());
+            }
+        }
+        data.firstTraceAttempted=tag.getBoolean("FirstTraceAttempted");
+        if(tag.contains("FirstTrace",Tag.TAG_LONG))data.firstTrace=BlockPos.of(tag.getLong("FirstTrace"));
+        for(Tag value:tag.getList("GuardianLiberations",Tag.TAG_STRING)){
+            String dim=value.getAsString();if(net.minecraft.resources.ResourceLocation.tryParse(dim)!=null)data.guardianLiberations.add(dim);
+        }
+        for(long value:java.util.Arrays.stream(tag.getLongArray("StillnessBreaches")).limit(64).toArray())data.stillnessBreaches.add(BlockPos.of(value));
         for (Tag t : tag.getList(TAG_RUNS, Tag.TAG_COMPOUND)) {
             try {
                 data.ledger.restoreRun(readRun((CompoundTag) t));
@@ -306,7 +385,7 @@ public class ExpeditionSavedData extends SavedData {
                         ? CampaignState.byId(runTag.getString(TAG_MIN_STATE))
                         : CampaignState.FRONTIER,
                 runTag.getBoolean(TAG_BIG_BAD));
-        return ExpeditionRun.restore(
+        ExpeditionRun restored = ExpeditionRun.restore(
                 runTag.getUUID(TAG_RUN_ID),
                 playerId,
                 party,
@@ -330,6 +409,12 @@ public class ExpeditionSavedData extends SavedData {
                 readDefense(runTag),
                 readFailedObjectives(runTag),
                 readSecuredTokens(runTag));
+        if (runTag.contains("GuardianEncounter", Tag.TAG_COMPOUND)) {
+            CompoundTag encounter = runTag.getCompound("GuardianEncounter");
+            restored.restoreGuardian(new com.expeditions.core.GuardianEncounter(
+                    encounter.getUUID("EntityId"), encounter.getBoolean("Defeated")));
+        }
+        return restored;
     }
 
     /** A string-list tag, absent in saves from before the field existed. */
@@ -393,10 +478,13 @@ public class ExpeditionSavedData extends SavedData {
             return ExpeditionOptions.DEFAULT;
         }
         CompoundTag opt = runTag.getCompound(TAG_OPTIONS);
+        if (opt.contains("Solo") && !opt.contains("Solo", Tag.TAG_BYTE)) {
+            throw new IllegalArgumentException("Malformed solo option");
+        }
         Difficulty tier = Difficulty.byName(opt.getString(TAG_OPT_DIFFICULTY));
         return new ExpeditionOptions(opt.getString(TAG_OPT_EXPEDITION),
                 tier != null ? tier : Difficulty.STANDARD,
-                opt.getInt(TAG_OPT_CHECKPOINTS), opt.getInt(TAG_OPT_TIME_PERCENT));
+                opt.getInt(TAG_OPT_CHECKPOINTS), opt.getInt(TAG_OPT_TIME_PERCENT), opt.getBoolean("Solo"));
     }
 
     /**
@@ -430,6 +518,18 @@ public class ExpeditionSavedData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider lookup) {
+        var reports = new ListTag();
+        history.reports().forEach((player, entries) -> entries.forEach(entry -> {
+            var row = new CompoundTag();
+            row.putUUID("Player", player); row.putUUID("Run", entry.runId());
+            row.putString("Expedition", entry.expeditionId()); row.putString("Name", entry.name());
+            row.putString("Dimension", entry.dimension()); row.putString("Outcome", entry.outcome().name());
+            row.putInt("Checkpoints", entry.checkpoints()); row.putInt("Total", entry.totalCheckpoints());
+            row.putInt("Kept", entry.tokensKept()); row.putLong("Elapsed", entry.elapsedTicks());
+            row.putLong("Ended", entry.endedGameTime()); row.putString("Reason", entry.reason());
+            row.putBoolean("Final", entry.finalResult()); reports.add(row);
+        }));
+        tag.put("History", reports);
         ListTag runs = new ListTag();
         for (ExpeditionRun run : ledger.runs()) {
             CompoundTag runTag = new CompoundTag();
@@ -447,6 +547,12 @@ public class ExpeditionSavedData extends SavedData {
             runTag.putBoolean(TAG_REWARDED, run.isRewarded());
             runTag.putInt(TAG_TOKENS_AWARDED, run.tokensAwarded());
             runTag.putBoolean(TAG_ARTIFACT_ISSUED, run.artifactIssued());
+            run.guardianEncounter().ifPresent(encounter -> {
+                CompoundTag guardian = new CompoundTag();
+                guardian.putUUID("EntityId", encounter.entityId());
+                guardian.putBoolean("Defeated", encounter.defeated());
+                runTag.put("GuardianEncounter", guardian);
+            });
             CompoundTag securedTag = new CompoundTag();
             run.securedTokens().forEach((member, amount) -> {
                 if (amount > 0) {
@@ -475,6 +581,7 @@ public class ExpeditionSavedData extends SavedData {
             optionsTag.putString(TAG_OPT_DIFFICULTY, run.options().difficulty().name());
             optionsTag.putInt(TAG_OPT_CHECKPOINTS, run.options().checkpoints());
             optionsTag.putInt(TAG_OPT_TIME_PERCENT, run.options().bonusTimePercent());
+            optionsTag.putBoolean("Solo", run.options().solo());
             runTag.put(TAG_OPTIONS, optionsTag);
             runTag.putString(TAG_MOD_WEATHER,
                     run.definition().modifiers().weather().name());
@@ -555,6 +662,9 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_UNLOCKS, unlocks);
+        tag.putBoolean("FirstTraceAttempted",firstTraceAttempted);if(firstTrace!=null)tag.putLong("FirstTrace",firstTrace.asLong());
+        var severed=new ListTag();for(String dimension:guardianLiberations)severed.add(StringTag.valueOf(dimension));tag.put("GuardianLiberations",severed);
+        tag.putLongArray("StillnessBreaches",stillnessBreaches.stream().mapToLong(BlockPos::asLong).toArray());
         ListTag trophies = new ListTag();
         ledger.trophyRecords().forEach((player, trophyIds) -> {
             if (!trophyIds.isEmpty()) {
@@ -594,6 +704,12 @@ public class ExpeditionSavedData extends SavedData {
             }
         });
         tag.put(TAG_MARKERS, markers);
+        ListTag trees=new ListTag();
+        recallParts.forEach((dimension,roots)->roots.forEach((root,parts)->{
+            var tree=writePos(root);tree.putString(TAG_DIMENSION,dimension);
+            tree.putIntArray("Parts",parts.stream().sorted().mapToInt(Integer::intValue).toArray());trees.add(tree);
+        }));
+        tag.put("RecallTrees",trees);
         ListTag cleared = new ListTag();
         for (String dimension : clearedDimensions) {
             cleared.add(StringTag.valueOf(dimension));
@@ -671,6 +787,12 @@ public class ExpeditionSavedData extends SavedData {
         return campaignProgress.getOrDefault(dimension, 0);
     }
 
+    public Set<String> campaignDimensions() {
+        var dimensions = new HashSet<>(campaignProgress.keySet());
+        dimensions.addAll(clearedDimensions); dimensions.addAll(dimensionPressure.keySet());
+        return Set.copyOf(dimensions);
+    }
+
     /**
      * Records one completed expedition in {@code dimension}: increments
      * the count and flips the cleared mark when the count reaches the
@@ -678,7 +800,8 @@ public class ExpeditionSavedData extends SavedData {
      */
     public void recordCampaignCompletion(String dimension) {
         int completions = campaignProgress.merge(dimension, 1, Integer::sum);
-        if (completions >= ExpeditionsConfig.campaignClearedAtCompletions()) {
+        if (!ExpeditionTuning.bool(dimension,"campaign.require_guardian",true)
+                && completions >= ExpeditionsConfig.campaignClearedAtCompletions()) {
             setDimensionCleared(dimension);
         }
         setDirty();
@@ -686,6 +809,7 @@ public class ExpeditionSavedData extends SavedData {
 
     /** Wipes a dimension's campaign — admin path and test cleanup. */
     public void resetCampaign(String dimension) {
+        guardianLiberations.remove(dimension);
         campaignProgress.remove(dimension);
         clearedDimensions.remove(dimension);
         setDirty();

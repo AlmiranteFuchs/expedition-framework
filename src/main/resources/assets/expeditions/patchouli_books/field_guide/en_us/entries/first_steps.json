@@ -1,0 +1,64 @@
+{
+  "name": "A field copy",
+  "icon": "expeditions:expedition_field_journal",
+  "category": "expeditions:beginnings",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_field_journal",
+      "text": "Some patches of ground hold their colour poorly. The scraps found there are cold, light, and slow to crumble. There is no movement in them.",
+      "title": "A field copy"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Pale traces",
+      "text": "Look for pale traces on natural ground and harvest them for dormant flakes. Cold tissue is safe to handle. If nearby ground has been searched, try newly explored country."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A place to begin",
+      "text": "A book and one flake make a field journal. A replacement copy will keep the discoveries you have already made."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A place to begin",
+      "text": "Keep several flakes for instruments. Four form a Dormant Knot; the recipes here show how to build a Stillness Resonator and an Essence Condenser. Place those machines next to each other. Their first sample should be a single"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A place to begin",
+      "text": "flake."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The first charter",
+      "text": "The Overworld is sheltered by what these notes call the Stillness. Ordinary collection does not weaken it; keeping your home quiet requires no maintenance."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The first charter",
+      "text": "Refine essence, build a terminal, and choose First Bearing for a short practice journey, or Field Survey for a regular charter."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_field_journal",
+      "text": "Your discoveries belong to you. A replacement book remembers them."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:dormant_knot"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:stillness_dynamo"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:essence_condenser"
+    },
+    {
+      "type": "expeditions:record_0"
+    }
+  ]
+}

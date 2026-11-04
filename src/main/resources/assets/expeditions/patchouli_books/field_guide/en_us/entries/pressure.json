@@ -1,0 +1,33 @@
+{
+  "name": "Being noticed",
+  "icon": "expeditions:assimilation_heart",
+  "category": "expeditions:bloom",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_heart",
+      "text": "A sound behind you is ordinary. Several creatures arriving from different directions deserve more attention.",
+      "title": "Being noticed"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The answering country",
+      "text": "The bar at the top of the screen shows how closely the country is attending to you. Its next mark is a warning. Prepare to move before it is reached. A charm protects against infection; it does not conceal your presence."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Buy time",
+      "text": "Settling a checkpoint lowers attention. Leaving the dimension lets it subside. Neither death nor logging out wipes the record of your stay."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Buy time",
+      "text": "Repeated successful operations establish a foothold and slow its rise. A liberated dimension no longer pursues you this way. Home is sheltered by the Stillness unless a local field has deliberately been opened."
+    },
+    {
+      "type": "expeditions:record_1"
+    }
+  ],
+  "advancement": "expeditions:journal/pressure"
+}

@@ -1,0 +1,58 @@
+{
+  "name": "The threshold",
+  "icon": "expeditions:expedition_terminal",
+  "category": "expeditions:beginnings",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_terminal",
+      "text": "The Wayroot is a graft kept under a copper arm. Pale bark holds it in shape. Fungal tissue feels for distant traces, and amber carries the Resonance between them. The copper guides where that current can go.",
+      "title": "The threshold"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An address",
+      "text": "Choose a charter and read its requirements before sealing it. The graft can find an address and a way home. It cannot promise safe footing."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Before entry",
+      "text": "The desk can open a small aperture above itself. A grafted arch draws it down into a doorway. Take food, a weapon and room for cargo. Entering issues the route compass."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Before entry",
+      "text": "Guests can join an open party until the first checkpoint. Set Party access to Solo Expedition to keep the portal private. First Bearing is always private and teaches two marks and a return."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bind a doorway",
+      "text": "Make the posts from birch logs and a dormant flake. Stand facing the Wayroot. Immediately to your right, build a post three upright Pale Graft Posts tall. Leave a one-block gap, then build a second matching post. Set the Graft"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bind a doorway",
+      "text": "Collar at the top of the gap."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bind a doorway",
+      "text": "Keep both blocks beneath the collar clear, with solid ground at the foot. Seal a charter to wake the arch. The first witness stump closes the aperture, leaving the timber in place."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:expedition_terminal",
+      "text": "Place it facing a safe space. A grafted arch can carry the aperture beside the desk."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:graft_post"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "expeditions:graft_collar"
+    }
+  ],
+  "advancement": "expeditions:journal/terminal"
+}

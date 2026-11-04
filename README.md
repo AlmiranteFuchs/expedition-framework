@@ -6,7 +6,84 @@ checkpoints, objectives, difficulty, and guaranteed token rewards.
 
 The long-term goal is to support vanilla dimensions and dimensions added by other
 mods, with minimal hardcoded assumptions about terrain, mechanics, or registries.
-The mod is intended to work standalone and to be suitable for modpacks.
+The mod requires Patchouli for its field guide and is suitable for modpacks.
+Dimension mods and MCP tooling are optional.
+
+## Build a grafted Wayroot
+
+Face the desk and build the following front view. The arch sits immediately
+to the right of the Wayroot, at the same floor level.
+
+```text
+  P C P
+  P . P
+W P . P
+```
+
+`W` is the Wayroot, `P` is an upright Pale Graft Post, and `C` is the
+Graft Collar. Both dots must be open air with a solid floor below the doorway.
+The requirements leaf describes the frame's condition. Sealing a charter wakes
+the doorway. The first witness stump closes it and leaves the frame standing.
+A desk without a collar still uses its small overhead aperture.
+
+## Aftergrowth Surveys
+
+A cleared dimension offers an Aftergrowth Survey. These repeatable charters
+have two marks, no deployment fee and no checkpoint hordes. Natural creatures
+and terrain still shape the journey. Extract to earn two Return Knots for
+the Sap Jar. The survey has a fixed pace and difficulty, and parties can join
+without extending the route.
+
+## Current starter progression (alpha.26)
+
+The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
+an early journal, and build a **Stillness Resonator + Essence Condenser** around a
+dormant knot and vanilla materials. The sheltered resonator supplies power without
+fuel; one raw flake plus 4000 Resonance becomes one essence. External FE generators
+also work. A captured-bloom engine and guardian-earned severed core extend the
+power progression; see [Resonance power](docs/resonance-power.md). Refined essence powers the terminal milestone.
+First Bearing is optional private practice: two witness stumps, a compass cue,
+and an Expedition Novice trophy after extraction. First Bearing or Field Survey
+opens remote deployment, without an Overworld boss gate. Regular charters may
+also use a private portal through the terminal’s Party access control.
+Home experimentation is an optional, powered, reversible local breach.
+
+Survey now leads into **Trace Recovery**, a separate cargo tutorial, before Deep
+Salvage. The terminal uses glass instead of amethyst. A one-time bounded search
+records a starter trace near spawn on suitable natural land. Recovered Shutter Blooms
+craft a **Field Ward** or **Heartglass Lens**; carry home-generated power in a
+**Resonance Cell** to use them on the next expedition. See
+[Field preparation](docs/field-preparation.md) for costs and limits.
+
+See [the complete starter chain](docs/stillness-progression.md) and
+[the open-frame art direction](docs/art-direction/stillness/README.md).
+
+The alpha.16 inventory pass redraws the handheld family and all compass frames,
+adds distinct living/dormant tissue icons, and frames the ten 3D block-item models
+consistently. [See the actual native sprites and in-game inventory](docs/art-direction/items/README.md).
+
+The alpha.17 **Shutter Bloom** replaces the cubic microbiome heart with folded
+pale bark plates, a narrow amber lining and staggered opening poses. Dormant
+specimens fold cold, and colony growth starts on actual nearby terrain. Existing
+block ids and captured-specimen recipes remain compatible. See
+[the source redesign](docs/shutter-bloom.md).
+
+Alpha.18 restores the preferred angled journal sprite and rewrites the guide as
+field observations with practical instructions. Starter recipes stay readable;
+advanced source recipes move into their earned chapters. Discovery progress is
+preserved. Create item transport and journal/sigil mixing were checked in the dev
+world; the proposed Liquid Resonance factory is documented in
+[Create automation](docs/create-automation.md), with
+[cost/reward rules](docs/resonance-deployment-proposal.md). The fluid and portal
+fuel requirement are proposals, not shipped mechanics.
+
+Alpha.22 uses the player's **native Minecraft tree structure** for the Stillwood
+Hollow, preserving its shape with the chosen pale bark/amber palette. The source
+contains 930 blocks including deep roots. Terrain clips obstructed tree pieces
+without drops; the safe portal opening is still required. Deployed pieces remain
+unbreakable in Survival and despawn when the expedition ends. Placed-piece records
+persist with the run for safe recovery. See [the authored structure](docs/stillwood-hollow.md).
+
 
 ## Environment
 
@@ -17,6 +94,7 @@ The mod is intended to work standalone and to be suitable for modpacks.
 | Java        | 21                         |
 | Gradle      | 9.2.1 (wrapper)            |
 | Build plugin| ModDevGradle 2.0.148       |
+| Guidebook   | Patchouli 1.21.1-92-NEOFORGE |
 
 Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 
@@ -24,6 +102,7 @@ Mojang official mappings + Parchment (`2024.11.17` for 1.21.1).
 
 ```bash
 ./gradlew build              # compile, run unit tests, produce build/libs/expeditions-<version>.jar
+./gradlew alphaBundle        # stage our jar + required Patchouli jar in build/alpha
 ./gradlew test               # pure-Java unit tests (JUnit 5)
 ./gradlew runServer          # headless dev server in ./run
 ./gradlew runClient          # dev client (GUI)
@@ -127,7 +206,6 @@ splitRewards = true              # false = every member gets the full pool
 bonusDrops         = true  # item drops alongside tokens on completion
 dropValuePerToken  = 1.0   # item-value budget granted per awarded token
 maxBonusDrops      = 8     # max stacks a single draw may grant
-redeemCost         = 10    # token cost of /expeditions redeem
 
 [expeditions.challenges]
 enabled = true                   # roll a challenge on each checkpoint
@@ -346,7 +424,7 @@ Precedence and rules:
 
 ### Reward pools
 
-Completion bonus drops and `/expeditions redeem` draw from the item tag
+Completion bonus drops draw from the item tag
 `expeditions:reward_items/<dimension path>` — e.g. `reward_items/overworld`,
 `reward_items/the_nether` — falling back to `reward_items/default` for
 dimensions without a pool. They are plain tags, so any datapack or mod can
@@ -532,6 +610,12 @@ chunk, and validate on real block state — not heightmap assumptions.
   (default 10, felt out to 3×). The 2D needle says "here"; the heartbeat is
   what says "25 blocks straight down" — the site's heart calling to the
   compass, and the Nether navigation answer.
+  A floating ember now gives a continuous vertical hint: it rises when the
+  target is above, sinks when below, and settles near the needle within two
+  blocks of the same height. Right-click to attune: a short spark trail and
+  three rising/falling chimes clarify the direction, with a two-second
+  cooldown. The carved pale-heartwood compass keeps its own art across all
+  32 needle frames and is held face-on so the whole instrument is readable.
 - **Portal entry + parties** — a run starts at the terminal and spawns a
   portal above it; stepping in teleports the player to a remote, validated
   landing spot the route was generated around. Anyone entering while it's
@@ -557,8 +641,21 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Bonus drops** — completed expeditions also grant item supplies: each
   member's token share converts to an item-value budget drawn from the run's
   own dimension's reward pool, so Nether completions pay Netherish loot.
-- **Token redeem** — `/expeditions redeem` spends the configured token cost
-  for one supply draw from the pool of the dimension the player stands in.
+- **Return Sap** — completed expeditions award a return knot. Right-click a
+  Sap Jar with a water bucket while carrying a knot and one Essence. This brews
+  1,000 mB. Use empty buckets to move it by hand. A jar holds 4,000 mB and a
+  Basin holds 2,000 mB. A Rootwick sends 25 mB per second toward its copper
+  outlet, horizontally or downward. Create can mix the same ingredients and
+  move the sap through the standard block fluid capability.
+- **Reclaiming Basin** — a recovered dimension opens weighted item pools
+  from its registry namespace. Materials cost 250 mB, Curiosities 500 mB,
+  and Gear 1,000 mB. Hard and Brutal extractions open Gear. The ledger shows
+  example finds and their chances. Vanilla dimensions share the vanilla
+  catalog. Tokens still cover charter fees.
+- **Recycling** — crouch and use an unwanted stack on a Sap Jar, or feed
+  it through the top with a hopper. The jar consumes only whole items that
+  fit. Low-value items yield 1 mB each and more valuable items can yield up
+  to 25 mB. Damaged equipment yields less.
 - **Tier-weighted pools** — drop chances weight by `ItemValuator`, which
   scores items from their own data components (rarity, food, durability,
   attribute modifiers) plus the NeoForge `c:` convention tags (gems, ingots,
@@ -605,8 +702,13 @@ chunk, and validate on real block state — not heightmap assumptions.
   or lingering is dangerous — and every time the counter crosses a horde
   band or breaches the buff threshold, everyone in the dimension hears
   the Bloom answer with a distant roar. `big_bad` expeditions turn their
-  final checkpoint into a boss assault and clear the dimension on
-  completion.
+  final checkpoint into an original **Rootbound Guardian** encounter. Its
+  articulated heartwood body has emissive eyes/core, a tracking boss bar,
+  warned radial sweeps, and an enraged phase with marked root bursts. Its
+  core takes extra damage during windup. Defeating the bound guardian is
+  mandatory before extraction; cleanup and canceled deaths grant no proof.
+  `heart_of_the_thicket` follows Deep Salvage and clears the dimension only
+  after the party actually defeats its guardian and extracts.
 - **Infection** — lingering near a live assimilation heart lets the
   organism take hold: a personal infection counter accrues on cadence,
   decays away from hearts, and crosses staged thresholds (whispers →
@@ -617,26 +719,39 @@ chunk, and validate on real block state — not heightmap assumptions.
   armor and a carried attunement sigil delay the take, capped short of
   immunity — you can stall the Bloom, never refuse it.
 - **Field journal** — `expeditions:expedition_field_journal` (book +
-  assimilation essence). Right-click writes a live survey onto its own
-  pages and opens the book GUI: the active expedition (name, dimension,
+  assimilation essence). Right-click opens a fourteen-chapter field guide.
+  Chapters unlock from server-observed discoveries and survive death,
+  relogging and replacement books. Locked entries explain what to discover.
+  Its field-record pages include the active expedition (name, dimension,
   checkpoint progress, time afield, party), the dimension's campaign and
-  Bloom awareness (pressure band, horde swell, empowered spawns), and a
-  blood assay. Sneak-use lets the journal drink a blood sample —
-  `expeditions:blood_letting` damage that bypasses invulnerability but
-  never kills — and only a blooded journal renders the carrier's
-  infection percentage and stage.
+  Bloom awareness (pressure band, horde swell, empowered spawns).
+  Blood sampling and infection measurements belong to the separate field assay kit.
+  Harvesting essence teaches the crafting-book recipes for the journal,
+  attunement sigil and craftable terminal. Guide layout and keyboard chapter
+  navigation are client-verified; persistence and crafting are GameTest-verified.
 - **Assimilated mobs** — every expedition horde, siege wave and boss pack
   member is the organism's tissue wearing local fauna — they arrive with
   a tell, souls and embers ringing the site and the Bloom's shriek, and
   they bleed embers when cut — a synced
   `expeditions:assimilated` attachment (stage 1–3, dressed by pressure)
   drives a client overlay layer added to every living-entity renderer —
-  vanilla or modded — bleaching the model toward bone, tracing pale
-  veins and igniting ember on each mob's own heartbeat phase. The same
+  vanilla or modded — drawing branching, world-lit bark lesions and eight dim ember
+  points. Native skin alpha masks preserve transparent hats/wings; there is no
+  bright body-wide wash. The same
   attachment mirrors the player's infection stage, so the take shows on
   player skins too. Renderers that can't carry layers get an ember/ash
   particle signature instead — "taken" reads on anything.
-- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies|campaign|infection`.
+  Nearby infected mobs also shed pale bark dust and ash more often at later stages;
+  the local effect has a shared four-particle-per-tick budget and a 24-block range.
+- **Field assay kit** — craft a glass bottle, iron ingot, copper ingot and essence
+  together. Use to inspect the last sealed sample; sneak-use draws a fresh one
+  for one heart, refuses lethal sampling and causes no knockback. The kit stores
+  patient, infection percentage, stage, dimension and sampling time. Its result
+  is a snapshot, not a free live reading. Infection no longer applies nausea or
+  vanilla Darkness; a faint edge pulse preserves central visibility and fog range.
+- **Commands** — `/expeditions balance|status|abandon|redeem|start|unlocks|trophies|campaign`.
+  `/expeditions infection` remains operator-only diagnostics; survival readings
+  use the physical assay kit.
 - **Assimilation layer** (M15 prototype) — `expeditions:assimilation_layer`,
   a thin harvestable membrane that coats sturdy faces of its cell —
   several at once, sculk-vein style, so corners hold floor and wall
@@ -644,17 +759,24 @@ chunk, and validate on real block state — not heightmap assumptions.
   bleaches the face's real sprite toward bone at runtime, so the
   underlying block keeps its detail and shading but loses its color —
   without modifying, replacing, or storing the covered block's state.
-  Bone-pale capillary veins run over the skin while an ember halo beats
-  through them — pale when dormant, ignited on the lub, Pale Garden
-  style — a lub-dub pulse that originates at the colony's heart and
-  ripples outward through the membrane, each colony on its own tempo;
-  kill the heart and the glow dies to a resting thrum. Entities pass
+  Sparse pale rootlets take ordinary world lighting, while small ember knots
+  follow the colony's lub-dub pulse. Fresh growth drains the host's color over
+  a minute, preserving the original grain and contrast. Kill the heart and
+  the pulse stops, leaving cold ashen scars. Entities pass
   through
   the film (no collision); non-sturdy surfaces (air, fluids, fences,
   slabs, leaves) refuse attachment; each face dies with its own support.
   Breaking it by hand drops exactly one `expeditions:assimilation_essence`
   (placeholder progression item); creative breaks, support loss and
   world-edit removal drop nothing.
+  Native 16×16 corner-compatible material tiles cover one block face each.
+  Shared world-corner labels keep adjacent edges continuous; resin is rare.
+  Frayed neighbor-aware coverage masks both grain and host bleaching. Isolated
+  patches leave exposed host around them; filled interiors retain the material.
+  Flat pale bark tissue, warm gray grain and sparse amber fissures follow the
+  Creaking-inspired palette. Its surface art carries the spreading influence.
+  The thin host surface remains the harvest target, with no movement collision.
+  Dead colonies stop glowing.
 - **Microbiome** (M15) — `expeditions:assimilation_heart`, a pale node
   breathing ash, souls and ember sparks on its beat, seeded on standable
   ground in a ring around players as they move through
@@ -669,21 +791,60 @@ chunk, and validate on real block state — not heightmap assumptions.
   PulseWave the membrane glows to — and each new face unfurls over a few
   ticks with a wet sculk spread, so you see and hear the colony crawl.
   And it hunts: within `microbiome.huntRadius` (default 24, 0
-  disables) each pulse prefers the frontier cells nearest a player, so
+  disables) each pulse prefers the frontier cells nearest a living host, so
   the carpet visibly creeps toward warmth — beyond the radius growth is
-  direction-blind again.
+  direction-blind again. Growth continues without any host while its chunk ticks.
   Breaking the heart stops the spread; a dimension marked cleared in the
   saved data silences hearts and spawning both. Expedition markers get
   colonized too — a heart seeds in the ring around each checkpoint and
-  exit (`microbiome.markerColonies`), so the glowing blob doubles as the
+  exit (`microbiome.markerColonies`), so the ember-lit heart doubles as the
   route's landmark.
-- **Tests** — 124 unit tests + 98 core GameTests and 3 optional modded-biome probes.
+- **Contact infection and hive hosts** — heart proximity is harmless. Touching live
+  painted tissue (including its frayed footprint), an infected body, or its direct
+  melee attack queues exposure for the next infection cadence. Cold scars and
+  cleared dimensions cannot spread it. Every living mob can acquire an infected
+  variant while retaining its native species, skin, equipment and drops. Nearby
+  infected mobs agree on one nearby target, track it with their heads even while
+  native combat is active, and immediately share attack alerts. Idle peers regroup around an older
+  member; normal combat and siege priorities remain available. They move 15%
+  slower through one non-stacking modifier and use vanilla's visual frozen-body
+  shiver, without setting frozen ticks or causing freezing damage.
+- **Disruption Charm** — craft string, amethyst, copper and essence. Hold it in the
+  offhand, or equip it in a Curios charm slot if Curios is installed. It supplies
+  `expeditions:assimilation_disruption`; `/effect give` can grant the same effect
+  to any living entity. The effect blocks new contact exposure and interrupts
+  an infected mob's hive coordination. It does not instantly cure existing doses.
+  Curios is optional; compatibility uses its documented NeoForge item-handler
+  capability, with no required API jar or new runtime dependency. To test the real
+  Curios-equipped client in development: `./gradlew runClient -PbinaryMinecraft
+  -PcuriosCompatTest`. Curios 9.5.1 emits unsupported sync packets to GameTest mock
+  players, so that integration is verified in the live client instead.
+- **Deployment board** — dedicated terminal screen with mission briefings,
+  readable requirements, actual bonus-time windows, reward/cost previews,
+  previous/next navigation and reverse option cycling. It preselects an
+  unlocked mission in the terminal's home dimension. Required checkpoint
+  objectives set a minimum route length, enforced again by the server.
+- **Horde cleanup** — persistent run ownership follows wandering mobs and slime
+  children. Ended hordes are removed on load or tick; chunk unloads retain cleanup
+  responsibility. Active hordes remain alive.
+- **Field guide** — a Patchouli book with four categories, discovery-gated entries,
+  search/bookmarks, illustrated crafting and guardian pages. Live survey
+  components read the journal report; the assay kit holds the blood measurement. Existing
+  discoveries migrate to hidden guide advancement gates without changing progress.
+- **Placement and grip** — the terminal has one directional screen face, the
+  portal selection follows its hollow root frame, and the compass uses a small,
+  tilted grip with the same mirrored transform for its ember indicator.
+- **Heartwood art** — all ten legacy block/item designs now share carved pale
+  wood, dark metal and ember accents, with separate block tops and a transparent
+  root-aperture portal. Regenerate through `python tools/gen_textures.py`; review
+  before/after with `python tools/preview_heartwood.py` (Pillow required).
+- **Tests** — 168 unit tests + 148 core GameTests and 3 optional modded-biome probes.
 
 ## Verified
 
-- `./gradlew build` — passes; `expeditions-0.5.5.jar` assembled.
-- `./gradlew test` — 124 unit tests, 0 failures.
-- `./gradlew runGameTestServer` — **98/98 game tests passed** on a real dedicated
+- `./gradlew build` — passes; `expeditions-0.6.0-alpha.14.jar` assembled.
+- `./gradlew test` — 155 unit tests, 0 failures.
+- `./gradlew runGameTestServer -PisolatedGameTests` — **120/120 core game tests passed** on a real dedicated
   server, driving the genuine `useItemOn` → `useWithoutItem` interaction path:
   - full loop completes with the bonus-inclusive award and marker cleanup,
   - death fails the run keeping only banked checkpoint credits,
@@ -775,11 +936,10 @@ chunk, and validate on real block state — not heightmap assumptions.
     the horde rolls its type from the dimension's entity-tag pool and every
     member carries the declared buffs, modifiers survive save→load, and
     malformed modifier definitions are skipped at reload.
-  - the field journal writes a live survey onto its own book pages —
-    dimension pressure readable as "Awareness" — keeps its assay page
-    blank until a blood sample latches on the stack (costing real health,
-    bypassing creative invulnerability), then reports the carrier's
-    infection percentage.
+  - the field journal writes its live expedition/survey records, while the
+    separate assay kit pays for a nonlethal blood sample and stores the measured
+    infection percentage. Inspection preserves the dated sample, and sampling
+    causes no knockback.
   - pressured hordes arrive flagged assimilated (stage 3, the synced
     attachment the client overlay reads) and an infected player's flag
     mirrors their stage.
@@ -798,7 +958,7 @@ chunk, and validate on real block state — not heightmap assumptions.
   GameTest server** — verified mechanically (placement, survival, drops,
   shapes), not visually. Manual check: `./gradlew runClient`, place the layer
   on grass/stone/ore faces from all six directions and reload the chunk.
-  The field journal's book GUI is likewise client-only — the game test
+  The field journal's chapter GUI is likewise client-only — the game test
   verifies the report lands on the stack's `WRITTEN_BOOK_CONTENT`; the
   actual screen open needs a client session.
 - Not yet verified by a **human client session** — game tests drive the real
@@ -857,8 +1017,8 @@ chunk, and validate on real block state — not heightmap assumptions.
   `ExpeditionEventHandler` (death + login recovery + startup pruning + commands),
 `ItemValuator` (stat-driven item score for reward weighting), `ItemRewards`
 (dimension-aware pools from `reward_items/<dim>` tags + score-weighted
-draws), `ExpeditionMenu` (vanilla chest-GUI terminal screen — server-only,
-no custom menu type).
+draws), `ExpeditionMenu` (read-only slot transport for `ExpeditionScreen`,
+registered through `ModMenus`).
 - `com.expeditions.block` — terminal/checkpoint/exit blocks delegating to the
   manager. `com.expeditions.registry` — `DeferredRegister` wiring.
 - `com.expeditions.server.data` — `ExpeditionDefinitionLoader`
@@ -883,4 +1043,21 @@ The roadmap's alpha surface is feature-complete; next is hardening and feel:
 
 1. Client playtest of the visual layer (trace pulse, membrane, colonies).
 2. Third-party dimension smoke (M13's open gap).
-3. A Big Bad design pass beyond the current assault-wave prototype.
+3. Terminal mission-board presentation and wider multiplayer balance testing.
+
+
+Frontier progression in alpha.12 adds a personal attention bar, warned hunting
+parties and pursuing guardians in uncleared dimensions. Checkpoints buy time;
+retreat cools attention. A bound boss victory and extraction liberate a dimension
+for everyone; ordinary repeated runs no longer replace that victory. First-survey proof now opens remote deployments, and dimensions without an authored boss get
+a generated liberation mission. Home is sheltered by the Stillness from alpha.13 onward. See [the tuning guide](docs/frontier-progression.md)
+for timings, refuge rules, counterplay and datapack settings.
+
+Personal reports: `/expeditions history` lists your last ten outcomes, checkpoints,
+credited tokens, elapsed time and withdrawal cause. Reports begin when this
+version is installed; existing saves do not gain invented history.
+`/expeditions campaign` explains the next step in the current dimension, while
+`/expeditions campaign all` summarizes dimensions with recorded activity and
+eligible charters. Guardian-required liberation is shown separately from ordinary
+completion counts. The expedition compass tooltip gives a rough direct distance band and
+vertical direction for its synchronized target in the current dimension.

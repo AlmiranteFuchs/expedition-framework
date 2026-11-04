@@ -27,11 +27,26 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        url = 'https://maven.theillusivec4.top/'
+        content { includeGroup 'top.theillusivec4.curios' }
+    }
+    maven {
+        url = 'https://maven.blamejared.com'
+        content { includeGroup 'vazkii.patchouli' }
+    }
 }
 
 base {
     archivesName = mod_id
+}
+
+// Ready-to-install alpha: our mod and its required guidebook library only.
+tasks.register('alphaBundle', Sync) {
+    dependsOn tasks.named('jar')
+    from(tasks.named('jar'))
+    from(configurations.runtimeClasspath) { include 'Patchouli-*.jar' }
+    into layout.buildDirectory.dir('alpha')
 }
 
 // Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
@@ -46,7 +61,7 @@ def gameTestStructureNamespaces = [
     'expeditions_asm', 'expeditions_prog', 'expeditions_art',
     'expeditions_eco', 'expeditions_party', 'expeditions_obj',
     'expeditions_loot', 'expeditions_opts', 'expeditions_mod',
-    'expeditions_horde', 'expeditions_dim', 'expeditions_modded_horde', 'expeditions_compass'
+    'expeditions_horde', 'expeditions_dim', 'expeditions_modded_horde', 'expeditions_compass', 'expeditions_journal', 'expeditions_frontier', 'expeditions_stillness', 'expeditions_resonance', 'expeditions_preparation', 'expeditions_bloom'
 ]
 ext.allGameTestNamespaces = (['expeditions'] + gameTestStructureNamespaces).join(',')
 // Installed mods can send unsupported packets to GameTest mock players.
@@ -91,6 +106,7 @@ neoForge {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
+            systemProperty 'expeditions.gameTestRun', 'true'
             gameDirectory = gameTestDirectory
             // -PgtNamespaces=<ns>[,<ns>...] runs only tests whose
             // templateNamespace matches — e.g. expeditions_smoke for the
@@ -145,6 +161,11 @@ configurations {
 }
 
 dependencies {
+    // Optional verification only; compatibility itself uses NeoForge's named capability.
+    if (project.hasProperty('curiosCompatTest')) {
+        localRuntime 'top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1'
+    }
+    implementation 'vazkii.patchouli:Patchouli:1.21.1-92-NEOFORGE'
     // Unit tests for the pure expedition domain (no Minecraft classes required).
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

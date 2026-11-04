@@ -133,7 +133,8 @@ public final class ExpeditionDefinitions {
                 parseKeys(json.get("grants")),
                 optionalInt(json, "cost_tokens", 0),
                 parseCampaignState(json.get("min_campaign_state")),
-                optionalBool(json, "big_bad", false));
+                optionalBool(json, "big_bad", false),
+                parseObjectives(json.get("commission_pool")));
     }
 
     /**
@@ -292,6 +293,20 @@ public final class ExpeditionDefinitions {
                     objectives.add(ExpeditionObjective.collectItems(id, description, required,
                             item, tag, requiredInt(json, "count"), bonus));
                 }
+                case "harvest" -> {
+                    String block = optionalString(json, "block", null);
+                    String tag = optionalString(json, "tag", null);
+                    if (block != null) {
+                        ResourceLocation blockId = ResourceLocation.tryParse(block);
+                        if (blockId == null || BuiltInRegistries.BLOCK.getOptional(blockId).isEmpty()) {
+                            throw new IllegalArgumentException("harvest objective " + id + " references unknown block " + block);
+                        }
+                    }
+                    objectives.add(ExpeditionObjective.harvest(id, description, required,
+                            block, tag, requiredInt(json, "count"), bonus));
+                }
+                case "scout" -> objectives.add(ExpeditionObjective.scout(id, description, required,
+                        optionalString(json, "biome", null), optionalString(json, "tag", null), bonus));
                 case "time_limit" -> objectives.add(ExpeditionObjective.timeLimit(
                         id, description, required,
                         (long) requiredInt(json, "seconds") * TICKS_PER_SECOND, bonus));

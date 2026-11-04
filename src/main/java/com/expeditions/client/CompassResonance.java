@@ -92,7 +92,17 @@ public final class CompassResonance {
         pose.translate(side * (-0.4f * Math.sin(swingRoot * Math.PI)),
                 0.2f * Math.sin(swingRoot * Math.PI * 2),
                 -0.2f * Math.sin(event.getSwingProgress() * Math.PI));
-        pose.translate(side * 0.56, -0.22 - event.getEquipProgress() * 0.6, -0.72);
+        pose.translate(side * 0.56, -0.52 - event.getEquipProgress() * 0.6, -0.72);
+        float swing = event.getSwingProgress();
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * (45 - 20 * (float)Math.sin(swing * swing * Math.PI))));
+        pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(side * -20 * (float)Math.sin(swingRoot * Math.PI)));
+        pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(-80 * (float)Math.sin(swingRoot * Math.PI)));
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(side * -45));
+        var context = right ? net.minecraft.world.item.ItemDisplayContext.FIRST_PERSON_RIGHT_HAND
+                : net.minecraft.world.item.ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
+        mc.getItemRenderer().getModel(event.getItemStack(), mc.level, mc.player, 0)
+                .applyTransform(context, pose, !right);
+        pose.translate(0, 0, 0.04);
         float beat = (float) PulseWave.amplitudeAt(time, 0, target.pos().asLong());
         float y = (float) (pull * 0.12 + Math.sin(time * 0.16) * 0.006);
         spark(event, pose, 0, y, 0.019f + beat * 0.005f, 0.8f);
@@ -108,7 +118,7 @@ public final class CompassResonance {
                 float x = (float) (Math.sin(i * 2.4 + progress * 2) * 0.018);
                 float trailY = direction == 0
                         ? (float) (Math.cos(i * 2.4) * 0.025)
-                        : (float) (direction * progress * (0.17 + Math.abs(pull) * 0.12));
+                        : (float) (direction * progress * (0.12 + Math.abs(pull) * 0.10));
                 spark(event, pose, x, trailY, 0.013f, (float) (1 - progress));
             }
         }
@@ -117,12 +127,12 @@ public final class CompassResonance {
 
     private static void spark(RenderHandEvent event, PoseStack stack,
             float x, float y, float radius, float alpha) {
-        var buffer = event.getMultiBufferSource().getBuffer(RenderType.eyes(EMBER));
+        var buffer = event.getMultiBufferSource().getBuffer(RenderType.entityTranslucent(EMBER));
         var pose = stack.last();
         float[][] corners = {{-1, -1, 0, 1}, {1, -1, 1, 1}, {1, 1, 1, 0}, {-1, 1, 0, 0}};
         for (float[] corner : corners) {
             buffer.addVertex(pose, x + corner[0] * radius, y + corner[1] * radius, 0)
-                    .setColor(1.0f, 1.0f, 1.0f, alpha)
+                    .setColor(1.0f, 0.72f, 0.32f, alpha)
                     .setUv(corner[2], corner[3])
                     .setOverlay(OverlayTexture.NO_OVERLAY)
                     .setLight(LightTexture.FULL_BRIGHT)

@@ -1,0 +1,21 @@
+{
+  "name": "The Charter",
+  "landing_text": "A field copy of the Charter.$(br2)Observations and working recipes.$(br2)Some pages are still unwritten.",
+  "subtitle": "Field notes",
+  "version": "0",
+  "use_resource_pack": true,
+  "nameplate_color": "dfcf91",
+  "dont_generate_book": true,
+  "custom_book_item": "expeditions:expedition_field_journal",
+  "book_texture": "patchouli:textures/gui/book_green.png",
+  "model": "expeditions:expedition_field_journal",
+  "use_blocky_font": true,
+  "show_progress": true,
+  "show_toasts": false,
+  "text_color": "393126",
+  "header_color": "483821",
+  "link_color": "915627",
+  "link_hover_color": "bd7a32",
+  "progress_bar_color": "ac783b",
+  "pause_game": false
+}

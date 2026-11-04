@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "DED",
+    "AKA",
+    "CEC"
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "E": {
+      "item": "expeditions:assimilation_essence"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "K": {
+      "item": "expeditions:dormant_knot"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    }
+  },
+  "result": {
+    "id": "expeditions:severance_core",
+    "count": 1
+  }
+}

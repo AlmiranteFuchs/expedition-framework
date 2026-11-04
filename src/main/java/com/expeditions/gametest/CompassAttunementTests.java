@@ -18,6 +18,14 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @GameTestHolder("expeditions_compass")
 @PrefixGameTestTemplate(false)
 public final class CompassAttunementTests {
+    static {
+        com.expeditions.server.Microbiome.suppressSeedingForTests(true);
+        com.expeditions.server.Microbiome.suppressTraversalForTests(true);
+        com.expeditions.server.Assimilation.suppressForTests(true);
+        com.expeditions.server.data.ExpeditionDefinitionLoader.suppressLoadingForTests(true);
+        com.expeditions.server.data.ExpeditionTuningLoader.suppressLoadingForTests(true);
+    }
+
     private CompassAttunementTests() { }
 
     @GameTest(template = "arena", batch = "compass_attune")

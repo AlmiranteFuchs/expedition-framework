@@ -30,6 +30,28 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .lightLevel(state -> 7)));
 
+    public static final DeferredHolder<Block, Block> RECLAIMING_BASIN = BLOCKS.register(
+            "reclaiming_basin", () -> new com.expeditions.block.ReclaimingBasinBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.5f)
+                            .sound(SoundType.COPPER).noOcclusion()));
+
+    public static final DeferredHolder<Block, Block> GRAFT_POST = BLOCKS.register("graft_post",
+            () -> new net.minecraft.world.level.block.RotatedPillarBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.0f).sound(SoundType.WOOD).noOcclusion()));
+    public static final DeferredHolder<Block, Block> GRAFT_COLLAR = BLOCKS.register("graft_collar",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+                    .strength(2.5f).sound(SoundType.COPPER).noOcclusion()));
+
+    public static final DeferredHolder<Block, net.minecraft.world.level.block.LiquidBlock> RETURN_SAP = BLOCKS.register(
+            "return_sap", () -> new net.minecraft.world.level.block.LiquidBlock(ModFluids.SAP.get(),
+                    BlockBehaviour.Properties.of().noCollission().strength(100).noLootTable().liquid()));
+    public static final DeferredHolder<Block, Block> SAP_JAR = BLOCKS.register("sap_jar",
+            () -> new com.expeditions.block.SapVesselBlock(BlockBehaviour.Properties.of().strength(2)
+                    .sound(SoundType.WOOD).noOcclusion(), com.expeditions.block.SapVesselBlock.Kind.JAR));
+    public static final DeferredHolder<Block, Block> ROOTWICK = BLOCKS.register("rootwick",
+            () -> new com.expeditions.block.SapVesselBlock(BlockBehaviour.Properties.of().strength(2)
+                    .sound(SoundType.WOOD).noOcclusion(), com.expeditions.block.SapVesselBlock.Kind.WICK));
+
     /**
      * Route markers placed by the server while a run is active. They are
      * indestructible so a run cannot become unwinnable through breaking them.
@@ -37,18 +59,28 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, ExpeditionCheckpointBlock> EXPEDITION_CHECKPOINT = BLOCKS.register(
             "expedition_checkpoint",
             () -> new ExpeditionCheckpointBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_CYAN)
+                    .mapColor(MapColor.TERRACOTTA_WHITE)
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
-                    .lightLevel(state -> 11)));
+                    .noOcclusion()
+                    .sound(SoundType.WOOD)
+                    .lightLevel(state -> 9)));
 
     public static final DeferredHolder<Block, ExpeditionExitBlock> EXPEDITION_EXIT = BLOCKS.register(
             "expedition_exit",
             () -> new ExpeditionExitBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_LIGHT_GREEN)
+                    .mapColor(MapColor.TERRACOTTA_WHITE)
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
-                    .lightLevel(state -> 13)));
+                    .noOcclusion()
+                    .sound(SoundType.WOOD)
+                    .lightLevel(state -> 11)));
+
+    public static final DeferredHolder<Block, com.expeditions.block.RecallTreePartBlock> RECALL_TREE_PART = BLOCKS.register(
+            "recall_tree_part", () -> new com.expeditions.block.RecallTreePartBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(-1.0f, 3_600_000.0f)
+                    .noLootTable().noOcclusion().sound(SoundType.WOOD).lightLevel(state ->
+                            com.expeditions.server.RecallTreeLayout.portal(state.getValue(com.expeditions.block.RecallTreePartBlock.PART)) ? 8 : 0)));
 
     /**
      * Defense device deployed by a {@code defend_device} objective. Shares
@@ -82,18 +114,17 @@ public final class ModBlocks {
                     .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
 
     /**
-     * The microbiome's nucleus: a solid amber node that is the layer's
-     * only growth organ — sturdy faces let the membrane seed directly
-     * onto it, a block-entity ticker pulses the colony outward up to a
-     * config cap, and breaking it silences the spread for good.
+     * The Shutter Bloom: a folded, non-sturdy colony source. A bounded ticker
+     * seeds supported host terrain and grows the colony to its configured cap.
+     * Its old registry id remains stable for worlds, recipes and colony links.
      */
     public static final DeferredHolder<Block, AssimilationHeartBlock> ASSIMILATION_HEART = BLOCKS.register(
             "assimilation_heart",
             () -> new AssimilationHeartBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_YELLOW)
                     .strength(1.5f, 6.0f)
-                    .sound(SoundType.HONEY_BLOCK)
-                    .lightLevel(state -> 7)));
+                    .sound(SoundType.WOOD).noOcclusion()
+                    .lightLevel(state -> 2+state.getValue(com.expeditions.block.BloomSourceBlock.OPEN))));
 
     /**
      * Temporary teleport marker spawned above a terminal while a run is open
@@ -102,11 +133,29 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, ExpeditionPortalBlock> EXPEDITION_PORTAL = BLOCKS.register(
             "expedition_portal",
             () -> new ExpeditionPortalBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_PURPLE)
+                    .mapColor(MapColor.TERRACOTTA_ORANGE)
+                    .noOcclusion()
                     .noCollission()
                     .strength(-1.0f, 3_600_000.0f)
                     .noLootTable()
                     .lightLevel(state -> 11)));
+
+    public static final DeferredHolder<Block,com.expeditions.block.DormantLayerBlock> DORMANT_LAYER=BLOCKS.register("dormant_layer",
+            ()->new com.expeditions.block.DormantLayerBlock(BlockBehaviour.Properties.of().strength(.2f).noLootTable().noOcclusion().sound(SoundType.AZALEA_LEAVES).pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
+    public static final DeferredHolder<Block,com.expeditions.block.DormantHeartBlock> DORMANT_HEART=BLOCKS.register("dormant_heart",
+            ()->new com.expeditions.block.DormantHeartBlock(BlockBehaviour.Properties.of().strength(1.5f).noLootTable().noOcclusion().sound(SoundType.WOOD)));
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> STILLNESS_DYNAMO=BLOCKS.register("stillness_dynamo",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> ESSENCE_CONDENSER=BLOCKS.register("essence_condenser",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.WOOD)));
+
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> LIVING_HEART_ENGINE=BLOCKS.register("living_heart_engine",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(2.5f).sound(SoundType.COPPER)));
+    public static final DeferredHolder<Block,com.expeditions.block.ResonanceMachineBlock> SEVERANCE_GENERATOR=BLOCKS.register("severance_generator",
+            ()->new com.expeditions.block.ResonanceMachineBlock(BlockBehaviour.Properties.of().strength(3f).sound(SoundType.COPPER)));
+
+    public static final DeferredHolder<Block,com.expeditions.block.FieldWardBlock> FIELD_WARD=BLOCKS.register("field_ward",
+            ()->new com.expeditions.block.FieldWardBlock(BlockBehaviour.Properties.of().strength(1.5f).sound(SoundType.WOOD).noOcclusion().lightLevel(s->s.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT)?10:0)));
 
     private ModBlocks() {
     }

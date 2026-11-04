@@ -1,0 +1,73 @@
+{
+  "name": "Unwritten pages",
+  "icon": "minecraft:feather",
+  "category": "expeditions:beginnings",
+  "sortnum": 10,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Folded bark",
+      "text": "Approach a living growth with pale shutters and an amber lining."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A useful residue",
+      "text": "Collect a dormant flake or refine your first essence."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The threshold",
+      "text": "Use a terminal and examine the charters it can offer."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The compass",
+      "text": "Enter an expedition portal and take its issued compass."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Settled marks",
+      "text": "Use a split witness stump rather than merely passing its light."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Sealed cargo",
+      "text": "Reach a recovery site and take possession of its sealed parcel."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Hold the line",
+      "text": "Activate a checkpoint whose charter calls for a deployed device."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A sealed sample",
+      "text": "Draw a sample with an assay kit, or notice the first effects of exposure."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Being noticed",
+      "text": "Remain in affected country long enough for it to answer your presence."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bring it home",
+      "text": "Use extraction after the charter's required work is complete."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "At the last marker",
+      "text": "Follow a confrontation charter until its final mark answers."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "After silence",
+      "text": "Return to country whose campaign has been brought to a close."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Things brought back",
+      "text": "Recover a living Shutter Bloom, or obtain an instrument made from one."
+    }
+  ]
+}

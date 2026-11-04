@@ -1,7 +1,84 @@
 {
   "variants": {
-    "": {
-      "model": "expeditions:block/assimilation_heart"
+    "facing=north,open=0": {
+      "model": "expeditions:block/bloom_shutter_0",
+      "y": 0
+    },
+    "facing=north,open=1": {
+      "model": "expeditions:block/bloom_shutter_1",
+      "y": 0
+    },
+    "facing=north,open=2": {
+      "model": "expeditions:block/bloom_shutter_2",
+      "y": 0
+    },
+    "facing=north,open=3": {
+      "model": "expeditions:block/bloom_shutter_3",
+      "y": 0
+    },
+    "facing=north,open=4": {
+      "model": "expeditions:block/bloom_shutter_4",
+      "y": 0
+    },
+    "facing=east,open=0": {
+      "model": "expeditions:block/bloom_shutter_0",
+      "y": 90
+    },
+    "facing=east,open=1": {
+      "model": "expeditions:block/bloom_shutter_1",
+      "y": 90
+    },
+    "facing=east,open=2": {
+      "model": "expeditions:block/bloom_shutter_2",
+      "y": 90
+    },
+    "facing=east,open=3": {
+      "model": "expeditions:block/bloom_shutter_3",
+      "y": 90
+    },
+    "facing=east,open=4": {
+      "model": "expeditions:block/bloom_shutter_4",
+      "y": 90
+    },
+    "facing=south,open=0": {
+      "model": "expeditions:block/bloom_shutter_0",
+      "y": 180
+    },
+    "facing=south,open=1": {
+      "model": "expeditions:block/bloom_shutter_1",
+      "y": 180
+    },
+    "facing=south,open=2": {
+      "model": "expeditions:block/bloom_shutter_2",
+      "y": 180
+    },
+    "facing=south,open=3": {
+      "model": "expeditions:block/bloom_shutter_3",
+      "y": 180
+    },
+    "facing=south,open=4": {
+      "model": "expeditions:block/bloom_shutter_4",
+      "y": 180
+    },
+    "facing=west,open=0": {
+      "model": "expeditions:block/bloom_shutter_0",
+      "y": 270
+    },
+    "facing=west,open=1": {
+      "model": "expeditions:block/bloom_shutter_1",
+      "y": 270
+    },
+    "facing=west,open=2": {
+      "model": "expeditions:block/bloom_shutter_2",
+      "y": 270
+    },
+    "facing=west,open=3": {
+      "model": "expeditions:block/bloom_shutter_3",
+      "y": 270
+    },
+    "facing=west,open=4": {
+      "model": "expeditions:block/bloom_shutter_4",
+      "y": 270
     }
   }
 }

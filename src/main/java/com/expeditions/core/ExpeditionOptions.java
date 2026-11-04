@@ -12,7 +12,15 @@ import java.util.Objects;
  * time window (0 = definition window).
  */
 public record ExpeditionOptions(String expeditionId, Difficulty difficulty,
-        int checkpoints, int bonusTimePercent) {
+        int checkpoints, int bonusTimePercent, boolean solo) {
+    public static final String FIRST_BEARING = "expeditions:first_bearing";
+    public static final int GUIDED_CHECKPOINTS = 2;
+
+    public ExpeditionOptions(String expeditionId, Difficulty difficulty, int checkpoints, int bonusTimePercent) {
+        this(expeditionId, difficulty, checkpoints, bonusTimePercent, false);
+    }
+
+    public boolean guided() { return FIRST_BEARING.equals(expeditionId); }
 
     /** The historical default: dimension-local expedition, standard tier. */
     public static final ExpeditionOptions DEFAULT = new ExpeditionOptions(

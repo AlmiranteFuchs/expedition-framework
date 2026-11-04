@@ -32,6 +32,19 @@ public final class MobSpawns {
     private MobSpawns() {
     }
 
+    /** Keep a wave thematic, but do not let one oversized roll silence a viable biome. */
+    public static Mob trySpawnFromPool(ServerLevel level, BlockPos center, int radius, String dimension) {
+        java.util.Set<EntityType<?>> rejected = new java.util.HashSet<>();
+        for (int attempt = 0; attempt < 16; attempt++) {
+            EntityType<?> type = HordePools.pickExcluding(level, center, dimension, level.random, rejected);
+            if (type == null) return null;
+            Mob mob = trySpawn(type, level, center, radius);
+            if (mob != null) return mob;
+            rejected.add(type);
+        }
+        return null;
+    }
+
     /**
      * A positioned, collision-free {@link Mob} of {@code type} in the ring
      * around {@code center}, or null when no column can host it. Random

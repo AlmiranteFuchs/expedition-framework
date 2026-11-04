@@ -54,6 +54,7 @@ public final class ExpeditionRun {
     private int tokensAwarded;
     private boolean artifactIssued;
     private DefenseState defense;
+    private GuardianEncounter guardian;
     private final Map<String, ObjectiveState> objectiveStates;
     private final Set<String> failedObjectives;
     private final Map<UUID, Integer> securedTokens;
@@ -99,6 +100,17 @@ public final class ExpeditionRun {
         this.artifactIssued = artifactIssued;
         this.challengeEntities = new ArrayList<>(challengeEntities);
         this.options = Objects.requireNonNull(options, "options");
+        if (options.solo() && this.party.size() != 1) {
+            throw new IllegalArgumentException("Solo runs have exactly one member");
+        }
+        if ((options.guided() || ExpeditionOptions.FIRST_BEARING.equals(definition.id()))
+                && (!options.guided() || !ExpeditionOptions.FIRST_BEARING.equals(definition.id())
+                    || !options.solo() || definition.bigBad() || !definition.dimension().equals("minecraft:overworld")
+                    || options.difficulty() != Difficulty.STANDARD || options.bonusTimePercent() != 0
+                    || options.checkpoints() != ExpeditionOptions.GUIDED_CHECKPOINTS
+                    || checkpoints.size() != ExpeditionOptions.GUIDED_CHECKPOINTS)) {
+            throw new IllegalArgumentException("Invalid guided survey");
+        }
         if (portalDimension == null || portalDimension.isBlank()) {
             throw new IllegalArgumentException("Portal dimension must not be blank");
         }
@@ -340,12 +352,14 @@ public final class ExpeditionRun {
     }
 
     /**
-     * Whether the run's portal is open to teleports and new members: active
+     * Whether the run's portal is open to its members: active
      * with no checkpoint reached yet. The first activation seals the party.
      */
     public boolean portalOpen() {
         return status == ExpeditionStatus.ACTIVE && completedCheckpoints == 0;
     }
+
+    public boolean acceptsGuests() { return portalOpen() && !options.solo(); }
 
     /**
      * Adds {@code playerId} to the party. Idempotent for existing members.
@@ -357,9 +371,9 @@ public final class ExpeditionRun {
             return;
         }
         ensureActive();
-        if (!portalOpen()) {
+        if (!acceptsGuests()) {
             throw new IllegalStateException(
-                    "Run " + runId + " is already underway; the party is sealed");
+                    "Run " + runId + " is not accepting guests");
         }
         party.add(playerId);
     }
@@ -404,6 +418,32 @@ public final class ExpeditionRun {
      */
     public List<UUID> challengeEntities() {
         return Collections.unmodifiableList(challengeEntities);
+    }
+
+    public Optional<GuardianEncounter> guardianEncounter() { return Optional.ofNullable(guardian); }
+    public boolean guardianDefeated() { return guardian != null && guardian.defeated(); }
+
+    public void bindGuardian(UUID entityId) {
+        ensureActive();
+        if (guardian != null) throw new IllegalStateException("This run already owns a guardian");
+        restoreGuardian(new GuardianEncounter(entityId, false));
+    }
+
+    /** Strict save seam; legacy completed runs may have no encounter record. */
+    public void restoreGuardian(GuardianEncounter encounter) {
+        Objects.requireNonNull(encounter, "encounter");
+        if (!definition.bigBad() || !allCheckpointsDone() || (status == ExpeditionStatus.COMPLETED && !encounter.defeated())
+                || (isActive() && !encounter.defeated() && !challengeEntities.contains(encounter.entityId()))) {
+            throw new IllegalArgumentException("Guardian record does not belong to this run's final challenge");
+        }
+        guardian = encounter;
+    }
+
+    /** Only a confirmed server death of the bound UUID can settle the encounter. */
+    public boolean recordGuardianDefeat(UUID entityId) {
+        if (!isActive() || guardian == null || guardian.defeated() || !guardian.entityId().equals(entityId)) return false;
+        guardian = new GuardianEncounter(entityId, true);
+        return true;
     }
 
     /**
@@ -736,15 +776,16 @@ public final class ExpeditionRun {
             throw new IllegalArgumentException("Objective progress must be >= 0");
         }
         ExpeditionObjective objective = objective(objectiveId);
-        if (objective.kind() != ObjectiveKind.COLLECT_ITEMS) {
+        if (objective.kind() != ObjectiveKind.COLLECT_ITEMS && objective.kind() != ObjectiveKind.HARVEST
+                && objective.kind() != ObjectiveKind.SCOUT) {
             throw new IllegalArgumentException(
-                    "Objective \"" + objectiveId + "\" is not a collect_items objective");
+                    "Objective \"" + objectiveId + "\" does not track field observations or gathered resources");
         }
         ObjectiveState state = state(objectiveId);
         if (state.completed()) {
             return false;
         }
-        int next = state.progress() + amount;
+        int next = state.progress() + Math.min(amount, objective.progressTarget() - state.progress());
         boolean done = next >= objective.progressTarget();
         objectiveStates.put(objectiveId,
                 new ObjectiveState(Math.min(next, objective.progressTarget()), done));
@@ -831,6 +872,9 @@ public final class ExpeditionRun {
                     "Run " + runId + " has unfinished required objectives: "
                             + missing.stream().map(ExpeditionObjective::id)
                                     .collect(Collectors.joining(", ")));
+        }
+        if (definition.bigBad() && !guardianDefeated()) {
+            throw new IllegalStateException("The Rootbound Guardian must be defeated before extraction");
         }
         status = ExpeditionStatus.COMPLETED;
     }

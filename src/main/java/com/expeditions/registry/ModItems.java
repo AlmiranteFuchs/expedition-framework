@@ -14,6 +14,22 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(ExpeditionsMod.MOD_ID);
+    public static final DeferredItem<com.expeditions.item.FieldAssayKitItem> FIELD_ASSAY_KIT = ITEMS.register(
+            "field_assay_kit", () -> new com.expeditions.item.FieldAssayKitItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<Item> DISRUPTION_CHARM = ITEMS.register(
+            "disruption_charm",()->new com.expeditions.item.DisruptionCharmItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<Item> RETURN_KNOT = ITEMS.registerSimpleItem("return_knot");
+    public static final DeferredItem<Item> RETURN_SAP_BUCKET = ITEMS.register("return_sap_bucket",
+            () -> new net.minecraft.world.item.BucketItem(ModFluids.SAP.get(),
+                    new Item.Properties().craftRemainder(net.minecraft.world.item.Items.BUCKET).stacksTo(1)));
+    public static final DeferredItem<BlockItem> SAP_JAR = ITEMS.registerSimpleBlockItem("sap_jar", ModBlocks.SAP_JAR);
+    public static final DeferredItem<BlockItem> ROOTWICK = ITEMS.registerSimpleBlockItem("rootwick", ModBlocks.ROOTWICK);
+    public static final DeferredItem<BlockItem> GRAFT_POST = ITEMS.registerSimpleBlockItem("graft_post", ModBlocks.GRAFT_POST);
+    public static final DeferredItem<BlockItem> GRAFT_COLLAR = ITEMS.registerSimpleBlockItem("graft_collar", ModBlocks.GRAFT_COLLAR);
+
+    public static final DeferredItem<BlockItem> RECLAIMING_BASIN = ITEMS.registerSimpleBlockItem(
+            "reclaiming_basin", ModBlocks.RECLAIMING_BASIN);
 
     public static final DeferredItem<BlockItem> EXPEDITION_TERMINAL_ITEM = ITEMS.registerSimpleBlockItem(
             "expedition_terminal", ModBlocks.EXPEDITION_TERMINAL);
@@ -49,8 +65,8 @@ public final class ModItems {
      * component; used at the terminal it grants that key permanently and
      * is never consumed — the artifact itself is the proof of attunement.
      */
-    public static final DeferredItem<Item> ATTUNEMENT_SIGIL = ITEMS.registerSimpleItem(
-            "attunement_sigil", new Item.Properties().stacksTo(1));
+    public static final DeferredItem<Item> ATTUNEMENT_SIGIL = ITEMS.register(
+            "attunement_sigil", () -> new com.expeditions.item.AttunementSigilItem(new Item.Properties().stacksTo(1)));
 
     /**
      * The survey tool: opens as a book carrying a live report — expedition
@@ -60,6 +76,21 @@ public final class ModItems {
     public static final DeferredItem<ExpeditionFieldJournalItem> EXPEDITION_FIELD_JOURNAL = ITEMS.register(
             "expedition_field_journal",
             () -> new ExpeditionFieldJournalItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<Item> DORMANT_FLAKE=ITEMS.registerSimpleItem("dormant_flake");
+    public static final DeferredItem<BlockItem> DORMANT_LAYER_ITEM=ITEMS.registerSimpleBlockItem("dormant_layer",ModBlocks.DORMANT_LAYER);
+    public static final DeferredItem<BlockItem> DORMANT_HEART_ITEM=ITEMS.registerSimpleBlockItem("dormant_heart",ModBlocks.DORMANT_HEART);
+    public static final DeferredItem<BlockItem> STILLNESS_DYNAMO_ITEM=ITEMS.registerSimpleBlockItem("stillness_dynamo",ModBlocks.STILLNESS_DYNAMO);
+    public static final DeferredItem<BlockItem> ESSENCE_CONDENSER_ITEM=ITEMS.registerSimpleBlockItem("essence_condenser",ModBlocks.ESSENCE_CONDENSER);
+
+    public static final DeferredItem<Item> DORMANT_KNOT=ITEMS.registerSimpleItem("dormant_knot");
+    public static final DeferredItem<com.expeditions.item.SeveranceCoreItem> SEVERANCE_CORE=ITEMS.register("severance_core",()->new com.expeditions.item.SeveranceCoreItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<BlockItem> LIVING_HEART_ENGINE_ITEM=ITEMS.registerSimpleBlockItem("living_heart_engine",ModBlocks.LIVING_HEART_ENGINE);
+    public static final DeferredItem<BlockItem> SEVERANCE_GENERATOR_ITEM=ITEMS.registerSimpleBlockItem("severance_generator",ModBlocks.SEVERANCE_GENERATOR);
+
+    public static final DeferredItem<com.expeditions.item.ResonanceCellItem> RESONANCE_CELL=ITEMS.register("resonance_cell",()->new com.expeditions.item.ResonanceCellItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<com.expeditions.item.SurveyLensItem> SURVEY_LENS=ITEMS.register("survey_lens",()->new com.expeditions.item.SurveyLensItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<BlockItem> FIELD_WARD_ITEM=ITEMS.registerSimpleBlockItem("field_ward",ModBlocks.FIELD_WARD);
 
     private ModItems() {
     }

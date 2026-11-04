@@ -28,8 +28,32 @@ import net.minecraft.world.phys.BlockHitResult;
  * run's progress otherwise. All state changes happen on the server.
  */
 public class ExpeditionTerminalBlock extends Block {
+    public static final net.minecraft.world.level.block.state.properties.DirectionProperty FACING =
+            net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
+
     public ExpeditionTerminalBlock(Properties properties) {
         super(properties);
+        registerDefaultState(stateDefinition.any().setValue(FACING, net.minecraft.core.Direction.NORTH));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING);
+    }
+
+    @Override
+    public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+        return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
+
+    @Override
+    protected BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+    }
+
+    @Override
+    protected BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
+        return rotate(state, mirror.getRotation(state.getValue(FACING)));
     }
 
     /**
@@ -41,6 +65,16 @@ public class ExpeditionTerminalBlock extends Block {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state,
             Level level, BlockPos pos, Player player, InteractionHand hand,
             BlockHitResult hitResult) {
+        if(stack.is(ModItems.SEVERANCE_CORE.get())){
+            if(player instanceof ServerPlayer server){
+                String dim=level.dimension().location().toString();
+                boolean ready=ExpeditionManager.get(server.server).canAttuneCore(dim);
+                if(ready)com.expeditions.item.SeveranceCoreItem.bind(stack,dim);
+                player.displayClientMessage(Component.translatable(ready?"machine.expeditions.core_attuned":"machine.expeditions.core_refused"),true);
+                server.inventoryMenu.broadcastChanges();
+            }
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (!stack.is(ModItems.ATTUNEMENT_SIGIL.get())) {
             return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
         }
@@ -66,6 +100,8 @@ public class ExpeditionTerminalBlock extends Block {
             BlockHitResult hitResult) {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+            com.expeditions.server.JournalDiscovery.unlock(serverPlayer,
+                    com.expeditions.core.JournalChapter.TERMINAL);
             // Apply the recovery policy on interaction too: a run whose world
             // state vanished is failed closed instead of trapping the player.
             manager.resumeOrFail(serverPlayer).ifPresentOrElse(
@@ -92,5 +128,8 @@ public class ExpeditionTerminalBlock extends Block {
 
     static String format(Waypoint w) {
         return w.x() + ", " + w.y() + ", " + w.z();
+    }    @Override protected net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,net.minecraft.world.level.BlockGetter level,BlockPos pos,net.minecraft.world.phys.shapes.CollisionContext context){
+        return FieldMachineShapes.shape("expedition_terminal",state.getValue(FACING));
     }
+
 }

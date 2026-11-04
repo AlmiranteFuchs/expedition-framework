@@ -1,0 +1,35 @@
+{
+  "name": "Settled marks",
+  "icon": "expeditions:expedition_checkpoint",
+  "category": "expeditions:expeditions",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_checkpoint",
+      "text": "Split pale stumps hold a narrow amber seam. Roots spread from the wood, but the cut does not close. The compass answers these witness stumps: the checkpoints named in a charter.",
+      "title": "Settled marks"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Settle the mark",
+      "text": "Use them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward, even if the expedition later fails. Make room before touching one. Its answer can draw company."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An unfinished route",
+      "text": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An unfinished route",
+      "text": "Disconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An unfinished route",
+      "text": "The terminal keeps a short record. Use /expeditions history to review the last ten outcomes and the tokens each journey secured."
+    }
+  ],
+  "advancement": "expeditions:journal/checkpoints"
+}

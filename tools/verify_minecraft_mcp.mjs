@@ -1,6 +1,7 @@
 // Live integration checks in a disposable world copy, using the real MCP protocol.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { gunzipSync } from 'node:zlib';
+import { writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
@@ -16,38 +17,16 @@ const directory = resolve(root, 'build/mcp-verification');
 mkdirSync(directory, { recursive: true });
 const report = { world: 'sp:MCP-Debug-Test-20261029', checks: [], expeditions: [] };
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const bundledPython = resolve(homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe');
+const python = process.env.EXPEDITIONS_PYTHON ?? (existsSync(bundledPython) ? bundledPython : 'python3');
+const biomeTables = JSON.parse(execFileSync(python, [resolve(root, 'tools/read_mod_biomes.py'),
+  ...readdirSync(resolve(root, 'run/mods')).filter(name => name.endsWith('.jar')).map(name => resolve(root, 'run/mods', name))],
+  {encoding:'utf8', maxBuffer: 16 * 1024 * 1024}));
+let verifiedWorld = false;
+let previousMobSpawning;
 
-// Read-only NBT decoding lets us compare live entities to the exact UUIDs the
-// authoritative run tracks, instead of confusing ambient fauna with its horde.
-function savedData() {
-  const buffer = gunzipSync(readFileSync(resolve(root,
-    'run/saves/MCP-Debug-Test-20261029/data/expeditions_runs.dat')));
-  let offset = 0;
-  const number = (size, method) => { const result = buffer[method](offset); offset += size; return result; };
-  const byte = () => number(1, 'readUInt8');
-  const int = () => number(4, 'readInt32BE');
-  const string = () => { const size = number(2, 'readUInt16BE'); const result = buffer.toString('utf8', offset, offset + size); offset += size; return result; };
-  function value(type) {
-    switch (type) {
-      case 1: return number(1, 'readInt8');
-      case 2: return number(2, 'readInt16BE');
-      case 3: return int();
-      case 4: return number(8, 'readBigInt64BE').toString();
-      case 5: return number(4, 'readFloatBE');
-      case 6: return number(8, 'readDoubleBE');
-      case 7: { const size = int(); const result = buffer.subarray(offset, offset + size); offset += size; return [...result]; }
-      case 8: return string();
-      case 9: { const child = byte(), size = int(); return Array.from({length: size}, () => value(child)); }
-      case 10: { const result = {}; for (let child; (child = byte()) !== 0;) { const key = string(); result[key] = value(child); } return result; }
-      case 11: return Array.from({length: int()}, () => int());
-      case 12: return Array.from({length: int()}, () => number(8, 'readBigInt64BE').toString());
-      default: throw new Error(`Unsupported NBT tag ${type}`);
-    }
-  }
-  const type = byte(); string();
-  return value(type).data;
-}
 function uuid(parts) {
+  if (typeof parts === 'string') return parts;
   const hex = parts.map(n => (n >>> 0).toString(16).padStart(8, '0')).join('');
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
 }
@@ -67,38 +46,80 @@ async function call(name, args = {}) {
   try { return JSON.parse(texts[0]); } catch { return texts.join('\n'); }
 }
 async function command(command, requireSuccess = true) {
+  assert(verifiedWorld, 'No live writes before the disposable world has been verified');
+  const screen = await call('get_screen');
+  assert(screen.inWorld && screen.lastWorldId === report.world, 'Stop if the user leaves the disposable test world');
   const result = await call('run_command', {command});
   if (requireSuccess) assert.equal(result.success, true, JSON.stringify(result));
   return result;
 }
 async function snapshot() {
-  await command('save-all flush');
-  return savedData();
+  const result = await command('execute as Dev at @s run expeditions diagnostics');
+  const json = result.output.find(line => line.trim().startsWith('{'));
+  assert(json, 'The live server must return an authoritative diagnostic snapshot');
+  return JSON.parse(json);
+}
+async function waitForClient() {
+  for (let n = 0; n < 150; n++) {
+    const screen = await call('get_screen');
+    assert.equal(screen.lastWorldId, report.world, 'Stay inside the disposable test world');
+    if (screen.inWorld && !['loading', 'connecting'].includes(screen.screen)) return;
+    await pause(200);
+  }
+  throw new Error('The client did not finish loading the dimension');
+}
+async function nativeBiome(dimension, point) {
+  const namespace = dimension.split(':')[0];
+  for (const [id, categories] of Object.entries(biomeTables).filter(([id]) => id.startsWith(namespace + ':'))) {
+    // Execute a real terminal command so the bridge's result callback fires
+    // for the successful branch as well as failed conditions.
+    const match = await command(`execute in ${dimension} positioned ${point.x} ${point.y} ${point.z} if biome ~ ~ ~ ${id} run time query gametime`, false);
+    if (match.success && match.resultValue > 0) {
+      return { id, mobs: [...new Set(Object.values(categories).flat().map(entry => entry.type))] };
+    }
+  }
+  throw new Error(`Could not identify the checkpoint's native biome in ${dimension}`);
 }
 async function clickMarker(point, dimension) {
+  await waitForClient();
   await call('close_screen');
-  await command(`execute in ${dimension} run tp Dev ${point.x + .5} ${point.y + 1} ${point.z + 2.5}`);
-  await pause(250);
-  await call('look_at', {x: point.x + .5, y: point.y + .5, z: point.z + .5});
-  await pause(200);
+  // The route guarantees the marker's own floor, not terrain two blocks
+  // beside it. Stand on the solid marker and look down instead of falling
+  // off an island or cave ledge between teleport and right-click.
+  await command(`execute in ${dimension} run tp Dev ${point.x + .5} ${point.y + 1} ${point.z + .5} 0 90`);
+  let scene;
+  for (let n = 0; n < 150; n++) {
+    await pause(200);
+    scene = await call('describe_scene', {maxDistance: 6, rayColumns: 1, rayRows: 1});
+    const hit = scene.lookingAt;
+    if (hit?.type === 'block' && hit.pos.x === point.x && hit.pos.y === point.y && hit.pos.z === point.z) break;
+  }
+  assert(scene.lookingAt?.type === 'block' && scene.lookingAt.pos.x === point.x
+    && scene.lookingAt.pos.y === point.y && scene.lookingAt.pos.z === point.z,
+    `Client must load and actually aim at the marker before clicking: ${JSON.stringify(scene.lookingAt)}`);
   const use = await call('use_item');
   await pause(250);
   return use;
 }
 try {
   await client.connect(transport);
+  report.bridge = await call('get_status');
   const screen = await call('get_screen');
   assert.equal(screen.lastWorldId, report.world, 'Live writes are restricted to the disposable debug copy');
+  assert(screen.inWorld, 'The debug world must be loaded');
+  verifiedWorld = true;
   await call('close_screen');
   await call('stop_movement');
   report.dimensions = await call('list_dimensions');
   report.missions = await command('expeditions dimensions');
   await command('execute as Dev at @s run expeditions abandon', false);
+  previousMobSpawning = (await command('gamerule doMobSpawning')).resultValue !== 0;
   await command('gamerule doMobSpawning false');
   await command('gamemode creative Dev');
   await command('item replace entity Dev weapon.mainhand with minecraft:air');
-  await command('execute in minecraft:overworld run fill -4 179 -4 4 179 4 minecraft:stone');
-  await command('execute in minecraft:overworld run fill -4 180 -4 4 184 4 minecraft:air');
+  // Vanilla /fill reports failure when the fixture already matches.
+  await command('execute in minecraft:overworld run fill -4 179 -4 4 179 4 minecraft:stone', false);
+  await command('execute in minecraft:overworld run fill -4 180 -4 4 184 4 minecraft:air', false);
   await command('execute in minecraft:overworld run tp Dev 0.5 180 0.5');
 
   for (const dimension of ['aether:the_aether', 'the_bumblezone:the_bumblezone', 'twilightforest:twilight_forest']) {
@@ -141,6 +162,7 @@ try {
       report.checks.push({movementDistance: distance});
     }
     test.click = await clickMarker(run.Checkpoints[0], dimension);
+    test.nativeBiome = await nativeBiome(dimension, test.checkpoint);
     data = await snapshot();
     const active = data.Runs.find(entry => uuid(entry.RunId) === test.runId);
     assert.equal(active.Done, 1, 'The real right-click must activate the checkpoint');
@@ -148,40 +170,57 @@ try {
     assert(tracked.length > 0, 'Checkpoint must track an actual horde');
     test.horde = [];
     for (const id of tracked) {
-      const entity = await call('get_entity', {uuid:id});
+      let entity;
+      for (let n = 0; n < 40; n++) {
+        try { entity = await call('get_entity', {uuid:id}); break; }
+        catch (error) {
+          if (!error.message.includes('[not_found]') || n === 39) throw error;
+          // Spawned entities can wait for a newly arrived player's chunk tickets.
+          await pause(200);
+        }
+      }
       assert.equal(entity.dimension, dimension);
       test.horde.push({uuid: id, type: entity.type, x:entity.x, y:entity.y, z:entity.z});
     }
-    if (dimension.startsWith('aether:')) {
-      assert(test.horde.every(entity => entity.type.startsWith('aether:')), 'Aether hordes must use native custom hostile categories');
-    }
-    if (dimension.startsWith('the_bumblezone:')) {
-      assert(test.horde.every(entity => entity.type === 'minecraft:bee' || entity.type.startsWith('the_bumblezone:')),
-        'Bumblezone hordes must use local bees rather than generic monsters');
-    }
+    assert(test.horde.every(entity => test.nativeBiome.mobs.includes(entity.type)),
+      `Horde types must belong to the actual ${test.nativeBiome.id} spawn table`);
     const first = test.horde[0];
     await call('look_at', {x:first.x, y:first.y + .7, z:first.z});
     await pause(200);
     test.screenshot = await call('screenshot');
     await clickMarker(run.Exit, dimension);
     data = await snapshot();
-    const ended = data.Runs.find(entry => uuid(entry.RunId) === test.runId);
+    let ended = data.Runs.find(entry => uuid(entry.RunId) === test.runId);
+    for (let n = 0; n < 20 && ended.ChallengeEntities.length > 0; n++) {
+      await pause(200);
+      ended = (await snapshot()).Runs.find(entry => uuid(entry.RunId) === test.runId);
+    }
     assert.equal(ended.Status, 'COMPLETED', 'Extraction must complete the run');
     assert.equal(ended.Rewarded, 1, 'Extraction must record rewards exactly once');
     assert.equal(ended.ChallengeEntities.length, 0, 'Run end must untrack its discarded horde');
     test.status = ended.Status;
     test.tokensAwarded = ended.TokensAwarded;
     test.cleanup = true;
+    await waitForClient();
     console.log(`PASS ${dimension}: ${test.horde.length} ${first.type}, reward ${test.tokensAwarded}, horde cleaned`);
     writeFileSync(resolve(directory, 'live-report.json'), JSON.stringify(report, null, 2));
   }
   report.success = true;
 } catch (error) {
   report.error = error.stack;
+  if (verifiedWorld) {
+    try { report.failureState = await call('get_self'); report.failureScreenshot = await call('screenshot'); } catch { }
+  }
   console.error(error.message);
   process.exitCode = 1;
 } finally {
   writeFileSync(resolve(directory, 'live-report.json'), JSON.stringify(report, null, 2));
   try { await call('stop_movement'); } catch { }
+  if (verifiedWorld) {
+    try { await command('execute as Dev at @s run expeditions abandon', false); } catch { }
+    if (previousMobSpawning !== undefined) {
+      try { await command(`gamerule doMobSpawning ${previousMobSpawning}`); } catch { }
+    }
+  }
   await client.close();
 }

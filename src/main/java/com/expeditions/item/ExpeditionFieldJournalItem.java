@@ -2,56 +2,41 @@ package com.expeditions.item;
 
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.ExpeditionRun;
-import com.expeditions.server.Assimilation;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionSavedData;
+import com.expeditions.server.FieldOrders;
 import com.expeditions.server.data.ExpeditionTuning;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundOpenBookPacket;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.Filterable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.Level;
 
 /**
  * The Charter-issue field journal. Right-click writes a fresh survey onto its
- * own pages and opens the vanilla book GUI — the active expedition, this
+ * own pages for the chapter guide — the active expedition, this
  * dimension's campaign, and the Bloom's pressure (the organism's awareness of
  * you). The report lives in a {@code WRITTEN_BOOK_CONTENT} component on the
  * stack, so the journal physically holds its last survey between uses.
  *
- * <p>Sneak-use lets the journal drink a blood sample — a small health cost,
- * never lethal — and only a blooded journal fills its third page with the
- * carrier's infection assay. The flag rides {@code CUSTOM_DATA} on the stack:
- * the journal remembers whose blood it drank, not the player.
+ * Blood sampling belongs to the separate field assay kit.
  */
 public class ExpeditionFieldJournalItem extends Item {
-    private static final String TAG_BLOOD_SAMPLED = "expeditions:blood_sampled";
+    // A presentation callback installed only by ExpeditionsClient. Dedicated
+    // servers never load a screen class or depend on a client implementation.
+    private static java.util.function.Consumer<InteractionHand> clientOpener = hand -> { };
 
-    /** The journal's price for reading what's inside you. Never kills. */
-    private static final float BLOOD_SAMPLE_COST = 2.0f;
-
-    /**
-     * Bloodletting rides {@code bypasses_invulnerability} — a creative-mode
-     * player still pays the sample's price.
-     */
-    private static final ResourceKey<DamageType> BLOOD_LETTING =
-            ResourceKey.create(Registries.DAMAGE_TYPE,
-                    ResourceLocation.fromNamespaceAndPath("expeditions", "blood_letting"));
-
+    public static void setClientOpener(java.util.function.Consumer<InteractionHand> opener) {
+        clientOpener = opener;
+    }
     public ExpeditionFieldJournalItem(Properties properties) {
         super(properties);
     }
@@ -60,57 +45,29 @@ public class ExpeditionFieldJournalItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!(player instanceof ServerPlayer server)) {
+            clientOpener.accept(hand);
             return InteractionResultHolder.success(stack);
         }
-        if (player.isShiftKeyDown()) {
-            return sampleBlood(server, stack)
-                    ? InteractionResultHolder.sidedSuccess(stack, false)
-                    : InteractionResultHolder.fail(stack);
-        }
-        openReport(server, stack, hand);
+        com.expeditions.server.JournalDiscovery.observe(server);
+        openReport(server, stack);
         return InteractionResultHolder.sidedSuccess(stack, false);
     }
 
     /**
-     * Sneak-use: the journal drinks. Costs {@link #BLOOD_SAMPLE_COST} health —
-     * refused when it would kill — and latches the blood flag so the assay
-     * page renders. Returns whether the sample was taken.
+     * Writes this tick's survey onto the stack. The custom client guide reads
+     * the synchronized component on its field-record pages. Keep broadcasting
+     * changes: the screen can open before this server-side refresh arrives.
      */
-    private static boolean sampleBlood(ServerPlayer player, ItemStack journal) {
-        if (player.getHealth() <= BLOOD_SAMPLE_COST) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.journal_too_weak"));
-            return false;
-        }
-        player.hurt(player.damageSources().source(BLOOD_LETTING), BLOOD_SAMPLE_COST);
-        CustomData.update(DataComponents.CUSTOM_DATA, journal,
-                tag -> tag.putBoolean(TAG_BLOOD_SAMPLED, true));
-        player.sendSystemMessage(Component.translatable(
-                "message.expeditions.journal_blood"));
-        return true;
-    }
-
-    private static boolean bloodSampled(ItemStack journal) {
-        CustomData data = journal.get(DataComponents.CUSTOM_DATA);
-        return data != null && data.copyTag().getBoolean(TAG_BLOOD_SAMPLED);
-    }
-
-    /**
-     * Writes this tick's survey onto the stack and opens the book GUI. The
-     * client reads the component off the held stack, so the slot sync must be
-     * enqueued before the open packet — same ordering {@code openItemGui}
-     * uses via {@code broadcastChanges}.
-     */
-    private static void openReport(ServerPlayer player, ItemStack journal, InteractionHand hand) {
+    private static void openReport(ServerPlayer player, ItemStack journal) {
         journal.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
                 Filterable.passThrough("Field Journal"), "The Charter", 0,
                 List.of(
                         Filterable.passThrough(expeditionPage(player)),
-                        Filterable.passThrough(surveyPage(player)),
-                        Filterable.passThrough(assayPage(player, journal))),
+                        Filterable.passThrough(surveyPage(player))),
                 true));
         player.containerMenu.broadcastChanges();
-        player.connection.send(new ClientboundOpenBookPacket(hand));
+        // The custom chapter screen reads this synchronized report as its
+        // field-record pages. It opens client-side through the use callback.
     }
 
     private static Component expeditionPage(ServerPlayer player) {
@@ -122,14 +79,24 @@ public class ExpeditionFieldJournalItem extends Item {
             return Component.literal(page.toString());
         }
         ExpeditionRun active = run.get();
-        long elapsed = player.serverLevel().getGameTime() - active.startedGameTime();
+        long elapsed = active.elapsedTicks(player.serverLevel().getGameTime());
         page.append(active.definition().displayName()).append('\n');
         page.append(active.definition().dimension()).append("\n\n");
         page.append("Checkpoints: ").append(active.completedCheckpoints())
                 .append('/').append(active.totalCheckpoints()).append('\n');
-        page.append("Afield: ").append(elapsed / 1200).append(" min\n");
+        if (elapsed >= 0) {
+            page.append("Afield: ").append(elapsed / 1200).append(" min\n");
+        }
         page.append("Party: ").append(active.party().size());
-        return Component.literal(page.toString());
+        var report = Component.literal(page.toString());
+        var orders = FieldOrders.describe(active);
+        if (!orders.isEmpty()) {
+            report.append("\n\n").append(Component.translatable("journal.expeditions.field_orders"));
+            for (Component order : orders) {
+                report.append("\n").append(order);
+            }
+        }
+        return report;
     }
 
     private static Component surveyPage(ServerPlayer player) {
@@ -175,36 +142,4 @@ public class ExpeditionFieldJournalItem extends Item {
         return fraction >= 0.5 ? "ROUSED" : "STIRRING";
     }
 
-    private static Component assayPage(ServerPlayer player, ItemStack journal) {
-        if (!bloodSampled(journal)) {
-            return Component.literal("§1§lBLOOD ASSAY§r\n\n"
-                    + "These pages stay blank.\n\n"
-                    + "The journal reads only what flows in you. "
-                    + "Hold it to a vein and let it drink.\n\n"
-                    + "(Sneak + use — it will cost a little of you.)");
-        }
-        double infection = Assimilation.infection(player);
-        StringBuilder page = new StringBuilder("§1§lBLOOD ASSAY§r\n\n");
-        if (infection <= 0) {
-            page.append("Your blood answers clean.\nThe Bloom has no hold.");
-        } else {
-            int max = ExpeditionTuning.integer(player.level().dimension(),
-                    "microbiome.infection_max", ExpeditionsConfig.infectionMax());
-            page.append("Infection: ")
-                    .append(Math.round(infection / max * 100)).append("%\n");
-            page.append("Stage: ").append(stageName(Assimilation.stage(player)))
-                    .append("\n\nIt is in the blood.");
-        }
-        return Component.literal(page.toString());
-    }
-
-    /** Stage words matching the whisper fiction: notice → grip → take. */
-    private static String stageName(int stage) {
-        return switch (stage) {
-            case 1 -> "the Bloom's notice";
-            case 2 -> "the grip";
-            case 3 -> "the take";
-            default -> "unmarked";
-        };
-    }
 }

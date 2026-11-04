@@ -1,0 +1,49 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "bark": "expeditions:block/route_bark",
+    "end": "expeditions:block/route_end",
+    "binding": "expeditions:block/route_binding",
+    "amber": "expeditions:block/route_amber",
+    "particle": "expeditions:block/route_bark",
+    "veil": "expeditions:block/stillwood_veil",
+    "twig": "expeditions:block/stillwood_twigs"
+  },
+  "ambientocclusion": true,
+  "render_type": "minecraft:translucent",
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        7.99
+      ],
+      "to": [
+        16,
+        16,
+        8.01
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#veil",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#veil",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

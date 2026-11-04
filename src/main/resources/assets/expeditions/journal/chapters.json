@@ -1,0 +1,233 @@
+{
+  "first_steps": {
+    "title": "I. A field copy",
+    "pages": [
+      {
+        "heading": "Pale traces",
+        "body": "Some patches of ground hold their colour poorly. The scraps found there are cold, light, and slow to crumble. There is no movement in them.\n\nLook for pale traces on natural ground and harvest them for dormant flakes. Cold tissue is safe to handle. If nearby ground has been searched, try newly explored country."
+      },
+      {
+        "heading": "A place to begin",
+        "body": "A book and one flake make a field journal. A replacement copy will keep the discoveries you have already made.\n\nKeep several flakes for instruments. Four form a Dormant Knot; the recipes here show how to build a Stillness Resonator and an Essence Condenser. Place those machines next to each other. Their first sample should be a single flake."
+      },
+      {
+        "heading": "The first charter",
+        "body": "The Overworld is sheltered by what these notes call the Stillness. Ordinary collection does not weaken it; keeping your home quiet requires no maintenance.\n\nRefine essence, build a terminal, and choose First Bearing for a short practice journey, or Field Survey for a regular charter."
+      }
+    ]
+  },
+  "bloom": {
+    "title": "II. Folded bark",
+    "pages": [
+      {
+        "heading": "The shutters",
+        "body": "The plates resemble dry bark until they move. One opens, then another; a narrow amber lining appears between them. The surrounding pale skin continues over materials that were never wood.\n\nThese notes use the name Shutter Bloom. The name describes its shape. It does not explain what is doing the growing."
+      },
+      {
+        "heading": "Work from the edge",
+        "body": "The surface growth spreads from a nearby bloom. Removing that source stops its colony and leaves supported tissue dormant. Break the tissue itself for flakes; tearing away its support leaves no useful harvest.\n\nLiving tissue and infected creatures transmit infection through contact. Standing nearby is not enough. Leave yourself a clear place to step before cutting a sample."
+      }
+    ],
+    "unlock_hint": "Approach a living growth with pale shutters and an amber lining."
+  },
+  "essence": {
+    "title": "III. A useful residue",
+    "pages": [
+      {
+        "heading": "A held movement",
+        "body": "A knot remains still on the bench, yet the resonator draws something from it. The needle settles only while the surrounding field is quiet. Resonance is the workshop name for that difference.\n\nA Stillness Resonator supplies 20 Resonance per tick on sheltered or liberated ground. Nearby instruments share the same field; leave seven blocks between their centres for separate output."
+      },
+      {
+        "heading": "The condenser",
+        "body": "Place a flake in the left slot and supply power. The right slot receives the refined essence. One flake needs 4000 Resonance and ten seconds of powered work.\n\nThe resonator does not burn its knot. Hoppers can feed the condenser and collect its result. Compatible FE equipment can supply power through the same connection. A redstone signal pauses a generator."
+      },
+      {
+        "heading": "Keep a sample",
+        "body": "The refined material holds together better than the scrap it came from. Copper, glass and a little essence are enough for the next instruments.\n\nThe crafting pages record the preparations currently understood. Save a few samples before committing the whole stock to one project."
+      },
+      {
+        "heading": "Read the instrument",
+        "body": "The machine names what is holding it back. Hover that line for details before adding more fuel.\n\nA comparator against a source reads its stored Resonance. Against a condenser it reads finished essence stock. Use that signal to control a buffer or an automated feed; a full output pauses refining without spending power."
+      }
+    ],
+    "unlock_hint": "Collect a dormant flake or refine your first essence."
+  },
+  "terminal": {
+    "title": "IV. The threshold",
+    "pages": [
+      {
+        "heading": "An address",
+        "body": "The Wayroot is a graft kept under a copper arm. Pale bark holds it in shape. Fungal tissue feels for distant traces, and amber carries the Resonance between them. The copper guides where that current can go.\n\nChoose a charter and read its requirements before sealing it. The graft can find an address and a way home. It cannot promise safe footing."
+      },
+      {
+        "heading": "Before entry",
+        "body": "The desk can open a small aperture above itself. A grafted arch draws it down into a doorway. Take food, a weapon and room for cargo. Entering issues the route compass.\n\nGuests can join an open party until the first checkpoint. Set Party access to Solo Expedition to keep the portal private. First Bearing is always private and teaches two marks and a return."
+      },
+      {
+        "heading": "Bind a doorway",
+        "body": "Make the posts from birch logs and a dormant flake. Stand facing the Wayroot. Immediately to your right, build a post three upright Pale Graft Posts tall. Leave a one-block gap, then build a second matching post. Set the Graft Collar at the top of the gap.\n\nKeep both blocks beneath the collar clear, with solid ground at the foot. Seal a charter to wake the arch. The first witness stump closes the aperture, leaving the timber in place."
+      }
+    ],
+    "unlock_hint": "Use a terminal and examine the charters it can offer."
+  },
+  "wayfinding": {
+    "title": "V. The compass",
+    "pages": [
+      {
+        "heading": "Reading the ember",
+        "body": "The thorn follows the next marker. The ember gives the part of the reading the needle cannot: height. Above the needle means higher ground; below it means a lower passage.\n\nHold use to take a steadier reading. The ember and chime rise or fall together. Release when you have your bearing.\n\nOn First Bearing, hold the compass to see a small thorn and the next mark. Turn until the thorn points ahead. When it settles into an ember, look for the stump or hollow nearby."
+      },
+      {
+        "heading": "A bearing, not a path",
+        "body": "A needle pointing into a cliff has not found a tunnel. Look for a route around or beneath it; the instrument cannot choose your footing.\n\nAfter the witness stumps, it points to the Stillwood Hollow for extraction. The terminal recalls this compass when the expedition ends. Keep your own equipment separate from what the charter lends.\n\nHover the compass for a rough direct range. This is a band, not a path length; the Heartglass Lens can make a precise measurement."
+      }
+    ],
+    "unlock_hint": "Enter an expedition portal and take its issued compass."
+  },
+  "checkpoints": {
+    "title": "VI. Settled marks",
+    "pages": [
+      {
+        "heading": "Settle the mark",
+        "body": "Split pale stumps hold a narrow amber seam. Roots spread from the wood, but the cut does not close. The compass answers these witness stumps: the checkpoints named in a charter.\n\nUse them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward, even if the expedition later fails. Make room before touching one. Its answer can draw company."
+      },
+      {
+        "heading": "An unfinished route",
+        "body": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours.\n\nDisconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree.\n\nThe terminal keeps a short record. Use /expeditions history to review the last ten outcomes and the tokens each journey secured."
+      }
+    ],
+    "unlock_hint": "Use a split witness stump rather than merely passing its light."
+  },
+  "cargo": {
+    "title": "VII. Sealed cargo",
+    "pages": [
+      {
+        "heading": "The seal",
+        "body": "The parcel is warmer at the binding than at its centre. Its seal agrees with the mark on this charter.\n\nA recovery objective issues cargo at its named checkpoint. Keep it with you and bring it to extraction. A parcel from another journey cannot settle this contract."
+      },
+      {
+        "heading": "Bring the object",
+        "body": "A written record is no substitute for the cargo. If it is lost, retrieve it before attempting to leave. A required recovery remains unfinished without the object.\n\nSuccessful extraction takes the sealed parcel and records its delivery. Loose samples and equipment are yours to bring home."
+      }
+    ],
+    "unlock_hint": "Reach a recovery site and take possession of its sealed parcel."
+  },
+  "defense": {
+    "title": "VIII. Hold the line",
+    "pages": [
+      {
+        "heading": "An audible machine",
+        "body": "The device is easier to hear once the surrounding movement stops. It seldom stays quiet for long.\n\nA defense charter deploys the machine beside its checkpoint. Keep it intact until the countdown ends. Watch the approaches as well as its remaining integrity; your own blows can damage it."
+      },
+      {
+        "heading": "Before the first wave",
+        "body": "Make room to circle the device and keep a clear way back. Attackers can reach it while you are occupied elsewhere.\n\nLosing a required device fails the expedition. An optional defense can be lost without ending the route, but its bonus is gone. Read which kind you have before starting."
+      }
+    ],
+    "unlock_hint": "Activate a checkpoint whose charter calls for a deployed device."
+  },
+  "blood": {
+    "title": "IX. A sealed sample",
+    "pages": [
+      {
+        "heading": "Take a fresh reading",
+        "body": "Old samples remain sealed and old readings remain old. The kit describes the patient at the moment of collection.\n\nCraft it from a glass bottle, iron, copper and a dormant flake. Sneak-use draws a nonlethal sample costing one heart. Use normally to read its infection level, stage and age. Draw again to check a change."
+      },
+      {
+        "heading": "After contact",
+        "body": "Exposure begins with contact with living tissue or an infected body. Some affected creatures shake even while standing still; several may turn towards the same disturbance.\n\nEarly exposure can subside once contact stops. A Disruption Charm in the offhand or a Curios charm slot blocks new infection. It does not erase a dose already present. Give recovery time, then check a fresh sample."
+      }
+    ],
+    "unlock_hint": "Draw a sample with an assay kit, or notice the first effects of exposure."
+  },
+  "pressure": {
+    "title": "X. Being noticed",
+    "pages": [
+      {
+        "heading": "The answering country",
+        "body": "A sound behind you is ordinary. Several creatures arriving from different directions deserve more attention.\n\nThe bar at the top of the screen shows how closely the country is attending to you. Its next mark is a warning. Prepare to move before it is reached. A charm protects against infection; it does not conceal your presence."
+      },
+      {
+        "heading": "Buy time",
+        "body": "Settling a checkpoint lowers attention. Leaving the dimension lets it subside. Neither death nor logging out wipes the record of your stay.\n\nRepeated successful operations establish a foothold and slow its rise. A liberated dimension no longer pursues you this way. Home is sheltered by the Stillness unless a local field has deliberately been opened."
+      }
+    ],
+    "unlock_hint": "Remain in affected country long enough for it to answer your presence."
+  },
+  "extraction": {
+    "title": "XI. Bring it home",
+    "pages": [
+      {
+        "heading": "The Stillwood Hollow",
+        "body": "Pale roots rise around a person-wide hollow. Amber threads hang where the trunk should be. The opening resembles the terminal aperture, though no frame has been fitted to it. These notes call it a Stillwood Hollow: the charter’s exit.\n\nAfter every checkpoint and required objective, step through the hollow or use its wood. Bring any required cargo. The party returns to its terminal and the remaining reward is settled."
+      },
+      {
+        "heading": "What can be used again",
+        "body": "Samples become equipment, and a completed charter becomes a record the terminal can recognise. Check its offerings after a return. Some work needs several forms of preparation.\n\nThe hollow leaves a return knot. Use a water bucket on a Sap Jar while carrying a knot and Essence to brew a bucket of Return Sap. Carry it by bucket, or feed it through a Rootwick pointing toward the basin. The basin knows the traces you brought home. The ledger sorts finds into materials, curiosities and gear. Harder charters open gear traces.\n\nCrouch and offer unwanted items to a Sap Jar. The roots break them down into sap. A hopper can feed the jar from above."
+      }
+    ],
+    "unlock_hint": "Use extraction after the charter's required work is complete."
+  },
+  "guardian": {
+    "title": "XII. At the last marker",
+    "pages": [
+      {
+        "heading": "The bound guardian",
+        "body": "The wood moves around an empty space. The amber inside becomes easier to see just before a strike.\n\nThis charter names a particular guardian. Defeat that creature and then extract to settle the confrontation. Reaching the exit while it lives will not finish the work. A different creature killed elsewhere is not proof."
+      },
+      {
+        "heading": "Watch the ground",
+        "body": "Raised arms and an ember circle give warning of a sweep. Leave the marked ground before it lands. The exposed core is vulnerable during the windup, if you can attack and still get clear.\n\nAs the core brightens, smaller warning marks can appear beneath its target. Keep moving out of them. Use the pause after a strike to regain space."
+      }
+    ],
+    "unlock_hint": "Follow a confrontation charter until its final mark answers."
+  },
+  "liberation": {
+    "title": "XIII. After silence",
+    "pages": [
+      {
+        "heading": "What has stopped",
+        "body": "The ordinary sounds remain. What is missing takes longer to notice.\n\nAn accepted guardian victory followed by extraction liberates the dimension for everyone. New colonies stop taking hold, growth ceases, and the pursuit clock falls quiet. Native creatures and ordinary hazards remain. Repeated surveys alone do not produce this change."
+      },
+      {
+        "heading": "A quiet remnant",
+        "body": "A core held against a terminal here can retain something of the quiet. It is a useful result, though these notes offer no explanation for why it travels.\n\nCraft an Unattuned Severance Core and use it on a terminal in the liberated dimension. Install the attuned core in a Severance Cradle for 120 Resonance per tick without fuel. The terminal must recognise the liberation record; a marked map is not enough."
+      },
+      {
+        "heading": "Quiet ground",
+        "body": "Come back once the Bloom is quiet. The Wayroot can lay a short Aftergrowth Survey through cleared country. Two marks and a hollow. The old creatures still wander there.\n\nThe hollow leaves two Return Knots when you bring the survey home. The ground remembers the way, even when the Bloom has let it go."
+      }
+    ],
+    "unlock_hint": "Return to country whose campaign has been brought to a close."
+  },
+  "preparation": {
+    "title": "XIV. Things brought back",
+    "pages": [
+      {
+        "heading": "Choose the experiment",
+        "body": "A recovered bloom folds while it is carried. Behind glass, the shutters can be coaxed into their old movement.\n\nOne specimen can become a Bloom Engine, a Field Ward or a Heartglass Lens. Each recipe consumes the specimen. Decide what the next journey lacks before committing it."
+      },
+      {
+        "heading": "A contained source",
+        "body": "The Bloom Engine holds its specimen inside a closed chamber. Supply essence to keep it working. One essence supports thirty running seconds at up to 80 Resonance per tick. A full bank pauses consumption; an unfed chamber goes quiet.\n\nThis is a workshop source. Opening the surrounding field is a separate experiment."
+      },
+      {
+        "heading": "Carry a reserve",
+        "body": "A Resonance Cell holds 16000 Resonance and starts empty. Sneak-use a generator to charge it; use a receiver normally to supply it. Compatible FE chargers also work.\n\nCarry a charged cell rather than assuming there will be a working workshop at the far end."
+      },
+      {
+        "heading": "A quiet camp",
+        "body": "Place a Field Ward and use a cell holding at least 4000 Resonance. It holds attention steady within eight blocks for two minutes. Check the remaining time with an empty hand.\n\nIt does not lower attention already gathered, stop an existing hunt, or block infection. Breaking the ward loses its remaining charge. Its two minutes pass even if you leave it behind."
+      },
+      {
+        "heading": "Measure a bearing",
+        "body": "Carry a Heartglass Lens and a charged cell, then finish a reading with the expedition compass. A measurement costs 200 Resonance and gives horizontal distance and signed height.\n\nWithout that charge, the ordinary needle and elevation ember still work. The lens belongs to you after extraction."
+      },
+      {
+        "heading": "Opening the field",
+        "body": "For a controlled experiment, sneak-use an attunement sigil on a condenser holding at least 4000 Resonance. The open field reaches twenty-four blocks and consumes 20 Resonance per tick; refining pauses.\n\nLive growth can operate inside it. A dormant resonator there loses the quiet field it draws from, so supply power from outside or use a contained engine. Use the sigil again to close the field. Power loss also restores the Stillness."
+      }
+    ],
+    "unlock_hint": "Recover a living Shutter Bloom, or obtain an instrument made from one."
+  }
+}

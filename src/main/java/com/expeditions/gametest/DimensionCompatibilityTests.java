@@ -106,12 +106,16 @@ public final class DimensionCompatibilityTests {
         var player = helper.makeMockServerPlayerInLevel();
         player.setGameMode(GameType.CREATIVE);
         // Unique columns keep this probe independent of the shared route tests.
-        for (int x : new int[]{64, 72, 80}) {
+        for (int x : new int[]{64, 72}) {
             end.getChunk(x >> 4, 0);
-            for (int y = 101; y < end.getMaxBuildHeight(); y++) {
-                end.setBlock(new BlockPos(x, y, 8), Blocks.AIR.defaultBlockState(), 3);
-            }
-            end.setBlock(new BlockPos(x, 100, 8), Blocks.STONE.defaultBlockState(), 3);
+            for (int y=101;y<end.getMaxBuildHeight();y++) end.setBlock(new BlockPos(x,y,8),Blocks.AIR.defaultBlockState(),3);
+            end.setBlock(new BlockPos(x,100,8),Blocks.STONE.defaultBlockState(),3);
+        }
+        // Supply real terrain under the full-sized tree, not a floating exit column.
+        for(int x=76;x<=84;x++) for(int z=4;z<=12;z++) {
+            end.getChunk(x>>4,z>>4);
+            end.setBlock(new BlockPos(x,100,z),Blocks.STONE.defaultBlockState(),3);
+            for(int y=101;y<end.getMaxBuildHeight();y++) end.setBlock(new BlockPos(x,y,z),Blocks.AIR.defaultBlockState(),3);
         }
         try {
             helper.assertTrue(ExpeditionAdapters.forLevel(end).orElseThrow()
@@ -135,6 +139,9 @@ public final class DimensionCompatibilityTests {
             for (Waypoint waypoint : run.checkpoints()) {
                 helper.assertTrue(waypoint.y() == 101, "automatic floor resolution must be used");
                 manager.activateCheckpoint(player, ExpeditionManager.toPos(waypoint));
+                helper.assertTrue(!helper.getLevel().getBlockState(ExpeditionManager.toPos(run.portal()))
+                                .is(ModBlocks.EXPEDITION_PORTAL.get()),
+                        "sealing a remote party must close the portal in its home dimension");
             }
             manager.completeRun(player);
             helper.assertTrue(run.isRewarded(), "automatic missions must settle rewards");

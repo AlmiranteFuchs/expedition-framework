@@ -2,6 +2,8 @@ package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.CheckpointChallenge;
+import com.expeditions.core.Difficulty;
+import com.expeditions.core.FrontierProgression;
 import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionOptions;
@@ -143,7 +145,8 @@ public final class ExpeditionManager {
 
     /** The player's held progression keys, for diagnostics and commands. */
     public Set<String> unlocks(UUID playerId) {
-        return ledger.unlocks(playerId);
+        return ledger.unlocks(playerId).stream().filter(key -> !key.startsWith(RECLAIMING_TRACE) && !key.startsWith(RECLAIMING_GEAR))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
     /** The player's trophies, for diagnostics and commands. */
@@ -151,7 +154,13 @@ public final class ExpeditionManager {
         return ledger.trophies(playerId);
     }
 
+    public boolean trainingComplete(UUID playerId) {
+        return trophies(playerId).contains(ExpeditionOptions.FIRST_BEARING);
+    }
+
     /** The shared world state — campaign records, markers, cleared dims. */
+    public FrontierThreat frontier() { return data.frontier(); }
+
     public ExpeditionSavedData savedData() {
         return data;
     }
@@ -193,22 +202,41 @@ public final class ExpeditionManager {
      * Checkpoints and time options reshape the run's definition defaults.
      */
     public ExpeditionRun startRun(ServerPlayer player, BlockPos terminalPos,
-            ExpeditionOptions options) {
+            ExpeditionOptions requested) {
         if (ledger.activeRun(player.getUUID()).isPresent()) {
             throw new IllegalStateException("You already have an active expedition");
         }
         ServerLevel portalLevel = player.serverLevel();
-        ExpeditionDefinition definition = options.expeditionId().isBlank()
+        ExpeditionDefinition definition = requested.expeditionId().isBlank()
                 ? ExpeditionDefinitions
                         .forDimension(portalLevel.dimension().location().toString())
                         .or(() -> ExpeditionsConfig.definitionFor(portalLevel.dimension()))
                         .orElseThrow(() -> new IllegalStateException(
                                 "No expedition is available in this dimension"))
                 : listStartable().stream()
-                        .filter(d -> d.id().equals(options.expeditionId()))
+                        .filter(d -> d.id().equals(requested.expeditionId()))
                         .findFirst()
                         .orElseThrow(() -> new IllegalStateException(
-                                "Unknown or unavailable expedition: " + options.expeditionId()));
+                                "Unknown or unavailable expedition: " + requested.expeditionId()));
+        boolean aftergrowth = FrontierProgression.isAftergrowth(definition);
+        boolean mastery = FrontierProgression.isMastery(definition);
+        if (FrontierThreat.rulesActive() && !aftergrowth && !mastery) {
+            definition = prepareFrontier(definition);
+        }
+        boolean guided = ExpeditionOptions.FIRST_BEARING.equals(definition.id());
+        if (guided && trainingComplete(player.getUUID())) {
+            throw new IllegalStateException("First Bearing is already recorded. Try a Field Survey next.");
+        }
+        if (guided && (definition.bigBad() || !definition.dimension().equals("minecraft:overworld")
+                || !(definition.route() instanceof RouteGeneration))) {
+            throw new IllegalStateException("First Bearing needs a generated Overworld survey route");
+        }
+        var options = guided ? new ExpeditionOptions(definition.id(), Difficulty.STANDARD,
+                ExpeditionOptions.GUIDED_CHECKPOINTS, 0, true)
+                : aftergrowth ? new ExpeditionOptions(definition.id(), Difficulty.STANDARD, 2, 0, requested.solo())
+                : mastery ? new ExpeditionOptions(definition.id(), Difficulty.HARD,
+                        FrontierProgression.MASTERY_CHECKPOINTS, 0, requested.solo())
+                : requested;
         RequirementCheck requirements = ledger.checkRequirements(
                 player.getUUID(), definition,
                 data.campaignState(definition.dimension()));
@@ -228,12 +256,25 @@ public final class ExpeditionManager {
         // Everything below is validated before a single block is placed so a
         // failed start leaves the world untouched. The portal stays in the
         // terminal's dimension even when the expedition runs elsewhere.
-        BlockPos portalPos = findPortalSpot(portalLevel, terminalPos).orElseThrow(
-                () -> new IllegalStateException(
-                        "The expedition terminal needs clear space above it"));
+        var frame = WayrootFrame.inspect(portalLevel, terminalPos);
+        if (!frame.canOpen()) throw new IllegalStateException(Component.translatable(frame.messageKey()).getString());
+        boolean framed = frame == WayrootFrame.Condition.READY;
+        var terminalState = portalLevel.getBlockState(terminalPos);
+        var front = terminalState.hasProperty(com.expeditions.block.ExpeditionTerminalBlock.FACING)
+                ? terminalState.getValue(com.expeditions.block.ExpeditionTerminalBlock.FACING)
+                : player.getDirection();
+        BlockPos portalPos = framed ? WayrootFrame.opening(terminalPos, front)
+                : findPortalSpot(portalLevel, terminalPos).orElseThrow(
+                        () -> new IllegalStateException("The Wayroot needs clear space above it"));
 
         RouteSpec spec = definition.route();
         if (options.checkpoints() > 0 && spec instanceof RouteGeneration g) {
+            int requiredLength = definition.objectives().stream().filter(ExpeditionObjective::required)
+                    .mapToInt(ExpeditionObjective::checkpoint).max().orElse(1);
+            if (options.checkpoints() < requiredLength) {
+                throw new IllegalStateException("This mission needs at least " + requiredLength
+                        + " checkpoints for its required objectives");
+            }
             spec = g.withCheckpoints(options.checkpoints());
         }
         RandomSource rng = player.getRandom();
@@ -277,9 +318,16 @@ public final class ExpeditionManager {
                 }
                 List<BlockPos> positions = new ArrayList<>();
                 for (RouteAnchor anchor : candidate.checkpoints()) {
-                    positions.add(resolveAnchor(adapter, level, anchor, maxAttempts));
+                    positions.add(resolveAnchor(adapter, level, anchor, maxAttempts,
+                            pos -> level != portalLevel || !framed
+                                    || !pos.equals(portalPos) && !pos.equals(portalPos.above())));
                 }
-                BlockPos exit = resolveAnchor(adapter, level, candidate.exit(), maxAttempts);
+                BlockPos exit = resolveAnchor(adapter, level, candidate.exit(), maxAttempts,
+                        pos -> RecallTrees.fits(level, pos)
+                                && positions.stream().noneMatch(cp -> RecallTrees.coreContains(pos, cp))
+                                && (level != portalLevel || (framed
+                                    ? !RecallTrees.contains(pos, portalPos) && !RecallTrees.contains(pos, portalPos.above())
+                                    : !RecallTrees.coreContains(pos, portalPos))));
                 route = candidate;
                 entryPos = candidateEntry != null
                         ? candidateEntry : positions.get(0).above();
@@ -298,19 +346,24 @@ public final class ExpeditionManager {
         for (BlockPos pos : checkpointPositions) {
             level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
             data.trackMarker(dimension, pos);
-            // The microbiome colonizes expedition infrastructure — a
-            // glowing blob near each marker doubles as the route's
-            // landmark. Best-effort; non-viable terrain simply skips it.
-            Microbiome.seedColonyNear(level, pos, level.random);
         }
-        level.setBlock(exitPos, ModBlocks.EXPEDITION_EXIT.get().defaultBlockState(), 3);
-        data.trackMarker(dimension, exitPos);
+        RecallTrees.place(level, exitPos, data);
+        // Reserve the complete hollow before ambient colony writes begin.
+        for (BlockPos pos : checkpointPositions) Microbiome.seedColonyNear(level, pos, level.random);
         Microbiome.seedColonyNear(level, exitPos, level.random);
-        portalLevel.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState(), 3);
+        var portalAxis = front.getAxis() == net.minecraft.core.Direction.Axis.X
+                ? net.minecraft.core.Direction.Axis.Z : net.minecraft.core.Direction.Axis.X;
+        portalLevel.setBlock(portalPos, ModBlocks.EXPEDITION_PORTAL.get().defaultBlockState()
+                .setValue(com.expeditions.block.ExpeditionPortalBlock.AXIS, portalAxis)
+                .setValue(com.expeditions.block.ExpeditionPortalBlock.FRAMED, framed), 3);
         data.trackMarker(portalDimension, portalPos);
 
+        int commissionIndex = definition.commissionPool().isEmpty() ? -1
+                : rng.nextInt(definition.commissionPool().size());
+        ExpeditionDefinition runDefinition = commissionIndex < 0 ? definition
+                : definition.withCommission(commissionIndex);
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(),
-                Set.of(player.getUUID()), definition,
+                Set.of(player.getUUID()), runDefinition,
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
                 toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
                 toWaypoint(entryPos), level.getGameTime(), options, portalDimension);
@@ -324,11 +377,19 @@ public final class ExpeditionManager {
                             + definition.costTokens());
         }
         ledger.startRun(run);
+        if (commissionIndex >= 0) {
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.commission", definition.commissionPool().get(commissionIndex).description()), true);
+        } else {
+            player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
+        }
         // Every expedition stirs the organism a little — pressure is the
         // dimension-wide threat counter hordes and waves read.
-        ExpeditionEventHandler.stirPressure(data, level, definition.dimension(),
-                ExpeditionTuning.integer(definition.dimension(), "pressure.per_run_start",
-                        ExpeditionsConfig.pressurePerRunStart()));
+        if (!aftergrowth && !mastery) {
+            ExpeditionEventHandler.stirPressure(data, level, definition.dimension(),
+                    ExpeditionTuning.integer(definition.dimension(), "pressure.per_run_start",
+                            ExpeditionsConfig.pressurePerRunStart()));
+        }
         applyMemberEffects(run, player);
         applyWeather(run, level);
         data.setDirty();
@@ -386,7 +447,43 @@ public final class ExpeditionManager {
                     .filter(this::isStartable)
                     .ifPresent(d -> startable.putIfAbsent(d.id(), d));
         }
-        return List.copyOf(startable.values());
+        if(FrontierThreat.rulesActive()) {
+            var bosses=new HashSet<String>();
+            for(var d:startable.values()) if(d.bigBad()) bosses.add(d.dimension());
+            for(var d:List.copyOf(startable.values())) {
+                var prepared=prepareFrontier(d);startable.put(d.id(),prepared);
+                if(!ExpeditionOptions.FIRST_BEARING.equals(d.id()) && !bosses.contains(d.dimension())
+                        && ExpeditionTuning.bool(d.dimension(),"campaign.auto_liberation",true)) {
+                    var boss=com.expeditions.core.FrontierProgression.liberation(prepared);
+                    startable.putIfAbsent(boss.id(),boss);bosses.add(d.dimension());
+                }
+            }
+        }
+        var offered = new ArrayList<>(startable.values());
+        for (ServerLevel loaded : server.getAllLevels()) {
+            String dimension = loaded.dimension().location().toString();
+            if (!data.isDimensionCleared(dimension)) continue;
+            var survey = FrontierProgression.aftergrowth(dimension);
+            if (!startable.containsKey(survey.id()) && isStartable(survey)) offered.add(survey);
+            var mastery = FrontierProgression.mastery(dimension);
+            if (!startable.containsKey(mastery.id()) && isStartable(mastery)) offered.add(mastery);
+        }
+        return List.copyOf(offered);
+    }
+
+    private ExpeditionDefinition prepareFrontier(ExpeditionDefinition d) {
+        boolean home=data.campaignCompletions("minecraft:overworld")>0 || data.isDimensionCleared("minecraft:overworld") || !ExpeditionTuning.bool(d.dimension(),"campaign.require_home_liberation",true);
+        return com.expeditions.core.FrontierProgression.prepare(d,home);
+    }
+
+    /** Historical boss trophies can migrate proof; ordinary completion-count clearing cannot. */
+    public boolean canAttuneCore(String dimension){
+        if(!data.isDimensionCleared(dimension))return false;
+        if(data.hasGuardianLiberation(dimension))return true;
+        boolean historical=listStartable().stream().filter(d->d.bigBad() && d.dimension().equals(dimension))
+                .anyMatch(d->ledger.trophyRecords().values().stream().anyMatch(t->t.contains(d.id())));
+        if(historical)data.recordGuardianLiberation(dimension);
+        return historical;
     }
 
     private boolean isStartable(ExpeditionDefinition definition) {
@@ -406,6 +503,7 @@ public final class ExpeditionManager {
         String dimension = level.dimension().location().toString();
         Waypoint portalWaypoint = toWaypoint(portalPos);
         Optional<ExpeditionRun> match = ledger.runs().stream()
+                .filter(ExpeditionRun::portalOpen)
                 .filter(r -> r.portal().equals(portalWaypoint)
                         && r.portalDimension().equals(dimension))
                 .findFirst();
@@ -417,7 +515,14 @@ public final class ExpeditionManager {
             return;
         }
         ExpeditionRun run = match.get();
+        if (isFramedRun(run) && !checkFramedPortal(level, portalPos)) return;
         if (!run.isMember(player.getUUID())) {
+            if (!run.acceptsGuests()) {
+                if (player.tickCount % 5 == 0) {
+                    player.displayClientMessage(Component.translatable("message.expeditions.private_portal"), true);
+                }
+                return;
+            }
             if (ledger.activeRun(player.getUUID()).isPresent()) {
                 player.sendSystemMessage(Component.translatable(
                         "message.expeditions.already_in_run"));
@@ -426,15 +531,22 @@ public final class ExpeditionManager {
             run.joinParty(player.getUUID());
             applyMemberEffects(run, player);
             ServerLevel runLevel = levelFor(run.definition().dimension());
-            if (runLevel != null) {
+            if (runLevel != null && !FrontierProgression.isAftergrowth(run.definition())
+                    && !FrontierProgression.isMastery(run.definition())) {
                 extendRouteForMember(run, runLevel);
             }
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.party_joined"));
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.party_joined"), true);
             data.setDirty();
         }
-        if (!hasCompass(player)) {
+        boolean needsCompass = !hasCompass(player);
+        if (needsCompass) {
             grantCompass(player, run);
+        } else {
+            forEachCompass(player, stack -> retarget(stack, run));
+        }
+        if (run.options().guided() && needsCompass) {
+            player.displayClientMessage(Component.translatable("message.expeditions.guided_entry"), true);
         }
         // The portal may sit in a different dimension than the expedition;
         // teleport into the run's own level.
@@ -443,6 +555,7 @@ public final class ExpeditionManager {
         if (destination != null) {
             player.teleportTo(destination, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
                     Set.of(), player.getYRot(), player.getXRot());
+            JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.WAYFINDING);
         }
         // Stepping through should feel like a deployment — title card up.
         player.connection.send(new ClientboundSetTitlesAnimationPacket(
@@ -468,9 +581,15 @@ public final class ExpeditionManager {
     public ExpeditionRun activateCheckpoint(ServerPlayer player, BlockPos pos) {
         ExpeditionRun run = requireActive(player.getUUID());
         requireRunDimension(run, player.serverLevel());
-        for (ExpeditionObjective objective : run.activateCheckpoint(toWaypoint(pos))) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.objective_completed", objective.description()));
+        run.activateCheckpoint(toWaypoint(pos));
+        JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CHECKPOINTS);
+        for (UUID member : run.party()) {
+            var online = server.getPlayerList().getPlayer(member);
+            if (online != null) JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.CHECKPOINTS);
+        }
+        for(UUID member:run.party()) {
+            var online=server.getPlayerList().getPlayer(member);
+            if(online!=null) FrontierThreat.relief(online,run.definition().dimension(),45);
         }
         if (run.completedCheckpoints() == 1) {
             closePortal(run);
@@ -481,9 +600,10 @@ public final class ExpeditionManager {
                 && run.definition().artifactObjectiveAt(run.completedCheckpoints())
                         .isPresent()) {
             grantArtifact(player, run);
+            JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CARGO);
             run.markArtifactIssued();
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.artifact_recovered"));
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.artifact_recovered"), true);
         }
         // A checkpoint holding the defense device deploys it — the only
         // valid activation stage is its declared checkpoint.
@@ -504,26 +624,30 @@ public final class ExpeditionManager {
                     ledger.addTokens(member, share);
                     run.secureTokens(member, share);
                 }
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.checkpoint_secured", share));
             }
         }
-        retargetPartyCompasses(run);
+        retargetPartyCompasses(run, player);
         // The previous challenge spawned around the checkpoint before this
         // one; its chunks may be unloaded now that the party moved on.
         if (run.completedCheckpoints() >= 2) {
             clearChallengeEntities(run, player.serverLevel(),
                     toPos(run.checkpoints().get(run.completedCheckpoints() - 2)));
         }
+        if (run.definition().defenseObjectiveAt(run.completedCheckpoints()).isEmpty()
+                && run.definition().artifactObjectiveAt(run.completedCheckpoints()).isEmpty()) {
+            player.displayClientMessage(Component.translatable(run.allCheckpointsDone()
+                    ? "message.expeditions.hollow_answers" : "message.expeditions.witness_answers",
+                    run.completedCheckpoints(), run.totalCheckpoints()), true);
+        }
         triggerCheckpointChallenge(run, player);
-        // The activation is a milestone — let it land: a beacon chime and
-        // a column of end-light over the just-lit checkpoint.
+        // The witness answers the compass: wood first, then a restrained chime.
         player.serverLevel().playSound(null, pos,
-                SoundEvents.BEACON_POWER_SELECT, SoundSource.BLOCKS,
-                0.7f, 1.2f);
-        player.serverLevel().sendParticles(ParticleTypes.END_ROD,
+                SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.5f, 0.7f);
+        player.serverLevel().playSound(null, pos,
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.55f, 0.65f);
+        player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
                 pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5,
-                18, 0.25, 1.1, 0.25, 0.015);
+                12, 0.16, 0.3, 0.16, 0.008);
         data.setDirty();
         return run;
     }
@@ -547,28 +671,28 @@ public final class ExpeditionManager {
         ExpeditionRun run = requireActive(player.getUUID());
         requireRunDimension(run, player.serverLevel());
         long elapsed = run.elapsedTicks(player.serverLevel().getGameTime());
-        for (ExpeditionObjective objective : run.evaluateTimedObjectives(elapsed)) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.objective_completed", objective.description()));
-        }
+        run.evaluateTimedObjectives(elapsed);
         // Artifact delivery re-evaluates at every exit click like timed
         // objectives: the item must be in a member's hands at this moment.
         // It is consumed only AFTER complete() succeeds — a refused click
         // (other required objectives missing) must not destroy the cargo.
         HeldArtifact held = findHeldArtifact(run);
         for (ExpeditionObjective objective : run.definition().objectives()) {
-            if (objective.kind() == ObjectiveKind.RECOVER_ARTIFACT
-                    && run.deliverArtifact(objective.id(), held != null)) {
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.objective_completed",
-                        objective.description()));
+            if (objective.kind() == ObjectiveKind.RECOVER_ARTIFACT) {
+                run.deliverArtifact(objective.id(), held != null);
             }
         }
         run.complete();
+        JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.EXTRACTION);
+        for (UUID member : run.party()) {
+            var online = server.getPlayerList().getPlayer(member);
+            if (online != null) JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.EXTRACTION);
+        }
         if (held != null) {
             held.consume();
         }
-        if (!run.isRewarded()) {
+        boolean awardReturnKnots = !run.isRewarded();
+        if (awardReturnKnots) {
             int base = run.definition().totalReward(elapsed,
                     run.completedObjectiveIds(), run.options().bonusTimePercent());
             int scaled = PartyScaling.scaledTotal(base, run.party().size(),
@@ -598,86 +722,121 @@ public final class ExpeditionManager {
         }
         for (UUID member : run.party()) {
             ledger.addTrophy(member, run.definition().id());
+            ledger.grantUnlock(member, RECLAIMING_TRACE + run.definition().dimension());
+            if (run.options().difficulty() == Difficulty.HARD || run.options().difficulty() == Difficulty.BRUTAL) {
+                ledger.grantUnlock(member, RECLAIMING_GEAR + run.definition().dimension());
+            }
         }
-        data.recordCampaignCompletion(run.definition().dimension());
-        ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
-                run.definition().dimension(),
-                ExpeditionTuning.integer(run.definition().dimension(),
-                        "pressure.per_run_completion",
-                        ExpeditionsConfig.pressurePerRunCompletion()));
+        if (!FrontierProgression.isAftergrowth(run.definition()) && !FrontierProgression.isMastery(run.definition())) {
+            data.recordCampaignCompletion(run.definition().dimension());
+            ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
+                    run.definition().dimension(),
+                    ExpeditionTuning.integer(run.definition().dimension(),
+                            "pressure.per_run_completion",
+                            ExpeditionsConfig.pressurePerRunCompletion()));
+        }
         // The Big Bad is the campaign's payoff: beating it wins the
         // dimension — the same cleared mark the grind threshold sets.
         if (run.definition().bigBad()) {
-            data.setDimensionCleared(run.definition().dimension());
+            JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.LIBERATION);
+            data.recordGuardianLiberation(run.definition().dimension());
             for (UUID member : run.party()) {
                 ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
                 if (memberPlayer != null) {
-                    memberPlayer.sendSystemMessage(Component.translatable(
-                            "message.expeditions.dimension_won",
-                            run.definition().dimension()));
+                    JournalDiscovery.unlock(memberPlayer, com.expeditions.core.JournalChapter.LIBERATION);
                 }
             }
         }
-        if (!run.definition().grants().isEmpty()) {
-            for (UUID member : run.party()) {
-                ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
-                if (memberPlayer != null) {
-                    memberPlayer.sendSystemMessage(Component.translatable(
-                            "message.expeditions.unlocked",
-                            String.join(", ", run.definition().grants())));
-                }
-            }
-        }
-        // Extraction lands the run's stakes — the challenge fanfare for
-        // the whole party and embers rising where the exit stood.
+        // The recall answers in the same register as its route instruments.
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
                 memberPlayer.playNotifySound(
-                        SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
-                        SoundSource.PLAYERS, 0.7f, 1.0f);
+                        SoundEvents.AMETHYST_BLOCK_RESONATE,
+                        SoundSource.PLAYERS, 0.7f, 0.75f);
             }
         }
-        player.serverLevel().sendParticles(ParticleTypes.FLAME,
+        player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
                 player.getX(), player.getY() + 0.6, player.getZ(),
-                24, 0.5, 0.8, 0.5, 0.02);
+                18, 0.3, 0.5, 0.3, 0.01);
         endRun(run);
+        if (awardReturnKnots) {
+            int count = FrontierProgression.isAftergrowth(run.definition()) || run.options().difficulty() == Difficulty.HARD
+                    || run.options().difficulty() == Difficulty.BRUTAL ? 2 : 1;
+            for (UUID member : run.party()) {
+                var online = member.equals(player.getUUID()) ? player : server.getPlayerList().getPlayer(member);
+                if (online != null) {
+                    var knot = new ItemStack(ModItems.RETURN_KNOT.get(), count);
+                    if (!online.getInventory().add(knot)) online.drop(knot, false);
+                }
+            }
+        }
         return run;
     }
 
-    /**
-     * Token sink: converts the configured redeem cost into a supply draw from
-     * the reward pool of the dimension the player stands in — so supplies
-     * redeemed in the Nether look Netherish. The spend lands in the same
-     * atomic ledger save as balances always have.
-     *
-     * @return whether the cost was available and items were granted
-     */
-    public boolean redeemTokens(ServerPlayer player) {
-        int cost = ExpeditionsConfig.redeemTokenCost();
-        List<Item> pool = ItemRewards.pool(
-                player.serverLevel().dimension().location().toString());
-        if (pool.isEmpty()) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.redeem_no_pool"));
-            return false;
-        }
-        if (!ledger.spendTokens(player.getUUID(), cost)) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.redeem_no_tokens", cost));
-            return false;
-        }
-        int budget = (int) (cost * ExpeditionsConfig.bonusDropValuePerToken());
-        for (ItemStack drop : ItemRewards.draw(pool, budget, player.getRandom(),
-                ExpeditionsConfig.maxBonusDrops())) {
-            if (!player.getInventory().add(drop)) {
-                player.drop(drop, false);
+    private static final String RECLAIMING_GEAR = "expeditions:reclaiming_gear/";
+    private static final String RECLAIMING_TRACE = FrontierProgression.EXTRACTION_TRACE_PREFIX;
+
+    public List<String> reclaimingDimensions(UUID player) {
+        var dimensions = new java.util.TreeSet<String>();
+        for (String key : ledger.unlocks(player)) {
+            if (key.startsWith(RECLAIMING_TRACE)) {
+                String dimension = key.substring(RECLAIMING_TRACE.length());
+                if (ResourceLocation.tryParse(dimension) != null && dimension.contains(":")) dimensions.add(dimension);
             }
         }
-        data.setDirty();
-        player.sendSystemMessage(Component.translatable(
-                "message.expeditions.redeemed", cost));
+        // Previous saves already have personal trophies and recent extraction reports.
+        var trophies = ledger.trophies(player);
+        for (var definition : listStartable()) {
+            if (trophies.contains(definition.id())) dimensions.add(definition.dimension());
+        }
+        for (var report : data.history().entries(player)) {
+            if (report.outcome() == ExpeditionStatus.COMPLETED) dimensions.add(report.dimension());
+        }
+        return List.copyOf(dimensions);
+    }
+
+    boolean canReclaimGear(UUID player, String dimension) {
+        return ledger.hasUnlock(player, RECLAIMING_GEAR + dimension);
+    }
+
+    boolean reclaim(ServerPlayer player, String dimension, int slot,
+            com.expeditions.block.entity.SapVesselBlockEntity vessel) {
+        if (!reclaimingDimensions(player.getUUID()).contains(dimension)) return false;
+        var offers = ReclaimingOffers.forDimension(dimension, player.serverLevel());
+        if (slot < 0 || slot >= offers.size()) return false;
+        if (slot == 2 && !canReclaimGear(player.getUUID(), dimension)) return reclaimRefused(player, "gear");
+        var offer = offers.get(slot);
+        var tank = vessel.tank();
+        if (tank.getFluidAmount() < offer.sap()) return reclaimRefused(player, "sap");
+        if (offer.finds().isEmpty()) return reclaimRefused(player, "empty_trace");
+        var inventory = player.getInventory();
+        long empty = inventory.items.stream().filter(ItemStack::isEmpty).count();
+        if (offer.finds().stream().anyMatch(find -> empty < emptySlotsNeeded(inventory, find.stack()))) {
+            return reclaimRefused(player, "room");
+        }
+        var cargo = offer.draw(player.getRandom());
+        tank.drain(offer.sap(), net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+        inventory.add(cargo);
+        inventory.setChanged();
+        player.displayClientMessage(Component.translatable("message.expeditions.basin_reclaimed"), true);
+        player.playNotifySound(SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.55f, 0.8f);
         return true;
+    }
+
+    private static int emptySlotsNeeded(net.minecraft.world.entity.player.Inventory inventory, ItemStack cargo) {
+        int remaining = cargo.getCount();
+        for (var stack : inventory.items) {
+            if (ItemStack.isSameItemSameComponents(stack, cargo)) {
+                remaining -= Math.max(0, stack.getMaxStackSize() - stack.getCount());
+            }
+        }
+        return Math.ceilDiv(Math.max(0, remaining), cargo.getMaxStackSize());
+    }
+
+    private static boolean reclaimRefused(ServerPlayer player, String reason) {
+        player.displayClientMessage(Component.translatable("message.expeditions.basin_" + reason), true);
+        return false;
     }
 
     /**
@@ -727,9 +886,11 @@ public final class ExpeditionManager {
     public ExpeditionRun failRun(ServerPlayer player, String reasonKey) {
         ExpeditionRun run = requireActive(player.getUUID());
         if (run.party().size() > 1) {
+            recordHistory(run, player.getUUID(), false, reasonKey);
             run.leaveParty(player.getUUID());
             removeCompasses(player);
             teleportToTerminal(player, run);
+            reportWithdrawal(run, player, reasonKey);
             data.setDirty();
             return run;
         }
@@ -808,8 +969,8 @@ public final class ExpeditionManager {
         }
         ExpeditionRun run = active.get();
         if (ExpeditionArtifactItem.isBoundTo(picked, run.runId())) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.artifact_recovered"));
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.artifact_recovered"), true);
         }
         boolean dirty = false;
         for (ExpeditionObjective objective : run.definition().objectives()) {
@@ -820,13 +981,61 @@ public final class ExpeditionManager {
                 continue;
             }
             if (run.addObjectiveProgress(objective.id(), picked.getCount())) {
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.objective_completed", objective.description()));
+                player.displayClientMessage(Component.translatable(
+                        "message.expeditions.objective_completed", objective.description()), true);
             }
             dirty = true;
         }
         if (dirty) {
             data.setDirty();
+        }
+    }
+
+    public void onBlockHarvested(ServerPlayer player, net.minecraft.world.level.block.state.BlockState state) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || !hasCompass(player)) {
+            return;
+        }
+        for (ExpeditionObjective objective : run.definition().objectives()) {
+            if (objective.kind() != ObjectiveKind.HARVEST
+                    || run.objectiveState(objective.id()).map(ObjectiveState::completed).orElse(true)) {
+                continue;
+            }
+            boolean matches = objective.item() == null
+                    ? state.is(TagKey.create(Registries.BLOCK, ResourceLocation.parse(objective.tag())))
+                    : BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse(objective.item()))
+                            .map(state::is).orElse(false);
+            if (matches) {
+                if (run.addObjectiveProgress(objective.id(), 1)) {
+                    player.displayClientMessage(Component.translatable(
+                            "message.expeditions.objective_completed", objective.description()), true);
+                }
+                data.setDirty();
+            }
+        }
+    }
+
+    public void surveyBiome(ServerPlayer player) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || !hasCompass(player)) {
+            return;
+        }
+        for (ExpeditionObjective objective : run.definition().objectives()) {
+            if (objective.kind() != ObjectiveKind.SCOUT
+                    || run.objectiveState(objective.id()).map(ObjectiveState::completed).orElse(true)) {
+                continue;
+            }
+            var biome = player.serverLevel().getBiome(player.blockPosition());
+            boolean matches = objective.item() == null
+                    ? biome.is(TagKey.create(Registries.BIOME, ResourceLocation.parse(objective.tag())))
+                    : biome.is(ResourceKey.create(Registries.BIOME, ResourceLocation.parse(objective.item())));
+            if (matches && run.addObjectiveProgress(objective.id(), 1)) {
+                player.displayClientMessage(Component.translatable(
+                        "message.expeditions.objective_completed", objective.description()), true);
+                data.setDirty();
+            }
         }
     }
 
@@ -863,22 +1072,57 @@ public final class ExpeditionManager {
                 }
             }
         }
+        for(var roots:manager.data.recallTreeRoots().entrySet())for(var root:roots.getValue()) {
+            boolean active=manager.ledger.runs().stream().anyMatch(r->r.isActive()
+                    &&r.definition().dimension().equals(roots.getKey())&&toPos(r.exit()).equals(root));
+            if(!active)manager.data.removeRecallTreeParts(roots.getKey(),root);
+        }
         manager.data.setDirty();
     }
 
     private boolean isReferencedByActiveRun(String dimension, BlockPos pos) {
         Waypoint waypoint = toWaypoint(pos);
+        ServerLevel markerLevel=levelFor(dimension);
         return ledger.runs().stream()
                 .filter(ExpeditionRun::isActive)
                 .anyMatch(r -> (r.definition().dimension().equals(dimension)
-                        && (r.checkpoints().contains(waypoint) || r.exit().equals(waypoint)
+                        && (r.checkpoints().contains(waypoint) || RecallTrees.contains(toPos(r.exit()), pos,data.recallTreeParts(dimension,toPos(r.exit())),markerLevel)
                                 || r.defense().map(d -> d.device().equals(waypoint))
                                         .orElse(false)))
-                        || (r.portalDimension().equals(dimension)
+                        || (r.portalOpen() && r.portalDimension().equals(dimension)
                                 && r.portal().equals(waypoint)));
     }
 
+    private static boolean isFramedRun(ExpeditionRun run) {
+        int x = Math.abs(run.portal().x() - run.terminal().x());
+        int z = Math.abs(run.portal().z() - run.terminal().z());
+        return run.portal().y() == run.terminal().y() && (x == 2 && z == 0 || z == 2 && x == 0);
+    }
+
+    public boolean checkFramedPortal(ServerLevel level, BlockPos pos) {
+        String dimension = level.dimension().location().toString();
+        var portal = toWaypoint(pos);
+        for (var run : ledger.runs()) {
+            if (!run.portalOpen() || !run.portalDimension().equals(dimension) || !run.portal().equals(portal)) continue;
+            if (WayrootFrame.activeIntact(level, toPos(run.terminal()), pos)) return true;
+            run.fail("site_lost");
+            endRun(run);
+            return false;
+        }
+        removeMarkerAt(level, pos);
+        data.untrackMarker(dimension, pos);
+        data.setDirty();
+        return false;
+    }
+
     private boolean isRunRecoverable(ExpeditionRun run) {
+        if (run.portalOpen() && isFramedRun(run)) {
+            var home = levelFor(run.portalDimension());
+            if (home == null || !WayrootFrame.activeIntact(home, toPos(run.terminal()), toPos(run.portal()))) return false;
+        }
+        // An old active boss run already past its final checkpoint has no
+        // accountable guardian. Never turn that legacy gap into a free win.
+        if (run.definition().bigBad() && run.allCheckpointsDone() && run.guardianEncounter().isEmpty()) return false;
         ServerLevel level = levelFor(run.definition().dimension());
         if (level == null) {
             return false;
@@ -888,7 +1132,7 @@ public final class ExpeditionManager {
                 return false;
             }
         }
-        return level.getBlockState(toPos(run.exit())).is(ModBlocks.EXPEDITION_EXIT.get());
+        return RecallTrees.intact(level, toPos(run.exit()));
     }
 
     /**
@@ -949,71 +1193,46 @@ public final class ExpeditionManager {
             }
         }
         cleanupMarkers(run);
+        for (UUID member : run.party()) recordHistory(run, member, true, run.failReason().orElse("ended"));
         broadcastSummary(run);
         data.setDirty();
     }
 
-    /**
-     * The end-of-run summary every online member sees — a structured
-     * breakdown separating what was banked, what extraction paid, and what
-     * was lost: the legible part of "danger with counterplay". On failure
-     * the recorded cause is surfaced alongside the kept credits and the
-     * at-risk estimate (what completion would have paid at that moment).
-     */
+    private void recordHistory(ExpeditionRun run, UUID member, boolean finalResult, String reason) {
+        var level = levelFor(run.definition().dimension());
+        boolean completed = finalResult && run.status() == ExpeditionStatus.COMPLETED;
+        data.recordHistory(member, new com.expeditions.core.ExpeditionHistory.Entry(run.runId(),
+                run.definition().id(), run.definition().displayName(), run.definition().dimension(),
+                completed ? ExpeditionStatus.COMPLETED : ExpeditionStatus.FAILED,
+                run.completedCheckpoints(), run.totalCheckpoints(),
+                completed ? Math.max(run.securedTokens(member), run.tokensAwarded()) : run.securedTokens(member),
+                level == null ? -1 : run.elapsedTicks(level.getGameTime()), server.overworld().getGameTime(),
+                reason, finalResult));
+    }
+
+    /** Leave a single field report in chat. Detailed results remain in history. */
     private void broadcastSummary(ExpeditionRun run) {
         boolean completed = run.status() == ExpeditionStatus.COMPLETED;
-        // The at-risk estimate is the share the run would have settled now;
-        // when the run's dimension is gone there is nothing to estimate.
-        ServerLevel level = levelFor(run.definition().dimension());
-        int share;
-        if (level != null) {
-            int total = run.definition().totalReward(
-                    run.elapsedTicks(level.getGameTime()),
-                    run.completedObjectiveIds(), run.options().bonusTimePercent());
-            share = PartyScaling.memberShare(
-                    PartyScaling.scaledTotal(total, run.party().size(),
-                            ExpeditionsConfig.partyRewardBonusPerExtraMember())
-                            * run.options().difficulty().rewardPercent() / 100,
-                    run.party().size(), ExpeditionsConfig.partySplitRewards());
-        } else {
-            share = 0;
-        }
-        int objectives = run.definition().objectives().size();
         for (UUID member : run.party()) {
-            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
-            if (memberPlayer == null) {
-                continue;
-            }
+            ServerPlayer player = server.getPlayerList().getPlayer(member);
+            if (player == null) continue;
             int secured = run.securedTokens(member);
             if (completed) {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_complete",
-                        run.definition().displayName()));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_progress",
-                        run.completedCheckpoints(), run.totalCheckpoints(),
-                        run.completedObjectiveIds().size(), objectives));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_rewards", secured,
-                        Math.max(0, share - secured), Math.max(secured, share),
-                        ledger.tokenBalance(member)));
+                String key = run.options().guided() ? "summary_home_novice"
+                        : run.definition().bigBad() ? "summary_home_liberated" : "summary_home";
+                player.sendSystemMessage(Component.translatable("message.expeditions." + key,
+                        run.definition().displayName(), Math.max(secured, run.tokensAwarded())));
             } else {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_failed",
-                        run.definition().displayName()));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_reason",
-                        Component.translatable("message.expeditions.fail_reason."
-                                + run.failReason().orElse("ended"))));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_progress",
-                        run.completedCheckpoints(), run.totalCheckpoints(),
-                        run.completedObjectiveIds().size(), objectives));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_kept", secured,
-                        Math.max(0, share - secured)));
+                reportWithdrawal(run, player, run.failReason().orElse("ended"));
             }
         }
+    }
+
+    private static void reportWithdrawal(ExpeditionRun run, ServerPlayer player, String reason) {
+        player.sendSystemMessage(Component.translatable("message.expeditions.summary_withdrawn",
+                run.definition().displayName(),
+                Component.translatable("message.expeditions.fail_reason." + reason),
+                run.securedTokens(player.getUUID())));
     }
 
     /** Applies the run's declared member effects (last while the run is active). */
@@ -1055,7 +1274,17 @@ public final class ExpeditionManager {
      * later checkpoint or run end can discard them.
      */
     private void triggerCheckpointChallenge(ExpeditionRun run, ServerPlayer player) {
-        if (!ExpeditionsConfig.challengesEnabled()) {
+        // Mandatory campaign encounters do not roll the optional horde chance.
+        if (run.definition().bigBad() && run.allCheckpointsDone()) {
+            BlockPos site = toPos(run.checkpoints().get(run.completedCheckpoints() - 1));
+            if (!spawnBoss(run, player.serverLevel(), site)) {
+                run.fail("guardian_site_blocked");
+                player.sendSystemMessage(Component.translatable("message.expeditions.guardian_site_blocked"));
+                endRun(run);
+            }
+            return;
+        }
+        if (run.options().guided() || FrontierProgression.isAftergrowth(run.definition()) || !ExpeditionsConfig.challengesEnabled()) {
             return;
         }
         ServerLevel level = player.serverLevel();
@@ -1066,24 +1295,15 @@ public final class ExpeditionManager {
         }
         BlockPos checkpoint = toPos(run.checkpoints()
                 .get(run.completedCheckpoints() - 1));
-        // The Big Bad's signature: the expedition's last checkpoint is the
-        // fight itself — a buffed pack with a named, glowing alpha. The
-        // win still runs through the normal completion path.
-        boolean bossFight = run.definition().bigBad()
-                && run.completedCheckpoints() == run.totalCheckpoints();
-        if (bossFight) {
-            spawnBoss(run, level, checkpoint);
-        } else {
-            spawnHorde(run, level, checkpoint);
-        }
+        spawnHorde(run, level, checkpoint);
         if (run.challengeEntities().isEmpty()) {
             return;
         }
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.challenge_horde"));
+                memberPlayer.displayClientMessage(Component.translatable(
+                        "message.expeditions.challenge_horde"), true);
             }
         }
     }
@@ -1097,8 +1317,6 @@ public final class ExpeditionManager {
     private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center) {
         // One type per activation, rolled from the spawn site's own mob pool
         // (biome spawn table → tag override → config fallback).
-        EntityType<?> type = HordePools.pick(level, center,
-                run.definition().dimension(), level.getRandom());
         int size = (ExpeditionsConfig.challengeHordeSize()
                 + ExpeditionsConfig.challengeHordeSizePerExtraMember()
                         * (run.party().size() - 1))
@@ -1111,9 +1329,13 @@ public final class ExpeditionManager {
         boolean buffed = pressure >= ExpeditionTuning.integer(run.definition().dimension(),
                 "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        if (size <= 0) return;
+        Mob first = MobSpawns.trySpawnFromPool(level, center, radius, run.definition().dimension());
+        if (first == null) return;
+        EntityType<?> type = first.getType();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            Mob mob = MobSpawns.trySpawn(type, level, center, radius);
+            Mob mob = i == 0 ? first : MobSpawns.trySpawn(type, level, center, radius);
             if (mob == null) {
                 continue;
             }
@@ -1130,6 +1352,7 @@ public final class ExpeditionManager {
                 pressureBuffs(mob);
             }
             targetHordeMob(mob, nearestMember(run, level, mob.blockPosition()));
+            ChallengeOwnership.mark(mob, run);
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
             }
@@ -1177,46 +1400,45 @@ public final class ExpeditionManager {
                 SoundSource.HOSTILE, 0.85f, 0.6f);
     }
 
-    /**
-     * The Big Bad's assault: a fixed pack of the site's own mob pool, every
-     * member pressure-empowered, and the last one crowned — a named,
-     * glowing, hardened alpha that reads as the organism's champion. Same
-     * spawn machinery and tracking as any horde; only the dressing is new.
-     */
-    private void spawnBoss(ExpeditionRun run, ServerLevel level, BlockPos center) {
-        EntityType<?> type = HordePools.pick(level, center,
-                run.definition().dimension(), level.getRandom());
-        int size = ExpeditionsConfig.bossPackSize();
+    /** The guardian's body must fit the real site geometry, just like a horde. */
+    private boolean spawnBoss(ExpeditionRun run, ServerLevel level, BlockPos center) {
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
-        List<UUID> spawned = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            Mob mob = MobSpawns.trySpawn(type, level, center, radius);
-            if (mob == null) {
-                continue;
-            }
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
-                    MobSpawnType.EVENT, null);
-            mob.setPersistenceRequired();
-            markAssimilated(mob, 3);
-            pressureBuffs(mob);
-            if (i == size - 1) {
-                mob.setCustomName(Component.translatable(
-                        "entity.expeditions.big_bad"));
-                mob.setCustomNameVisible(true);
-                mob.setGlowingTag(true);
-                mob.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST,
-                        MobEffectInstance.INFINITE_DURATION, 1, false, false));
-                mob.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST,
-                        MobEffectInstance.INFINITE_DURATION, 4, false, false));
-            }
-            targetHordeMob(mob, nearestMember(run, level, mob.blockPosition()));
-            if (level.addFreshEntity(mob)) {
-                spawned.add(mob.getUUID());
+        Mob placed = MobSpawns.trySpawn(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(), level, center, radius);
+        if (!(placed instanceof com.expeditions.entity.RootboundGuardian guardian)) return false;
+        guardian.finalizeSpawn(level, level.getCurrentDifficultyAt(guardian.blockPosition()), MobSpawnType.EVENT, null);
+        guardian.setArena(center);
+        double health = Math.min(900, 180 * Math.sqrt(run.party().size())
+                * run.options().difficulty().hordePercent() / 100.0);
+        guardian.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(health);
+        guardian.setHealth((float) health);
+        targetHordeMob(guardian, nearestMember(run, level, guardian.blockPosition()));
+        ChallengeOwnership.mark(guardian, run);
+        if (!level.addFreshEntity(guardian)) return false;
+        run.trackChallengeEntities(List.of(guardian.getUUID()));
+        run.bindGuardian(guardian.getUUID());
+        announceSpawn(level, center, radius);
+        for (UUID member : run.party()) {
+            ServerPlayer online = server.getPlayerList().getPlayer(member);
+            if (online != null) {
+                JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.GUARDIAN);
+                online.displayClientMessage(Component.translatable("message.expeditions.guardian_awakened"), true);
             }
         }
-        if (!spawned.isEmpty()) {
-            run.trackChallengeEntities(spawned);
-            announceSpawn(level, center, radius);
+        return true;
+    }
+
+    /** Accepted death only: cleanup/discard cannot grant encounter proof. */
+    public void onGuardianDefeated(com.expeditions.entity.RootboundGuardian guardian) {
+        for (ExpeditionRun run : ledger.runs()) {
+            if (run.definition().dimension().equals(guardian.level().dimension().location().toString())
+                    && run.recordGuardianDefeat(guardian.getUUID())) {
+                data.setDirty();
+                for (UUID member : run.party()) {
+                    ServerPlayer online = server.getPlayerList().getPlayer(member);
+                    if (online != null) online.displayClientMessage(Component.translatable("message.expeditions.guardian_defeated"), true);
+                }
+                break;
+            }
         }
     }
 
@@ -1265,13 +1487,14 @@ public final class ExpeditionManager {
                 ExpeditionsConfig.defenseDeviceHp(), now,
                 objective.timeLimitTicks(),
                 ExpeditionsConfig.defenseWaveSeconds() * 20L);
+        JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.DEFENSE);
         spawnSiegeWave(run, level, devicePos);
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                memberPlayer.sendSystemMessage(Component.translatable(
+                memberPlayer.displayClientMessage(Component.translatable(
                         "message.expeditions.defense_started",
-                        objective.timeLimitTicks() / 20));
+                        objective.timeLimitTicks() / 20), true);
             }
         }
     }
@@ -1336,8 +1559,8 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.device_destroyed"));
+                memberPlayer.displayClientMessage(Component.translatable(
+                        "message.expeditions.device_destroyed"), true);
             }
         }
         if (objective != null && objective.required() && run.isActive()) {
@@ -1378,9 +1601,9 @@ public final class ExpeditionManager {
                 for (UUID member : run.party()) {
                     ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
                     if (memberPlayer != null) {
-                        memberPlayer.sendSystemMessage(Component.translatable(
+                        memberPlayer.displayClientMessage(Component.translatable(
                                 "message.expeditions.objective_completed",
-                                survived.get().description()));
+                                survived.get().description()), true);
                     }
                 }
                 continue;
@@ -1426,12 +1649,13 @@ public final class ExpeditionManager {
         boolean buffed = pressure
                 >= ExpeditionTuning.integer(run.definition().dimension(),
                         "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
-        EntityType<?> type = HordePools.pick(level, devicePos,
-                run.definition().dimension(), level.getRandom());
         int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        Mob first = MobSpawns.trySpawnFromPool(level, devicePos, radius, run.definition().dimension());
+        if (first == null) return;
+        EntityType<?> type = first.getType();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Mob mob = MobSpawns.trySpawn(type, level, devicePos, radius);
+            Mob mob = i == 0 ? first : MobSpawns.trySpawn(type, level, devicePos, radius);
             if (mob == null) {
                 continue;
             }
@@ -1450,6 +1674,7 @@ public final class ExpeditionManager {
             mob.goalSelector.addGoal(1, new AttackDeviceGoal(mob, devicePos,
                     ExpeditionsConfig.defenseMobDamage(),
                     ExpeditionsConfig.defenseMobAttackTicks()));
+            ChallengeOwnership.mark(mob, run);
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
             }
@@ -1491,7 +1716,7 @@ public final class ExpeditionManager {
         if (run.challengeEntities().isEmpty()) {
             return;
         }
-        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        int radius = ExpeditionsConfig.challengeHordeSpawnRadius() + 16;
         for (int cx = (center.getX() - radius) >> 4;
                 cx <= (center.getX() + radius) >> 4; cx++) {
             for (int cz = (center.getZ() - radius) >> 4;
@@ -1543,7 +1768,7 @@ public final class ExpeditionManager {
             Waypoint center = run.checkpoints().get(
                     Math.min(run.completedCheckpoints(), run.totalCheckpoints()) - 1);
             AABB box = columnBox(level, toPos(center),
-                    ExpeditionsConfig.challengeHordeSpawnRadius() + 1);
+                    ExpeditionsConfig.challengeHordeSpawnRadius() + 17);
             for (UUID entityId : List.copyOf(run.challengeEntities())) {
                 Entity entity = findInSections(level, box, entityId);
                 if (entity != null) {
@@ -1564,6 +1789,8 @@ public final class ExpeditionManager {
      * sees entities parked in sections whose chunk is not entity-ticking.
      */
     private static Entity findInSections(ServerLevel level, AABB box, UUID entityId) {
+        Entity visible = level.getEntity(entityId);
+        if (visible != null) return visible;
         List<Entity> found = new ArrayList<>();
         level.getEntities().get(box, entity -> {
             if (found.isEmpty() && entity.getUUID().equals(entityId)) {
@@ -1575,12 +1802,14 @@ public final class ExpeditionManager {
 
     /** Removes the portal block when the first checkpoint seals the party. */
     private void closePortal(ExpeditionRun run) {
-        String dimension = run.definition().dimension();
+        String dimension = run.portalDimension();
         ServerLevel level = levelFor(dimension);
         if (level != null) {
             BlockPos portalPos = toPos(run.portal());
-            removeMarkerAt(level, portalPos);
-            data.untrackMarker(dimension, portalPos);
+            if (!isReferencedByActiveRun(dimension, portalPos)) {
+                removeMarkerAt(level, portalPos);
+                data.untrackMarker(dimension, portalPos);
+            }
         }
     }
 
@@ -1652,9 +1881,19 @@ public final class ExpeditionManager {
                         ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
             }
         }
+        // Parts are tracked individually for crash pruning, and retained per position
+        // while any other live route still needs them. Never remove unrelated blocks.
+        for (BlockPos part : RecallTrees.allParts(toPos(run.exit()))) {
+            var state = level.getBlockState(part);
+            if (!isReferencedByActiveRun(dimension, part)) {
+                if (state.is(ModBlocks.RECALL_TREE_PART.get())) removeMarkerAt(level, part);
+                data.untrackMarker(dimension, part);
+            }
+        }
         if (!isReferencedByActiveRun(dimension, toPos(run.exit()))) {
             removeMarker(level, run.exit(),
                     ModBlocks.EXPEDITION_EXIT.get().defaultBlockState());
+            data.removeRecallTreeParts(dimension,toPos(run.exit()));
         }
     }
 
@@ -1664,20 +1903,18 @@ public final class ExpeditionManager {
      */
     private static void grantCompass(ServerPlayer player, ExpeditionRun run) {
         ItemStack stack = new ItemStack(ModItems.EXPEDITION_COMPASS.get());
-        retarget(stack, runDimension(run), nextTarget(run));
+        retarget(stack, run);
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
     }
 
     /** Points every expedition compass of every online member at the next target. */
-    private void retargetPartyCompasses(ExpeditionRun run) {
-        Waypoint target = nextTarget(run);
-        ResourceKey<Level> dimension = runDimension(run);
+    private void retargetPartyCompasses(ExpeditionRun run, ServerPlayer activator) {
         for (UUID member : run.party()) {
-            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
+            ServerPlayer memberPlayer = member.equals(activator.getUUID()) ? activator : server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                forEachCompass(memberPlayer, stack -> retarget(stack, dimension, target));
+                forEachCompass(memberPlayer, stack -> retarget(stack, run));
             }
         }
     }
@@ -1690,6 +1927,9 @@ public final class ExpeditionManager {
     private static void grantArtifact(ServerPlayer player, ExpeditionRun run) {
         ItemStack stack = new ItemStack(ModItems.EXPEDITION_ARTIFACT.get());
         stack.set(ModDataComponents.RUN_ID.get(), run.runId().toString());
+        if (FrontierProgression.isMastery(run.definition())) {
+            stack.set(DataComponents.ITEM_NAME, Component.translatable("item.expeditions.living_scion"));
+        }
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
@@ -1793,9 +2033,14 @@ public final class ExpeditionManager {
         return run.nextCheckpoint().orElse(run.exit());
     }
 
-    private static void retarget(ItemStack stack, ResourceKey<Level> dimension, Waypoint target) {
+    private static void retarget(ItemStack stack, ExpeditionRun run) {
         stack.set(DataComponents.LODESTONE_TRACKER, new LodestoneTracker(
-                Optional.of(GlobalPos.of(dimension, toPos(target))), false));
+                Optional.of(GlobalPos.of(runDimension(run), toPos(nextTarget(run)))), false));
+        if (run.options().guided()) {
+            stack.set(ModDataComponents.GUIDED_STEP.get(), run.completedCheckpoints() + 1);
+        } else {
+            stack.remove(ModDataComponents.GUIDED_STEP.get());
+        }
     }
 
     /**
@@ -1841,7 +2086,8 @@ public final class ExpeditionManager {
         if (state.is(ModBlocks.EXPEDITION_CHECKPOINT.get())
                 || state.is(ModBlocks.EXPEDITION_EXIT.get())
                 || state.is(ModBlocks.EXPEDITION_PORTAL.get())
-                || state.is(ModBlocks.EXPEDITION_DEVICE.get())) {
+                || state.is(ModBlocks.EXPEDITION_DEVICE.get())
+                || state.is(ModBlocks.RECALL_TREE_PART.get())) {
             level.removeBlock(pos, false);
         }
     }
@@ -1855,10 +2101,15 @@ public final class ExpeditionManager {
      */
     private static BlockPos resolveAnchor(ExpeditionDimensionAdapter adapter, ServerLevel level,
             RouteAnchor anchor, int maxAttempts) {
-        Optional<BlockPos> resolved = adapter.resolveAnchor(level, anchor);
+        return resolveAnchor(adapter, level, anchor, maxAttempts, pos -> true);
+    }
+
+    private static BlockPos resolveAnchor(ExpeditionDimensionAdapter adapter, ServerLevel level,
+            RouteAnchor anchor, int maxAttempts, java.util.function.Predicate<BlockPos> footprint) {
+        Optional<BlockPos> resolved = adapter.resolveAnchor(level, anchor).filter(footprint);
         for (int i = 0; resolved.isEmpty() && i < maxAttempts && i < JITTER.length; i++) {
             resolved = adapter.resolveAnchor(level,
-                    new RouteAnchor(anchor.x() + JITTER[i][0], anchor.z() + JITTER[i][1]));
+                    new RouteAnchor(anchor.x() + JITTER[i][0], anchor.z() + JITTER[i][1])).filter(footprint);
         }
         return resolved.orElseThrow(() -> new IllegalStateException(
                 "No safe expedition route could be resolved in this dimension"));

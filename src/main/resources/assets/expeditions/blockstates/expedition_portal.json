@@ -1,7 +1,20 @@
 {
   "variants": {
-    "": {
-      "model": "expeditions:block/expedition_portal"
+    "axis=x,framed=false": {
+      "model": "expeditions:block/expedition_portal",
+      "y": 0
+    },
+    "axis=x,framed=true": {
+      "model": "expeditions:block/wayroot_portal",
+      "y": 0
+    },
+    "axis=z,framed=false": {
+      "model": "expeditions:block/expedition_portal",
+      "y": 90
+    },
+    "axis=z,framed=true": {
+      "model": "expeditions:block/wayroot_portal",
+      "y": 90
     }
   }
 }

@@ -1,0 +1,7 @@
+{
+  "type":"minecraft:crafting_shapeless",
+  "category":"equipment",
+  "ingredients":[{"item":"minecraft:string"},{"item":"minecraft:amethyst_shard"},
+    {"item":"minecraft:copper_ingot"},{"item":"expeditions:assimilation_essence"}],
+  "result":{"id":"expeditions:disruption_charm","count":1}
+}

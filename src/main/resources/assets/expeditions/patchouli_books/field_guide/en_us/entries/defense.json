@@ -1,0 +1,30 @@
+{
+  "name": "Hold the line",
+  "icon": "expeditions:expedition_checkpoint",
+  "category": "expeditions:expeditions",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_checkpoint",
+      "text": "The device is easier to hear once the surrounding movement stops. It seldom stays quiet for long.",
+      "title": "Hold the line"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "An audible machine",
+      "text": "A defense charter deploys the machine beside its checkpoint. Keep it intact until the countdown ends. Watch the approaches as well as its remaining integrity; your own blows can damage it."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Before the first wave",
+      "text": "Make room to circle the device and keep a clear way back. Attackers can reach it while you are occupied elsewhere."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Before the first wave",
+      "text": "Losing a required device fails the expedition. An optional defense can be lost without ending the route, but its bonus is gone. Read which kind you have before starting."
+    }
+  ],
+  "advancement": "expeditions:journal/defense"
+}

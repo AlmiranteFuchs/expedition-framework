@@ -191,15 +191,15 @@ public final class ExpeditionsConfig {
             .defineInRange("expeditions.microbiome.markerColonyStarterPulses", 6, 0, 64);
 
     private static final ModConfigSpec.IntValue HUNT_RADIUS = BUILDER
-            .comment("How far a heart senses players — within this distance",
+            .comment("How far a heart senses living hosts — within this distance",
                     "each growth pulse prefers the frontier cells nearest a",
-                    "player, so the colony visibly creeps toward warmth.",
+                    "living host, so the colony visibly creeps toward warmth.",
                     "Beyond it (or 0) growth is direction-blind.")
             .defineInRange("expeditions.microbiome.huntRadius", 24, 0, 128);
 
     private static final ModConfigSpec.IntValue INFECTION_RADIUS = BUILDER
-            .comment("How close to an assimilation heart the infection",
-                    "reaches — within this distance the organism takes hold.")
+            .comment("Legacy compatibility setting. Infection now requires physical",
+                    "contact with living tissue or an infected body; radius is not used.")
             .defineInRange("expeditions.microbiome.infectionRadius", 12, 1, 64);
 
     private static final ModConfigSpec.IntValue INFECTION_INTERVAL = BUILDER
@@ -207,11 +207,11 @@ public final class ExpeditionsConfig {
             .defineInRange("expeditions.microbiome.infectionIntervalTicks", 20, 1, 600);
 
     private static final ModConfigSpec.IntValue INFECTION_ACCRUAL = BUILDER
-            .comment("Infection gained per interval while near a heart.")
+            .comment("Infection gained per interval after physical contact.")
             .defineInRange("expeditions.microbiome.infectionAccrual", 1, 0, 1000);
 
     private static final ModConfigSpec.IntValue INFECTION_DECAY = BUILDER
-            .comment("Infection shed per interval while away from hearts.")
+            .comment("Early infection shed per interval without contact.")
             .defineInRange("expeditions.microbiome.infectionDecay", 1, 0, 1000);
 
     private static final ModConfigSpec.IntValue INFECTION_MAX = BUILDER
@@ -251,9 +251,9 @@ public final class ExpeditionsConfig {
             .defineInRange("expeditions.campaign.establishedAtCompletions", 2, 1, 1000);
 
     private static final ModConfigSpec.IntValue CAMPAIGN_CLEARED = BUILDER
-            .comment("Completed expeditions in a dimension before the",
-                    "campaign is won — the dimension flips to \"cleared\"",
-                    "and the microbiome goes silent there.")
+            .comment("Legacy completion-count clearing threshold. Only applies when",
+                    "the dimension datapack opts into campaign.require_guardian=false.",
+                    "By default liberation requires a bound mission guardian and extraction.")
             .defineInRange("expeditions.campaign.clearedAtCompletions", 5, 1, 1000);
 
     private static final ModConfigSpec.IntValue PRESSURE_START = BUILDER
@@ -411,9 +411,24 @@ public final class ExpeditionsConfig {
             .comment("Maximum stacks a single bonus-drop draw may grant.")
             .defineInRange("expeditions.rewards.maxBonusDrops", 8, 0, 64);
 
-    private static final ModConfigSpec.IntValue REDEEM_COST = BUILDER
-            .comment("Token cost of /expeditions redeem (one supply draw).")
-            .defineInRange("expeditions.rewards.redeemCost", 10, 1, 1_000_000);
+    private static final ModConfigSpec.BooleanValue FRONTIER_ENABLED=BUILDER
+            .comment("Escalating personal attention, hunts and pursuit guardians in uncleared dimensions.")
+            .define("expeditions.frontier.enabled",true);
+    private static final ModConfigSpec.IntValue FRONTIER_LIMIT=BUILDER
+            .comment("Effective seconds until pursuit guardian; warnings at 20%, hunts at 40%, overrun at 70%.")
+            .defineInRange("expeditions.frontier.guardianAfterSeconds",600,60,7200);
+    private static final ModConfigSpec.IntValue FRONTIER_HOME=BUILDER
+            .comment("Overworld world-spawn refuge radius. Ambient hearts and attention do not begin inside it. 0 disables.")
+            .defineInRange("expeditions.frontier.homeRefugeRadius",128,0,1024);
+    public static boolean frontierEnabled() { return FRONTIER_ENABLED.get(); }
+    public static int frontierLimit() { return FRONTIER_LIMIT.get(); }
+    public static int frontierHomeRadius() { return FRONTIER_HOME.get(); }
+
+    private static final ModConfigSpec.BooleanValue SIMPLE_GENERATORS = BUILDER
+            .comment("Optional casual power: all three source types supply 10 R/t without",
+                    "fuel, quiet-ground or core binding. Existing block ids stay unchanged.",
+                    "Off by default; expedition and guardian progression gates are unaffected.")
+            .define("expeditions.resonance.simple_generators", false);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
@@ -607,7 +622,7 @@ public final class ExpeditionsConfig {
         return MICROBIOME_MARKER_COLONIES.get();
     }
 
-    /** How far a heart senses players for directional growth (0 = off). */
+    /** How far a heart senses living hosts for directional growth (0 = off). */
     public static int microbiomeHuntRadius() {
         return HUNT_RADIUS.get();
     }
@@ -615,6 +630,11 @@ public final class ExpeditionsConfig {
     /** Maximum distance from a marker its colony's heart may land. */
     public static int microbiomeMarkerColonyRadius() {
         return MICROBIOME_MARKER_RADIUS.get();
+    }
+
+    /** Whether generators use simplified rules (casual mode). */
+    public static boolean simpleGenerators() {
+        return SIMPLE_GENERATORS.get();
     }
 
     /** Growth pulses applied to a marker colony at seed time. */
@@ -740,11 +760,6 @@ public final class ExpeditionsConfig {
     /** Maximum stacks a single draw may grant. */
     public static int maxBonusDrops() {
         return MAX_BONUS_DROPS.get();
-    }
-
-    /** Token cost of one redeemed supply draw. */
-    public static int redeemTokenCost() {
-        return REDEEM_COST.get();
     }
 
     private static Optional<ExpeditionDefinition> definition(String id, String name,

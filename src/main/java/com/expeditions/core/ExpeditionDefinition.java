@@ -39,7 +39,19 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
         String dimension, RouteSpec route, int tokenReward,
         int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives,
         ExpeditionModifiers modifiers, Set<String> requires, Set<String> grants,
-        int costTokens, CampaignState minCampaignState, boolean bigBad) {
+        int costTokens, CampaignState minCampaignState, boolean bigBad,
+        List<ExpeditionObjective> commissionPool) {
+
+    /** A fixed charter, including definitions restored from a running expedition. */
+    public ExpeditionDefinition(String id, String displayName, int difficulty,
+            String dimension, RouteSpec route, int tokenReward,
+            int bonusTokens, int bonusTimeTicks, List<ExpeditionObjective> objectives,
+            ExpeditionModifiers modifiers, Set<String> requires, Set<String> grants,
+            int costTokens, CampaignState minCampaignState, boolean bigBad) {
+        this(id, displayName, difficulty, dimension, route, tokenReward, bonusTokens,
+                bonusTimeTicks, objectives, modifiers, requires, grants, costTokens,
+                minCampaignState, bigBad, List.of());
+    }
 
     /** Definition without progression fields (config defaults, older saves). */
     public ExpeditionDefinition(String id, String displayName, int difficulty,
@@ -116,6 +128,7 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
             throw new IllegalArgumentException("Bonus time must be >= 0");
         }
         objectives = List.copyOf(objectives);
+        commissionPool = List.copyOf(commissionPool);
         Objects.requireNonNull(modifiers, "modifiers");
         if (costTokens < 0) {
             throw new IllegalArgumentException("Cost must be >= 0");
@@ -143,6 +156,24 @@ public record ExpeditionDefinition(String id, String displayName, int difficulty
                                 + " but the route has only " + checkpoints);
             }
         }
+        for (ExpeditionObjective commission : commissionPool) {
+            if (commission.required() || commission.checkpoint() != 0) {
+                throw new IllegalArgumentException("Commission " + commission.id()
+                        + " must be optional and independent of checkpoints");
+            }
+            if (!seen.add(commission.id())) {
+                throw new IllegalArgumentException("Duplicate objective or commission id " + commission.id());
+            }
+        }
+    }
+
+    /** Resolve the charter into the fixed objective list persisted with a run. */
+    public ExpeditionDefinition withCommission(int index) {
+        var resolved = new java.util.ArrayList<>(objectives);
+        resolved.add(commissionPool.get(index));
+        return new ExpeditionDefinition(id, displayName, difficulty, dimension, route,
+                tokenReward, bonusTokens, bonusTimeTicks, resolved, modifiers, requires,
+                grants, costTokens, minCampaignState, bigBad);
     }
 
     /**

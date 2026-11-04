@@ -41,6 +41,46 @@ class ExpeditionObjectiveTest {
     // ---- Objective construction validation --------------------------------
 
     @Test
+    void scoutingLatchesOneObservationAndRejectsAmbiguousTargets() {
+        assertThrows(IllegalArgumentException.class, () -> ExpeditionObjective.scout(
+                "bearing", "Take a bearing", false, "minecraft:forest", "minecraft:is_forest", 5));
+        var scout = ExpeditionObjective.scout("bearing", "Take a bearing", false,
+                null, "minecraft:is_forest", 5);
+        var run = newRun(scout);
+        assertTrue(run.addObjectiveProgress("bearing", 1));
+        assertFalse(run.addObjectiveProgress("bearing", 1));
+        assertEquals(1, run.objectiveState("bearing").orElseThrow().progress());
+    }
+
+    @Test
+    void commissionSelectionFreezesOneOptionalObjective() {
+        var fixed = ExpeditionObjective.visitCheckpoint("start", "Reach the mark", true, 1, 0);
+        var bark = ExpeditionObjective.harvest("bark", "Cut bark", false, null, "minecraft:logs", 2, 4);
+        var haste = ExpeditionObjective.timeLimit("haste", "Beat the dusk", false, 400, 6);
+        var charter = new ExpeditionDefinition("expeditions:trial", "Trial", 0, "minecraft:overworld",
+                route(), 8, 0, 0, List.of(fixed), ExpeditionModifiers.NONE, Set.of(), Set.of(),
+                0, CampaignState.FRONTIER, false, List.of(bark, haste));
+        assertEquals(List.of(fixed, haste), charter.withCommission(1).objectives());
+        assertTrue(charter.withCommission(1).commissionPool().isEmpty());
+        assertEquals(List.of(bark, haste), charter.commissionPool());
+        assertThrows(IllegalArgumentException.class, () -> new ExpeditionDefinition(
+                "expeditions:trial", "Trial", 0, "minecraft:overworld", route(), 8, 0, 0,
+                List.of(fixed), ExpeditionModifiers.NONE, Set.of(), Set.of(), 0,
+                CampaignState.FRONTIER, false, List.of(bark, bark)));
+    }
+
+    @Test
+    void harvestClampsToItsTarget() {
+        var objective = ExpeditionObjective.harvest("bark", "Cut a bark sample", false,
+                null, "minecraft:logs", 2, 4);
+        var run = newRun(objective);
+        assertFalse(run.addObjectiveProgress("bark", 1));
+        assertTrue(run.addObjectiveProgress("bark", Integer.MAX_VALUE));
+        assertEquals(2, run.objectiveState("bark").orElseThrow().progress());
+        assertFalse(run.addObjectiveProgress("bark", 1));
+    }
+
+    @Test
     void objectivesRejectInvalidShapes() {
         assertThrows(IllegalArgumentException.class,
                 () -> ExpeditionObjective.visitCheckpoint(" ", "d", false, 1, 0));

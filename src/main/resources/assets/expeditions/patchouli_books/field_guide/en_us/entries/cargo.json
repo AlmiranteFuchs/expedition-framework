@@ -1,0 +1,30 @@
+{
+  "name": "Sealed cargo",
+  "icon": "expeditions:expedition_artifact",
+  "category": "expeditions:expeditions",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_artifact",
+      "text": "The parcel is warmer at the binding than at its centre. Its seal agrees with the mark on this charter.",
+      "title": "Sealed cargo"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The seal",
+      "text": "A recovery objective issues cargo at its named checkpoint. Keep it with you and bring it to extraction. A parcel from another journey cannot settle this contract."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bring the object",
+      "text": "A written record is no substitute for the cargo. If it is lost, retrieve it before attempting to leave. A required recovery remains unfinished without the object."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bring the object",
+      "text": "Successful extraction takes the sealed parcel and records its delivery. Loose samples and equipment are yours to bring home."
+    }
+  ],
+  "advancement": "expeditions:journal/cargo"
+}

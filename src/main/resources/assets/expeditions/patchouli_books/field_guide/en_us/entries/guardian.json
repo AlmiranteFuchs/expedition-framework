@@ -1,0 +1,36 @@
+{
+  "name": "At the last marker",
+  "icon": "expeditions:assimilation_heart",
+  "category": "expeditions:thicket",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:assimilation_heart",
+      "text": "The wood moves around an empty space. The amber inside becomes easier to see just before a strike.",
+      "title": "At the last marker"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The bound guardian",
+      "text": "This charter names a particular guardian. Defeat that creature and then extract to settle the confrontation. Reaching the exit while it lives will not finish the work. A different creature killed elsewhere is not proof."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Watch the ground",
+      "text": "Raised arms and an ember circle give warning of a sweep. Leave the marked ground before it lands. The exposed core is vulnerable during the windup, if you can attack and still get clear."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Watch the ground",
+      "text": "As the core brightens, smaller warning marks can appear beneath its target. Keep moving out of them. Use the pause after a strike to regain space."
+    },
+    {
+      "type": "patchouli:entity",
+      "entity": "expeditions:rootbound_guardian",
+      "scale": 0.55,
+      "text": "Read the raised arms. Leave the marked ground before it strikes."
+    }
+  ],
+  "advancement": "expeditions:journal/guardian"
+}

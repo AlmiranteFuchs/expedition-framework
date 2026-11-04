@@ -37,6 +37,17 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * and {@code /expeditions} exposes status, balance and abandon subcommands.
  */
 public final class ExpeditionEventHandler {
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        var old=event.getOriginal().getPersistentData();
+        if(old.contains(FrontierThreat.ROOT))event.getEntity().getPersistentData().put(FrontierThreat.ROOT,old.get(FrontierThreat.ROOT).copy());
+    }
+    public static void onFrontierDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
+        if(event.getEntity().getPersistentData().hasUUID(FrontierThreat.OWNER))event.setCanceled(true);
+    }
+    public static void onFrontierExperience(net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event) {
+        if(event.getEntity().getPersistentData().hasUUID(FrontierThreat.OWNER))event.setCanceled(true);
+    }
+
     private ExpeditionEventHandler() {
     }
 
@@ -65,6 +76,12 @@ public final class ExpeditionEventHandler {
             // Runs that ended while the member was offline can leave a compass
             // behind in their inventory.
             manager.sweepCompasses(player);
+            if(manager.unlocks(player.getUUID()).contains("expeditions:salvage_clear") || manager.unlocks(player.getUUID()).contains("expeditions:guardian_clear"))
+                manager.grantUnlock(player.getUUID(),"expeditions:recovery_clear");
+            if(!player.getPersistentData().getBoolean("expeditions:trace_hint")){
+                manager.savedData().firstTrace().ifPresent(p->player.sendSystemMessage(Component.translatable("equipment.expeditions.first_trace",p.getX(),p.getZ())));
+                if(manager.savedData().firstTrace().isPresent())player.getPersistentData().putBoolean("expeditions:trace_hint",true);
+            }
             boolean hadRun = manager.activeRun(player.getUUID()).isPresent();
             manager.resumeOrFail(player).ifPresentOrElse(
                     run -> player.sendSystemMessage(Component.translatable(
@@ -85,6 +102,7 @@ public final class ExpeditionEventHandler {
      */
     public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
         ExpeditionManager.pruneOrphanMarkers(event.getServer());
+        FirstTrace.seed(event.getServer().overworld(),ExpeditionManager.get(event.getServer()).savedData());
     }
 
     /**
@@ -95,6 +113,7 @@ public final class ExpeditionEventHandler {
     public static void onServerTick(ServerTickEvent.Post event) {
         if (event.getServer().getTickCount() % 20 == 0) {
             ExpeditionManager manager = ExpeditionManager.get(event.getServer());
+            manager.frontier().tick(event.getServer(),manager.savedData());
             manager.tickDefenses();
             manager.sweepChallengeEntities();
         }
@@ -108,13 +127,17 @@ public final class ExpeditionEventHandler {
      */
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (player.tickCount % ExpeditionTuning.integer(
+            if (!player.isCreative() && !player.isSpectator() && player.tickCount % ExpeditionTuning.integer(
                             player.level().dimension(), "microbiome.heart_spawn_interval_ticks",
                             ExpeditionsConfig.microbiomeSpawnIntervalTicks()) == 0
                     && Microbiome.enabled(player.serverLevel())) {
                 Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
             }
             CompassPing.onPlayerTick(player);
+            if (player.tickCount % 20 == 0 && !player.isSpectator()) {
+                ExpeditionManager.get(player.server).surveyBiome(player);
+            }
+            if (player.tickCount > 0 && player.tickCount % 40 == 0) JournalDiscovery.observe(player);
             dwellPressure(player);
             Assimilation.onPlayerTick(player);
         }
@@ -131,6 +154,7 @@ public final class ExpeditionEventHandler {
      * without fabricating a tick event.
      */
     public static void dwellPressure(ServerPlayer player) {
+        if(Stillness.suppresses(player.serverLevel(),player.blockPosition()))return;
         int interval = ExpeditionTuning.integer(player.level().dimension(),
                 "pressure.dwell_interval_ticks",
                 ExpeditionsConfig.pressureDwellIntervalTicks());
@@ -141,7 +165,7 @@ public final class ExpeditionEventHandler {
         }
         int amount = ExpeditionTuning.integer(player.level().dimension(),
                 "pressure.dwell_amount", ExpeditionsConfig.pressureDwellAmount());
-        if (amount <= 0) {
+        if (amount <= 0 || com.expeditions.block.entity.FieldWardBlockEntity.covers(player.serverLevel(),player.blockPosition())) {
             return;
         }
         ExpeditionSavedData data = player.server.overworld().getDataStorage()
@@ -191,6 +215,11 @@ public final class ExpeditionEventHandler {
      * pipelines), and free ambience for the ones that can.
      */
     public static void onEntityTick(EntityTickEvent.Post event) {
+        if (event.getEntity() instanceof net.minecraft.world.entity.Mob mob
+                && (mob.tickCount + mob.getId()) % 20 == 0
+                && (FrontierThreat.tickHunter(mob) || ChallengeOwnership.onTick(mob))) return;
+        if(event.getEntity() instanceof LivingEntity living && living.level() instanceof ServerLevel)
+            Assimilation.onLivingTick(living);
         if (!(event.getEntity() instanceof LivingEntity entity)
                 || !(entity.level() instanceof ServerLevel level)
                 || entity.isInvisible()
@@ -216,6 +245,13 @@ public final class ExpeditionEventHandler {
      */
     public static void onLivingHurt(LivingDamageEvent.Post event) {
         LivingEntity entity = event.getEntity();
+        if(event.getNewDamage()>0 && entity instanceof net.minecraft.world.entity.Mob victim
+                && event.getSource().getEntity() instanceof LivingEntity attacker) Assimilation.onAttacked(victim,attacker);
+        if(event.getSource().getDirectEntity()==event.getSource().getEntity()
+                && event.getSource().getEntity() instanceof LivingEntity attacker
+                && attacker.getData(ModAttachments.ASSIMILATED)>0
+                && attacker.distanceToSqr(entity)<=Math.pow(attacker.getBbWidth()+entity.getBbWidth()+.75,2))
+            Assimilation.onContact(entity);
         if (!(entity.level() instanceof ServerLevel level)
                 || entity.getData(ModAttachments.ASSIMILATED) <= 0) {
             return;
@@ -224,6 +260,12 @@ public final class ExpeditionEventHandler {
         level.sendParticles(ParticleTypes.SMALL_FLAME, entity.getX(),
                 entity.getY() + entity.getBbHeight() * 0.6, entity.getZ(),
                 count, 0.3, 0.4, 0.3, 0.02);
+    }
+
+    public static void onBlockHarvested(net.neoforged.neoforge.event.level.BlockDropsEvent event) {
+        if (event.getBreaker() instanceof ServerPlayer player && player.gameMode.getGameModeForPlayer().isSurvival()) {
+            ExpeditionManager.get(player.server).onBlockHarvested(player, event.getState());
+        }
     }
 
     /**
@@ -239,6 +281,9 @@ public final class ExpeditionEventHandler {
             if (count > 0) {
                 ItemStack picked = event.getOriginalStack();
                 picked.setCount(count);
+                if (picked.is(com.expeditions.registry.ModItems.ASSIMILATION_ESSENCE.get())) {
+                    JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.ESSENCE);
+                }
                 ExpeditionManager.get(player.server).onItemPickup(player, picked);
             }
         }
@@ -259,9 +304,14 @@ public final class ExpeditionEventHandler {
                 .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem))
                 .then(Commands.literal("unlocks").executes(ExpeditionEventHandler::unlocks))
                 .then(Commands.literal("trophies").executes(ExpeditionEventHandler::trophies))
-                .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign))
-                .then(Commands.literal("infection").executes(ExpeditionEventHandler::infection))
+                .then(Commands.literal("history").executes(ExpeditionEventHandler::history))
+                .then(Commands.literal("campaign").executes(ExpeditionEventHandler::campaign)
+                        .then(Commands.literal("all").executes(ExpeditionEventHandler::campaignAll)))
+                .then(Commands.literal("infection").requires(source -> source.hasPermission(2))
+                        .executes(ExpeditionEventHandler::infection))
                 .then(Commands.literal("dimensions").executes(ExpeditionEventHandler::dimensions))
+                .then(Commands.literal("diagnostics").requires(source -> source.hasPermission(2))
+                        .executes(ExpeditionEventHandler::diagnostics))
                 .then(Commands.literal("start")
                         .then(Commands.argument("expedition", ResourceLocationArgument.id())
                                 .suggests(EXPEDITION_SUGGESTIONS)
@@ -303,6 +353,33 @@ public final class ExpeditionEventHandler {
                     + (missions.isEmpty() ? "no expeditions enabled" : missions)));
         }
         return levels.size();
+    }
+
+    /** A bounded read-only snapshot for admins and optional live test tooling. */
+    private static int diagnostics(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = player(ctx);
+        if (player == null) return 0;
+        var manager = ExpeditionManager.get(player.server);
+        var entries = new java.util.ArrayList<java.util.Map<String, Object>>();
+        manager.latestRun(player.getUUID()).ifPresent(run -> {
+            java.util.Map<String, Object> entry = new java.util.LinkedHashMap<>();
+            entry.put("RunId", run.runId().toString());
+            entry.put("Dimension", run.definition().dimension());
+            entry.put("PortalDimension", run.portalDimension());
+            entry.put("Portal", run.portal()); entry.put("Checkpoints", run.checkpoints()); entry.put("Exit", run.exit());
+            entry.put("Status", run.status().name()); entry.put("Done", run.completedCheckpoints());
+            entry.put("Rewarded", run.isRewarded() ? 1 : 0); entry.put("TokensAwarded", run.tokensAwarded());
+            entry.put("ChallengeEntities", run.challengeEntities().stream()
+                    .map(id -> java.util.Map.of("EntityId", id.toString())).toList());
+            run.guardianEncounter().ifPresent(guardian -> entry.put("Guardian", guardian));
+            entries.add(entry);
+        });
+        String json = new com.google.gson.Gson().toJson(java.util.Map.of(
+                "Runs", entries, "Balance", manager.tokenBalance(player.getUUID())));
+        // sendSystemMessage redirects to the player entity after `execute as`,
+        // bypassing the invoking command source (including MCP/admin capture).
+        ctx.getSource().sendSuccess(() -> Component.literal(json), false);
+        return 1;
     }
 
     private static int balance(CommandContext<CommandSourceStack> ctx) {
@@ -347,7 +424,10 @@ public final class ExpeditionEventHandler {
         player.sendSystemMessage(trophyIds.isEmpty()
                 ? Component.translatable("message.expeditions.trophies_none")
                 : Component.translatable("message.expeditions.trophies",
-                        String.join(", ", trophyIds)));
+                        trophyIds.stream().sorted()
+                                .map(id -> id.equals(ExpeditionOptions.FIRST_BEARING)
+                                        ? Component.translatable("trophy.expeditions.expedition_novice") : Component.literal(id))
+                                .reduce((first, next) -> Component.empty().append(first).append(", ").append(next)).orElseThrow()));
         return 1;
     }
 
@@ -366,6 +446,74 @@ public final class ExpeditionEventHandler {
                 "message.expeditions.campaign", dimension,
                 data.campaignState(dimension).id(),
                 data.campaignCompletions(dimension)));
+        campaignProgress(player, data, dimension);
+        return 1;
+    }
+
+    private static int history(CommandContext<CommandSourceStack> ctx) {
+        var player = player(ctx);
+        if (player == null) return 0;
+        var entries = ExpeditionManager.get(player.server).savedData().history().entries(player.getUUID());
+        player.sendSystemMessage(Component.translatable(entries.isEmpty()
+                ? "message.expeditions.history_empty" : "message.expeditions.history_title"));
+        for (var entry : entries) {
+            var duration = entry.elapsedTicks() < 0 ? Component.translatable("message.expeditions.history_unknown")
+                    : Component.translatable("message.expeditions.history_duration", entry.elapsedTicks() / 1200,
+                            String.format(java.util.Locale.ROOT, "%02d", entry.elapsedTicks() / 20 % 60));
+            var outcome = Component.translatable("message.expeditions.history_" + entry.outcome().name().toLowerCase(java.util.Locale.ROOT));
+            var row = Component.translatable("message.expeditions.history_row", entry.name(), outcome,
+                    entry.checkpoints(), entry.totalCheckpoints(), entry.tokensKept(), duration, entry.dimension());
+            if (entry.outcome() == com.expeditions.core.ExpeditionStatus.FAILED)
+                row.append(Component.translatable("message.expeditions.history_reason",
+                        Component.translatable("message.expeditions.fail_reason." + entry.reason())));
+            player.sendSystemMessage(row);
+        }
+        return 1;
+    }
+
+    private static void campaignProgress(ServerPlayer player, ExpeditionSavedData data, String dimension) {
+        var state = data.campaignState(dimension);
+        if (state == com.expeditions.core.CampaignState.CLEARED) {
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_liberated"));
+        } else if (state == com.expeditions.core.CampaignState.ESTABLISHED
+                && ExpeditionTuning.bool(dimension, "campaign.require_guardian", true)) {
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_guardian"));
+        } else {
+            boolean clearing = state == com.expeditions.core.CampaignState.ESTABLISHED
+                    || !ExpeditionTuning.bool(dimension, "campaign.require_guardian", true)
+                    && ExpeditionsConfig.campaignClearedAtCompletions() <= ExpeditionsConfig.campaignEstablishedAtCompletions();
+            int target = !clearing
+                    ? ExpeditionsConfig.campaignEstablishedAtCompletions() : ExpeditionsConfig.campaignClearedAtCompletions();
+            int count = Math.min(data.campaignCompletions(dimension), target);
+            int fill = target <= 0 ? 10 : (int) ((long) count * 10 / target);
+            String bar = "[" + "|".repeat(fill) + ".".repeat(10 - fill) + "]";
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_progress", bar, count, target,
+                    clearing ? "CLEARED" : "ESTABLISHED"));
+        }
+        if (dimension.equals("minecraft:overworld"))
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_shelter"));
+    }
+
+    private static int campaignAll(CommandContext<CommandSourceStack> ctx) {
+        var player = player(ctx);
+        if (player == null) return 0;
+        var manager = ExpeditionManager.get(player.server);
+        var data = manager.savedData();
+        var dimensions = new java.util.TreeSet<>(data.campaignDimensions());
+        dimensions.add(player.serverLevel().dimension().location().toString());
+        var definitions = manager.listStartable();
+        player.sendSystemMessage(Component.translatable("message.expeditions.campaign_records"));
+        for (String dimension : dimensions) {
+            var available = definitions.stream().filter(d -> d.dimension().equals(dimension)
+                    && !(ExpeditionOptions.FIRST_BEARING.equals(d.id()) && manager.trainingComplete(player.getUUID()))
+                    && manager.missingRequirements(player.getUUID(), d).isSatisfied()).toList();
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_dimension", dimension,
+                    data.campaignState(dimension).id(), data.campaignCompletions(dimension), available.size()));
+            campaignProgress(player, data, dimension);
+            if (available.stream().anyMatch(com.expeditions.core.ExpeditionDefinition::bigBad)
+                    && data.campaignState(dimension) != com.expeditions.core.CampaignState.CLEARED)
+                player.sendSystemMessage(Component.translatable("message.expeditions.campaign_confrontation"));
+        }
         return 1;
     }
 
@@ -376,28 +524,33 @@ public final class ExpeditionEventHandler {
         }
         ExpeditionManager manager = ExpeditionManager.get(player.server);
         manager.activeRun(player.getUUID()).ifPresentOrElse(
-                run -> run.nextCheckpoint().ifPresentOrElse(
+                run -> {
+                    run.nextCheckpoint().ifPresentOrElse(
                         next -> player.sendSystemMessage(Component.translatable(
                                 "message.expeditions.next_checkpoint",
                                 run.completedCheckpoints() + 1, run.totalCheckpoints(),
                                 format(next))),
                         () -> player.sendSystemMessage(Component.translatable(
-                                "message.expeditions.all_checkpoints", format(run.exit())))),
+                                "message.expeditions.all_checkpoints", format(run.exit()))));
+                    for (Component order : FieldOrders.describe(run)) {
+                        ctx.getSource().sendSuccess(() -> order, false);
+                    }
+                },
                 () -> player.sendSystemMessage(Component.translatable(
                         "message.expeditions.status_none")));
         return 1;
     }
 
     /**
-     * `/expeditions redeem` — the token sink: spends the configured cost on a
-     * supply draw from the current dimension's reward item pool.
+     * `/expeditions redeem` points players to the basin that settles supply claims.
      */
     private static int redeem(CommandContext<CommandSourceStack> ctx) {
         ServerPlayer player = player(ctx);
         if (player == null) {
             return 0;
         }
-        return ExpeditionManager.get(player.server).redeemTokens(player) ? 1 : 0;
+        player.sendSystemMessage(Component.translatable("message.expeditions.basin_redeem_hint"));
+        return 1;
     }
 
     /**
@@ -423,11 +576,8 @@ public final class ExpeditionEventHandler {
                 argOr(ctx, "checkpoints", Integer.class, 0),
                 argOr(ctx, "time", Integer.class, 0));
         try {
-            ExpeditionRun run = ExpeditionManager.get(player.server)
+            ExpeditionManager.get(player.server)
                     .startRun(player, player.blockPosition(), options);
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.expedition_started",
-                    run.definition().displayName()));
             return 1;
         } catch (IllegalStateException e) {
             player.sendSystemMessage(Component.literal(e.getMessage()));
@@ -452,7 +602,6 @@ public final class ExpeditionEventHandler {
         }
         try {
             ExpeditionManager.get(player.server).failRun(player, "abandoned");
-            player.sendSystemMessage(Component.translatable("message.expeditions.expedition_abandoned"));
             return 1;
         } catch (IllegalStateException e) {
             player.sendSystemMessage(Component.translatable("message.expeditions.status_none"));

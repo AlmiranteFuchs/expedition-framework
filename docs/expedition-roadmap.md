@@ -430,6 +430,15 @@ third-party mod installation remains a manual compatibility check.
 
 ### Remaining work
 
+Compass navigation polish: a signed elevation ember floats over the held
+instrument; right-click attunement adds a vertical spark trace and three
+ascending/descending notes. The ±2-block level band keeps walkable differences
+quiet. All 32 needle frames now retain a carved pale-heartwood housing rather
+than substituting vanilla compass art. Two game tests cover either-hand use,
+cooldown, unchanged tracker data, and invalid/cross-dimension refusal; four
+unit tests cover the elevation rule. MCP client checks verified the held art,
+above/below movement, and an active right-click trail in the disposable world.
+
 Horde compatibility follow-up: selection now reads every non-friendly biome
 spawn category, including NeoForge extensions, instead of only MONSTER.
 Biomes without eligible hostiles fall back to local NeutralMob creatures
@@ -448,3 +457,267 @@ layer (trace pulse, membrane, heart colonies, compass heartbeat), a
 smoke run against a real third-party modded dimension if one ever joins
 the pack, and any Big Bad *design* pass beyond the current assault-wave
 prototype.
+
+## M16 — Onboarding & UX Improvements (in progress)
+
+Improving player onboarding, feedback, and quality of life to reduce complexity
+barriers while preserving depth.
+
+### Quick wins (immediate implementation)
+
+**Technical Improvements - Test helper updates**
+- Replace deprecated `makeMockServerPlayerInLevel()` with new NeoForge test API
+- Eliminates 100+ deprecation warnings in game tests
+
+**Simplified Early Power - Config option**
+- Add `expeditions.resonance.simple_generators` config flag
+- When true: merge all three generator types into one "Resonance Generator" with reduced output
+- Removes fuel, quiet-ground, and core-binding complexity for casual play
+
+**Quality of Life - Expedition history**
+- Add `/expeditions history` command showing last 10 expeditions with outcomes
+- Useful for debugging failed runs and tracking personal progress
+
+**Better In-Game Feedback - Machine status**
+- Click on resonance machines sends chat message with current status
+- Add "status check" button in GUI showing full state chain
+
+**Better In-Game Feedback - Compass distance**
+- Add distance indicator in compass tooltip ("274 blocks away")
+- Reduces reliance on 3D spatial reasoning
+
+### Medium effort (implementation in progress)
+
+**Better In-Game Feedback - Terminal failure tooltips**
+- Enhanced tooltip showing full requirement tree for locked expeditions
+- Shows campaign state gap, missing keys, token cost in one view
+- Hover over locked expeditions for detailed explanation
+
+**Campaign Pacing - Progress bar**
+- `/expeditions campaign` command shows progress bar to next state
+- "3/5 completions to ESTABLISHED" explicitly
+- Visual feedback on campaign progression
+
+**Progressive System Disclosure - Journal chapter gating**
+- Field guide chapters unlock as systems are discovered:
+  - Chapter 1: Microbiome + dormant flakes (unlocks on first dormant flake pickup)
+  - Chapter 2: Resonance machines (unlocks on first resonator build)
+  - Chapter 3: Field equipment (unlocks on first cell craft)
+  - Chapter 4: Expeditions (unlocks on terminal activation)
+  - Chapter 5: Campaign progression (unlocks after first expedition completion)
+- Reduces upfront complexity
+
+**Campaign Pacing - Dimension summary**
+- Command or GUI showing all visited dimensions with campaign states
+- Lists available expeditions per dimension
+- Shows which Big Bad is unlocked
+
+**Expedition Onboarding - Solo tutorial expedition**
+- "Solo Expedition" option in menu disables party joining
+- Shows waypoint arrow instead of requiring compass interpretation
+- 2 checkpoints instead of 3-5
+- Grants "Expedition Novice" trophy on completion
+
+**Technical Improvements - Chunk-load safety**
+- Safety wrapper in `ExpeditionManager` force-loads chunks before entity lookups
+- Fallback scans `entityManager.sectionStorage` if entity not found
+- Addresses entity visibility caveat for unloaded chunks
+
+### Major features (deferred to future milestones)
+
+**Technical Improvements - SavedData sharding**
+- Split into three files by namespace:
+  - `expeditions-ledger.dat` (balances, unlocks, trophies - per-player, rarely changes)
+  - `expeditions-runs.dat` (active runs, markers - per-world, changes frequently)
+  - `expeditions-campaign.dat` (campaign states, pressure - per-dimension, medium frequency)
+- Reduces hot file contention and partial load times
+- Requires migration path for existing saves
+
+**Gameplay Variety - New objective kinds**
+- `SCOUT`: Visit radius around location without triggering mobs (stealth)
+- `HARVEST`: Extract X blocks of specific type (field-gathering)
+- `RELAY`: Place marker at location (sets up next checkpoint)
+- `SURVIVE`: Stay in region for X seconds without taking damage (endurance)
+- Requires game tests, balancing, datapack schema updates
+
+**Gameplay Variety - Dynamic objective pools**
+- Some expeditions have random objectives from a pool
+- Makes repeat runs less predictable
+- Increases replay value
+
+**Gameplay Variety - Side objectives**
+- Optional mini-tasks awarding bonus tokens without gating completion
+- Examples: "Collect 5 different flowers in this biome"
+- Encourages exploration without blocking progress
+
+**Player Retention - Post-campaign content**
+- Resource expeditions: pure farming, no threat, after dimension cleared
+- Mastery expeditions: harder versions with better rewards
+- Scavenger hunts: find hidden caches placed by the mod
+- Gives reasons to return to cleared dimensions
+
+**Player Retention - Dimensional traits**
+- Unique properties unlocked after clearing each dimension:
+  - Overworld: Dormant knots spawn in villages (trade with villagers)
+  - Nether: Dormant hearts spawn in basalt deltas (special essence variants)
+  - End: Severed cores craftable from ender pearls (alternative source)
+
+**Campaign Pacing - Visual landmarks**
+- Campaign milestones have visual markers:
+  - FRONTIER → ESTABLISHED: Spawn dormant heart cluster near spawn
+  - ESTABLISHED → CLEARED: Remove guardian's ember circle
+- Visual feedback on campaign progress
+
+**Quality of Life - Quick-save during expeditions**
+- Temporary checkpoint marker persists for 10 minutes
+- Emergency save point for long expeditions
+- Reduces frustration from unexpected disconnects
+
+**Quality of Life - Compass waypoint sharing**
+- Party members can see each other's compass targets
+- Improves coordination without requiring voice chat
+- Optional feature (config toggle)
+
+**Quality of Life - Config presets**
+- Include `expeditions-server.toml` templates for playstyles:
+  - Casual: simplified generators, reduced threat
+  - Hardcore: strict requirements, higher rewards
+  - Expert: full complexity, challenging
+- Makes modpack configuration easier
+
+### M16 implementation review — alpha.23
+
+Machine surface repair and operating feedback are implemented and tested. The
+five machine models retain their shapes and palette; their 34 overlapping face
+pairs are now zero. Machine screens show live operating reasons, contextual
+hints, collector sharing and actual output. Comparators read source energy or
+finished condenser stock. Intermittent power gets a short visual hold without
+free processing. `simple_generators` optionally makes all three source variants
+produce 10 R/t without fuel, quiet ground or a bound core; normal rules remain
+the default. Their distinct registry IDs and saved inventories are preserved.
+
+Implementation decisions: use persistent GUI status instead of repeated chat
+messages or a redundant status button. Keep all 14 stable journal discovery IDs
+and the always-readable starter instructions. Do not shard SavedData: reward
+flags, balances, runs and markers must roll back atomically in one file. The
+proposed test-helper replacement is deferred: the supported 1.21.1 helper still
+exposes the deprecated server-player method and has no equivalent replacement.
+History, compass distance and campaign progress are the next M16 slice.
+
+### M16 personal reports and navigation — alpha.24
+
+Implemented `/expeditions history`: ten personal reports, including outcome,
+route progress, secured/full credited share, elapsed time and failure cause.
+Reports persist with the ledger in its existing atomic SavedData file; malformed
+entries are skipped individually. A member leaving and rejoining an open party
+gets one updated report when that run ends. Existing saves begin collecting new
+reports without fabricating historical runs.
+
+The compass tooltip shows coarse direct distance bands and the existing ember's
+vertical direction. Exact free distance was deliberately avoided: the recovered
+Heartglass Lens remains the paid precise horizontal-distance and height tool.
+The discovered wayfinding and checkpoint guide pages explain both additions.
+
+`/expeditions campaign` now shows the next completion threshold or required
+confrontation, rather than implying ordinary completions always grant liberation.
+`campaign all` lists dimensions with campaign/pressure records plus the current
+dimension, eligible charter counts and eligible confrontation availability. This
+is a records summary, not a new registry of every visited dimension. The terminal
+readiness panel already lists key, token and campaign requirements; its liberation
+hint now correctly directs players toward a confrontation where required.
+
+Verified: 193 unit tests, 176 core GameTests (179 including optional modded biome
+probes), build and alphaBundle. Remaining M16 proposals above are still proposals;
+no solo-arrow/tutorial rewrite, new objective kinds or post-campaign rewards are
+claimed by this release. Existing journal identities, authored tree geometry and
+guardian proof rules are preserved.
+
+
+### M16 onboarding — alpha.25
+
+First Bearing is a short optional Overworld charter, suggested on the home
+terminal for a player without field proof. It offers two witness stumps, a
+private entrance and an amber bearing while holding the issued compass.
+The cue follows the same synchronized target as the needle, labels the next
+mark or hollow and reports height without exposing exact lens measurements.
+Natural terrain and ordinary hazards still matter. It teaches the normal
+checkpoint and extraction interactions without rolling checkpoint hordes.
+
+Extraction grants the Expedition Novice trophy, field proof and eight tokens.
+The payout settles at extraction and the trophy closes the practice charter,
+so failed attempts can be retried without turning practice into a repeatable
+token source. Field Survey remains an alternative. Ordinary charters can use
+the Party access toggle; solo runs preserve their chosen routes and challenges,
+and legacy runs default to open party admission.
+
+Terminal readiness is available on the locked deployment control. The guide
+introduces practice and private portals through existing discovery chapters.
+This slice retains the existing stable journal gates, one-file save model and
+chunk ownership cleanup. New objective types and post-campaign charters remain
+future work.
+
+
+### Post-liberation return loop — alpha.27 development
+
+Aftergrowth Surveys are generated for loaded, adapter-supported dimensions
+whose campaign is cleared. The two-mark route uses the normal portal, party,
+navigation, and extraction lifecycle. It omits checkpoint hordes and timed
+bonuses. Extraction yields two Return Knots without advancing campaign counts
+or granting Hard/Brutal gear proof. Ordinary creatures and hazards remain.
+
+### Field commissions — alpha.28
+
+Deep Salvage offers an optional bark sample commission alongside the cargo and
+siege. The bonus settles at extraction. The assignment rewards gathering on
+the route and can be skipped when the party needs to get home.
+
+Datapack authors can use `harvest` with a positive `count` and exactly one
+`block` ID or block `tag`. The run records one unit per matching survival
+harvest by a party member carrying the field compass in the destination
+dimension. Item pickup and Fortune yields do not affect the count. Progress
+uses the existing saved objective record.
+
+### Rotating commissions — alpha.29
+
+Deep Salvage now draws one commission at deployment. The Wayroot lists the
+possibilities before deployment and announces the selection when the entrance
+opens. The cargo and siege remain the charter's main work. Datapacks can add a
+`commission_pool` array using the same entries as `objectives`. Pool entries
+must be optional and independent of checkpoints. The selected entry is saved
+with the run's objectives so reloads never reroll it.
+
+Deep Rock Galactic's mission assignments
+and optional challenges are a reference for keeping the main extraction goal
+legible while giving the party a reason to detour. Alex's Caves is a reference
+for using a discovery in the world to give the guidebook something concrete to
+say about the player's next outing.
+
+- [Deep Rock Galactic Season 01](https://www.deeprockgalactic.com/season-01)
+- [Alex's Caves project page](https://www.curseforge.com/minecraft/mc-mods/alexs-caves)
+
+### Post-clearance mastery — alpha.31
+
+Lasting Graft is a fixed three-mark Hard charter. A host with a personal
+extraction trace can offer eight tokens to open it in a cleared dimension.
+Recover a living scion at the second mark and hold the graft at the third
+before carrying the scion home. Local threats can answer the defense, while
+the dimension stays cleared and its background Bloom pressure stays quiet.
+Extraction grants the usual Hard gear proof and two Return Knots.
+
+### Field orders — alpha.32
+
+The survey log in the held field journal records the party's actual orders,
+including the commission drawn when the Wayroot opened. Required work,
+optional work and gathering progress use the same labels as
+`/expeditions status`. Reopen the journal to refresh its snapshot.
+
+### Biome scouting — alpha.33
+
+A scout commission asks the party to find a kind of place. Deep Salvage can
+draw a forest bearing as its optional work. Datapacks define a `scout`
+objective with exactly one `biome` ID or biome `tag`. The party records the
+bearing when a member carrying the field compass reaches a matching biome in
+the destination dimension. The bearing is shared and pays at extraction.
+
+The [server presets](server-presets.md) cover a gentler introduction, the
+default Charter balance, and a harsher pressure curve with better bonus drops.

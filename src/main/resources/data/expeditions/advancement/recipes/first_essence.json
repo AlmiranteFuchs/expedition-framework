@@ -1,0 +1,24 @@
+{
+  "criteria": {
+    "sample": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "expeditions:assimilation_essence"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "rewards": {
+    "recipes": [
+      "expeditions:expedition_field_journal",
+      "expeditions:attunement_sigil",
+      "expeditions:expedition_terminal",
+      "expeditions:field_assay_kit"
+    ]
+  }
+}

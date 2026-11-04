@@ -1,0 +1,45 @@
+{
+  "name": "Bring it home",
+  "icon": "expeditions:expedition_exit",
+  "category": "expeditions:expeditions",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:expedition_exit",
+      "text": "Pale roots rise around a person-wide hollow. Amber threads hang where the trunk should be. The opening resembles the terminal aperture, though no frame has been fitted to it. These notes call it a Stillwood Hollow: the charter’s",
+      "title": "Bring it home"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The Stillwood Hollow",
+      "text": "exit."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The Stillwood Hollow",
+      "text": "After every checkpoint and required objective, step through the hollow or use its wood. Bring any required cargo. The party returns to its terminal and the remaining reward is settled."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What can be used again",
+      "text": "Samples become equipment, and a completed charter becomes a record the terminal can recognise. Check its offerings after a return. Some work needs several forms of preparation."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What can be used again",
+      "text": "The hollow leaves a return knot. Use a water bucket on a Sap Jar while carrying a knot and Essence to brew a bucket of Return Sap. Carry it by bucket, or feed it through a Rootwick pointing toward the basin. The basin knows the"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What can be used again",
+      "text": "traces you brought home. The ledger sorts finds into materials, curiosities and gear. Harder charters open gear traces."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What can be used again",
+      "text": "Crouch and offer unwanted items to a Sap Jar. The roots break them down into sap. A hopper can feed the jar from above."
+    }
+  ],
+  "advancement": "expeditions:journal/extraction"
+}

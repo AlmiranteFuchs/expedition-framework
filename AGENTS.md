@@ -2,6 +2,19 @@
 
 Guidance for coding agents working on this repository.
 
+## Unattended milestone work
+
+When the owner asks for sustained or all-day work, treat each tested commit
+and published release as a checkpoint. Continue directly into the next
+roadmap item while the session is available. Batch related changes for
+verification and keep each published release tested. After the roadmap,
+continue with game feel, design, and textures as requested.
+
+A scheduled wake-up resumes the broader assignment. Publishing one slice
+does not finish it. If a real limit or blocker stops progress, record the last
+verified commit or release, the next concrete step, and what actually stopped
+the session. Report a quota limit only when there is evidence of one.
+
 ## Project
 
 NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapper,
@@ -28,6 +41,7 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   `expeditions_loot`=drops; `expeditions_opts`=options;
   `expeditions_mod`=modifiers; `expeditions_horde`=nether horde;
   `expeditions_dim`=automatic dimensions; `expeditions`=core lifecycle.
+  `expeditions_compass`=compass attunement.
   Each namespace's `arena.nbt` is generated at
   build time from `data/expeditions/structure/arena.nbt` — register new
   namespaces in `gameTestStructureNamespaces` (build.gradle), never copy
@@ -39,8 +53,16 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   with installed mods that reject mock-player packets: add `-PisolatedGameTests`
   to use `run/gametest-isolated`; its own `world` is cleaned before each run.
 - Datagen: `./gradlew runData` → `src/generated/resources`
+- Guidebook: Patchouli `1.21.1-92-NEOFORGE` is a required runtime library.
+  `python3 tools/gen_guidebook.py` generates its categories/entries and hidden
+  advancement gates from `assets/expeditions/journal/chapters.json`.
+  Book metadata belongs in `data/expeditions/patchouli_books/field_guide`;
+  contents belong in the matching `assets/` directory. `./gradlew alphaBundle`
+  stages both required jars in `build/alpha`.
 - Textures: `python3 tools/gen_textures.py` regenerates all asset PNGs
   (16×16, bone/ember ramps, top-left light, ordered dither — no noise)
+  and the heartwood block face models via `tools/heartwood_art.py`.
+  `python3 tools/preview_heartwood.py` builds a before/after board in `build/`.
 - Sounds: `python3 tools/gen_sounds.py` regenerates all `.ogg` SFX and
   `sounds.json` (needs `pip3 install soundfile`; horror voicing — dying
   Charter machinery vs wet sub-squelch whispering Bloom; events not
@@ -150,6 +172,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   the server sets `DataComponents.LODESTONE_TRACKER` to the next target and
   `ExpeditionsClient` (`@Mod dist = CLIENT`) registers the `angle` property
   that reads `tracker.target()`.
+  `CompassResonance` renders a floating elevation ember in first-person hand
+  space; `CompassElevation` is the pure signed-height rule (two-block level
+  tolerance). Right-click starts a 24-tick reading with a 40-tick cooldown;
+  no useItemOn override, so checkpoint block interactions still take priority.
+  All 32 angle models use the mod's generated heartwood art and shared housing
+  display transforms. Invalid or other-dimension trackers stay dormant.
 - Portal + party lifecycle: `startRun(player, terminalPos)` resolves the
   route at a remote landing spot (`entryMin/Max` travel distance for
   generated routes; authored routes land on the first checkpoint) and spawns
@@ -158,6 +186,13 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   checkpoint: `portalOpen()`), extends generated routes by
   `party.checkpointsPerExtraMember` legs per join, grants the compass and
   teleports to `run.entry`. Orphaned/sealed portal blocks self-remove.
+- A Graft Collar beside the Wayroot binds a player-built arch. `WayrootFrame`
+  checks the two vertical posts, floor and empty aperture before route writes.
+  A framed run keeps a single tracked marker at desk height two blocks to its
+  right. Its model spans the two-block opening. Frame checks fail open-portal
+  runs when the structure is broken. Sealing or cleanup removes the marker
+  and leaves the player's blocks in place. Unbound desks retain the old
+  overhead portal.
 - `ExpeditionRun` has a mutable-but-invariant party (never empty — last
   member can't `leaveParty`, the run fails instead), plus persisted
   `terminal`/`portal`/`entry` waypoints. Run end (`endRun`) removes portal +
@@ -206,14 +241,16 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   successful run (every checkpoint must be activated anyway) — they're for
   bonus flavor, not optional paths. Only `collect_items` and `time_limit`
   can go unfinished.
-- Token economy (milestone 7): `ExpeditionLedger.spendTokens` is the atomic
-  sink (deducts only when the balance covers the full cost; callers
-  `setDirty()`; negative rejected, zero succeeds). Two consumers: completion
-  `grantBonusDrops` (online members only, run's dimension pool) and
-  `/expeditions redeem` (`redeemTokens` — pool of the dimension the player
-  stands in; checks the pool is non-empty BEFORE spending). Pools are the
-  `expeditions:reward_items/<dimension path>` item tags + `default`
-  fallback — datapack surface; don't add per-item tables.
+- Token economy: `ExpeditionLedger.spendTokens` deducts only when the balance
+  covers the full cost. The Reclaiming Basin settles an exact quote only after
+  checking personal extraction proof, Return Sap, and inventory room. The
+  `expeditions:reclaiming/` unlock prefix is reserved for durable personal
+  dimension traces. Older trophies and completed history can supply proof.
+  Gear requires a Hard or Brutal extraction trace. Basin pools are namespace
+  scoped, weighted from item value, and omit blocks and recognizable gated
+  items. The Sap Jar recycler consumes only whole items with tank space.
+  Completion bonus drops still use the `expeditions:reward_items/<dimension
+  path>` tags with the `default` fallback.
 - `ItemValuator` scores a stack from data components + NeoForge `c:` tags —
   modded items rank on the same scale automatically. `ItemRewards.draw`
   turns a value budget (tokens × `dropValuePerToken`) into weighted stacks
@@ -226,8 +263,10 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   portal/terminal cleanup+teleport paths must use it (not the run dim).
   `listStartable()` = datapack + unshadowed config defs filtered by
   loaded-dimension + adapter — the menu and `/expeditions start` share it.
-  Terminal click opens `ExpeditionMenu` (vanilla `ChestMenu` subclass —
-  server-only, container is display-only; `clicked` consumes option-row
+  Terminal click opens `ExpeditionMenu` (a `ChestMenu` subclass used as
+  read-only slot-sync transport for the custom `ExpeditionScreen` registered
+  through `ModMenus`; its client factory never touches a server manager).
+  The container is display-only; `clicked` consumes option-row
   slots, `quickMoveStack` blocks insertion). The menu preselects the
   terminal's home-dimension expedition — sorted id order ≠ player intent.
   `pruneOrphanMarkers` must snapshot `liveMarkers` before iterating
@@ -250,7 +289,10 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   placements; they are overridden ONLY by
   a non-empty `horde_mobs/<dim>` entity tag, then `horde_mobs/default`, then
   config `hordeMob`. One type is rolled per horde activation (thematic), not
-  per mob.
+  per mob. Before settling a wave's type, `MobSpawns.trySpawnFromPool` retries
+  up to 16 distinct weighted candidates if an oversized body cannot fit.
+  Retries stay within the same resolved pool, including explicit tag overrides;
+  the first positioned body is reused, not thrown away. Siege waves share this.
 - `cleanupMarkers` removes per position via `isReferencedByActiveRun`, NOT
   the old `anyOtherActiveRunInDimension` dimension-wide guard — that guard
   let one leaked active run poison marker cleanup for the whole dimension,
@@ -298,8 +340,52 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   face's own sprite desaturated — resolve sprites via face quads, then
   unculled quads, then the particle icon; never mutate atlas sprites or
   covered block state.
+  The layer's block model is intentionally empty: its BER draws the host skin,
+  the world-anchored scar atlas and its sparse resin mask.
+  Do not restore a raised full-face slab. Persisted `born` drives one minute of
+  gradual host bleaching; missing legacy birth times render mature. Rootlets
+  use world lighting, knots follow the heart, and dead hearts leave cold scars.
+  The player approved the native tile material and frayed boundaries in alpha.9.
+  `BloomSurfacePattern` derives shared world-corner labels; one 16px tile covers
+  one face. `tools/bloom_surface_art.py` builds 32 materials plus resin variants
+  in a 128×128 atlas. Never stretch an illustration over multiple block faces.
+  `BloomBoundary` caches at most 1024 merged coverage masks (eight neighbors ×
+  four fray variants); the same mask clips grain, bleaching and ember light.
+  Full interiors keep a single quad. Exposed edges leave original host visible;
+  missing diagonals cut concave corners. Shared edge endpoints must agree even
+  when neighboring fray variants differ. Keep additive RGB masked with alpha.
+  The multiface attachment/spread rules remain unchanged.
+  Mob lesions use native-skin alpha masks, normal lighting and sparse, dim ember
+  points; dynamic skins with no readable source are skipped rather than painted
+  opaque. The bounded texture cache clears on resource reload.
+  The assimilation layer is strictly flat, texture-only art: pale bark tissue,
+  warm gray grain and sparse amber fissures on the bleached host. No raised
+  cuboids, fingers, tubes or proximity bending; no vine-green palette. Keep
+  world-anchored grain continuous. The host surface stays the harvest target and
+  collision stays empty. Nearby infected mobs shed pale client-side dust/ash with
+  a shared four-particle-per-tick budget, 24-block range and stage-based cadence.
+  Infection grants neither nausea nor vanilla Darkness. `BloomVignette` caps
+  the border pulse at 10% opacity and leaves fog/central vision unchanged.
 
 ## Testing conventions
+
+- Portal lookup must filter `portalOpen()` (ACTIVE and unsealed) before matching a portal address.
+  Different parties reuse a terminal; an ended party's saved record must not
+  shadow the new portal and cause it to self-remove. A sealed but still ACTIVE
+  party must not shadow it either. `closePortal` uses `portalDimension`, and
+  closed portals are not live marker references. The `portal_reuse` regression
+  uses three distinct players at one terminal to prove entry and cleanup.
+- `horde_body_fit` uses a real soul-sand-valley spawn table in a three-high
+  enclosed room, deliberately rolls a ghast first, then verifies a smaller
+  native type fits. Fill the biome over a region, not one block: biome lookup
+  samples neighboring quart cells and a one-cell fixture can still read plains.
+
+- Suppression seams are active ONLY with JVM property
+  `expeditions.gameTestRun=true`, set by the Gradle GameTest server run.
+  NeoForge initializes test classes in ordinary dev clients too; accepting
+  their static suppression requests there hid bundled missions and disabled
+  Bloom traversal/infection in real play. Do not remove this property guard
+  from datapack loaders, Microbiome or Assimilation.
 
 - Unit-test domain rules in `src/test` — no Minecraft imports needed there.
   `SafeColumnSearch` is tested with synthetic column predicates; when modeling
@@ -371,6 +457,19 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Rules
 
+- Campaign guardians: `bigBad` runs bind a `GuardianEncounter` UUID after the
+  final checkpoint, independently of optional horde settings. `complete()`
+  refuses until that exact guardian has an accepted death. Cleanup/discard
+  never grants proof. `ExpeditionSavedData` persists the encounter with the
+  run; malformed live ownership is rejected. Legacy active boss runs already
+  past their final checkpoint without an encounter fail recovery safely.
+  `RootboundGuardian.die` checks `dead` AFTER `super.die` so a canceled death
+  cannot open extraction. The GameTest cancels one lethal hit, resets the
+  fixture's same-tick immunity, then verifies a real kill and both save states.
+- Guardian skins are UV-mapped 64x64 entity sheets generated by
+  `tools/gen_guardian_texture.py`; the 16x16 rule still applies to item/block
+  textures. Model, eyes/core glow and both warning phases are client-verified.
+
 - Keep the domain free of Minecraft dependencies.
 - Write/update unit tests for domain changes; game tests for interaction paths.
 - Don't add abstractions without a current consumer (dimension adapters, route
@@ -384,11 +483,34 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
 
 ## Verification status
 
-Verified: `build` + 124 unit tests + 98/98 GameTest in-game
+Challenge entities carry a persistent `expeditions:challenge_run` UUID.
+`ChallengeOwnership` rejects ended/orphan ownership on load, retries cleanup on
+mob ticks, and retains UUID tracking across chunk unloads. Slime children inherit
+ownership through `MobSplitEvent`; only actually ticking children enter tracking,
+and ended hordes cannot split. Legacy assimilated tracked mobs gain ownership on
+load. The cleanup search checks the global visible UUID lookup before bounded
+full-column section storage; never discard a live run's owned horde.
+
+Verified: `build` + 176 unit tests + 159/159 core GameTest in-game
 tests pass. The field journal writes its report into the stack's own
-`WRITTEN_BOOK_CONTENT` component and opens the vanilla book GUI —
-`broadcastChanges()` MUST precede the `ClientboundOpenBookPacket` so the
-client sees the fresh component (same ordering as `openItemGui`). Its
+`WRITTEN_BOOK_CONTENT` component for Patchouli's `JournalRecordComponent` pages.
+`JournalBook` opens the guide through the client callback and remembers the
+hand used, so records read the correct physical stack. Keep `broadcastChanges()`
+so fresh report data reaches an already-open book. Discovery bits
+are explicit stable positions in pure-Java `JournalChapter`, persisted in the
+player's `JOURNAL_DISCOVERIES` attachment with `copyOnDeath`; do not reuse bits.
+The chapter body resource is `assets/expeditions/journal/chapters.json`.
+`JournalDiscovery.reconcileBookDiscoveries` mirrors known bits into the hidden
+`expeditions:journal/<chapter>` advancement gates, including legacy players.
+The bits remain the authority; migration must never unlock unknown chapters.
+Guide components are client-only and read synchronized reports, never mutable
+server state. `expeditions_journal` tests discovery migration, referenced guide
+items/recipes/entities, placement direction and hollow portal selection alongside
+the existing save/load/death/crafting tests. Blood sampling belongs to
+`FieldAssayKitItem`, not the journal. Its CustomData holds a paid, dated snapshot;
+normal use never silently refreshes the sample. `AssayScreen` paginates small GUIs.
+The infection command is operator-only; survival measurements require the kit.
+The kit's
 `expeditions:blood_letting` damage type rides `bypasses_invulnerability`
 because mock players hardcode `isCreative()→true` — generic damage can
 never cost them blood (and creative players would get free samples).
@@ -421,3 +543,351 @@ expeditions stay in the terminal list (lore explains the gap);
 the locked-lore path unverified visually (same as the summary
 broadcast). Human client click-through and real disconnect not
 simulated.
+
+
+## Contact infection / hive milestone
+
+Infection is contact-only. `AssimilationLayerBlock.entityInside` delegates to
+`Assimilation.touchLayer`, which intersects the living body's AABB with the
+same frayed boundary regions used by the renderer. Dead-heart scars and cleared
+worlds cannot expose hosts. A persistent queued contact bit is consumed once on
+the configured cadence, so a brief crossing counts without accumulating per
+frame. Players retain the staged effects/effigy lifecycle; native mobs retain
+their type and persist an infected variant at stage one or later. Legacy horde
+attachment flags hydrate their infection dose on tick. Established mob variants
+retain stage one unless the dimension is cleared. Armor stands are not hosts.
+
+`AssimilationProtection` accepts the registered disruption effect, an offhand
+Disruption Charm, or an actually equipped Curios item via the documented
+`curios:item_handler` NeoForge capability. No Curios classes or reflection are
+required in the release. Never treat a charm merely packed in inventory as
+protection. The charm refreshes a short effect; don't remove separately granted
+effects on unequip. The optional `-PcuriosCompatTest` runtime is for real client
+verification only: Curios 9.5.1 sends `curios:sync_data` to embedded GameTest
+channels and fails before our assertions. The ordinary isolated suite remains
+Curios-free. Real Curios slot equip, automatic effect refresh and contact
+immunity were verified in the disposable debug client.
+
+`HiveMind` shares nearby threats/targets and regrouping leaders; it keeps no
+static cross-world targets or forced chunk tickets. Its stable transient speed
+modifier is -15% and must not stack or remove another mod's modifiers. The
+priority-4 `HiveMindGoal` preserves priority-1 defense-device behavior and native
+combat. Passive hosts gain a weak contact attack. Client-only
+`LivingEntityRendererMixin` enables the existing vanilla shiver, without setting
+frozen ticks or inflicting freezing damage. Disruption suspends that hive shiver
+and coordination; it is not universal immunity to a species' ordinary attacks.
+
+Verified: build + 155 unit tests + 129 core GameTests (132 reported including
+three optional biome probes); contact/ward, all six surfaces, dead scars, native
+mob persistence, physical carrier transmission, shared targets/non-stacking slow,
+autonomous growth and cow-seeking have dedicated interaction checks. The live
+client confirmed cows converging on a sheep, body-contact conversion, a 0.17
+movement speed from a 0.20 baseline, and Curios-only protection. User art exports
+are under ignored `art-exports/`; never regenerate or overwrite those editable
+handoffs while iterating runtime art.
+
+
+## Shared hive focus correction (alpha.11)
+
+`ModAttachments.HIVE_FOCUS` is transient/server-only: no codec or network sync.
+Nearby active infected mobs (24-block radius, capped at 32 bodies per decision)
+receive one common focus. Refreshes are shared and bounded to ten ticks, fresh
+attacks alert immediately, and member-private target goals cannot replace the
+live common focus. Validity is checked before reuse: dead, unloaded, converted,
+allied or other-world hosts are rejected. Disruption on a target prevents
+infection, not detection; disruption on an infected member releases coordination.
+`HiveMind.tick` runs after native AI and tracks eye height/head yaw separately
+from the movement goal, without locking native combat or priority-1 device goals.
+`HiveMindGoal` refreshes its running host instead of retaining an obsolete target.
+`Assimilation.onAttacked` preserves the GameTest suppression guard for alerts.
+Three interaction regressions cover conflicting targets, private-AI overwrite,
+actual head orientation, stale-target removal, damage-event alerts and running
+goal retargeting and real pursuit on both native AI tick schedules. The pursuit
+goal requires every-tick updates: a tickCount % 10 navigation gate otherwise
+never executes for one staggered schedule. Do not serialize entity references
+in shared focus state.
+
+Verified alpha.11: build/alphaBundle, 155 unit tests and all 132 core GameTests
+(135 reported including three optional biome probes). The real Curios-equipped
+client confirmed cow/sheep/husk convergence on one protected pig. With movement
+disabled temporarily, all three heads followed that pig from left to right;
+normal AI was restored afterward. Local screenshots are
+`build/mcp-verification/screenshot-1793470484338-0.png` and
+`build/mcp-verification/screenshot-1793470507594-0.png`.
+
+
+## Frontier progression (alpha.12)
+
+`FrontierAttention` and `FrontierProgression` are pure domain policies.
+`FrontierThreat` owns the personal residence clock, native boss-style HUD and
+bounded pursuit waves. Its instance belongs to `ExpeditionSavedData` (runtime
+only): `ExpeditionManager.get()` constructs a stateless facade on every call,
+so putting a stateful HUD service on the manager leaks duplicate boss bars.
+Player residence lives under persistent `expeditions:frontier` and copies on
+PlayerEvent.Clone. Checkpoints grant 45 effective seconds of relief. Retreat
+cools old dimensions; logout/death do not wipe the clock. The Overworld spawn
+refuge prevents ambient heart seeding and attention; infection still requires
+contact. The default clock reaches noticed/hunted/overrun/reckoning at 2/4/7/10
+effective minutes, with Overworld and established-foothold multipliers.
+Pursuit mobs carry owner UUID and expiry, reserve tracked capacity across unloads,
+and discard when ownership/exposure no longer permits them. They award no drops,
+XP or guardian proof. The mission's exact bound guardian remains authoritative.
+Routine completions now establish a foothold but cannot clear a dimension unless
+`campaign.require_guardian=false` explicitly restores legacy count clearing.
+Loaded dimensions without an authored boss receive a generated liberation mission.
+Home liberation opens remote deployment for everyone; native portals remain usable.
+`Microbiome.trySpawnHeart` checks cleared/refuge state itself, not only its caller.
+`expeditions_frontier` adds five GameTests; register its arena through build.gradle.
+The frontier suppression seam has the same gameTestRun JVM-property guard as the
+existing seams. New guide text generation explicitly reads UTF-8 on Windows.
+Verified: build/alphaBundle, 159 unit tests and 137 core GameTests (140 including
+three optional biome probes). Balance is an initial alpha pass; long survival
+and multiplayer balance sessions remain useful.
+
+Live alpha.12 review used a temporary 60-effective-second threshold and accelerated
+server ticks in the disposable MCP world. The corrected HUD displayed one bar;
+Reckoning spawned owned infected hunters and recorded the pursuing guardian.
+Temporary resistance protected the test player, so this verifies presentation and
+escalation, not a human survival balance verdict. The probe datapack was disabled,
+normal timing restored, temporary test effects removed, and Creative restored.
+HUD proof: `build/mcp-verification/screenshot-1793635703076-0.png`.
+
+
+## Stillness and essence bootstrap (alpha.13)
+
+The Overworld is sheltered by default, independently of the cleared flag. Live
+hearts hibernate into dormant heartwood, remaining supported colony faces become
+DormantLayerBlock, and raw flakes replace direct essence harvesting. Natural
+DormantScarFeature adds safe traces in new Overworld chunks. Its suppression seam
+is guarded by gameTestRun; old authored test columns must not gain ambient traces.
+Stillness also suppresses local infection, hive activation and passive pressure.
+`ResonanceProcessing` is pure domain policy; the block entities own paid batches.
+Vanilla-only Dynamo/Condenser recipes bootstrap the FE chain: 4000 FE from one raw
+flake, another flake plus 4000 FE makes one essence over 200 ticks. The standard
+NeoForge EnergyStorage and ItemHandler capabilities expose directional energy and
+input/output automation. No runtime dependency was added. Feedstock reservations,
+power and progress persist; breaking unfinished work returns raw feedstock.
+A charged condenser can open a deliberate 24-block local breach with a sigil.
+It requires a 4000 FE reserve and drains 20 FE/t, pauses processing, and fails
+closed on power loss/removal. Bounded breach positions persist in world SavedData;
+loaded machines validate activity without loading chunks. Cleared flags still win.
+First survey proof now gates remote deployment; no home boss victory is required.
+The journal and assay kit use raw flakes and cannot deadlock on refined essence.
+`tools/stillness_art.py` is the final field-equipment art pass, called last by the
+master generator. It does not touch approved Bloom atlases or user art exports.
+Open-frame models and their rotated selection/collision share native model JSON
+through FieldMachineShapes; keep visible open space. The wheel is currently static.
+New art and actual screenshots live in docs/art-direction/stillness. The generated
+concept is reference only; native game textures remain 16x16. Five new tests use
+expeditions_stillness; arena comes from the registered Gradle namespace list.
+Verified: build/alphaBundle, 162 unit tests, 142 core GameTests (145 including three
+optional biome probes), plus actual client production/UI and final geometry checks.
+
+
+## Resonance sources (alpha.14)
+
+`ResonancePower` is pure domain policy: sheltered/liberated dormant knots supply
+20 R/t divided among resonators within six blocks, contained hearts supply 80 R/t
+with 600 paid running ticks per essence, and a proven severed core supplies 120 R/t.
+Resonance uses standard FE at 1:1; source types do not open breaches automatically.
+The old stillness_dynamo registry id remains for compatibility; its new name and
+model are Stillness Resonator. No more raw-fuel burning. Dormant Knot recipes need
+only four raw flakes; the condenser still requires one raw sample and 4000 R.
+Living and severed blocks share the machine type but have different item validators.
+Power output is divided across accepting neighbors with a conserved total budget.
+`GuardianLiberations` persists in the same SavedData as win flags/ledger. Only
+accepted bound-guardian death plus successful extraction records new proof. A
+cleared mark alone is insufficient. Known historical boss trophies may migrate;
+unknown history fails closed. An unattuned core is crafted, then bound at a proven
+source terminal. Bound items still revalidate their dimension against server proof.
+Campaign reset removes proof; stored energy remains, but new generation stops.
+No inventory reward is granted at victory, avoiding a separate crash-sensitive
+item-award transaction. The source perk is shared world progress.
+`ResonanceRenderer` adds world-lit suspended knots and flexing ribs; common logic
+never imports it. HAS_CORE and ACTIVE block state synchronize presence/activity;
+no per-frame world edits or extra payloads. Menu data now covers source kind/rate;
+generators have one accessible slot and condensers have two.
+`tools/stillness_art.py` maps side/end grain along actual beam axes and gives glass
+its own UVs. The generic stamped panel and flywheel geometry are superseded.
+Approved layer atlases and user art exports remain untouched. Six interaction tests
+use expeditions_resonance (registered arena namespace); six pure source tests cover
+rates and proof/fuel/field conditions. Real guardian extraction also asserts proof.
+Verified: build/alphaBundle, 168 unit tests, 148 core GameTests (151 including three
+optional biome probes). See docs/resonance-power.md for operating details.
+
+Live alpha.14 checks confirm 20/80 R/t source screens, real refining, moving knots
+and the unproven-core refusal. The demo core remains unattuned; proven 120 R/t
+production and reset behavior use the terminal interaction test. Empty cradles
+exclude the animated-node placeholder from FieldMachineShapes until HAS_CORE.
+The native preview/motion/UI images are under docs/art-direction/stillness.
+
+Alpha.15 field preparation: `expeditions_preparation` covers six interaction tests, including real Survey + Trace Recovery completions and legacy tutorial-proof migration. Field Ward uses a paid game-time deadline (4000 R / 120s / 8-block sphere); it pauses personal attention accrual and dwell pressure, never clears attention, prevents infection or stops existing hunts. Ward searches only loaded nearby chunk block entities and only at each mechanic cadence. Cells store charge in the synchronized RESONANCE stack component and expose standard FE item capabilities. Starter trace attempt/address persist once in world SavedData; the bounded natural-ground search may refuse ocean/obstructed spawns.
+
+Alpha.16 inventory art: `tools/item_art.py` runs last through `gen_textures.py` -> `stillness_art.py`. It owns all handheld PNGs, 32 compass frames, two tissue inventory icons and ten block-item GUI transforms. Keep world/Bloom atlases separate. `python tools/validate_item_art.py` checks 24 registered models, references and native sprite invariants; `python tools/preview_items.py` writes the native sheet, comparison/animation artifacts and editable ZIP. Preserve compass frame ordering and the existing housing hand transform.
+
+Alpha.17 Shutter Bloom: stable `assimilation_heart`/`dormant_heart` ids now use
+`BloomSourceBlock` (facing + open 0..4), non-sturdy folded fan models and matching
+`FieldMachineShapes` selection/collision. `tools/bloom_source_art.py` owns all
+source models, 16px lining/grain textures and the engine's miniature specimen;
+it runs before `item_art.py` through the normal texture generator. Do not restore
+a full-cube source or six-face aura. Initial colony moves scan the 3x3x3 neighborhood
+and attach only to actual sturdy host faces, including legacy embedded sources.
+Opening preserves the same block entity and saved colony links. Stillness closes
+the same facing into Dormant Bloom; essence reactivation preserves that facing.
+The `expeditions_bloom` namespace adds five GameTests. Verified: build/alphaBundle,
+176 unit tests and 159 core GameTests (162 reported with three optional biome
+probes). Crouch use bypasses ordinary block use: keep AttunementSigilItem.useOn's
+server-side breach fallback, and the real-use open/close regression.
+
+Journal art preference: the user preferred the pre-alpha.16 angled green leather field journal. It is restored byte-for-byte to commit 2744308; `item_art.py` delegates that sprite to `gen_textures.py:gen_journal`. Keep this exception in subsequent item art passes. The Resonance-funded terminal economy in `docs/resonance-deployment-proposal.md` is a proposal, not an implemented fuel system.
+
+Create investigation: official Create 6.0.10 is installed only in ignored `run/mods` (bundled Flywheel/Ponder/Registrate). Real debug-world checks verified Create chutes feeding and extracting eight essence through our condenser, and a 64-RPM mixer crafting our journal and a sigil with its attunement component intact. `docs/create-automation.md` records fixtures. Liquid Resonance, the proposed Still and terminal fluid cost are NOT implemented; the example JSON stays under docs, never active resources until the native fluid is registered.
+
+Alpha.18 journal copy: keep the guide observational and restrained, with clear
+operating instructions but no early campaign/encounter walkthrough. Starter knot,
+resonator and condenser recipes are always in first_steps. Living-source engine
+recipes belong in preparation; severance recipes belong in liberation. Stable
+JournalChapter bits and advancement ids remain unchanged. Guide text must retain
+contact-only infection and the raw-flake assay-kit recipe. The new journal gate
+regression checks these recipe locations; build/alphaBundle, 176 unit tests and
+160 core GameTests pass (163 reported with three optional biome probes).
+
+Alpha.19 route instruments: stable checkpoint/exit ids display as Witness Mark /
+Recall Anchor. `tools/route_marker_art.py` owns native grain and non-cube models,
+called through `heartwood_art.py`. `RouteMarkerBlock` reads those same model
+elements through FieldMachineShapes; no full supporting faces or invisible cube
+selection. Keep both inside a single placement cell. No global activated state:
+different parties may share an address with different progress. Existing server
+activation/extraction authority, rewards, recovery and marker cleanup are unchanged.
+Journal copy connects the names to checkpoints/extraction and keeps practical
+requirements explicit. Activation/recall use restrained amber dust and low chimes.
+The async defenseSurvivesAndPays fixture has unique 164/172/180,164 columns;
+reusing 64/72/80,64 let older cube markers act as accidental floors for later
+tests while that siege was still live. Verified: build/alphaBundle, 176 unit
+tests and 161 core GameTests (164 reported with three optional biome probes).
+
+Alpha.20 supersedes the manufactured route instruments with Witness Stumps and
+the Stillwood Hollow. `RecallTrees` owns a bounded 3x3x1, nine-cell layout (root
+plus eight indexed `recall_tree_part` blocks). Validate the whole footprint and
+three floor cells before any marker write/payment, using bounded adapter retries.
+Never overwrite terrain to fit it. Track every segment in existing liveMarkers;
+active-run references, orphan pruning, recovery and cleanup cover all segments.
+`grown=false` is the exit's default for legacy compact blocks; new deployments
+explicitly set true. Grown recovery requires all expected part indices. Both
+aperture cells have empty collision and forward entity crossings to server recall;
+trunk use forwards the same root. Only the player's matching exit/dimension can
+recall, and all existing objective/cargo/guardian gates still apply. No global
+ready flag may encode a party's progress on these shared world blocks.
+`route_marker_art.py` generates the rooted stump, segment geometry, native animated
+veil, twig silhouettes and whole-tree inventory miniature. Journal language leaves
+the Stillness/Bloom connection observational; the landmarks give no power or
+immunity. Four new GameTests cover refusal/no charge, tracking/recovery cleanup,
+entity callbacks/reward idempotence, trunk use and compact-root validity. Synthetic
+End fixtures need a three-wide floor; post-placement headroom tests permit only
+the exact intact non-colliding upper aperture. Verified: 176 unit tests and 165
+core GameTests (168 reported with the three optional biome probes), build/alphaBundle.
+
+Alpha.21 corrects the scale: new return landmarks are a full block-built tree,
+114 tracked cells, eight blocks tall, seven-wide canopy and a three-by-three
+hollow trunk. The portal is recessed one block behind the doorway. The user
+explicitly rejected the thin custom-model arch; never describe that as satisfying
+the requested multiblock art. New logs, roots and leaves are full cubes, with
+native bark/endgrain/ash foliage and an animated dark amber portal. Art remains
+subject to user review. `tools/recall_tree_layout.py` generates the canonical
+`assets/expeditions/route/recall_tree.json`; placement, collision semantics,
+blockstate models and inventory miniature share this template. New pieces start
+at index 8; indices 0..7 and full_tree=false preserve the alpha.20 layout.
+FULL_TREE defaults false for legacy saves; new deployments set grown/full_tree
+true. Treat existing indexed offsets as persisted data; future footprint changes
+need another layout version rather than silently reordering them. Cleanup covers
+the union of old/new offsets, recovery validates the correct version, and terrain,
+door clearance, root supports and border checks precede all placement/payment.
+The larger footprint loads at most four covered chunks per candidate. Generated
+routes still use bounded jitter/rerolls. Both synthetic End fixtures provide real
+ground under the tree. A new regression enforces full cube geometry, eight-block
+height and recessed portal collision. Verified: build/alphaBundle, 176 unit tests
+and 166 core GameTests (169 with the optional biome probes).
+
+Alpha.22 uses the player's captured tree as the authoritative art source.
+`docs/art-direction/player-tree/stillwood_player_source.nbt` preserves all 930
+original non-air block states in a 17x31x17 box, including 169 underground pieces.
+The user explicitly selected the mod's pale bark/amber palette with their exact
+shape. Never run the workshop preparation function over their original build,
+or replace this source with a procedurally invented tree. `recall_tree_layout.py`
+now reads that native NBT; `verify_authored_tree.py` checks every authored voxel,
+source hash, old indices and the mod-independent protected native template under
+data/expeditions/structure. No Twilight Forest runtime dependency is introduced.
+Capture defaults to refusing overwrite; --replace is only for a new requested build.
+
+TREE_LAYOUT=1 identifies the authored layout. Part indices 0..120 retain the old
+arches/procedural tree; authored parts append after them. Legacy absent flags
+still default safely. A clipped deployed tree has an exact placed-index manifest
+in the SAME SavedData file as runs/balances/markers. Placement touches only AIR;
+existing terrain, plants, fluids and other markers clip optional tree pieces
+without drops. Only the doorway, two portal cells and safe floor must fit.
+Record only parts actually placed; recovery requires their exact states plus both
+portal cells. Missing/malformed manifests fail closed, never as legacy. Cleanup
+and orphan pruning remove manifests and actual owned markers without drops;
+survival hardness stays -1. Per-position references use the manifest. Legacy
+fallback reads a candidate old piece's inverse offset, never an imagined new
+footprint that could pin unrelated orphan branches. Both run completion and
+failure clean up the whole deployed structure, preserving all native obstructions.
+Verified: build/alphaBundle, 176 unit tests and 169 core GameTests (172 reported
+including the optional biome probes). The original authored build remains intact;
+the pale palette preview is a separate development fixture near 1221,240,1052.
+
+
+## Machine feedback — alpha.23
+
+Machine models are generated through `tools/machine_surface_mesh.py`. Render
+fragments carry `expeditions_render_only`; original collision bodies carry
+`expeditions_collision_only` and one transparent face (the native model parser
+rejects faceless elements). `FieldMachineShapes` must preserve those original
+bodies while excluding render fragments. Run `tools/verify_machine_models.py`
+and `tools/test_machine_surfaces.py` after model changes. Five models now have
+zero coplanar overlaps (34 before repair), with their approved palette intact.
+Resonance screens synchronize operating status, collector count and actual
+output. Source comparators read FE fill; condenser comparators read finished
+stock. `simple_generators` defaults false; enabled sources produce 10 R/t, keep
+saved fuel/core inventories, and restore normal proof checks when disabled.
+Condenser feedback holds at most three ticks across intermittent power; paid
+progress and immediate output backpressure remain authoritative. Verified:
+186 unit tests, 173 core GameTests (176 including optional biome probes), build
+and alphaBundle; native workshop and status proofs in docs/art-direction/machines.
+
+
+## Personal reports and navigation — alpha.24
+
+`ExpeditionHistory` keeps at most ten immutable reports per player, in the same
+SavedData file as runs and balances. These reports are observations, never reward
+authority. Final outcomes are idempotent by run UUID; an open-party departure is
+replaceable if the player rejoins and later finishes. Failure records only that
+member's secured tokens; completion records the full credited share, never just
+the extraction top-up. Missing legacy history is empty; malformed individual
+records are skipped. Commands `history` and `campaign all` require no operator
+permission. Campaign progress distinguishes guardian proof from count thresholds.
+The basic compass tooltip uses `CompassRange` coarse direct bands, preserving
+the paid Heartglass Lens measurement mechanic. Target validation stays shared
+with attunement, so dormant/other-dimension compasses give no distance or height.
+Verified: 193 unit tests, 176 core GameTests (179 including optional biome probes),
+build and alphaBundle. `ExpeditionHistoryTests` covers completion, banked failure,
+party rejoining, malformed save rows, legacy saves and non-operator commands.
+
+
+## First Bearing and private charters — alpha.25
+
+Keep portal lifetime separate from admission: `portalOpen()` controls owner
+entry, sealing, recovery and marker references; `acceptsGuests()` also requires
+`!options.solo()`. A private portal remains a live marker and a rejected guest
+cannot change its run. `Options.Solo` defaults false for old saves. Solo runs
+restore only with one member.
+
+The reserved `expeditions:first_bearing` charter fixes two generated Overworld
+marks, standard difficulty and solo access. It skips optional checkpoint
+hordes. The ordinary extraction transaction grants its permanent trophy and
+field proof; the server refuses replay after extraction. The eight practice
+tokens are an extraction bonus, so failed attempts cannot farm checkpoint
+credits. No normal charter's checkpoint banking was changed.
+`GUIDED_STEP` is presentation metadata on the issued compass; the lodestone
+tracker remains the sole target, and the client cue has no gameplay authority.
+The 14 journal discovery IDs are unchanged.
