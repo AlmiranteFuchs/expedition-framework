@@ -19,7 +19,7 @@ public final class PaleChestBlock extends ChestBlock {
 
     @Override
     protected RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
+        return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
     public static final class Storage extends ChestBlockEntity {

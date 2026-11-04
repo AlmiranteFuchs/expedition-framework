@@ -36,6 +36,10 @@ public class ExpeditionsClient {
     public ExpeditionsClient(IEventBus modEventBus, ModContainer container) {
         modEventBus.addListener(ExpeditionsClient::onClientSetup);
         modEventBus.addListener(ExpeditionsClient::onRegisterRenderers);
+        modEventBus.addListener((net.neoforged.neoforge.client.event.ModelEvent.RegisterAdditional event) -> {
+            event.register(PaleChestRenderer.BODY);
+            event.register(PaleChestRenderer.LID);
+        });
         modEventBus.addListener((net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent event) ->
                 event.registerFluidType(new net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions() {
                     @Override public ResourceLocation getStillTexture() {
@@ -113,6 +117,7 @@ public class ExpeditionsClient {
             EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(), GuardianRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.RESONANCE_MACHINE.get(),ResonanceRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.PALE_CHEST.get(), PaleChestRenderer::new);
         event.registerBlockEntityRenderer(
                 ModBlockEntities.ASSIMILATION_LAYER.get(),
                 AssimilationLayerRenderer::new);

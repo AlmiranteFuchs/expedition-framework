@@ -1,1 +1,4 @@
-{ "parent": "expeditions:block/rootwick" }
+{
+  "parent": "expeditions:block/rootwick",
+  "gui_light": "front"
+}

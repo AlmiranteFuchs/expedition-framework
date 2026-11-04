@@ -1,1 +1,4 @@
-{ "parent": "expeditions:block/reclaiming_basin" }
+{
+  "parent": "expeditions:block/reclaiming_basin",
+  "gui_light": "front"
+}

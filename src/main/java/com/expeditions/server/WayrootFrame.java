@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.RotatedPillarBlock;
 /** The collar binds a Wayroot to the player-built frame on its right. */
 public final class WayrootFrame {
     public enum Condition {
-        UNBOUND, READY, TIMBER, FLOOR, BLOCKED, BUSY;
+        UNBOUND, READY, TIMBER, FLOOR, BLOCKED, BUSY, MISALIGNED;
 
         public boolean canOpen() { return this == UNBOUND || this == READY; }
         public String messageKey() { return "gui.expeditions.wayroot_frame_" + name().toLowerCase(java.util.Locale.ROOT); }
@@ -28,16 +28,29 @@ public final class WayrootFrame {
         var state = level.getBlockState(desk);
         if (!state.is(ModBlocks.EXPEDITION_TERMINAL.get())) return Condition.UNBOUND;
         var front = state.getValue(ExpeditionTerminalBlock.FACING);
-        var portal = opening(desk, front);
-        if (!level.getBlockState(portal.above(2)).is(ModBlocks.GRAFT_COLLAR.get())) return Condition.UNBOUND;
+        var portal = boundOpening(level, desk, front);
+        if (!level.getBlockState(portal.above(2)).is(ModBlocks.GRAFT_COLLAR.get())) {
+            for (int side = -3; side <= 3; side++) for (int height = 1; height <= 3; height++) {
+                if (level.getBlockState(desk.relative(front.getClockWise(), side).above(height))
+                        .is(ModBlocks.GRAFT_COLLAR.get())) return Condition.MISALIGNED;
+            }
+            return Condition.UNBOUND;
+        }
         return inspectOpening(level, portal, front.getClockWise().getAxis(), false);
+    }
+
+    public static BlockPos boundOpening(ServerLevel level, BlockPos desk, Direction front) {
+        var right = opening(desk, front);
+        var left = desk.relative(front.getClockWise(), 2);
+        return !level.getBlockState(right.above(2)).is(ModBlocks.GRAFT_COLLAR.get())
+                && level.getBlockState(left.above(2)).is(ModBlocks.GRAFT_COLLAR.get()) ? left : right;
     }
 
     public static boolean activeIntact(ServerLevel level, BlockPos desk, BlockPos portal) {
         var state = level.getBlockState(desk);
         if (!state.is(ModBlocks.EXPEDITION_TERMINAL.get())) return false;
         var front = state.getValue(ExpeditionTerminalBlock.FACING);
-        return opening(desk, front).equals(portal)
+        return (opening(desk, front).equals(portal) || desk.relative(front.getClockWise(), 2).equals(portal))
                 && inspectOpening(level, portal, front.getClockWise().getAxis(), true) == Condition.READY;
     }
 

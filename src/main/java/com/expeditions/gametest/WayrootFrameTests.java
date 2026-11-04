@@ -27,11 +27,15 @@ public final class WayrootFrameTests {
         var player = helper.makeMockServerPlayerInLevel();
         player.setGameMode(GameType.CREATIVE);
         var desk = helper.absolutePos(new BlockPos(2, 1, 2));
-        var opening = WayrootFrame.opening(desk, Direction.SOUTH);
+        var opening = desk.relative(Direction.SOUTH.getClockWise(), 2);
         level.setBlockAndUpdate(desk, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState()
                 .setValue(ExpeditionTerminalBlock.FACING, Direction.SOUTH));
         level.setBlockAndUpdate(opening.below(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(opening, Blocks.AIR.defaultBlockState());
+        level.setBlockAndUpdate(opening.above(3), ModBlocks.GRAFT_COLLAR.get().defaultBlockState());
+        helper.assertTrue(WayrootFrame.inspect(level, desk) == WayrootFrame.Condition.MISALIGNED,
+                "a misplaced collar reports the layout instead of falling back to an overhead portal");
+        level.removeBlock(opening.above(3), false);
         level.setBlockAndUpdate(opening.above(2), ModBlocks.GRAFT_COLLAR.get().defaultBlockState());
         helper.assertTrue(WayrootFrame.inspect(level, desk) == WayrootFrame.Condition.TIMBER, "collar reports missing timber");
         var post = ModBlocks.GRAFT_POST.get().defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.Y);

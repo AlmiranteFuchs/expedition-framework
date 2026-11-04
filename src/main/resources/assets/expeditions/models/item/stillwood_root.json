@@ -1,3 +1,4 @@
 {
-  "parent": "expeditions:block/stillwood_root_y"
+  "parent": "expeditions:block/stillwood_root_y",
+  "gui_light": "front"
 }

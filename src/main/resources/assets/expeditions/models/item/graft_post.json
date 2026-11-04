@@ -1,1 +1,4 @@
-{ "parent": "expeditions:block/graft_post" }
+{
+  "parent": "expeditions:block/graft_post",
+  "gui_light": "front"
+}

@@ -1,1 +1,4 @@
-{ "parent": "expeditions:block/pale_planks" }
+{
+  "parent": "expeditions:block/pale_planks",
+  "gui_light": "front"
+}

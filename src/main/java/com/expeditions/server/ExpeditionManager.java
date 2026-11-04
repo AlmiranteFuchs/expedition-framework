@@ -291,7 +291,7 @@ public final class ExpeditionManager {
         var front = terminalState.hasProperty(com.expeditions.block.ExpeditionTerminalBlock.FACING)
                 ? terminalState.getValue(com.expeditions.block.ExpeditionTerminalBlock.FACING)
                 : player.getDirection();
-        BlockPos portalPos = framed ? WayrootFrame.opening(terminalPos, front)
+        BlockPos portalPos = framed ? WayrootFrame.boundOpening(portalLevel, terminalPos, front)
                 : findPortalSpot(portalLevel, terminalPos).orElseThrow(
                         () -> new IllegalStateException("The Wayroot needs clear space above it"));
 

@@ -1,3 +1,4 @@
 {
-  "parent": "expeditions:block/stillwood_leaves"
+  "parent": "expeditions:block/stillwood_leaves",
+  "gui_light": "front"
 }
