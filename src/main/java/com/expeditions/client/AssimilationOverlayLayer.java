@@ -5,6 +5,7 @@ import com.expeditions.registry.ModAttachments;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
@@ -34,5 +35,16 @@ public class AssimilationOverlayLayer<T extends LivingEntity, M extends EntityMo
         float heat = pulse * (.4f + .6f * taken);
         getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.eyes(textures.get().embers())), light,
                 overlay, FastColor.ARGB32.color((int)(44 * heat), (int)(140 * heat), (int)(78 * heat), (int)(28 * heat)));
+
+        float left = (entity.getData(ModAttachments.ARRIVAL_GLOW_UNTIL)
+                - entity.level().getGameTime() - partialTick) / ModAttachments.ARRIVAL_GLOW_TICKS;
+        if (left > 0 && left <= 1) {
+            float glow = Math.min(1, (1 - left) * 8) * left;
+            getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.entityTranslucent(textures.get().scars())),
+                    LightTexture.FULL_BRIGHT, overlay, FastColor.ARGB32.color((int)(160 * glow), 255, 243, 219));
+            getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.eyes(textures.get().embers())),
+                    LightTexture.FULL_BRIGHT, overlay, FastColor.ARGB32.color((int)(84 * glow),
+                            (int)(210 * glow), (int)(123 * glow), (int)(46 * glow)));
+        }
     }
 }

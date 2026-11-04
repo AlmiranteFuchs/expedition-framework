@@ -737,3 +737,13 @@ witness or the Hollow when the hold resolves. At least one living party
 member must be within 32 blocks to advance the hold. Outside that range,
 the survival and reinforcement clocks pause and siege mobs stop attacking
 the device. An attacker's device assignment survives entity reload.
+
+### Checkpoint horde approaches — alpha.36
+
+An ordinary witness horde forms on a reachable side of the site. The wave
+stages at roughly the witness's height, leaves space around nearby players,
+and uses adjacent lanes when its main approach fills. The sound and embers
+come from the lead lane. If the terrain closes a lane, the wave tries
+another bearing. The biome still supplies the attackers.
+Newly spawned attackers briefly show pale bark and bright amber seams before
+settling into the normal infected overlay.

@@ -1316,7 +1316,7 @@ public final class ExpeditionManager {
     }
 
     /**
-     * Spawns the configured horde mob in a ring around {@code center} and
+     * Stages the horde on one approach to {@code center} and
      * tracks them on the run. Each mob persists (no despawn) and hunts the
      * nearest online party member; a configured type that is not a
      * {@link Mob} contributes nothing.
@@ -1335,17 +1335,34 @@ public final class ExpeditionManager {
                 "pressure.horde_bonus_per", ExpeditionsConfig.pressureHordeBonusPer());
         boolean buffed = pressure >= ExpeditionTuning.integer(run.definition().dimension(),
                 "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
-        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        int radius = Math.max(7, ExpeditionsConfig.challengeHordeSpawnRadius());
         if (size <= 0) return;
-        Mob first = MobSpawns.trySpawnFromPool(level, center, radius, run.definition().dimension());
+        double firstBearing = level.random.nextDouble() * Math.PI * 2;
+        List<BlockPos> occupied = new ArrayList<>();
+        Mob first = MobSpawns.trySpawnFromPool(level, center, run.definition().dimension(), type -> {
+            for (int sector = 0; sector < 8; sector++) {
+                Mob placed = MobSpawns.tryApproach(type, level, center, radius,
+                        firstBearing + sector * Math.PI / 4, occupied);
+                if (placed != null) return placed;
+            }
+            return null;
+        });
         if (first == null) return;
+        BlockPos approach = first.blockPosition();
+        double bearing = Math.atan2(approach.getZ() - center.getZ(), approach.getX() - center.getX());
         EntityType<?> type = first.getType();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            Mob mob = i == 0 ? first : MobSpawns.trySpawn(type, level, center, radius);
-            if (mob == null) {
-                continue;
+            Mob candidate = i == 0 ? first : MobSpawns.tryApproach(type, level, center, radius, bearing, occupied);
+            if (candidate == null) {
+                candidate = MobSpawns.tryApproach(type, level, center, radius, bearing + Math.PI / 3, occupied);
             }
+            if (candidate == null) {
+                candidate = MobSpawns.tryApproach(type, level, center, radius, bearing - Math.PI / 3, occupied);
+            }
+            if (candidate == null) break;
+            Mob mob = candidate;
+            occupied.add(mob.blockPosition().atY(center.getY()));
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
                     MobSpawnType.EVENT, null);
             mob.setPersistenceRequired();
@@ -1366,7 +1383,7 @@ public final class ExpeditionManager {
         }
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
-            announceSpawn(level, center, radius);
+            announceSpawn(level, approach, 3);
         }
     }
 
@@ -1377,6 +1394,8 @@ public final class ExpeditionManager {
      */
     private static void markAssimilated(Mob mob, int stage) {
         mob.setData(ModAttachments.ASSIMILATED, stage);
+        mob.setData(ModAttachments.ARRIVAL_GLOW_UNTIL,
+                mob.level().getGameTime() + ModAttachments.ARRIVAL_GLOW_TICKS);
     }
 
     /** Neutral local fauna need anger as well as a target to keep fighting. */

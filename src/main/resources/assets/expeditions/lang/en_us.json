@@ -47,7 +47,7 @@
   "message.expeditions.already_in_run": "You are already on an expedition.",
   "message.expeditions.party_joined": "The charter takes your mark.",
   "message.expeditions.member_left": "A member left your expedition party.",
-  "message.expeditions.challenge_horde": "Something heard the stump.",
+  "message.expeditions.challenge_horde": "The Bloom stirs nearby. Listen for the approach.",
   "message.expeditions.objective_completed": "Objective complete: %1$s",
   "message.expeditions.commission": "The Wayroot opens. Field commission: %1$s",
   "message.expeditions.objectives_missing": "Required objectives unfinished: %1$s",

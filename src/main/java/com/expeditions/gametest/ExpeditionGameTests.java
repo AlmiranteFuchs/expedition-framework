@@ -1232,6 +1232,19 @@ public final class ExpeditionGameTests {
         // in hidden entity sections until real tickets promote them — force
         // the chunks and wait for promotion so cleanup can reach them.
         List<UUID> firstHorde = List.copyOf(run.challengeEntities());
+        var staging = firstHorde.stream().map(id -> findEntity(level, firstCheckpoint, hordeRadius, id)).toList();
+        for (Entity mob : staging) {
+            helper.assertTrue(mob != null && Math.abs(mob.getBlockY() - firstCheckpoint.getY()) <= 2
+                            && !mob.blockPosition().closerThan(player.blockPosition().atY(mob.getBlockY()), 5),
+                    "horde staging must stay near the witness elevation and clear the player");
+            helper.assertTrue(mob.getData(com.expeditions.registry.ModAttachments.ARRIVAL_GLOW_UNTIL) > level.getGameTime(),
+                    "fresh attackers carry the temporary arrival shimmer");
+        }
+        var lead = staging.getFirst().blockPosition().subtract(firstCheckpoint);
+        helper.assertTrue(staging.stream().allMatch(mob -> {
+            var offset = mob.blockPosition().subtract(firstCheckpoint);
+            return lead.getX() * offset.getX() + lead.getZ() * offset.getZ() >= 0;
+        }), "the opening horde must come from one side of the witness");
         forceLoadArea(level, firstCheckpoint, hordeRadius);
         pollUntil(helper,
                 () -> firstHorde.stream().allMatch(id -> level.getEntity(id) != null),
@@ -4348,16 +4361,19 @@ public final class ExpeditionGameTests {
             // is deterministic when probed through MobSpawns directly:
             // it positions the mob without adding it, so no entity-section
             // promotion or lava-wander race can flake the assertion. The
-            // sweep inside trySpawn also settles ring viability: a ring
-            // that can host a mob must have produced the tracked horde.
+            // broad ring can fit a mob on a lower ledge even where a
+            // checkpoint horde has no reachable approach.
             int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
+            for (UUID id : run.challengeEntities()) {
+                Entity attacker = findEntity(nether, checkpoint, hordeRadius, id);
+                helper.assertTrue(attacker != null && Math.abs(attacker.getBlockY() - checkpoint.getY()) <= 2,
+                        "a Nether horde must stage at the witness's elevation");
+            }
             EntityType<?> type = HordePools.pick(nether, checkpoint,
                     run.definition().dimension(), nether.random);
             Mob probe = MobSpawns.trySpawn(type, nether, checkpoint,
                     hordeRadius);
             if (probe != null) {
-                helper.assertTrue(!run.challengeEntities().isEmpty(),
-                        "a viable ring must have produced a nether horde");
                 BlockPos feet = probe.blockPosition();
                 probe.discard();
                 helper.assertTrue(
