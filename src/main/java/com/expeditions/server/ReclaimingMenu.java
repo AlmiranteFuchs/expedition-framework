@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
@@ -23,6 +25,7 @@ public final class ReclaimingMenu extends ChestMenu {
     private final BlockPos basin;
     private final ExpeditionManager manager;
     private final List<String> dimensions;
+    private final DataSlot sap = DataSlot.standalone();
     private int index;
 
     public ReclaimingMenu(int id, Inventory inventory) {
@@ -31,6 +34,7 @@ public final class ReclaimingMenu extends ChestMenu {
         basin = BlockPos.ZERO;
         manager = null;
         dimensions = List.of();
+        addDataSlot(sap);
     }
 
     public ReclaimingMenu(int id, Inventory inventory, ServerLevel level, BlockPos basin) {
@@ -39,6 +43,7 @@ public final class ReclaimingMenu extends ChestMenu {
         this.basin = basin.immutable();
         manager = ExpeditionManager.get(level.getServer());
         dimensions = manager.reclaimingDimensions(inventory.player.getUUID());
+        addDataSlot(sap);
         refresh(inventory.player);
     }
 
@@ -68,15 +73,16 @@ public final class ReclaimingMenu extends ChestMenu {
 
     @Override
     public void broadcastChanges() {
-        if (level != null && !dimensions.isEmpty()) {
-            int amount = level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
-                    ? vessel.tank().getFluidAmount() : 0;
-            var account = getContainer().getItem(22);
-            var name = Component.translatable("gui.expeditions.basin_account", dimensions.get(index), amount);
-            if (!name.equals(account.get(DataComponents.CUSTOM_NAME))) account.set(DataComponents.CUSTOM_NAME, name);
-        }
+        if (level != null) updateSap();
         super.broadcastChanges();
     }
+
+    private void updateSap() {
+        sap.set(level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
+                ? vessel.tank().getFluidAmount() : 0);
+    }
+
+    public int sapAmount() { return sap.get(); }
 
     @Override
     public ItemStack quickMoveStack(Player player, int slot) {
@@ -90,6 +96,7 @@ public final class ReclaimingMenu extends ChestMenu {
     private void refresh(Player player) {
         var display = getContainer();
         display.clearContent();
+        updateSap();
         if (dimensions.isEmpty()) {
             display.setItem(13, label(new ItemStack(Items.DEAD_BUSH), "gui.expeditions.basin_dormant"));
             return;
@@ -101,22 +108,36 @@ public final class ReclaimingMenu extends ChestMenu {
             quote.set(DataComponents.CUSTOM_NAME, Component.translatable("gui.expeditions.basin_tier_" + slot,
                     quote.getCount(), offer.item().getDescription()));
             var notes = new java.util.ArrayList<Component>();
-            notes.add(Component.translatable("gui.expeditions.basin_price", offer.sap()));
-            if (offer.feedCount() > 0) notes.add(Component.translatable("gui.expeditions.basin_feed",
+            boolean sealed = slot == 2 && !manager.canReclaimGear(player.getUUID(), dimensions.get(index));
+            notes.add(sealed ? Component.translatable("gui.expeditions.basin_field_sealed")
+                    : Component.translatable("gui.expeditions.basin_field_note", offer.extra().getDescription()));
+            if (offer.feedCount() > 0) notes.add(Component.translatable("gui.expeditions.basin_field_feed",
                     offer.feedCount(), offer.feed().getDescription()));
+            notes.add(Component.translatable("gui.expeditions.basin_price", offer.sap()));
             notes.add(Component.translatable("gui.expeditions.basin_bonus", offer.extraCount(), offer.extra().getDescription()));
-            if (slot == 2 && !manager.canReclaimGear(player.getUUID(), dimensions.get(index))) {
+            if (sealed) {
                 notes.add(Component.translatable("message.expeditions.basin_gear"));
             }
             quote.set(DataComponents.LORE, new ItemLore(notes));
             display.setItem(slot, quote);
         }
         display.setItem(18, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_previous"));
-        int amount = level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
-                ? vessel.tank().getFluidAmount() : 0;
         display.setItem(22, label(new ItemStack(ModItems.RETURN_SAP_BUCKET.get()), "gui.expeditions.basin_account",
-                dimensions.get(index), amount));
+                traceName(dimensions.get(index))));
         display.setItem(26, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_next"));
+    }
+
+    private static Component traceName(String dimension) {
+        var id = ResourceLocation.tryParse(dimension);
+        if (id == null) return Component.literal(dimension);
+        var words = id.getPath().split("[/_-]+");
+        var name = new java.util.StringJoiner(" ");
+        for (String word : words) {
+            if (!word.isEmpty()) name.add(Character.toUpperCase(word.charAt(0)) + word.substring(1));
+        }
+        String fallback = name.length() == 0 ? dimension : name.toString();
+        return Component.translatableWithFallback("dimension." + id.getNamespace() + "."
+                + id.getPath().replace('/', '.'), fallback);
     }
 
     private static ItemStack label(ItemStack stack, String key, Object... args) {

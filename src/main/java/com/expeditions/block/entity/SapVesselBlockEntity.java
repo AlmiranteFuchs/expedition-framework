@@ -17,6 +17,7 @@ import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 
 public final class SapVesselBlockEntity extends BlockEntity {
+    public static final int BASIN_CAPACITY = 2000;
     private final SapVesselBlock.Kind kind;
     private final FluidTank tank;
 
@@ -24,7 +25,7 @@ public final class SapVesselBlockEntity extends BlockEntity {
         super(ModBlockEntities.SAP_VESSEL.get(), pos, state);
         kind = ((SapVesselBlock) state.getBlock()).kind();
         int capacity = switch (kind) {
-            case BASIN -> 2000;
+            case BASIN -> BASIN_CAPACITY;
             case JAR -> 4000;
             case WICK -> 250;
         };
