@@ -1460,6 +1460,13 @@ public final class ExpeditionGameTests {
                             && order.getKey().equals("message.expeditions.field_order_optional")
                             && order.getArgs()[0].equals("Cut a bark sample")),
                     "the status command shows the actual field commission");
+            var journal = new ItemStack(ModItems.EXPEDITION_FIELD_JOURNAL.get());
+            player.setItemInHand(InteractionHand.OFF_HAND, journal);
+            journal.getItem().use(helper.getLevel(), player, InteractionHand.OFF_HAND);
+            var report = journal.get(DataComponents.WRITTEN_BOOK_CONTENT);
+            helper.assertTrue(report != null && report.getPages(false).getFirst().getSiblings().stream()
+                            .anyMatch(orders::contains),
+                    "the held journal stores the same resolved orders as the status command");
 
             manager.activateCheckpoint(player,
                     ExpeditionManager.toPos(run.checkpoints().get(0)));

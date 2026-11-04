@@ -703,3 +703,10 @@ Recover a living scion at the second mark and hold the graft at the third
 before carrying the scion home. Local threats can answer the defense, while
 the dimension stays cleared and its background Bloom pressure stays quiet.
 Extraction grants the usual Hard gear proof and two Return Knots.
+
+### Field orders — alpha.32
+
+The survey log in the held field journal records the party's actual orders,
+including the commission drawn when the Wayroot opened. Required work,
+optional work and gathering progress use the same labels as
+`/expeditions status`. Reopen the journal to refresh its snapshot.

@@ -41,6 +41,7 @@
   "message.expeditions.field_order_count": "%1$s/%2$s",
   "message.expeditions.field_order_on_return": "judged at extraction",
   "message.expeditions.field_order_open": "open",
+  "journal.expeditions.field_orders": "Field orders",
   "message.expeditions.already_in_run": "You are already on an expedition.",
   "message.expeditions.party_joined": "The charter takes your mark.",
   "message.expeditions.member_left": "A member left your expedition party.",

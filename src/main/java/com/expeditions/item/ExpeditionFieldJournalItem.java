@@ -4,6 +4,7 @@ import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionSavedData;
+import com.expeditions.server.FieldOrders;
 import com.expeditions.server.data.ExpeditionTuning;
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +49,7 @@ public class ExpeditionFieldJournalItem extends Item {
             return InteractionResultHolder.success(stack);
         }
         com.expeditions.server.JournalDiscovery.observe(server);
-        openReport(server, stack, hand);
+        openReport(server, stack);
         return InteractionResultHolder.sidedSuccess(stack, false);
     }
 
@@ -57,7 +58,7 @@ public class ExpeditionFieldJournalItem extends Item {
      * the synchronized component on its field-record pages. Keep broadcasting
      * changes: the screen can open before this server-side refresh arrives.
      */
-    private static void openReport(ServerPlayer player, ItemStack journal, InteractionHand hand) {
+    private static void openReport(ServerPlayer player, ItemStack journal) {
         journal.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
                 Filterable.passThrough("Field Journal"), "The Charter", 0,
                 List.of(
@@ -78,14 +79,24 @@ public class ExpeditionFieldJournalItem extends Item {
             return Component.literal(page.toString());
         }
         ExpeditionRun active = run.get();
-        long elapsed = player.serverLevel().getGameTime() - active.startedGameTime();
+        long elapsed = active.elapsedTicks(player.serverLevel().getGameTime());
         page.append(active.definition().displayName()).append('\n');
         page.append(active.definition().dimension()).append("\n\n");
         page.append("Checkpoints: ").append(active.completedCheckpoints())
                 .append('/').append(active.totalCheckpoints()).append('\n');
-        page.append("Afield: ").append(elapsed / 1200).append(" min\n");
+        if (elapsed >= 0) {
+            page.append("Afield: ").append(elapsed / 1200).append(" min\n");
+        }
         page.append("Party: ").append(active.party().size());
-        return Component.literal(page.toString());
+        var report = Component.literal(page.toString());
+        var orders = FieldOrders.describe(active);
+        if (!orders.isEmpty()) {
+            report.append("\n\n").append(Component.translatable("journal.expeditions.field_orders"));
+            for (Component order : orders) {
+                report.append("\n").append(order);
+            }
+        }
+        return report;
     }
 
     private static Component surveyPage(ServerPlayer player) {
