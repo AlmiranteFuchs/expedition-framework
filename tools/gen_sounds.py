@@ -698,12 +698,124 @@ def b_basin_reclaim():
 
 
 def b_wayroot_graft():
-    """Sap drawn up through the graft — a creak settling under load,
-    a wet draw, a short ring."""
+    """The collar takes: wood groaning under new load, sap drawn up
+    through the grain, one deep settling knock. Rooted, not rung."""
+    out = buf(1.3)
+    mix(out, creak(0.7, 280, 130, 241), 0.5, 0.0)
+    mix(out, squelch(0.55, 243, drips=1, f_sweep=(200, 420)), 0.35, 0.35)
+    wood_knock(out, 0.75, gain=0.5, freq=180)
+    toll(out, note(40), 0.6, 1.0, 0.22)
+    return finalize(out)
+
+
+# ----------------------------------------------------- field machines, cont.
+def b_field_ward_ignite():
+    """The ward drinks the cell and snaps on: socket clunk, a hum
+    ramping up, the field's edge crackling once."""
     out = buf(1.1)
-    mix(out, creak(0.5, 140, 260, 241), 0.5, 0.05)
-    mix(out, squelch(0.45, 243, drips=2, f_sweep=(300, 650)), 0.4, 0.3)
-    toll(out, note(52), 0.55, 0.7, 0.2)
+    clunk(out, 0.0, gain=0.6, freq=110)
+    ramp = apply_env(drone(0.7, (90.0, 91.5, 180.0)), attack=0.4,
+                     decay_tau=0.4, sustain=0.0)
+    mix(out, ramp, 0.5, 0.15)
+    snap = apply_env(bp(noise(0.08, 311), 1500, 4.0), decay_tau=0.03,
+                     sustain=0.0)
+    mix(out, snap, 0.45, 0.3)
+    mix(out, lp(noise(0.5, 313), 500), 0.15, 0.3)
+    return finalize(out)
+
+
+def b_field_ward_extinguish():
+    """The charge dies: the hum sags flat, a last dry tick."""
+    out = buf(1.0)
+    w = apply_env(warble(88, 0.7, vib_hz=3.0, vib_depth=0.02, seed=315),
+                  attack=0.01, decay_tau=0.35, sustain=0.0)
+    mix(out, lp(w, 500), 0.5)
+    tick = apply_env(bp(noise(0.04, 317), 900, 4.0), decay_tau=0.015,
+                     sustain=0.0)
+    mix(out, tick, 0.3, 0.6)
+    return finalize(out)
+
+
+def b_sap_vessel_fill():
+    """Sap globs into the vessel — slow thick glugs."""
+    out = buf(0.9)
+    rng = random.Random(321)
+    for i in range(3):
+        t = 0.05 + i * 0.2 + rng.uniform(0, 0.06)
+        f = rng.uniform(140, 220)
+        glug = apply_env(sine(lambda tt, f=f: f * (1 - 0.8 * tt), 0.14),
+                         decay_tau=0.05, sustain=0.0)
+        mix(out, lp(glug, 500), 0.6, t)
+    mix(out, lp(noise(0.8, 323), 400), 0.2)
+    return finalize(out)
+
+
+def b_sap_vessel_recycle():
+    """The vessel grinds an item into sap: crunches, then dissolve."""
+    out = buf(0.9)
+    rng = random.Random(325)
+    for i in range(3):
+        crack = apply_env(bp(noise(0.08, 326 + i), rng.uniform(600, 1100),
+                             3.0), decay_tau=0.03, sustain=0.0)
+        mix(out, crack, 0.5, 0.03 + i * 0.09 + rng.uniform(0, 0.03))
+    mix(out, squelch(0.5, 327, drips=2, f_sweep=(500, 180)), 0.4, 0.3)
+    return finalize(out)
+
+
+def b_device_activate():
+    """Defense device spinning up: clunk, rising thrum, a hostile
+    little whine that says it is now armed."""
+    out = buf(1.3)
+    clunk(out, 0.0, gain=0.7, freq=95)
+    mix(out, apply_env(drone(0.9, (70.0, 71.5, 140.0)), attack=0.5,
+                       decay_tau=0.6, sustain=0.0), 0.4, 0.2)
+    whine = apply_env(bp_sweep(noise(0.7, 331), 400, 900, 6.0),
+                      attack=0.4, decay_tau=0.4, sustain=0.0)
+    mix(out, whine, 0.2, 0.3)
+    toll(out, note(45), 0.9, 0.6, 0.2)
+    return finalize(out)
+
+
+def b_device_damage(seed):
+    """Something is chewing on the device: a dent clang and a
+    stressed creak."""
+    rng = random.Random(seed)
+    out = buf(0.55)
+    clang = apply_env(bp(noise(0.09, seed + 1), rng.uniform(1100, 1600),
+                         3.5), decay_tau=0.04, sustain=0.0)
+    mix(out, clang, 0.7)
+    mix(out, apply_env(sine(lambda t: 160 - 80 * t, 0.2),
+                       decay_tau=0.07, sustain=0.0), 0.4)
+    mix(out, creak(0.3, 160, 120, seed + 2), 0.3, 0.1)
+    return finalize(out)
+
+
+def b_device_destroy():
+    """The device gives out: crack, collapse, the hum dying mid-cycle."""
+    out = buf(1.6)
+    crack = apply_env(bp(noise(0.2, 337), 1000, 2.0), decay_tau=0.08,
+                    sustain=0.0)
+    mix(out, crack, 0.8)
+    w = apply_env(warble(120, 0.9, vib_hz=6.0, vib_depth=0.05, seed=339),
+                  attack=0.01, decay_tau=0.4, sustain=0.0)
+    mix(out, lp(w, 700), 0.5, 0.1)
+    mix(out, lp(sub_drop(0.8, 60, 25), 300), 0.6, 0.4)
+    debris = apply_env(lp(noise(0.7, 341), 600), attack=0.05,
+                     decay_tau=0.3, sustain=0.0)
+    mix(out, debris, 0.3, 0.5)
+    return finalize(reverb(out, wet=0.25))
+
+
+def b_cell_insert():
+    """Socketing a resonance cell: clunk, contacts biting, the hum
+    waking."""
+    out = buf(0.7)
+    clunk(out, 0.0, gain=0.7, freq=120)
+    bite = apply_env(bp(noise(0.05, 343), 1600, 5.0), decay_tau=0.02,
+                     sustain=0.0)
+    mix(out, bite, 0.4, 0.06)
+    mix(out, apply_env(sine(lambda t: 90 + 40 * t, 0.4), attack=0.05,
+                       decay_tau=0.2, sustain=0.0), 0.35, 0.15)
     return finalize(out)
 
 
@@ -863,6 +975,23 @@ REGISTRY = [
      ["basin/reclaim"], [b_basin_reclaim]),
     ("block.wayroot.graft",
      ["wayroot/graft"], [b_wayroot_graft]),
+    ("block.field_ward.ignite",
+     ["field_ward/ignite"], [b_field_ward_ignite]),
+    ("block.field_ward.extinguish",
+     ["field_ward/extinguish"], [b_field_ward_extinguish]),
+    ("block.sap_vessel.fill",
+     ["sap_vessel/fill"], [b_sap_vessel_fill]),
+    ("block.sap_vessel.recycle",
+     ["sap_vessel/recycle"], [b_sap_vessel_recycle]),
+    ("block.expedition_device.activate",
+     ["device/activate"], [b_device_activate]),
+    ("block.expedition_device.damage",
+     ["device/damage1", "device/damage2"],
+     _variants(b_device_damage, (333, 334))),
+    ("block.expedition_device.destroy",
+     ["device/destroy"], [b_device_destroy]),
+    ("item.resonance_cell.insert",
+     ["cell/insert"], [b_cell_insert]),
     ("entity.rootbound_guardian.windup",
      ["guardian/windup"], [b_guardian_windup]),
     ("entity.rootbound_guardian.strike",

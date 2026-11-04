@@ -31,6 +31,25 @@
     ],
     "subtitle": "subtitles.expeditions.block.expedition_checkpoint.activate"
   },
+  "block.expedition_device.activate": {
+    "sounds": [
+      "expeditions:device/activate"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_device.activate"
+  },
+  "block.expedition_device.damage": {
+    "sounds": [
+      "expeditions:device/damage1",
+      "expeditions:device/damage2"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_device.damage"
+  },
+  "block.expedition_device.destroy": {
+    "sounds": [
+      "expeditions:device/destroy"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_device.destroy"
+  },
   "block.expedition_portal.hum": {
     "sounds": [
       "expeditions:portal/hum"
@@ -61,6 +80,18 @@
     ],
     "subtitle": "subtitles.expeditions.block.expedition_terminal.refuse"
   },
+  "block.field_ward.extinguish": {
+    "sounds": [
+      "expeditions:field_ward/extinguish"
+    ],
+    "subtitle": "subtitles.expeditions.block.field_ward.extinguish"
+  },
+  "block.field_ward.ignite": {
+    "sounds": [
+      "expeditions:field_ward/ignite"
+    ],
+    "subtitle": "subtitles.expeditions.block.field_ward.ignite"
+  },
   "block.recall_tree.answer": {
     "sounds": [
       "expeditions:recall/answer"
@@ -90,6 +121,18 @@
       "expeditions:resonance/work"
     ],
     "subtitle": "subtitles.expeditions.block.resonance_machine.work"
+  },
+  "block.sap_vessel.fill": {
+    "sounds": [
+      "expeditions:sap_vessel/fill"
+    ],
+    "subtitle": "subtitles.expeditions.block.sap_vessel.fill"
+  },
+  "block.sap_vessel.recycle": {
+    "sounds": [
+      "expeditions:sap_vessel/recycle"
+    ],
+    "subtitle": "subtitles.expeditions.block.sap_vessel.recycle"
   },
   "block.wayroot.graft": {
     "sounds": [
@@ -193,5 +236,11 @@
       "expeditions:journal/discovery"
     ],
     "subtitle": "subtitles.expeditions.item.expedition_field_journal.discovery"
+  },
+  "item.resonance_cell.insert": {
+    "sounds": [
+      "expeditions:cell/insert"
+    ],
+    "subtitle": "subtitles.expeditions.item.resonance_cell.insert"
   }
 }
