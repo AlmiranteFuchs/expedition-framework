@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "expeditions:block/stillwood_bark",
+    "end": "expeditions:block/stillwood_end"
+  }
+}

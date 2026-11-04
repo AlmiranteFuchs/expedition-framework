@@ -44,6 +44,8 @@ public final class ExpeditionRun {
     private final Waypoint portal;
     private final Waypoint entry;
     private final long startedGameTime;
+    private Waypoint fieldCache;
+    private boolean fieldCacheOpened;
     private final List<UUID> challengeEntities;
     private final ExpeditionOptions options;
     private final String portalDimension;
@@ -581,6 +583,26 @@ public final class ExpeditionRun {
      */
     public boolean artifactIssued() {
         return artifactIssued;
+    }
+
+    public Optional<Waypoint> fieldCache() { return Optional.ofNullable(fieldCache); }
+
+    public boolean fieldCacheOpened() { return fieldCacheOpened; }
+
+    public void restoreFieldCache(Waypoint position, boolean opened) {
+        if (fieldCache != null || !FrontierProgression.isAftergrowth(definition)
+                || checkpoints.contains(position) || exit.equals(position)) {
+            throw new IllegalArgumentException("Invalid field cache position");
+        }
+        fieldCache = java.util.Objects.requireNonNull(position);
+        fieldCacheOpened = opened;
+    }
+
+    public boolean openFieldCache(Waypoint position) {
+        ensureActive();
+        if (completedCheckpoints == 0 || fieldCacheOpened || !position.equals(fieldCache)) return false;
+        fieldCacheOpened = true;
+        return true;
     }
 
     /**

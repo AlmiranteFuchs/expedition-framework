@@ -414,6 +414,10 @@ public class ExpeditionSavedData extends SavedData {
             restored.restoreGuardian(new com.expeditions.core.GuardianEncounter(
                     encounter.getUUID("EntityId"), encounter.getBoolean("Defeated")));
         }
+        if (runTag.contains("FieldCache", Tag.TAG_COMPOUND)) {
+            var cache = runTag.getCompound("FieldCache");
+            restored.restoreFieldCache(readWaypoint(cache), cache.getBoolean("Opened"));
+        }
         return restored;
     }
 
@@ -575,6 +579,11 @@ public class ExpeditionSavedData extends SavedData {
             runTag.put(TAG_TERMINAL, writeWaypoint(run.terminal()));
             runTag.put(TAG_PORTAL, writeWaypoint(run.portal()));
             runTag.put(TAG_ENTRY, writeWaypoint(run.entry()));
+            run.fieldCache().ifPresent(position -> {
+                var cache = writeWaypoint(position);
+                cache.putBoolean("Opened", run.fieldCacheOpened());
+                runTag.put("FieldCache", cache);
+            });
             runTag.putString(TAG_PORTAL_DIMENSION, run.portalDimension());
             CompoundTag optionsTag = new CompoundTag();
             optionsTag.putString(TAG_OPT_EXPEDITION, run.options().expeditionId());

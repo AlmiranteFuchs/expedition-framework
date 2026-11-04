@@ -12,6 +12,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ExpeditionsMod.MOD_ID);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.expeditions.block.PaleChestBlock.Storage>> PALE_CHEST =
+            BLOCK_ENTITIES.register("pale_chest", () -> BlockEntityType.Builder.of(
+                    com.expeditions.block.PaleChestBlock.Storage::new, ModBlocks.PALE_CHEST.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>,
             BlockEntityType<AssimilationLayerBlockEntity>> ASSIMILATION_LAYER =

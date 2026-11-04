@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "expeditions:pale_wood"
+    }
+  ],
+  "result": {
+    "id": "expeditions:pale_planks",
+    "count": 4
+  }
+}

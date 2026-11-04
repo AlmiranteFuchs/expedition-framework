@@ -1,0 +1,7 @@
+{
+  "parent": "expeditions:block/pale_chest",
+  "textures": {
+    "boards": "expeditions:block/stillwood_bark",
+    "bark": "expeditions:block/graft_bark"
+  }
+}

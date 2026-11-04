@@ -20,6 +20,9 @@ public final class ModItems {
             "disruption_charm",()->new com.expeditions.item.DisruptionCharmItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<Item> RETURN_KNOT = ITEMS.registerSimpleItem("return_knot");
+    public static final DeferredItem<BlockItem> PALE_WOOD = ITEMS.registerSimpleBlockItem("pale_wood", ModBlocks.PALE_WOOD);
+    public static final DeferredItem<BlockItem> PALE_PLANKS = ITEMS.registerSimpleBlockItem("pale_planks", ModBlocks.PALE_PLANKS);
+    public static final DeferredItem<BlockItem> PALE_CHEST = ITEMS.registerSimpleBlockItem("pale_chest", ModBlocks.PALE_CHEST);
     public static final DeferredItem<Item> RETURN_SAP_BUCKET = ITEMS.register("return_sap_bucket",
             () -> new net.minecraft.world.item.BucketItem(ModFluids.SAP.get(),
                     new Item.Properties().craftRemainder(net.minecraft.world.item.Items.BUCKET).stacksTo(1)));

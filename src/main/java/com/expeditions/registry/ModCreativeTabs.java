@@ -29,6 +29,9 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.SAP_JAR.get());
                         output.accept(ModItems.ROOTWICK.get());
                         output.accept(ModItems.RETURN_KNOT.get());
+                        output.accept(ModItems.PALE_WOOD.get());
+                        output.accept(ModItems.PALE_PLANKS.get());
+                        output.accept(ModItems.PALE_CHEST.get());
                         output.accept(ModItems.RETURN_SAP_BUCKET.get());
                         output.accept(ModItems.EXPEDITION_CHECKPOINT_ITEM.get());
                         output.accept(ModItems.EXPEDITION_EXIT_ITEM.get());

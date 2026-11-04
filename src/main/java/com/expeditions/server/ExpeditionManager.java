@@ -373,6 +373,7 @@ public final class ExpeditionManager {
                             + definition.costTokens());
         }
         ledger.startRun(run);
+        if (aftergrowth) placeFieldCache(run, level, adapter);
         if (commissionIndex >= 0) {
             player.displayClientMessage(Component.translatable(
                     "message.expeditions.commission", definition.commissionPool().get(commissionIndex).description()), true);
@@ -390,6 +391,41 @@ public final class ExpeditionManager {
         applyWeather(run, level);
         data.setDirty();
         return run;
+    }
+
+    private void placeFieldCache(ExpeditionRun run, ServerLevel level, ExpeditionDimensionAdapter adapter) {
+        BlockPos witness = toPos(run.checkpoints().getFirst());
+        int bearing = level.random.nextInt(8);
+        for (int i = 0; i < 8; i++) {
+            double angle = (bearing + i) * Math.PI / 4;
+            int x = witness.getX() + (int) Math.round(Math.cos(angle) * 18);
+            int z = witness.getZ() + (int) Math.round(Math.sin(angle) * 18);
+            var site = adapter.resolveAnchor(level, new RouteAnchor(x, z)).filter(pos ->
+                    Math.abs(pos.getY() - witness.getY()) <= 6 && level.getBlockState(pos).isAir()
+                    && !pos.closerThan(toPos(run.exit()), 10));
+            if (site.isEmpty()) continue;
+            var pos = site.get();
+            if (level.setBlockAndUpdate(pos, ModBlocks.FIELD_CACHE.get().defaultBlockState())) {
+                run.restoreFieldCache(toWaypoint(pos), false);
+                data.trackMarker(run.definition().dimension(), pos);
+                return;
+            }
+        }
+    }
+
+    public void claimFieldCache(ServerPlayer player, BlockPos pos) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || !run.openFieldCache(toWaypoint(pos))) {
+            player.displayClientMessage(Component.translatable("message.expeditions.cache_sealed"), true);
+            return;
+        }
+        var find = new ItemStack(ModItems.EXPEDITION_ARTIFACT.get());
+        find.set(ModDataComponents.RUN_ID.get(), run.runId().toString());
+        find.set(DataComponents.ITEM_NAME, Component.translatable("item.expeditions.cache_find"));
+        if (!player.getInventory().add(find)) player.drop(find, false);
+        player.displayClientMessage(Component.translatable("message.expeditions.cache_opened"), true);
+        data.setDirty();
     }
 
     /**
@@ -645,6 +681,17 @@ public final class ExpeditionManager {
                     run.completedCheckpoints(), run.totalCheckpoints()), true);
         }
         triggerCheckpointChallenge(run, player);
+        if (run.completedCheckpoints() == 1) {
+            run.fieldCache().ifPresent(cache -> {
+                int dx = cache.x() - pos.getX();
+                int dz = cache.z() - pos.getZ();
+                var bearing = Math.abs(dx) > Math.abs(dz)
+                        ? (dx > 0 ? net.minecraft.core.Direction.EAST : net.minecraft.core.Direction.WEST)
+                        : (dz > 0 ? net.minecraft.core.Direction.SOUTH : net.minecraft.core.Direction.NORTH);
+                player.displayClientMessage(Component.translatable("message.expeditions.cache_bearing",
+                        Component.translatable("direction." + bearing.getName())), true);
+            });
+        }
         // The witness answers the compass: wood first, then a restrained chime.
         player.serverLevel().playSound(null, pos,
                 SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.5f, 0.7f);
@@ -696,6 +743,8 @@ public final class ExpeditionManager {
         if (held != null) {
             held.consume();
         }
+        ItemStack cacheReward = held != null && run.fieldCacheOpened()
+                ? ReclaimingOffers.cacheReward(run.definition().dimension(), player.serverLevel()) : ItemStack.EMPTY;
         boolean awardReturnKnots = !run.isRewarded();
         if (awardReturnKnots) {
             int base = run.definition().totalReward(elapsed,
@@ -765,6 +814,7 @@ public final class ExpeditionManager {
                 player.getX(), player.getY() + 0.6, player.getZ(),
                 18, 0.3, 0.5, 0.3, 0.01);
         endRun(run);
+        if (!cacheReward.isEmpty() && !player.getInventory().add(cacheReward)) player.drop(cacheReward, false);
         if (awardReturnKnots) {
             int count = FrontierProgression.isAftergrowth(run.definition()) || run.options().difficulty() == Difficulty.HARD
                     || run.options().difficulty() == Difficulty.BRUTAL ? 2 : 1;
@@ -1093,6 +1143,7 @@ public final class ExpeditionManager {
                 .filter(ExpeditionRun::isActive)
                 .anyMatch(r -> (r.definition().dimension().equals(dimension)
                         && (r.checkpoints().contains(waypoint) || RecallTrees.contains(toPos(r.exit()), pos,data.recallTreeParts(dimension,toPos(r.exit())),markerLevel)
+                                || r.fieldCache().filter(waypoint::equals).isPresent()
                                 || r.defense().map(d -> d.device().equals(waypoint))
                                         .orElse(false)))
                         || (r.portalOpen() && r.portalDimension().equals(dimension)
@@ -1164,6 +1215,11 @@ public final class ExpeditionManager {
         // A siege still running when the run ends (abandon, death) stands
         // down with the rest of the markers.
         if (level != null) {
+            run.fieldCache().ifPresent(cache -> {
+                BlockPos cachePos = toPos(cache);
+                if (level.getBlockState(cachePos).is(ModBlocks.FIELD_CACHE.get())) level.removeBlock(cachePos, false);
+                data.untrackMarker(dimension, cachePos);
+            });
             run.defense().ifPresent(d -> {
                 BlockPos devicePos = toPos(d.device());
                 if (!isReferencedByActiveRun(dimension, devicePos)) {
@@ -2122,6 +2178,7 @@ public final class ExpeditionManager {
                 || state.is(ModBlocks.EXPEDITION_EXIT.get())
                 || state.is(ModBlocks.EXPEDITION_PORTAL.get())
                 || state.is(ModBlocks.EXPEDITION_DEVICE.get())
+                || state.is(ModBlocks.FIELD_CACHE.get())
                 || state.is(ModBlocks.RECALL_TREE_PART.get())) {
             level.removeBlock(pos, false);
         }

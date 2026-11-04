@@ -4,7 +4,9 @@ import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.FrontierProgression;
 import com.expeditions.registry.ModItems;
+import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.ExpeditionManager;
+import com.expeditions.server.ExpeditionSavedData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -56,11 +58,26 @@ public final class AftergrowthTests {
             manager.enterPortal(guest, portal);
             helper.assertTrue(run.party().contains(guest.getUUID()) && run.totalCheckpoints() == 2,
                     "a guest can join without extending the quiet route");
+            var cache = ExpeditionManager.toPos(run.fieldCache().orElseThrow());
+            ExpeditionGameTests.useBlockAt(helper, owner, cache);
+            helper.assertTrue(!run.fieldCacheOpened(), "a sealed cache waits for the first witness");
             for (var checkpoint : run.checkpoints()) {
                 manager.activateCheckpoint(owner, ExpeditionManager.toPos(checkpoint));
                 helper.assertTrue(run.challengeEntities().isEmpty(), "aftergrowth has no checkpoint horde");
             }
+            ExpeditionGameTests.useBlockAt(helper, owner, cache);
+            ExpeditionGameTests.useBlockAt(helper, guest, cache);
+            helper.assertTrue(run.fieldCacheOpened() && owner.getInventory().countItem(ModItems.EXPEDITION_ARTIFACT.get()) == 1
+                            && guest.getInventory().countItem(ModItems.EXPEDITION_ARTIFACT.get()) == 0,
+                    "only the first party member opening the cache receives the find");
+            var stored = data.save(new net.minecraft.nbt.CompoundTag(), level.registryAccess());
+            var restored = ExpeditionSavedData.load(stored, level.registryAccess()).ledger().activeRun(owner.getUUID()).orElseThrow();
+            helper.assertTrue(restored.fieldCache().equals(run.fieldCache()) && restored.fieldCacheOpened(),
+                    "cache site and claim both survive save and reload");
             manager.completeRun(owner);
+            helper.assertTrue(!level.getBlockState(cache).is(ModBlocks.FIELD_CACHE.get())
+                            && owner.getInventory().countItem(ModItems.EXPEDITION_ARTIFACT.get()) == 0,
+                    "extraction removes the cache and settles the carried find");
             helper.assertTrue(owner.getInventory().countItem(ModItems.RETURN_KNOT.get()) == 2,
                     "two return knots settle at the hollow");
             helper.assertTrue(data.campaignCompletions(dimension) == 0 && !manager.unlocks(owner.getUUID()).contains("expeditions:field_clear"),
@@ -91,6 +108,22 @@ public final class AftergrowthTests {
             if (manager.activeRun(owner.getUUID()).isPresent()) manager.failRun(owner);
             data.resetCampaign(dimension);
         }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", batch = "pale_chest")
+    public static void paleChestStoresItemsAndOpens(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var pos = helper.absolutePos(new BlockPos(2, 1, 2));
+        level.setBlockAndUpdate(pos, ModBlocks.PALE_CHEST.get().defaultBlockState());
+        var player = helper.makeMockServerPlayerInLevel();
+        ExpeditionGameTests.useBlockAt(helper, player, pos);
+        helper.assertTrue(player.containerMenu instanceof net.minecraft.world.inventory.ChestMenu,
+                "the pale chest opens a standard storage menu");
+        var chest = (net.minecraft.world.Container) level.getBlockEntity(pos);
+        chest.setItem(0, new net.minecraft.world.item.ItemStack(ModItems.PALE_PLANKS.get(), 4));
+        helper.assertTrue(chest.getItem(0).getCount() == 4, "the pale chest stores items");
+        player.closeContainer();
         helper.succeed();
     }
 }

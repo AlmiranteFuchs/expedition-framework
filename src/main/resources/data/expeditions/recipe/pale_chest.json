@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PPP",
+    "PFP",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "expeditions:pale_planks"
+    },
+    "F": {
+      "item": "expeditions:dormant_flake"
+    }
+  },
+  "result": {
+    "id": "expeditions:pale_chest",
+    "count": 1
+  }
+}

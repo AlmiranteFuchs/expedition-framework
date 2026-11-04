@@ -747,3 +747,16 @@ come from the lead lane. If the terrain closes a lane, the wave tries
 another bearing. The biome still supplies the attackers.
 Newly spawned attackers briefly show pale bark and bright amber seams before
 settling into the normal infected overlay.
+
+### Field caches and pale woodworking — alpha.37
+
+Aftergrowth can place one optional pale cache on a nearby detour when the
+destination offers a safe site. The first witness gives a rough compass
+bearing. Recover its sealed find and carry it through the Hollow to draw
+a curiosity from the destination's salvage pool. Dimensions with no eligible
+curiosities yield a Return Knot. The location and one-time claim are saved
+with the run. The cache is removed when the route ends.
+
+Infuse two logs with Assimilation Essence to craft two Pale Wood blocks.
+Each makes four Pale Planks. Eight Pale Planks and a Dormant Flake craft
+the Pale Chest, which uses the standard chest inventory.

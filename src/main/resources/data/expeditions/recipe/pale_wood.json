@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "tag": "minecraft:logs"
+    },
+    {
+      "tag": "minecraft:logs"
+    },
+    {
+      "item": "expeditions:assimilation_essence"
+    }
+  ],
+  "result": {
+    "id": "expeditions:pale_wood",
+    "count": 2
+  }
+}

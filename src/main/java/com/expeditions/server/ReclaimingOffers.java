@@ -66,5 +66,12 @@ final class ReclaimingOffers {
                 new Offer(1000, List.copyOf(categories.get(2))));
     }
 
+    static ItemStack cacheReward(String dimension, ServerLevel level) {
+        var curiosities = forDimension(dimension, level).get(1);
+        return curiosities.finds().isEmpty()
+                ? new ItemStack(com.expeditions.registry.ModItems.RETURN_KNOT.get())
+                : curiosities.draw(level.random);
+    }
+
     private ReclaimingOffers() { }
 }

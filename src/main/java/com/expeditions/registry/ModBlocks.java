@@ -21,6 +21,19 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  */
 public final class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(ExpeditionsMod.MOD_ID);
+    public static final DeferredHolder<Block, Block> PALE_WOOD = BLOCKS.register("pale_wood",
+            () -> new net.minecraft.world.level.block.RotatedPillarBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(2).sound(SoundType.WOOD)));
+    public static final DeferredHolder<Block, Block> PALE_PLANKS = BLOCKS.register("pale_planks",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(2).sound(SoundType.WOOD)));
+    public static final DeferredHolder<Block, Block> PALE_CHEST = BLOCKS.register("pale_chest",
+            () -> new com.expeditions.block.PaleChestBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.5f).sound(SoundType.WOOD).noOcclusion()));
+    public static final DeferredHolder<Block, Block> FIELD_CACHE = BLOCKS.register("field_cache",
+            () -> new com.expeditions.block.FieldCacheBlock(BlockBehaviour.Properties.of()
+                    .strength(-1, 3600000).sound(SoundType.WOOD).noLootTable().noOcclusion()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK).lightLevel(state -> 4)));
 
     public static final DeferredHolder<Block, ExpeditionTerminalBlock> EXPEDITION_TERMINAL = BLOCKS.register(
             "expedition_terminal",
