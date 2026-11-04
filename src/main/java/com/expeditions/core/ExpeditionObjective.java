@@ -55,23 +55,24 @@ public record ExpeditionObjective(String id, String description, boolean require
                 count = 0;
                 timeLimitTicks = 0;
             }
-            case COLLECT_ITEMS -> {
+            case COLLECT_ITEMS, HARVEST -> {
+                String type = kind == ObjectiveKind.HARVEST ? "harvest" : "collect_items";
                 boolean hasItem = item != null && !item.isBlank();
                 boolean hasTag = tag != null && !tag.isBlank();
                 if (hasItem == hasTag) {
                     throw new IllegalArgumentException(
-                            "collect_items objective \"" + id
-                                    + "\" needs exactly one of item or tag");
+                            type + " objective \"" + id
+                                    + "\" needs exactly one target id or tag");
                 }
                 String target = hasItem ? item : tag;
                 if (!RESOURCE_ID.matcher(target).matches()) {
                     throw new IllegalArgumentException(
-                            "collect_items objective \"" + id
+                            type + " objective \"" + id
                                     + "\" has invalid id \"" + target + "\"");
                 }
                 if (count < 1) {
                     throw new IllegalArgumentException(
-                            "collect_items objective \"" + id + "\" needs a count >= 1");
+                            type + " objective \"" + id + "\" needs a count >= 1");
                 }
                 checkpoint = 0;
                 timeLimitTicks = 0;
@@ -134,6 +135,13 @@ public record ExpeditionObjective(String id, String description, boolean require
                 ObjectiveKind.COLLECT_ITEMS, 0, item, tag, count, 0, bonusTokens);
     }
 
+    /** Uses the existing target fields to store a block id or block tag. */
+    public static ExpeditionObjective harvest(String id, String description,
+            boolean required, String block, String tag, int count, int bonusTokens) {
+        return new ExpeditionObjective(id, description, required,
+                ObjectiveKind.HARVEST, 0, block, tag, count, 0, bonusTokens);
+    }
+
     /** A timed objective: completes only if the run finishes within {@code ticks}. */
     public static ExpeditionObjective timeLimit(String id, String description,
             boolean required, long ticks, int bonusTokens) {
@@ -165,7 +173,7 @@ public record ExpeditionObjective(String id, String description, boolean require
     public int progressTarget() {
         return switch (kind) {
             case VISIT_CHECKPOINT, RECOVER_ARTIFACT, DEFEND_DEVICE -> 1;
-            case COLLECT_ITEMS -> count;
+            case COLLECT_ITEMS, HARVEST -> count;
             case TIME_LIMIT -> (int) Math.min(timeLimitTicks, Integer.MAX_VALUE);
         };
     }

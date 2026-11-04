@@ -41,6 +41,17 @@ class ExpeditionObjectiveTest {
     // ---- Objective construction validation --------------------------------
 
     @Test
+    void harvestClampsToItsTarget() {
+        var objective = ExpeditionObjective.harvest("bark", "Cut a bark sample", false,
+                null, "minecraft:logs", 2, 4);
+        var run = newRun(objective);
+        assertFalse(run.addObjectiveProgress("bark", 1));
+        assertTrue(run.addObjectiveProgress("bark", Integer.MAX_VALUE));
+        assertEquals(2, run.objectiveState("bark").orElseThrow().progress());
+        assertFalse(run.addObjectiveProgress("bark", 1));
+    }
+
+    @Test
     void objectivesRejectInvalidShapes() {
         assertThrows(IllegalArgumentException.class,
                 () -> ExpeditionObjective.visitCheckpoint(" ", "d", false, 1, 0));

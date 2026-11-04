@@ -1402,6 +1402,8 @@ public final class ExpeditionGameTests {
                     {"id": "logs", "description": "Collect 2 logs",
                      "type": "collect_items", "tag": "minecraft:logs",
                      "count": 2, "bonus_tokens": 2},
+                    {"id": "bark", "description": "Cut a bark sample",
+                     "type": "harvest", "tag": "minecraft:logs", "count": 1},
                     {"id": "speedy", "description": "Finish within a minute",
                      "type": "time_limit", "seconds": 60, "bonus_tokens": 7}
                   ]
@@ -1415,10 +1417,27 @@ public final class ExpeditionGameTests {
         try {
             ExpeditionDefinitions.reload(entries);
             ExpeditionRun run = startExpedition(helper, manager, player);
-            helper.assertTrue(run.definition().objectives().size() == 4,
-                    "all four objectives must be defined");
-            helper.assertTrue(run.objectiveStates().size() == 4,
+            helper.assertTrue(run.definition().objectives().size() == 5,
+                    "all five objectives must be defined");
+            helper.assertTrue(run.objectiveStates().size() == 5,
                     "every defined objective must be tracked from run start");
+
+            var sample = new BlockPos(3, 1, 3);
+            player.setGameMode(GameType.SURVIVAL);
+            helper.setBlock(sample, Blocks.OAK_LOG);
+            player.gameMode.destroyBlock(helper.absolutePos(sample));
+            helper.assertTrue(!run.objectiveState("bark").orElseThrow().completed(),
+                    "cutting a log before entering the portal must not count");
+            manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
+            var fieldSample = player.blockPosition().above(2);
+            player.serverLevel().setBlockAndUpdate(fieldSample, Blocks.OAK_LOG.defaultBlockState());
+            helper.assertTrue(player.getInventory().countItem(ModItems.EXPEDITION_COMPASS.get()) == 1,
+                    "entering the field issues the compass");
+            helper.assertTrue(player.serverLevel().getBlockState(fieldSample).is(net.minecraft.tags.BlockTags.LOGS),
+                    "the field sample belongs to the loaded logs block tag");
+            helper.assertTrue(player.gameMode.destroyBlock(fieldSample), "the field sample can be harvested");
+            helper.assertTrue(run.objectiveState("bark").orElseThrow().completed(),
+                    "a tagged block harvested in the field must count");
 
             manager.activateCheckpoint(player,
                     ExpeditionManager.toPos(run.checkpoints().get(0)));
@@ -3760,7 +3779,7 @@ public final class ExpeditionGameTests {
                     .map(ExpeditionObjective::kind).toList();
             for (ObjectiveKind kind : List.of(ObjectiveKind.VISIT_CHECKPOINT,
                     ObjectiveKind.RECOVER_ARTIFACT, ObjectiveKind.DEFEND_DEVICE,
-                    ObjectiveKind.COLLECT_ITEMS, ObjectiveKind.TIME_LIMIT)) {
+                    ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT)) {
                 helper.assertTrue(kinds.contains(kind),
                         "deep_salvage must compose a " + kind + " objective");
             }

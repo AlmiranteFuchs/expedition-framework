@@ -975,6 +975,31 @@ public final class ExpeditionManager {
         }
     }
 
+    public void onBlockHarvested(ServerPlayer player, net.minecraft.world.level.block.state.BlockState state) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || !hasCompass(player)) {
+            return;
+        }
+        for (ExpeditionObjective objective : run.definition().objectives()) {
+            if (objective.kind() != ObjectiveKind.HARVEST
+                    || run.objectiveState(objective.id()).map(ObjectiveState::completed).orElse(true)) {
+                continue;
+            }
+            boolean matches = objective.item() == null
+                    ? state.is(TagKey.create(Registries.BLOCK, ResourceLocation.parse(objective.tag())))
+                    : BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse(objective.item()))
+                            .map(state::is).orElse(false);
+            if (matches) {
+                if (run.addObjectiveProgress(objective.id(), 1)) {
+                    player.displayClientMessage(Component.translatable(
+                            "message.expeditions.objective_completed", objective.description()), true);
+                }
+                data.setDirty();
+            }
+        }
+    }
+
     private static boolean matchesObjective(ItemStack stack, ExpeditionObjective objective) {
         if (objective.item() != null) {
             return BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(objective.item()))

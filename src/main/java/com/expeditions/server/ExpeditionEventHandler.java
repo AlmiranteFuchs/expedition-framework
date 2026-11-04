@@ -259,6 +259,12 @@ public final class ExpeditionEventHandler {
                 count, 0.3, 0.4, 0.3, 0.02);
     }
 
+    public static void onBlockHarvested(net.neoforged.neoforge.event.level.BlockDropsEvent event) {
+        if (event.getBreaker() instanceof ServerPlayer player && player.gameMode.getGameModeForPlayer().isSurvival()) {
+            ExpeditionManager.get(player.server).onBlockHarvested(player, event.getState());
+        }
+    }
+
     /**
      * Feeds item pickups into collect_items objectives. The event fires after
      * the stack entered the inventory; the picked amount is the item entity's

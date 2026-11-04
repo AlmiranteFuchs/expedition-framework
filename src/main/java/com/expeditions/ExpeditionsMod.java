@@ -52,6 +52,7 @@ public class ExpeditionsMod {
         gameBus.addListener(com.expeditions.block.SapVesselBlock::allowRecyclingInteraction);
         gameBus.addListener(ExpeditionEventHandler::onLivingDeath);
         gameBus.addListener(ExpeditionEventHandler::onItemPickup);
+        gameBus.addListener(net.neoforged.bus.api.EventPriority.LOWEST, ExpeditionEventHandler::onBlockHarvested);
         gameBus.addListener(ExpeditionEventHandler::onPlayerLogin);
         gameBus.addListener(ExpeditionEventHandler::onServerStarted);
         gameBus.addListener(ExpeditionEventHandler::onServerTick);

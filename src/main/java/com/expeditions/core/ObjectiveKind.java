@@ -16,6 +16,8 @@ public enum ObjectiveKind {
      * item tag; the domain only counts progress.
      */
     COLLECT_ITEMS,
+    /** Harvest matching blocks during a field run ({@code harvest}). */
+    HARVEST,
     /**
      * Finish the expedition within a time budget ({@code time_limit}).
      * Evaluated once at completion: completed iff elapsed ticks ≤ the limit.

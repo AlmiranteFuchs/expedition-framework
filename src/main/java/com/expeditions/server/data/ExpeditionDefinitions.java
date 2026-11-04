@@ -292,6 +292,18 @@ public final class ExpeditionDefinitions {
                     objectives.add(ExpeditionObjective.collectItems(id, description, required,
                             item, tag, requiredInt(json, "count"), bonus));
                 }
+                case "harvest" -> {
+                    String block = optionalString(json, "block", null);
+                    String tag = optionalString(json, "tag", null);
+                    if (block != null) {
+                        ResourceLocation blockId = ResourceLocation.tryParse(block);
+                        if (blockId == null || BuiltInRegistries.BLOCK.getOptional(blockId).isEmpty()) {
+                            throw new IllegalArgumentException("harvest objective " + id + " references unknown block " + block);
+                        }
+                    }
+                    objectives.add(ExpeditionObjective.harvest(id, description, required,
+                            block, tag, requiredInt(json, "count"), bonus));
+                }
                 case "time_limit" -> objectives.add(ExpeditionObjective.timeLimit(
                         id, description, required,
                         (long) requiredInt(json, "seconds") * TICKS_PER_SECOND, bonus));

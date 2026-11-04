@@ -61,10 +61,10 @@
     },
     {
       "id": "scrap",
-      "description": "Salvage 8 iron",
-      "type": "collect_items",
-      "item": "minecraft:iron_ingot",
-      "count": 8,
+      "description": "Cut four bark samples",
+      "type": "harvest",
+      "tag": "minecraft:logs",
+      "count": 4,
       "required": false,
       "bonus_tokens": 12
     },

@@ -776,15 +776,15 @@ public final class ExpeditionRun {
             throw new IllegalArgumentException("Objective progress must be >= 0");
         }
         ExpeditionObjective objective = objective(objectiveId);
-        if (objective.kind() != ObjectiveKind.COLLECT_ITEMS) {
+        if (objective.kind() != ObjectiveKind.COLLECT_ITEMS && objective.kind() != ObjectiveKind.HARVEST) {
             throw new IllegalArgumentException(
-                    "Objective \"" + objectiveId + "\" is not a collect_items objective");
+                    "Objective \"" + objectiveId + "\" does not count gathered resources");
         }
         ObjectiveState state = state(objectiveId);
         if (state.completed()) {
             return false;
         }
-        int next = state.progress() + amount;
+        int next = state.progress() + Math.min(amount, objective.progressTarget() - state.progress());
         boolean done = next >= objective.progressTarget();
         objectiveStates.put(objectiveId,
                 new ObjectiveState(Math.min(next, objective.progressTarget()), done));

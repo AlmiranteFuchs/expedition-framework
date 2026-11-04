@@ -664,3 +664,26 @@ whose campaign is cleared. The two-mark route uses the normal portal, party,
 navigation, and extraction lifecycle. It omits checkpoint hordes and timed
 bonuses. Extraction yields two Return Knots without advancing campaign counts
 or granting Hard/Brutal gear proof. Ordinary creatures and hazards remain.
+
+### Field commissions — alpha.28
+
+Deep Salvage offers an optional bark sample commission alongside the cargo and
+siege. The bonus settles at extraction. The assignment rewards gathering on
+the route and can be skipped when the party needs to get home.
+
+Datapack authors can use `harvest` with a positive `count` and exactly one
+`block` ID or block `tag`. The run records one unit per matching survival
+harvest by a party member carrying the field compass in the destination
+dimension. Item pickup and Fortune yields do not affect the count. Progress
+uses the existing saved objective record.
+
+The next variety slice should choose one optional commission from an authored
+pool and save that choice with the route. The briefing should tell the party
+what it drew before anyone crosses. Deep Rock Galactic's mission assignments
+and optional challenges are a reference for keeping the main extraction goal
+legible while giving the party a reason to detour. Alex's Caves is a reference
+for using a discovery in the world to give the guidebook something concrete to
+say about the player's next outing.
+
+- [Deep Rock Galactic Season 01](https://www.deeprockgalactic.com/season-01)
+- [Alex's Caves project page](https://www.curseforge.com/minecraft/mc-mods/alexs-caves)
