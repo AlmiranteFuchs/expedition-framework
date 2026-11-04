@@ -783,3 +783,13 @@ plates use the host skin's alpha mask, and the stage controls how strongly
 they show. Short body shudders grow stronger with the infection. The hive
 reduces native movement and flight speed attributes by 30 percent where
 present. The modifier clears when the host is disrupted or cleansed.
+
+### Guardian combat and machine feedback — alpha.41
+
+The Rootbound Guardian alternates a close sweep with a burst at the target's
+marked position from the opening phase. Below half health, it adds a ring
+with a safe pocket at its center. Each windup has a distinct pose and ground
+warning. It approaches more slowly and shudders harder as it enrages.
+
+Resonance generators and the condenser make quiet, spaced work sounds
+while generating or refining. Each machine has a distinct cue.

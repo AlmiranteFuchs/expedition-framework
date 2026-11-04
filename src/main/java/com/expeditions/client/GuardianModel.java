@@ -68,10 +68,27 @@ public final class GuardianModel extends HierarchicalModel<RootboundGuardian> {
         rightArm.zRot = -0.1f - Mth.sin(age * 0.06f) * 0.04f;
         if (entity.windupTicks() > 0) {
             float lift = Math.min(1, (entity.attack().warningTicks() - entity.windupTicks() + 1) / 12f);
-            leftArm.xRot = -2.25f * lift;
-            rightArm.xRot = -2.05f * lift;
-            body.xRot = 0.12f * lift;
-            head.xRot -= 0.18f * lift;
+            switch (entity.attack()) {
+                case SWEEP -> {
+                    leftArm.yRot = -0.85f * lift;
+                    rightArm.yRot = 0.85f * lift;
+                    leftArm.xRot = rightArm.xRot = -1.2f * lift;
+                }
+                case ROOT_BURST -> {
+                    rightArm.xRot = -2.1f * lift;
+                    body.xRot = 0.22f * lift;
+                }
+                case ROOT_RING -> {
+                    leftArm.xRot = rightArm.xRot = -2.6f * lift;
+                    head.xRot -= 0.28f * lift;
+                }
+            }
         }
+        float tremor = Mth.sin(age * 2.55f) * (0.55f + 0.45f * Mth.sin(age * 0.42f));
+        float strength = entity.enraged() ? 0.13f : 0.085f;
+        body.zRot += tremor * strength;
+        head.zRot += Mth.sin(age * 3.2f) * strength;
+        leftArm.zRot += tremor * strength;
+        rightArm.zRot -= tremor * strength;
     }
 }

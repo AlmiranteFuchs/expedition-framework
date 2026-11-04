@@ -55,12 +55,16 @@ class GuardianEncounterTest {
         assertFalse(GuardianAttack.SWEEP.hits(0, 3, 0));
         assertTrue(GuardianAttack.ROOT_BURST.hits(2.7, 2, 0));
         assertFalse(GuardianAttack.ROOT_BURST.hits(2.8, 0, 0));
+        assertFalse(GuardianAttack.ROOT_RING.hits(2.4, 0, 0));
+        assertTrue(GuardianAttack.ROOT_RING.hits(5, 0, 0));
+        assertFalse(GuardianAttack.ROOT_RING.hits(7.1, 0, 0));
     }
 
     @Test void theSecondPhaseAlternatesAndEveryAttackHasTimeToReact() {
-        assertEquals(GuardianAttack.SWEEP, GuardianAttack.next(false, 1));
+        assertEquals(GuardianAttack.ROOT_BURST, GuardianAttack.next(false, 1));
+        assertEquals(GuardianAttack.SWEEP, GuardianAttack.next(false, 2));
         assertEquals(GuardianAttack.ROOT_BURST, GuardianAttack.next(true, 1));
-        assertEquals(GuardianAttack.SWEEP, GuardianAttack.next(true, 2));
+        assertEquals(GuardianAttack.ROOT_RING, GuardianAttack.next(true, 2));
         for (var attack : GuardianAttack.values()) {
             assertTrue(attack.warningTicks() >= 30);
             assertTrue(attack.recoveryTicks() >= 40);

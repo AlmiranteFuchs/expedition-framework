@@ -29,6 +29,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
         @Override protected void onContentsChanged(int slot) { setChanged();updateComparator(); }
     };
     private int fuelTicks,progress,generationRate,fieldCount=1;
+    private long nextWorkSound;
     private long lastFieldScan=Long.MIN_VALUE;
     private boolean reserved,breach;
     private ResonanceStatus status=ResonanceStatus.NO_SAMPLE;
@@ -142,6 +143,17 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                     }
                 }
             }
+        }
+        if (working && !be.breach && level.getGameTime() >= be.nextWorkSound) {
+            var sound = switch (be.kind()) {
+                case DORMANT -> SoundEvents.WOODEN_TRAPDOOR_CLOSE;
+                case LIVING -> SoundEvents.WARDEN_HEARTBEAT;
+                case SEVERED -> SoundEvents.AMETHYST_BLOCK_RESONATE;
+                case CONDENSER -> SoundEvents.UI_STONECUTTER_TAKE_RESULT;
+            };
+            level.playSound(null, pos, sound, SoundSource.BLOCKS, 0.32f,
+                    be.dynamo() ? 0.75f : 0.9f);
+            be.nextWorkSound = level.getGameTime() + 34 + level.random.nextInt(13);
         }
         if(be.dynamo() && be.energy()>0){
             int budget=Math.min(160,be.energy());
