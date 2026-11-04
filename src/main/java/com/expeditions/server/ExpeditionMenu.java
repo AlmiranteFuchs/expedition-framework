@@ -185,14 +185,17 @@ public class ExpeditionMenu extends ChestMenu {
         }
         try {
             ExpeditionRun run = manager.startRun(player, terminalPos, options());
+            // Follow the actual aperture, including portals raised to clear an obstruction.
+            BlockPos portal = ExpeditionManager.toPos(run.portal());
+            var graft = net.minecraft.world.phys.Vec3.atBottomCenterOf(terminalPos).add(0, 0.75, 0);
+            var aperture = net.minecraft.world.phys.Vec3.atCenterOf(portal);
+            for (int step = 0; step <= 6; step++) {
+                var spark = graft.lerp(aperture, step / 6.0);
+                player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
+                        spark.x, spark.y, spark.z, 2, 0.06, 0.03, 0.06, 0);
+            }
             player.closeContainer();
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.expedition_started",
-                    run.definition().displayName()));
-            run.nextCheckpoint().ifPresent(first -> player.sendSystemMessage(
-                    Component.translatable("message.expeditions.next_checkpoint",
-                            run.completedCheckpoints() + 1, run.totalCheckpoints(),
-                            format(first))));
+            player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
         } catch (IllegalStateException e) {
             LOGGER.warn("Expedition start refused for {}: {}",
                     player.getScoreboardName(), e.getMessage());

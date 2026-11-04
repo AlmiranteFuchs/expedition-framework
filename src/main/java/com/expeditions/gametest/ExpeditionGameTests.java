@@ -1695,7 +1695,8 @@ public final class ExpeditionGameTests {
         int drops = 0;
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())) {
+            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())
+                    || stack.is(ModItems.RETURN_KNOT.get())) {
                 continue;
             }
             helper.assertTrue(pool.contains(stack.getItem()),
@@ -1742,7 +1743,8 @@ public final class ExpeditionGameTests {
         int drops = 0;
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())) {
+            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())
+                    || stack.is(ModItems.RETURN_KNOT.get())) {
                 continue;
             }
             helper.assertTrue(pool.contains(stack.getItem()),
@@ -1754,48 +1756,96 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
-    /**
-     * `/expeditions redeem` is the token sink: it deducts the configured cost
-     * exactly once and grants items from the player's current-dimension pool;
-     * with an insufficient balance it refuses without touching the balance.
-     */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_opts", batch = "expedition_x")
-    public static void redeemConvertsTokensToSupplies(GameTestHelper helper) {
-        MinecraftServer server = helper.getLevel().getServer();
-        ExpeditionManager manager = ExpeditionManager.get(server);
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        int cost = ExpeditionsConfig.redeemTokenCost();
-
-        helper.assertTrue(!manager.redeemTokens(player),
-                "redeem with a zero balance must refuse");
-        helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
-                "a refused redeem must not touch the balance");
-
-        savedData(server).ledger().addTokens(player.getUUID(), cost * 2);
-        helper.assertTrue(manager.redeemTokens(player), "first redeem must succeed");
-        helper.assertTrue(manager.tokenBalance(player.getUUID()) == cost,
-                "balance must drop by the redeem cost, was "
-                        + manager.tokenBalance(player.getUUID()));
-
-        List<Item> pool = ItemRewards.pool("minecraft:overworld");
-        int drops = 0;
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty()) {
-                continue;
-            }
-            helper.assertTrue(pool.contains(stack.getItem()),
-                    "redeemed item " + stack.getItem() + " must come from the dimension pool");
-            drops++;
+    public static void basinSettlesOnlyProvenAffordableClaims(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var manager = ExpeditionManager.get(level.getServer());
+        var player = helper.makeMockServerPlayerInLevel();
+        var position = helper.absolutePos(new BlockPos(2, 1, 2));
+        level.setBlockAndUpdate(position, ModBlocks.RECLAIMING_BASIN.get().defaultBlockState());
+        player.moveTo(position.getX() + 0.5, position.getY(), position.getZ() + 1.5);
+        var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(position);
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
+                com.expeditions.registry.ModFluids.SAP.get(), 2000), execute);
+        var ledger = savedData(level.getServer()).ledger();
+        ledger.addTokens(player.getUUID(), 20);
+        var locked = new com.expeditions.server.ReclaimingMenu(1, player.getInventory(), level, position);
+        var pickup = net.minecraft.world.inventory.ClickType.PICKUP;
+        locked.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "unproven traces cannot take sap");
+        ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:overworld");
+        var menu = new com.expeditions.server.ReclaimingMenu(2, player.getInventory(), level, position);
+        menu.clicked(2, 0, pickup, player);
+        menu.clicked(1, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "locked gear and missing feedstock must refuse");
+        menu.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 1750
+                        && player.getInventory().countItem(Items.COBBLESTONE) == 32,
+                "rough supplies deliver the guaranteed haul and spend 250 mB");
+        player.getInventory().add(new ItemStack(Items.RAW_IRON, 6));
+        menu.clicked(1, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 1250
+                        && player.getInventory().countItem(Items.IRON_INGOT) == 8
+                        && player.getInventory().countItem(Items.RAW_IRON) == 0,
+                "worked stock consumes its exact sap and raw feed");
+        ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming_gear/minecraft:overworld");
+        menu.clicked(2, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 250
+                        && player.getInventory().countItem(Items.IRON_PICKAXE) == 1
+                        && player.getInventory().countItem(Items.IRON_INGOT) == 5
+                        && manager.tokenBalance(player.getUUID()) == 20,
+                "gear spends 1000 mB and three ingots, leaving charter tokens alone");
+        for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
+            player.getInventory().setItem(slot, new ItemStack(Items.DIRT, 64));
         }
-        helper.assertTrue(drops > 0, "redeem must grant at least one item");
-
-        helper.assertTrue(manager.redeemTokens(player), "second redeem must also succeed");
-        helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0,
-                "balance must reach exactly zero, was " + manager.tokenBalance(player.getUUID()));
-        helper.assertTrue(!manager.redeemTokens(player),
-                "a third redeem must refuse on the drained balance");
+        menu.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 250, "a full inventory must leave sap intact");
         helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_opts", batch = "sap_workshop")
+    public static void sapBrewsBucketsAndMovesThroughRootwick(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.SURVIVAL);
+        var jar = helper.absolutePos(new BlockPos(1, 1, 2));
+        var wick = jar.east();
+        var bowl = wick.east();
+        level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
+        level.setBlockAndUpdate(bowl, ModBlocks.RECLAIMING_BASIN.get().defaultBlockState());
+        player.moveTo(jar.getX() + 0.5, jar.getY(), jar.getZ() + 1.5);
+        var cap = net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK;
+        var from = level.getCapability(cap, jar, Direction.EAST);
+        var to = level.getCapability(cap, bowl, Direction.WEST);
+        helper.assertTrue(from != null && to != null, "standard block fluid capabilities are available");
+        player.getInventory().setItem(1, new ItemStack(ModItems.RETURN_KNOT.get()));
+        player.getInventory().setItem(2, new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
+        var hand = InteractionHand.MAIN_HAND;
+        player.setItemInHand(hand, new ItemStack(Items.WATER_BUCKET));
+        var jarHit = new BlockHitResult(Vec3.atCenterOf(jar), Direction.UP, jar, false);
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
+        helper.assertTrue(from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET)
+                        && player.getInventory().countItem(ModItems.RETURN_KNOT.get()) == 0
+                        && player.getInventory().countItem(ModItems.ASSIMILATION_ESSENCE.get()) == 0,
+                "water, Essence and a knot brew exactly one bucket");
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
+        helper.assertTrue(player.getItemInHand(hand).is(ModItems.RETURN_SAP_BUCKET.get())
+                        && from.getFluidInTank(0).isEmpty(), "an empty bucket retrieves a full bucket of sap");
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand,
+                new BlockHitResult(Vec3.atCenterOf(bowl), Direction.UP, bowl, false));
+        helper.assertTrue(to.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET),
+                "a sap bucket fills the basin");
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        from.fill(to.drain(1000, execute), execute);
+        level.setBlockAndUpdate(wick, ModBlocks.ROOTWICK.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING, Direction.EAST));
+        helper.succeedWhen(() -> {
+            int moved = to.getFluidInTank(0).getAmount();
+            helper.assertTrue(moved >= 25, "rootwick must deliver sap to the basin");
+            helper.assertTrue(moved <= 50 && moved + from.getFluidInTank(0).getAmount() == 1000,
+                    "rootwick must transfer at its slow rate without creating sap");
+        });
     }
 
     /**

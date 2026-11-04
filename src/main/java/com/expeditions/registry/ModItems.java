@@ -19,6 +19,16 @@ public final class ModItems {
     public static final DeferredItem<Item> DISRUPTION_CHARM = ITEMS.register(
             "disruption_charm",()->new com.expeditions.item.DisruptionCharmItem(new Item.Properties().stacksTo(1)));
 
+    public static final DeferredItem<Item> RETURN_KNOT = ITEMS.registerSimpleItem("return_knot");
+    public static final DeferredItem<Item> RETURN_SAP_BUCKET = ITEMS.register("return_sap_bucket",
+            () -> new net.minecraft.world.item.BucketItem(ModFluids.SAP.get(),
+                    new Item.Properties().craftRemainder(net.minecraft.world.item.Items.BUCKET).stacksTo(1)));
+    public static final DeferredItem<BlockItem> SAP_JAR = ITEMS.registerSimpleBlockItem("sap_jar", ModBlocks.SAP_JAR);
+    public static final DeferredItem<BlockItem> ROOTWICK = ITEMS.registerSimpleBlockItem("rootwick", ModBlocks.ROOTWICK);
+
+    public static final DeferredItem<BlockItem> RECLAIMING_BASIN = ITEMS.registerSimpleBlockItem(
+            "reclaiming_basin", ModBlocks.RECLAIMING_BASIN);
+
     public static final DeferredItem<BlockItem> EXPEDITION_TERMINAL_ITEM = ITEMS.registerSimpleBlockItem(
             "expedition_terminal", ModBlocks.EXPEDITION_TERMINAL);
 

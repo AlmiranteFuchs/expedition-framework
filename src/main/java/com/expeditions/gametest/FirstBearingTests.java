@@ -59,6 +59,8 @@ public final class FirstBearingTests {
             h.assertTrue(!manager.trainingComplete(owner.getUUID()), "entry does not grant the trophy");
             try {
                 manager.completeRun(owner);
+            h.assertTrue(owner.getInventory().countItem(ModItems.RETURN_KNOT.get()) == 1,
+                    "successful practice extraction grants one return knot");
                 h.fail("an early extraction must refuse");
             } catch (IllegalStateException expected) { }
             manager.activateCheckpoint(owner, ExpeditionManager.toPos(run.checkpoints().getFirst()));
@@ -69,6 +71,8 @@ public final class FirstBearingTests {
             h.assertTrue(run.securedTokens(owner.getUUID()) == 0, "repeatable failed practice cannot bank its extraction reward");
             h.assertTrue(!manager.trainingComplete(owner.getUUID()) && run.challengeEntities().isEmpty(), "the second mark still requires extraction");
             manager.completeRun(owner);
+            h.assertTrue(manager.reclaimingDimensions(owner.getUUID()).contains("minecraft:overworld"),
+                    "extraction records a permanent basin trace");
             h.assertTrue(manager.trainingComplete(owner.getUUID()) && manager.unlocks(owner.getUUID()).contains("expeditions:field_clear")
                     && run.tokensAwarded() == 8, "the novice trophy and field proof are awarded through ordinary extraction");
             var saved = ExpeditionSavedData.load(manager.savedData().save(new CompoundTag(), level.registryAccess()), level.registryAccess());

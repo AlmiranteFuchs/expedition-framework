@@ -94,7 +94,7 @@ public final class FrontierThreat {
                         Component.translatable("frontier.expeditions.stage."+Stage.values()[stage.ordinal()+1].name().toLowerCase(Locale.ROOT)),
                         remaining/60,String.format(Locale.ROOT,"%02d",remaining%60)));
         if(before==0 || FrontierAttention.stage(before,max)!=stage) {
-            player.sendSystemMessage(Component.translatable("frontier.expeditions.warning."+stage.name().toLowerCase(Locale.ROOT)));
+            player.displayClientMessage(Component.translatable("frontier.expeditions.warning."+stage.name().toLowerCase(Locale.ROOT)), true);
             level.playSound(null,player.blockPosition(),SoundEvents.AMETHYST_BLOCK_RESONATE,SoundSource.HOSTILE,.6f,stage==Stage.RECKONING?.5f:.8f);
         }
         if(stage.ordinal()>=Stage.HUNTED.ordinal()) {
@@ -140,7 +140,7 @@ public final class FrontierThreat {
             var tracked=new CompoundTag();tracked.putUUID("id",mob.getUUID());tracked.putLong("until",until);tracked.putBoolean("boss",bossDue);list.add(tracked);nearby++;
             if(bossDue) {
                 entry.putLong("nextBoss",now+3600);
-                player.sendSystemMessage(Component.translatable("frontier.expeditions.pursuer"));
+                player.displayClientMessage(Component.translatable("frontier.expeditions.pursuer"), true);
             }
         }
         if(bossDue) entry.putLong("nextBoss",Math.max(entry.getLong("nextBoss"),now+400));

@@ -217,14 +217,14 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   successful run (every checkpoint must be activated anyway) — they're for
   bonus flavor, not optional paths. Only `collect_items` and `time_limit`
   can go unfinished.
-- Token economy (milestone 7): `ExpeditionLedger.spendTokens` is the atomic
-  sink (deducts only when the balance covers the full cost; callers
-  `setDirty()`; negative rejected, zero succeeds). Two consumers: completion
-  `grantBonusDrops` (online members only, run's dimension pool) and
-  `/expeditions redeem` (`redeemTokens` — pool of the dimension the player
-  stands in; checks the pool is non-empty BEFORE spending). Pools are the
-  `expeditions:reward_items/<dimension path>` item tags + `default`
-  fallback — datapack surface; don't add per-item tables.
+- Token economy: `ExpeditionLedger.spendTokens` deducts only when the balance
+  covers the full cost. The Reclaiming Basin settles an exact quote only after
+  checking personal extraction proof, Return Sap, feedstock, and inventory room. The
+  `expeditions:reclaiming/` unlock prefix is reserved for durable personal
+  dimension traces. Older trophies and completed history can supply proof.
+  Bound Gear requires a Hard or Brutal extraction trace.
+  Completion bonus drops still use the `expeditions:reward_items/<dimension
+  path>` tags with the `default` fallback.
 - `ItemValuator` scores a stack from data components + NeoForge `c:` tags —
   modded items rank on the same scale automatically. `ItemRewards.draw`
   turns a value budget (tokens × `dropValuePerToken`) into weighted stacks

@@ -50,9 +50,13 @@ def gen():
     item('severance_core',lambda d:[d.polygon([(8,0),(14,6),(14,10),(8,15),(1,9),(2,5)],fill=METAL[0]),d.polygon([(8,2),(12,7),(8,13),(3,7)],fill=PALE[3]),d.line((8,3,4,7),fill=PALE[5]),d.rectangle((7,5,9,10),fill=AMBER[2]),d.point((7,5),fill=AMBER[4])])
     glass=Image.new('RGBA',(16,16),(0,0,0,0));g=ImageDraw.Draw(glass);g.rectangle((0,0,15,15),outline='#889b8f');g.line((2,2,2,13),fill='#e5eee0');g.line((3,2,3,7),fill='#b9cabb');save('block/machine_glass',glass)
     resin=panel(AMBER);save('block/machine_resin',resin)
-    chart=Image.new('RGBA',(16,16),PALE[3]);d=ImageDraw.Draw(chart);d.rectangle((0,0,15,15),outline=METAL[0]);d.rectangle((1,1,14,14),outline=COPPER[2]);d.line((3,3,12,3),fill=PALE[5]);d.line([(3,12),(5,9),(9,9),(12,5)],fill=COPPER[1],width=1)
-    for x,y in ((3,12),(5,9),(9,9),(12,5)):d.point((x,y),fill=AMBER[2])
-    d.line((3,5,6,5),fill=PALE[1]);d.line((3,6,5,6),fill=PALE[2]);save('block/terminal_chart',chart)
+    chart=Image.new('RGBA',(16,16),PALE[4]);d=ImageDraw.Draw(chart)
+    d.line([(0,0),(0,13),(2,15),(15,15)],fill=PALE[2])
+    d.line([(1,0),(13,0),(15,2)],fill=PALE[5])
+    d.line([(3,12),(6,9),(10,10),(12,6),(14,5)],fill=COPPER[1])
+    for x,y in ((3,12),(6,9),(10,10),(12,6)):d.point((x,y),fill=AMBER[2])
+    for y,length in ((3,7),(4,4),(6,3),(13,6)):d.line((2,y,2+length,y),fill=PALE[1])
+    save('block/terminal_chart',chart)
     item('dormant_flake',lambda d:[(d.polygon([(x,y),(x+3,y-2),(x+1,y+2),(x+3,y+3),(x,y+5),(x-2,y+3)],fill=PALE[0]),d.line([(x+2,y-1),(x,y+2),(x+1,y+3),(x-1,y+3)],fill=PALE[4],width=2)) for x,y in ((4,4),(10,7),(5,10))])
     def essence(d):
         d.polygon([(8,0),(11,4),(14,9),(13,13),(9,15),(4,14),(2,11),(4,6)],fill=PALE[0]);d.line([(8,1),(5,7),(3,11),(5,13),(8,14)],fill=PALE[4],width=2)
@@ -98,10 +102,90 @@ def gen():
         box([4,7,6],[6,8,10],'copper'),box([10,7,6],[12,8,10],'copper'),box([6,9,6],[10,13,10],'empty')]
     condenser=base+[box([8,3,6],[10,5,8],'copper'),box([6,5,4],[12,6,10],'copper'),box([6,13,4],[12,14,10],'copper'),box([7,6,5],[11,13,9],'glass'),box([8,6,6],[10,10,8],'resin'),box([5,4,4],[6,14,5]),box([12,4,9],[13,14,10]),box([8,14,6],[10,16,8],'iron'),box([3,13,6],[8,15,8],'copper'),box([2,8,6],[4,14,8],'copper'),box([2,4,6],[4,8,8]),box([3,7,5],[5,8,7],'copper'),box([3,3,4],[6,5,7],'glass'),box([4,3,5],[5,4,6],'resin')]
     terminal=[box([1,0,2],[5,2,6],'iron'),box([11,0,10],[15,2,14],'iron'),box([2,2,3],[4,9,5]),box([12,2,11],[14,11,13]),box([3,3,4],[13,5,12]),box([.25,8,3],[15.75,9,14],'bone',{'origin':[8,8,8],'axis':'x','angle':-45}),box([1,9,4],[15,9.125,13],'chart',{'origin':[8,8,8],'axis':'x','angle':-45}),box([14,7,8],[16,9,10],'copper')]
-    for face in terminal[6]['faces']:
-        terminal[6]['faces'][face]['texture']='#chart' if face=='up' else '#bone'
+    tilt=terminal[5]['rotation']
+    terminal[6]=box([4,9,4],[13,9.125,12],'chart',tilt)
+    for face,data in terminal[6]['faces'].items():
+        data['texture']='#chart' if face=='up' else '#bone'
+        if face=='up':data['uv']=[0,0,16,16]
+    # Paper clamp, resin seal, split graft and lever all follow the desk angle.
+    terminal[7:]=[
+        box([3.5,9.125,4.25],[13.5,9.65,5.15],'copper',tilt),
+        box([10,9.125,10],[12.5,9.5,11.75],'resin',tilt),
+        box([1,9,6],[3.25,10.2,12],'bone',tilt),
+        box([1.25,10.2,8.25],[3,11.75,11.25],'bone',tilt),
+        box([1.65,11.75,9],[2.65,13.25,10.5],'resin',tilt),
+        box([.75,11.75,8.65],[1.65,14,10.85],'bone',tilt),
+        box([2.65,11.75,8.65],[3.55,14,10.85],'bone',tilt),
+        box([13.7,9,8],[15.2,10,11],'copper',tilt),
+        box([14.1,10,9],[14.8,12.1,9.8],'copper',tilt),
+        box([13.65,12.1,8.65],[15.25,12.8,10.15],'bone',tilt),
+    ]
+    from machine_surface_mesh import exposed
+    basin=[
+        box([1,0,1],[4,2,4]), box([12,0,1],[15,2,4]),
+        box([1,0,12],[4,2,15]), box([12,0,12],[15,2,15]),
+        box([2,2,2],[14,4,14]), box([3,4,3],[13,5,13],'copper'),
+        box([2,5,2],[14,7,4],'copper'), box([2,5,12],[14,7,14],'copper'),
+        box([2,5,4],[4,7,12],'copper'), box([12,5,4],[14,7,12],'copper'),
+        box([1,7,1],[15,8,3],'copper'), box([1,7,13],[15,8,15],'copper'),
+        box([1,7,3],[3,8,13],'copper'), box([13,7,3],[15,8,13],'copper'),
+        box([6,5,6],[10,5.35,10],'resin'),
+        box([1,4,5],[3,9,8]), box([13,4,8],[15,9,11]),
+        box([4,4,13],[7,9,15]),
+    ]
+    write(Path('models/block/reclaiming_basin.json'),{
+        'parent':'minecraft:block/block','textures':textures,'elements':exposed(basin),
+        'render_type':'minecraft:cutout','ambientocclusion':False,
+    })
+    jar=[
+        box([2,0,2],[14,2,14],'bone'),
+        box([3,2,3],[13,3,13],'copper'), box([3,13,3],[13,14,13],'copper'),
+        box([4,3,4],[12,13,12],'glass'),
+        box([2,2,2],[4,14,4]), box([12,2,2],[14,14,4]),
+        box([2,2,12],[4,14,14]), box([12,2,12],[14,14,14]),
+        box([6,14,6],[10,15,10],'copper'),
+    ]
+    wick=[
+        box([5,5,0],[11,11,16]),
+        box([4,4,0],[12,12,2],'copper'), box([4.5,4.5,14],[11.5,11.5,16]),
+        box([7,7,0],[9,9,0.25],'resin'), box([7,7,15.75],[9,9,16],'resin'),
+        box([6,11,9],[10,12,12],'copper'),
+    ]
+    for name,parts in [('sap_jar',jar),('rootwick',wick)]:
+        write(Path('models/block/'+name+'.json'),{
+            'parent':'minecraft:block/block','textures':textures,'elements':exposed(parts),
+            'render_type':'minecraft:cutout','ambientocclusion':False,
+        })
+        write(Path('models/item/'+name+'.json'),{'parent':'expeditions:block/'+name})
+    variants={}
+    for direction,rotation in [('north',{}),('east',{'y':90}),('south',{'y':180}),('west',{'y':270}),
+                               ('down',{'x':90}),('up',{'x':270})]:
+        variants['facing='+direction]={'model':'expeditions:block/rootwick',**rotation}
+    write(Path('blockstates/rootwick.json'),{'variants':variants})
+    for name,x,z,base,step in [('reclaiming_basin',4.125,4.125,5.4,.4),('sap_jar',4.15,4.15,3.25,2.25)]:
+        parts=[{'apply':{'model':'expeditions:block/'+name}}]
+        for fill in range(1,5):
+            write(Path(f'models/block/{name}_sap_{fill}.json'),{
+                'parent':'minecraft:block/block','textures':{'resin':textures['resin']},
+                'elements':[box([x,base,z],[16-x,base+fill*step,16-z],'resin')],
+                'ambientocclusion':False,
+            })
+            parts.append({'when':{'sap_level':str(fill)},'apply':{'model':f'expeditions:block/{name}_sap_{fill}'}})
+        write(Path('blockstates/'+name+'.json'),{'multipart':parts})
+    item('return_knot',lambda d:[
+        d.polygon([(3,4),(8,1),(13,4),(14,10),(9,14),(3,12),(1,8)],fill=PALE[1]),
+        d.polygon([(4,5),(8,3),(12,5),(12,10),(8,12),(4,10)],fill=PALE[3]),
+        d.line([(4,7),(7,5),(9,7),(8,10),(11,9)],fill=AMBER[2],width=2),
+        d.point((7,5),fill=AMBER[4]),
+    ])
+    item('return_sap_bucket',lambda d:[
+        d.polygon([(2,4),(13,4),(12,13),(10,15),(5,15),(3,12)],fill=METAL[0]),
+        d.polygon([(3,5),(12,5),(11,13),(5,13)],fill=METAL[3]),
+        d.ellipse((2,2,13,7),fill=METAL[0]),
+        d.ellipse((3,3,12,6),fill=AMBER[2]),
+        d.line((4,4,8,4),fill=AMBER[4]),d.line((5,8,6,12),fill=PALE[4]),
+    ])
     for name,elements in [('stillness_dynamo',dynamo),('living_heart_engine',living),('severance_generator',severed),('essence_condenser',condenser),('expedition_terminal',terminal)]:
-        from machine_surface_mesh import exposed
         elements=exposed(elements)
         model={'parent':'minecraft:block/block','textures':textures,'elements':elements,'render_type':'minecraft:cutout','ambientocclusion':False}
         write(Path('models/block/'+name+'.json'),model)

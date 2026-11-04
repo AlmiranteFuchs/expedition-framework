@@ -30,6 +30,10 @@ public final class ModBlockEntities {
                     ModBlocks.STILLNESS_DYNAMO.get(),ModBlocks.ESSENCE_CONDENSER.get(),ModBlocks.LIVING_HEART_ENGINE.get(),ModBlocks.SEVERANCE_GENERATOR.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<com.expeditions.block.entity.FieldWardBlockEntity>> FIELD_WARD=
             BLOCK_ENTITIES.register("field_ward",()->BlockEntityType.Builder.of(com.expeditions.block.entity.FieldWardBlockEntity::new,ModBlocks.FIELD_WARD.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.expeditions.block.entity.SapVesselBlockEntity>> SAP_VESSEL =
+            BLOCK_ENTITIES.register("sap_vessel", () -> BlockEntityType.Builder.of(
+                    com.expeditions.block.entity.SapVesselBlockEntity::new,
+                    ModBlocks.RECLAIMING_BASIN.get(), ModBlocks.SAP_JAR.get(), ModBlocks.ROOTWICK.get()).build(null));
     private ModBlockEntities() {
     }
 }

@@ -144,7 +144,8 @@ public final class ExpeditionManager {
 
     /** The player's held progression keys, for diagnostics and commands. */
     public Set<String> unlocks(UUID playerId) {
-        return ledger.unlocks(playerId);
+        return ledger.unlocks(playerId).stream().filter(key -> !key.startsWith(RECLAIMING_TRACE) && !key.startsWith(RECLAIMING_GEAR))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
     /** The player's trophies, for diagnostics and commands. */
@@ -494,8 +495,8 @@ public final class ExpeditionManager {
             if (runLevel != null) {
                 extendRouteForMember(run, runLevel);
             }
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.party_joined"));
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.party_joined"), true);
             data.setDirty();
         }
         boolean needsCompass = !hasCompass(player);
@@ -505,7 +506,7 @@ public final class ExpeditionManager {
             forEachCompass(player, stack -> retarget(stack, run));
         }
         if (run.options().guided() && needsCompass) {
-            player.sendSystemMessage(Component.translatable("message.expeditions.guided_entry"));
+            player.displayClientMessage(Component.translatable("message.expeditions.guided_entry"), true);
         }
         // The portal may sit in a different dimension than the expedition;
         // teleport into the run's own level.
@@ -540,10 +541,7 @@ public final class ExpeditionManager {
     public ExpeditionRun activateCheckpoint(ServerPlayer player, BlockPos pos) {
         ExpeditionRun run = requireActive(player.getUUID());
         requireRunDimension(run, player.serverLevel());
-        for (ExpeditionObjective objective : run.activateCheckpoint(toWaypoint(pos))) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.objective_completed", objective.description()));
-        }
+        run.activateCheckpoint(toWaypoint(pos));
         JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CHECKPOINTS);
         for (UUID member : run.party()) {
             var online = server.getPlayerList().getPlayer(member);
@@ -564,8 +562,8 @@ public final class ExpeditionManager {
             grantArtifact(player, run);
             JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CARGO);
             run.markArtifactIssued();
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.artifact_recovered"));
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.artifact_recovered"), true);
         }
         // A checkpoint holding the defense device deploys it — the only
         // valid activation stage is its declared checkpoint.
@@ -586,8 +584,6 @@ public final class ExpeditionManager {
                     ledger.addTokens(member, share);
                     run.secureTokens(member, share);
                 }
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.checkpoint_secured", share));
             }
         }
         retargetPartyCompasses(run, player);
@@ -596,6 +592,12 @@ public final class ExpeditionManager {
         if (run.completedCheckpoints() >= 2) {
             clearChallengeEntities(run, player.serverLevel(),
                     toPos(run.checkpoints().get(run.completedCheckpoints() - 2)));
+        }
+        if (run.definition().defenseObjectiveAt(run.completedCheckpoints()).isEmpty()
+                && run.definition().artifactObjectiveAt(run.completedCheckpoints()).isEmpty()) {
+            player.displayClientMessage(Component.translatable(run.allCheckpointsDone()
+                    ? "message.expeditions.hollow_answers" : "message.expeditions.witness_answers",
+                    run.completedCheckpoints(), run.totalCheckpoints()), true);
         }
         triggerCheckpointChallenge(run, player);
         // The witness answers the compass: wood first, then a restrained chime.
@@ -629,21 +631,15 @@ public final class ExpeditionManager {
         ExpeditionRun run = requireActive(player.getUUID());
         requireRunDimension(run, player.serverLevel());
         long elapsed = run.elapsedTicks(player.serverLevel().getGameTime());
-        for (ExpeditionObjective objective : run.evaluateTimedObjectives(elapsed)) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.objective_completed", objective.description()));
-        }
+        run.evaluateTimedObjectives(elapsed);
         // Artifact delivery re-evaluates at every exit click like timed
         // objectives: the item must be in a member's hands at this moment.
         // It is consumed only AFTER complete() succeeds — a refused click
         // (other required objectives missing) must not destroy the cargo.
         HeldArtifact held = findHeldArtifact(run);
         for (ExpeditionObjective objective : run.definition().objectives()) {
-            if (objective.kind() == ObjectiveKind.RECOVER_ARTIFACT
-                    && run.deliverArtifact(objective.id(), held != null)) {
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.objective_completed",
-                        objective.description()));
+            if (objective.kind() == ObjectiveKind.RECOVER_ARTIFACT) {
+                run.deliverArtifact(objective.id(), held != null);
             }
         }
         run.complete();
@@ -655,7 +651,8 @@ public final class ExpeditionManager {
         if (held != null) {
             held.consume();
         }
-        if (!run.isRewarded()) {
+        boolean awardReturnKnots = !run.isRewarded();
+        if (awardReturnKnots) {
             int base = run.definition().totalReward(elapsed,
                     run.completedObjectiveIds(), run.options().bonusTimePercent());
             int scaled = PartyScaling.scaledTotal(base, run.party().size(),
@@ -685,10 +682,10 @@ public final class ExpeditionManager {
         }
         for (UUID member : run.party()) {
             ledger.addTrophy(member, run.definition().id());
-        }
-        if (run.options().guided()) {
-            player.sendSystemMessage(Component.translatable("message.expeditions.novice_awarded",
-                    Component.translatable("trophy.expeditions.expedition_novice")));
+            ledger.grantUnlock(member, RECLAIMING_TRACE + run.definition().dimension());
+            if (run.options().difficulty() == Difficulty.HARD || run.options().difficulty() == Difficulty.BRUTAL) {
+                ledger.grantUnlock(member, RECLAIMING_GEAR + run.definition().dimension());
+            }
         }
         data.recordCampaignCompletion(run.definition().dimension());
         ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
@@ -705,19 +702,6 @@ public final class ExpeditionManager {
                 ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
                 if (memberPlayer != null) {
                     JournalDiscovery.unlock(memberPlayer, com.expeditions.core.JournalChapter.LIBERATION);
-                    memberPlayer.sendSystemMessage(Component.translatable(
-                            "message.expeditions.dimension_won",
-                            run.definition().dimension()));
-                }
-            }
-        }
-        if (!run.definition().grants().isEmpty()) {
-            for (UUID member : run.party()) {
-                ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
-                if (memberPlayer != null) {
-                    memberPlayer.sendSystemMessage(Component.translatable(
-                            "message.expeditions.unlocked",
-                            String.join(", ", run.definition().grants())));
                 }
             }
         }
@@ -734,42 +718,96 @@ public final class ExpeditionManager {
                 player.getX(), player.getY() + 0.6, player.getZ(),
                 18, 0.3, 0.5, 0.3, 0.01);
         endRun(run);
+        if (awardReturnKnots) {
+            int count = run.options().difficulty() == Difficulty.HARD
+                    || run.options().difficulty() == Difficulty.BRUTAL ? 2 : 1;
+            for (UUID member : run.party()) {
+                var online = member.equals(player.getUUID()) ? player : server.getPlayerList().getPlayer(member);
+                if (online != null) {
+                    var knot = new ItemStack(ModItems.RETURN_KNOT.get(), count);
+                    if (!online.getInventory().add(knot)) online.drop(knot, false);
+                }
+            }
+        }
         return run;
     }
 
-    /**
-     * Token sink: converts the configured redeem cost into a supply draw from
-     * the reward pool of the dimension the player stands in — so supplies
-     * redeemed in the Nether look Netherish. The spend lands in the same
-     * atomic ledger save as balances always have.
-     *
-     * @return whether the cost was available and items were granted
-     */
-    public boolean redeemTokens(ServerPlayer player) {
-        int cost = ExpeditionsConfig.redeemTokenCost();
-        List<Item> pool = ItemRewards.pool(
-                player.serverLevel().dimension().location().toString());
-        if (pool.isEmpty()) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.redeem_no_pool"));
-            return false;
-        }
-        if (!ledger.spendTokens(player.getUUID(), cost)) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.redeem_no_tokens", cost));
-            return false;
-        }
-        int budget = (int) (cost * ExpeditionsConfig.bonusDropValuePerToken());
-        for (ItemStack drop : ItemRewards.draw(pool, budget, player.getRandom(),
-                ExpeditionsConfig.maxBonusDrops())) {
-            if (!player.getInventory().add(drop)) {
-                player.drop(drop, false);
+    private static final String RECLAIMING_GEAR = "expeditions:reclaiming_gear/";
+    private static final String RECLAIMING_TRACE = "expeditions:reclaiming/";
+
+    public List<String> reclaimingDimensions(UUID player) {
+        var dimensions = new java.util.TreeSet<String>();
+        for (String key : ledger.unlocks(player)) {
+            if (key.startsWith(RECLAIMING_TRACE)) {
+                String dimension = key.substring(RECLAIMING_TRACE.length());
+                if (ResourceLocation.tryParse(dimension) != null && dimension.contains(":")) dimensions.add(dimension);
             }
         }
-        data.setDirty();
-        player.sendSystemMessage(Component.translatable(
-                "message.expeditions.redeemed", cost));
+        // Previous saves already have personal trophies and recent extraction reports.
+        var trophies = ledger.trophies(player);
+        for (var definition : listStartable()) {
+            if (trophies.contains(definition.id())) dimensions.add(definition.dimension());
+        }
+        for (var report : data.history().entries(player)) {
+            if (report.outcome() == ExpeditionStatus.COMPLETED) dimensions.add(report.dimension());
+        }
+        return List.copyOf(dimensions);
+    }
+
+    boolean canReclaimGear(UUID player, String dimension) {
+        return ledger.hasUnlock(player, RECLAIMING_GEAR + dimension);
+    }
+
+    boolean reclaim(ServerPlayer player, String dimension, int slot,
+            com.expeditions.block.entity.SapVesselBlockEntity vessel) {
+        if (!reclaimingDimensions(player.getUUID()).contains(dimension)) return false;
+        var offers = ReclaimingOffers.forDimension(dimension);
+        if (slot < 0 || slot >= offers.size()) return false;
+        if (slot == 2 && !canReclaimGear(player.getUUID(), dimension)) return reclaimRefused(player, "gear");
+        var offer = offers.get(slot);
+        var tank = vessel.tank();
+        if (tank.getFluidAmount() < offer.sap()) return reclaimRefused(player, "sap");
+        var inventory = player.getInventory();
+        if (offer.feedCount() > 0 && inventory.items.stream().filter(stack -> stack.is(offer.feed())).mapToInt(ItemStack::getCount).sum() < offer.feedCount()) {
+            return reclaimRefused(player, "feed");
+        }
+        var cargo = offer.stack();
+        var bonus = offer.bonus();
+        long empty = inventory.items.stream().filter(ItemStack::isEmpty).count();
+        if (empty < emptySlotsNeeded(inventory, cargo) + emptySlotsNeeded(inventory, bonus)) {
+            return reclaimRefused(player, "room");
+        }
+        int remainingFeed = offer.feedCount();
+        for (var stack : inventory.items) {
+            if (remainingFeed == 0) break;
+            if (stack.is(offer.feed())) {
+                int consumed = Math.min(remainingFeed, stack.getCount());
+                stack.shrink(consumed);
+                remainingFeed -= consumed;
+            }
+        }
+        tank.drain(offer.sap(), net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+        inventory.add(cargo);
+        if (player.getRandom().nextInt(4) == 0) inventory.add(bonus);
+        inventory.setChanged();
+        player.displayClientMessage(Component.translatable("message.expeditions.basin_reclaimed"), true);
+        player.playNotifySound(SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.55f, 0.8f);
         return true;
+    }
+
+    private static int emptySlotsNeeded(net.minecraft.world.entity.player.Inventory inventory, ItemStack cargo) {
+        int remaining = cargo.getCount();
+        for (var stack : inventory.items) {
+            if (ItemStack.isSameItemSameComponents(stack, cargo)) {
+                remaining -= Math.max(0, stack.getMaxStackSize() - stack.getCount());
+            }
+        }
+        return Math.ceilDiv(Math.max(0, remaining), cargo.getMaxStackSize());
+    }
+
+    private static boolean reclaimRefused(ServerPlayer player, String reason) {
+        player.displayClientMessage(Component.translatable("message.expeditions.basin_" + reason), true);
+        return false;
     }
 
     /**
@@ -823,6 +861,7 @@ public final class ExpeditionManager {
             run.leaveParty(player.getUUID());
             removeCompasses(player);
             teleportToTerminal(player, run);
+            reportWithdrawal(run, player, reasonKey);
             data.setDirty();
             return run;
         }
@@ -901,8 +940,8 @@ public final class ExpeditionManager {
         }
         ExpeditionRun run = active.get();
         if (ExpeditionArtifactItem.isBoundTo(picked, run.runId())) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.artifact_recovered"));
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.artifact_recovered"), true);
         }
         boolean dirty = false;
         for (ExpeditionObjective objective : run.definition().objectives()) {
@@ -913,8 +952,8 @@ public final class ExpeditionManager {
                 continue;
             }
             if (run.addObjectiveProgress(objective.id(), picked.getCount())) {
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.objective_completed", objective.description()));
+                player.displayClientMessage(Component.translatable(
+                        "message.expeditions.objective_completed", objective.description()), true);
             }
             dirty = true;
         }
@@ -1068,67 +1107,29 @@ public final class ExpeditionManager {
                 reason, finalResult));
     }
 
-    /**
-     * The end-of-run summary every online member sees — a structured
-     * breakdown separating what was banked, what extraction paid, and what
-     * was lost: the legible part of "danger with counterplay". On failure
-     * the recorded cause is surfaced alongside the kept credits and the
-     * at-risk estimate (what completion would have paid at that moment).
-     */
+    /** Leave a single field report in chat. Detailed results remain in history. */
     private void broadcastSummary(ExpeditionRun run) {
         boolean completed = run.status() == ExpeditionStatus.COMPLETED;
-        // The at-risk estimate is the share the run would have settled now;
-        // when the run's dimension is gone there is nothing to estimate.
-        ServerLevel level = levelFor(run.definition().dimension());
-        int share;
-        if (level != null) {
-            int total = run.definition().totalReward(
-                    run.elapsedTicks(level.getGameTime()),
-                    run.completedObjectiveIds(), run.options().bonusTimePercent());
-            share = PartyScaling.memberShare(
-                    PartyScaling.scaledTotal(total, run.party().size(),
-                            ExpeditionsConfig.partyRewardBonusPerExtraMember())
-                            * run.options().difficulty().rewardPercent() / 100,
-                    run.party().size(), ExpeditionsConfig.partySplitRewards());
-        } else {
-            share = 0;
-        }
-        int objectives = run.definition().objectives().size();
         for (UUID member : run.party()) {
-            ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
-            if (memberPlayer == null) {
-                continue;
-            }
+            ServerPlayer player = server.getPlayerList().getPlayer(member);
+            if (player == null) continue;
             int secured = run.securedTokens(member);
             if (completed) {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_complete",
-                        run.definition().displayName()));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_progress",
-                        run.completedCheckpoints(), run.totalCheckpoints(),
-                        run.completedObjectiveIds().size(), objectives));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_rewards", secured,
-                        Math.max(0, share - secured), Math.max(secured, share),
-                        ledger.tokenBalance(member)));
+                String key = run.options().guided() ? "summary_home_novice"
+                        : run.definition().bigBad() ? "summary_home_liberated" : "summary_home";
+                player.sendSystemMessage(Component.translatable("message.expeditions." + key,
+                        run.definition().displayName(), Math.max(secured, run.tokensAwarded())));
             } else {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_failed",
-                        run.definition().displayName()));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_reason",
-                        Component.translatable("message.expeditions.fail_reason."
-                                + run.failReason().orElse("ended"))));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_progress",
-                        run.completedCheckpoints(), run.totalCheckpoints(),
-                        run.completedObjectiveIds().size(), objectives));
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.summary_kept", secured,
-                        Math.max(0, share - secured)));
+                reportWithdrawal(run, player, run.failReason().orElse("ended"));
             }
         }
+    }
+
+    private static void reportWithdrawal(ExpeditionRun run, ServerPlayer player, String reason) {
+        player.sendSystemMessage(Component.translatable("message.expeditions.summary_withdrawn",
+                run.definition().displayName(),
+                Component.translatable("message.expeditions.fail_reason." + reason),
+                run.securedTokens(player.getUUID())));
     }
 
     /** Applies the run's declared member effects (last while the run is active). */
@@ -1198,8 +1199,8 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.challenge_horde"));
+                memberPlayer.displayClientMessage(Component.translatable(
+                        "message.expeditions.challenge_horde"), true);
             }
         }
     }
@@ -1317,7 +1318,7 @@ public final class ExpeditionManager {
             ServerPlayer online = server.getPlayerList().getPlayer(member);
             if (online != null) {
                 JournalDiscovery.unlock(online, com.expeditions.core.JournalChapter.GUARDIAN);
-                online.sendSystemMessage(Component.translatable("message.expeditions.guardian_awakened"));
+                online.displayClientMessage(Component.translatable("message.expeditions.guardian_awakened"), true);
             }
         }
         return true;
@@ -1331,7 +1332,7 @@ public final class ExpeditionManager {
                 data.setDirty();
                 for (UUID member : run.party()) {
                     ServerPlayer online = server.getPlayerList().getPlayer(member);
-                    if (online != null) online.sendSystemMessage(Component.translatable("message.expeditions.guardian_defeated"));
+                    if (online != null) online.displayClientMessage(Component.translatable("message.expeditions.guardian_defeated"), true);
                 }
                 break;
             }
@@ -1388,9 +1389,9 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                memberPlayer.sendSystemMessage(Component.translatable(
+                memberPlayer.displayClientMessage(Component.translatable(
                         "message.expeditions.defense_started",
-                        objective.timeLimitTicks() / 20));
+                        objective.timeLimitTicks() / 20), true);
             }
         }
     }
@@ -1455,8 +1456,8 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
-                memberPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.device_destroyed"));
+                memberPlayer.displayClientMessage(Component.translatable(
+                        "message.expeditions.device_destroyed"), true);
             }
         }
         if (objective != null && objective.required() && run.isActive()) {
@@ -1497,9 +1498,9 @@ public final class ExpeditionManager {
                 for (UUID member : run.party()) {
                     ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
                     if (memberPlayer != null) {
-                        memberPlayer.sendSystemMessage(Component.translatable(
+                        memberPlayer.displayClientMessage(Component.translatable(
                                 "message.expeditions.objective_completed",
-                                survived.get().description()));
+                                survived.get().description()), true);
                     }
                 }
                 continue;

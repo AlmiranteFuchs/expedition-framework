@@ -28,7 +28,12 @@
     {
       "type": "patchouli:text",
       "title": "What can be used again",
-      "text": "Tokens can be exchanged with /expeditions redeem; the available pool follows the dimension you stand in. Put useful supplies aside before spending the whole balance on another contract."
+      "text": "The hollow leaves a return knot. Use a water bucket on a Sap Jar while carrying a knot and Essence to brew a bucket of Return Sap. Carry it by bucket, or feed it through a Rootwick pointing toward the basin. The basin knows the"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What can be used again",
+      "text": "traces you brought home. Worked stock and gear need feedstock as well as sap. Harder charters open Bound Gear."
     }
   ],
   "advancement": "expeditions:journal/extraction"

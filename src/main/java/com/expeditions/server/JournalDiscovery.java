@@ -23,7 +23,7 @@ public final class JournalDiscovery {
                 .anyMatch(stack -> stack.is(ModItems.EXPEDITION_FIELD_JOURNAL.get()))
                 || player.getOffhandItem().is(ModItems.EXPEDITION_FIELD_JOURNAL.get());
         if (hasBook) {
-            player.sendSystemMessage(Component.translatable("message.expeditions.journal_discovery"));
+            player.displayClientMessage(Component.translatable("message.expeditions.journal_discovery"), true);
             player.playNotifySound(SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.5f, 0.8f);
         }
     }

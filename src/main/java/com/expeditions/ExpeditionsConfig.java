@@ -411,10 +411,6 @@ public final class ExpeditionsConfig {
             .comment("Maximum stacks a single bonus-drop draw may grant.")
             .defineInRange("expeditions.rewards.maxBonusDrops", 8, 0, 64);
 
-    private static final ModConfigSpec.IntValue REDEEM_COST = BUILDER
-            .comment("Token cost of /expeditions redeem (one supply draw).")
-            .defineInRange("expeditions.rewards.redeemCost", 10, 1, 1_000_000);
-
     private static final ModConfigSpec.BooleanValue FRONTIER_ENABLED=BUILDER
             .comment("Escalating personal attention, hunts and pursuit guardians in uncleared dimensions.")
             .define("expeditions.frontier.enabled",true);
@@ -764,11 +760,6 @@ public final class ExpeditionsConfig {
     /** Maximum stacks a single draw may grant. */
     public static int maxBonusDrops() {
         return MAX_BONUS_DROPS.get();
-    }
-
-    /** Token cost of one redeemed supply draw. */
-    public static int redeemTokenCost() {
-        return REDEEM_COST.get();
     }
 
     private static Optional<ExpeditionDefinition> definition(String id, String name,

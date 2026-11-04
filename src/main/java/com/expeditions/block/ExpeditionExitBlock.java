@@ -71,11 +71,7 @@ public class ExpeditionExitBlock extends RouteMarkerBlock {
             if (walking && (!bound.get().allCheckpointsDone()
                     || (bound.get().definition().bigBad() && !bound.get().guardianDefeated()))) return;
             try {
-                ExpeditionRun run = manager.completeRun(serverPlayer);
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.expedition_completed",
-                        run.tokensAwarded(),
-                        manager.tokenBalance(serverPlayer.getUUID())));
+                manager.completeRun(serverPlayer);
             } catch (IllegalStateException e) {
                 if (walking) return; // Keep approaches quiet; timed/cargo gates are evaluated by completeRun above.
                 // A refused completion is either unfinished checkpoints or
@@ -86,15 +82,15 @@ public class ExpeditionExitBlock extends RouteMarkerBlock {
                         .orElse(List.of());
                 if (active.filter(run -> run.definition().bigBad() && run.allCheckpointsDone()
                         && !run.guardianDefeated()).isPresent()) {
-                    player.sendSystemMessage(Component.translatable("message.expeditions.guardian_blocks_exit"));
+                    player.displayClientMessage(Component.translatable("message.expeditions.guardian_blocks_exit"), true);
                 } else if (!missing.isEmpty()) {
-                    player.sendSystemMessage(Component.translatable(
+                    player.displayClientMessage(Component.translatable(
                             "message.expeditions.objectives_missing",
                             missing.stream().map(ExpeditionObjective::description)
-                                    .collect(Collectors.joining(", "))));
+                                    .collect(Collectors.joining(", "))), true);
                 } else {
-                    player.sendSystemMessage(Component.translatable(
-                            "message.expeditions.not_finished"));
+                    player.displayClientMessage(Component.translatable(
+                            "message.expeditions.not_finished"), true);
                 }
             }
     }

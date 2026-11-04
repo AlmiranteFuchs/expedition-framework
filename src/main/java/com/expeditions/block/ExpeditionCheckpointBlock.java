@@ -1,6 +1,5 @@
 package com.expeditions.block;
 
-import com.expeditions.core.ExpeditionRun;
 import com.expeditions.server.ExpeditionManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -27,19 +26,10 @@ public class ExpeditionCheckpointBlock extends RouteMarkerBlock {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             ExpeditionManager manager = ExpeditionManager.get(level.getServer());
             try {
-                ExpeditionRun run = manager.activateCheckpoint(serverPlayer, pos);
-                if (run.allCheckpointsDone()) {
-                    player.sendSystemMessage(Component.translatable(
-                            "message.expeditions.all_checkpoints",
-                            ExpeditionTerminalBlock.format(run.exit())));
-                } else {
-                    player.sendSystemMessage(Component.translatable(
-                            "message.expeditions.checkpoint_reached",
-                            run.completedCheckpoints(), run.totalCheckpoints()));
-                }
+                manager.activateCheckpoint(serverPlayer, pos);
             } catch (IllegalStateException e) {
-                player.sendSystemMessage(Component.translatable(
-                        "message.expeditions.wrong_checkpoint"));
+                player.displayClientMessage(Component.translatable(
+                        "message.expeditions.wrong_checkpoint"), true);
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);

@@ -28,6 +28,9 @@ public class ExpeditionsMod {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ExpeditionsMod(IEventBus modEventBus, ModContainer modContainer) {
+        com.expeditions.registry.ModFluids.TYPES.register(modEventBus);
+        com.expeditions.registry.ModFluids.FLUIDS.register(modEventBus);
+        modEventBus.addListener(com.expeditions.block.entity.SapVesselBlockEntity::registerCapabilities);
         ModBlocks.BLOCKS.register(modEventBus);
         com.expeditions.registry.ModFeatures.FEATURES.register(modEventBus);
         modEventBus.addListener(com.expeditions.block.entity.ResonanceMachineBlockEntity::registerCapabilities);

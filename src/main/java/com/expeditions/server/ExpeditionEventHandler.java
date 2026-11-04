@@ -528,15 +528,15 @@ public final class ExpeditionEventHandler {
     }
 
     /**
-     * `/expeditions redeem` — the token sink: spends the configured cost on a
-     * supply draw from the current dimension's reward item pool.
+     * `/expeditions redeem` points players to the basin that settles supply claims.
      */
     private static int redeem(CommandContext<CommandSourceStack> ctx) {
         ServerPlayer player = player(ctx);
         if (player == null) {
             return 0;
         }
-        return ExpeditionManager.get(player.server).redeemTokens(player) ? 1 : 0;
+        player.sendSystemMessage(Component.translatable("message.expeditions.basin_redeem_hint"));
+        return 1;
     }
 
     /**
@@ -562,11 +562,9 @@ public final class ExpeditionEventHandler {
                 argOr(ctx, "checkpoints", Integer.class, 0),
                 argOr(ctx, "time", Integer.class, 0));
         try {
-            ExpeditionRun run = ExpeditionManager.get(player.server)
+            ExpeditionManager.get(player.server)
                     .startRun(player, player.blockPosition(), options);
-            player.sendSystemMessage(Component.translatable(
-                    "message.expeditions.expedition_started",
-                    run.definition().displayName()));
+            player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
             return 1;
         } catch (IllegalStateException e) {
             player.sendSystemMessage(Component.literal(e.getMessage()));
@@ -591,7 +589,6 @@ public final class ExpeditionEventHandler {
         }
         try {
             ExpeditionManager.get(player.server).failRun(player, "abandoned");
-            player.sendSystemMessage(Component.translatable("message.expeditions.expedition_abandoned"));
             return 1;
         } catch (IllegalStateException e) {
             player.sendSystemMessage(Component.translatable("message.expeditions.status_none"));

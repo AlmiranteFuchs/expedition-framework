@@ -7,13 +7,13 @@
     {
       "type": "patchouli:spotlight",
       "item": "expeditions:expedition_terminal",
-      "text": "The terminal fixes a route through country it has not made safe. A successful deployment is an address and a way back, not a promise about the journey.",
+      "text": "The Wayroot is a graft kept under a copper arm. Pale bark holds it in shape. Fungal tissue feels for distant traces, and amber carries the Resonance between them. The copper guides where that current can go.",
       "title": "The threshold"
     },
     {
       "type": "patchouli:text",
       "title": "An address",
-      "text": "Choose a charter, difficulty and route length. Read its requirements, objectives and rewards before starting. A refused route does not deploy markers or take its entry payment."
+      "text": "Choose a charter and read its requirements before sealing it. The graft can find an address and a way home. It cannot promise safe footing."
     },
     {
       "type": "patchouli:text",

@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "expeditions:return_sap",
+    "expeditions:flowing_return_sap"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "expeditions:block/rootwick"
+    },
+    "facing=east": {
+      "model": "expeditions:block/rootwick",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "expeditions:block/rootwick",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "expeditions:block/rootwick",
+      "y": 270
+    },
+    "facing=down": {
+      "model": "expeditions:block/rootwick",
+      "x": 90
+    },
+    "facing=up": {
+      "model": "expeditions:block/rootwick",
+      "x": 270
+    }
+  }
+}

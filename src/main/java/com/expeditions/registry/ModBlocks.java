@@ -30,6 +30,21 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .lightLevel(state -> 7)));
 
+    public static final DeferredHolder<Block, Block> RECLAIMING_BASIN = BLOCKS.register(
+            "reclaiming_basin", () -> new com.expeditions.block.ReclaimingBasinBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.5f)
+                            .sound(SoundType.COPPER).noOcclusion()));
+
+    public static final DeferredHolder<Block, net.minecraft.world.level.block.LiquidBlock> RETURN_SAP = BLOCKS.register(
+            "return_sap", () -> new net.minecraft.world.level.block.LiquidBlock(ModFluids.SAP.get(),
+                    BlockBehaviour.Properties.of().noCollission().strength(100).noLootTable().liquid()));
+    public static final DeferredHolder<Block, Block> SAP_JAR = BLOCKS.register("sap_jar",
+            () -> new com.expeditions.block.SapVesselBlock(BlockBehaviour.Properties.of().strength(2)
+                    .sound(SoundType.WOOD).noOcclusion(), com.expeditions.block.SapVesselBlock.Kind.JAR));
+    public static final DeferredHolder<Block, Block> ROOTWICK = BLOCKS.register("rootwick",
+            () -> new com.expeditions.block.SapVesselBlock(BlockBehaviour.Properties.of().strength(2)
+                    .sound(SoundType.WOOD).noOcclusion(), com.expeditions.block.SapVesselBlock.Kind.WICK));
+
     /**
      * Route markers placed by the server while a run is active. They are
      * indestructible so a run cannot become unwinnable through breaking them.

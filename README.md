@@ -181,7 +181,6 @@ splitRewards = true              # false = every member gets the full pool
 bonusDrops         = true  # item drops alongside tokens on completion
 dropValuePerToken  = 1.0   # item-value budget granted per awarded token
 maxBonusDrops      = 8     # max stacks a single draw may grant
-redeemCost         = 10    # token cost of /expeditions redeem
 
 [expeditions.challenges]
 enabled = true                   # roll a challenge on each checkpoint
@@ -400,7 +399,7 @@ Precedence and rules:
 
 ### Reward pools
 
-Completion bonus drops and `/expeditions redeem` draw from the item tag
+Completion bonus drops draw from the item tag
 `expeditions:reward_items/<dimension path>` — e.g. `reward_items/overworld`,
 `reward_items/the_nether` — falling back to `reward_items/default` for
 dimensions without a pool. They are plain tags, so any datapack or mod can
@@ -617,8 +616,17 @@ chunk, and validate on real block state — not heightmap assumptions.
 - **Bonus drops** — completed expeditions also grant item supplies: each
   member's token share converts to an item-value budget drawn from the run's
   own dimension's reward pool, so Nether completions pay Netherish loot.
-- **Token redeem** — `/expeditions redeem` spends the configured token cost
-  for one supply draw from the pool of the dimension the player stands in.
+- **Return Sap** — completed expeditions award a return knot. Right-click a
+  Sap Jar with a water bucket while carrying a knot and one Essence. This brews
+  1,000 mB. Use empty buckets to move it by hand. A jar holds 4,000 mB and a
+  Basin holds 2,000 mB. A Rootwick sends 25 mB per second toward its copper
+  outlet, horizontally or downward. Create can mix the same ingredients and
+  move the sap through the standard block fluid capability.
+- **Reclaiming Basin** — choose a recovered dimension and a cache. Loose
+  Gatherings cost 250 mB, Worked Stock costs 500 mB plus raw feedstock, and
+  Bound Gear costs 1,000 mB plus crafting material. Hard and Brutal
+  extractions open Bound Gear for their dimension. Each cache shows its
+  guaranteed haul and a one-in-four bonus. Tokens still cover charter fees.
 - **Tier-weighted pools** — drop chances weight by `ItemValuator`, which
   scores items from their own data components (rarity, food, durability,
   attribute modifiers) plus the NeoForge `c:` convention tags (gems, ingots,
