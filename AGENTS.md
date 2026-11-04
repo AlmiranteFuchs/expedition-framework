@@ -2,6 +2,19 @@
 
 Guidance for coding agents working on this repository.
 
+## Unattended milestone work
+
+When the owner asks for sustained or all-day work, treat each tested commit
+and published release as a checkpoint. Continue directly into the next
+roadmap item while the session is available. Batch related changes for
+verification and keep each published release tested. After the roadmap,
+continue with game feel, design, and textures as requested.
+
+A scheduled wake-up resumes the broader assignment. Publishing one slice
+does not finish it. If a real limit or blocker stops progress, record the last
+verified commit or release, the next concrete step, and what actually stopped
+the session. Report a quota limit only when there is evidence of one.
+
 ## Project
 
 NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapper,
