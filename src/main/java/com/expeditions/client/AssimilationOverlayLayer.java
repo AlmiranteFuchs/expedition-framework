@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
 import net.minecraft.world.entity.LivingEntity;
 
-/** Sparse bark lesions over the native animated skin. No bright body-wide film. */
+/** Matte bark plates and sparse amber seams over the native animated skin. */
 public class AssimilationOverlayLayer<T extends LivingEntity, M extends EntityModel<T>> extends RenderLayer<T, M> {
     public AssimilationOverlayLayer(RenderLayerParent<T, M> renderer) { super(renderer); }
     @Override
@@ -29,6 +29,8 @@ public class AssimilationOverlayLayer<T extends LivingEntity, M extends EntityMo
         float pulse = (float)PulseWave.amplitudeAt(entity.level().getGameTime() + partialTick,
                 0, entity.getUUID().getMostSignificantBits());
         int overlay = LivingEntityRenderer.getOverlayCoords(entity, 0);
+        getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.entityTranslucent(textures.get().bark())),
+                light, overlay, FastColor.ARGB32.color((int)(255 * (.43f + .52f * taken)), 255, 250, 240));
         getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.entityTranslucent(textures.get().scars())), light,
                 overlay, FastColor.ARGB32.color((int)(255 * (.60f + .30f * taken)), 235, 229, 216));
         // Small resin fissures are emissive. Cap RGB as well as alpha for additive blending.

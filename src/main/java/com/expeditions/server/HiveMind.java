@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
@@ -18,6 +19,8 @@ import net.minecraft.world.entity.player.Player;
 /** Local, decentralized hive awareness: no global targets, cross-world maps or forced chunk loads. */
 public final class HiveMind {
     private static final ResourceLocation SLOW = ResourceLocation.parse("expeditions:hive_languor");
+    private static final AttributeModifier LANGUOR = new AttributeModifier(SLOW, -.30,
+            AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
     private HiveMind() { }
     public static boolean infected(LivingEntity entity) {
         return entity.getData(ModAttachments.ASSIMILATED)>0;
@@ -33,9 +36,10 @@ public final class HiveMind {
                 && !(candidate instanceof Mob && infected(candidate)) && !mob.isAlliedTo(candidate);
     }
     public static void tick(Mob mob) {
-        var speed=mob.getAttribute(Attributes.MOVEMENT_SPEED);
-        if(!active(mob)) {
-            if(speed!=null) speed.removeModifier(SLOW);
+        boolean infected = active(mob);
+        applyLanguor(mob.getAttribute(Attributes.MOVEMENT_SPEED), infected);
+        applyLanguor(mob.getAttribute(Attributes.FLYING_SPEED), infected);
+        if(!infected) {
             if(mob.hasData(ModAttachments.HIVE_FOCUS)) {
                 var old=mob.getData(ModAttachments.HIVE_FOCUS);
                 if(old.target()!=null && mob.getTarget()==old.target()) mob.setTarget(null);
@@ -44,8 +48,6 @@ public final class HiveMind {
             return;
         }
         if((mob.tickCount+mob.getId())%20==0) {
-            if(speed!=null && speed.getModifier(SLOW)==null)
-                speed.addTransientModifier(new AttributeModifier(SLOW,-.15,AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
             if(mob.goalSelector.getAvailableGoals().stream().noneMatch(g->g.getGoal() instanceof HiveMindGoal))
                 mob.goalSelector.addGoal(4,new HiveMindGoal(mob));
         }
@@ -55,6 +57,12 @@ public final class HiveMind {
             mob.setTarget(target);
             faceTarget(mob,target);
         }
+    }
+
+    private static void applyLanguor(AttributeInstance speed, boolean infected) {
+        if (speed == null) return;
+        if (!infected) speed.removeModifier(SLOW);
+        else if (speed.getModifier(SLOW) == null) speed.addTransientModifier(LANGUOR);
     }
 
     public static LivingEntity targetFor(Mob mob) {

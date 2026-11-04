@@ -166,10 +166,10 @@ public final class InfectionContactTests {
             h.assertTrue(HiveMind.targetFor(peer)==threat,"a peer must share the same perceived attacker");
             double original=peer.getAttributeValue(Attributes.MOVEMENT_SPEED);
             peer.tickCount=40-Math.floorMod(peer.getId(),20);HiveMind.tick(peer);
-            h.assertTrue(Math.abs(peer.getAttributeValue(Attributes.MOVEMENT_SPEED)-original*.85)<.00001,
+            h.assertTrue(Math.abs(peer.getAttributeValue(Attributes.MOVEMENT_SPEED)-original*.70)<.00001,
                     "infected bodies must move fifteen percent slower");
             peer.tickCount+=20;HiveMind.tick(peer);
-            h.assertTrue(Math.abs(peer.getAttributeValue(Attributes.MOVEMENT_SPEED)-original*.85)<.00001,"slowdown must not stack");
+            h.assertTrue(Math.abs(peer.getAttributeValue(Attributes.MOVEMENT_SPEED)-original*.70)<.00001,"slowdown must not stack");
             h.assertTrue(peer.getTarget()==threat && peer.getType()==EntityType.COW,"shared pursuit must preserve native species");
             peer.addEffect(new MobEffectInstance(ModEffects.ASSIMILATION_DISRUPTION,100));peer.tickCount+=20;HiveMind.tick(peer);
             h.assertTrue(HiveMind.targetFor(peer)==null && Math.abs(peer.getAttributeValue(Attributes.MOVEMENT_SPEED)-original)<.00001,

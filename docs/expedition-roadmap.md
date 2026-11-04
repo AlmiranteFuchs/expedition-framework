@@ -775,3 +775,11 @@ stage roughly 15–18 blocks out at the default range and leave 12 blocks
 around players. In open terrain the search begins behind the witness's
 activator. A quiet wood crack marks the incoming side. The alpha.38 sound
 wiring was removed after the listening pass.
+
+### Infected mob presentation — alpha.40
+
+Infected mobs carry matte pale-bark plates beneath their resin seams. The
+plates use the host skin's alpha mask, and the stage controls how strongly
+they show. Short body shudders grow stronger with the infection. The hive
+reduces native movement and flight speed attributes by 30 percent where
+present. The modifier clears when the host is disrupted or cleansed.
