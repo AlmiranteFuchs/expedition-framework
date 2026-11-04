@@ -2,9 +2,13 @@ package com.expeditions.core;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** Generated campaign missions use the same authoritative requirements and boss proof as authored ones. */
 public final class FrontierProgression {
+    public static final int MASTERY_CHECKPOINTS = 3;
+    public static final String EXTRACTION_TRACE_PREFIX = "expeditions:reclaiming/";
+
     private FrontierProgression() { }
     public static ExpeditionDefinition prepare(ExpeditionDefinition base,boolean homePrepared) {
         if(homePrepared || base.dimension().equals("minecraft:overworld")) return base;
@@ -33,6 +37,25 @@ public final class FrontierProgression {
         return new ExpeditionDefinition(aftergrowthId(dimension), "Aftergrowth Survey", 0, dimension,
                 new RouteGeneration(2, 28, 48, 28, 48, 6, 64, 128),
                 4, 0, 0, List.of(), ExpeditionModifiers.NONE,
-                java.util.Set.of(), java.util.Set.of(), 0, CampaignState.CLEARED, false);
+                Set.of(), Set.of(), 0, CampaignState.CLEARED, false);
+    }
+
+    public static String masteryId(String dimension) {
+        return "expeditions:mastery/" + dimension.replace(':', '/');
+    }
+
+    public static boolean isMastery(ExpeditionDefinition definition) {
+        return !definition.bigBad() && definition.minCampaignState() == CampaignState.CLEARED
+                && definition.id().equals(masteryId(definition.dimension()));
+    }
+
+    public static ExpeditionDefinition mastery(String dimension) {
+        return new ExpeditionDefinition(masteryId(dimension), "Lasting Graft", 2, dimension,
+                new RouteGeneration(MASTERY_CHECKPOINTS, 44, 72, 44, 72, 6, 96, 160),
+                28, 0, 0, List.of(
+                        ExpeditionObjective.recoverArtifact("scion", "Carry the last scion to the Hollow", true, 2, 0),
+                        ExpeditionObjective.defendDevice("graft", "Hold the graft while it takes", true, 3, 35 * 20, 6)),
+                ExpeditionModifiers.NONE, Set.of(EXTRACTION_TRACE_PREFIX + dimension), Set.of(),
+                8, CampaignState.CLEARED, false);
     }
 }

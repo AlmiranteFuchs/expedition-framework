@@ -41,6 +41,11 @@ public final class AftergrowthTests {
                 helper.assertTrue(manager.activeRun(owner.getUUID()).isEmpty(), "the refusal places no run");
             }
             data.setDimensionCleared(dimension);
+            String masteryId = FrontierProgression.masteryId(dimension);
+            var mastery = manager.listStartable().stream().filter(d -> d.id().equals(masteryId)).findFirst().orElseThrow();
+            data.ledger().addTokens(owner.getUUID(), mastery.costTokens());
+            helper.assertTrue(!manager.missingRequirements(owner.getUUID(), mastery).isSatisfied(),
+                    "a cleared dimension and the fee alone do not give the host a personal trace");
             int pressure = data.pressure(dimension);
             var run = manager.startRun(owner, desk, request);
             helper.assertTrue(run.totalCheckpoints() == 2 && run.options().difficulty() == Difficulty.STANDARD
@@ -65,6 +70,22 @@ public final class AftergrowthTests {
             helper.assertTrue(data.pressure(dimension) == pressure, "a return to cleared ground does not stir the Bloom");
             helper.assertTrue(manager.listStartable().stream().anyMatch(d -> d.id().equals(id)),
                     "a settled survey remains available");
+            helper.assertTrue(manager.missingRequirements(owner.getUUID(), mastery).isSatisfied(),
+                    "the quiet extraction earns the trace needed to host Lasting Graft");
+
+            var graft = manager.startRun(owner, desk, new ExpeditionOptions(masteryId, Difficulty.RELAXED, 2, 150));
+            helper.assertTrue(graft.totalCheckpoints() == 3 && graft.options().difficulty() == Difficulty.HARD,
+                    "Lasting Graft always uses three marks at Hard difficulty");
+            manager.enterPortal(owner, ExpeditionManager.toPos(graft.portal()));
+            for (var checkpoint : graft.checkpoints()) {
+                manager.activateCheckpoint(owner, ExpeditionManager.toPos(checkpoint));
+            }
+            helper.assertTrue(graft.artifactIssued() && graft.defense().isPresent(),
+                    "the mastery route issues its scion and begins the graft defense");
+            helper.assertTrue(graft.missingRequiredObjectives().stream().anyMatch(o -> o.id().equals("graft")),
+                    "the Hollow stays closed until the graft defense finishes");
+            helper.assertTrue(data.pressure(dimension) == pressure,
+                    "a mastery charter does not rekindle dimension pressure");
         } finally {
             if (manager.activeRun(guest.getUUID()).isPresent()) manager.failRun(guest);
             if (manager.activeRun(owner.getUUID()).isPresent()) manager.failRun(owner);

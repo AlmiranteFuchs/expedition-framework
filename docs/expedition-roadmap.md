@@ -694,3 +694,12 @@ say about the player's next outing.
 
 - [Deep Rock Galactic Season 01](https://www.deeprockgalactic.com/season-01)
 - [Alex's Caves project page](https://www.curseforge.com/minecraft/mc-mods/alexs-caves)
+
+### Post-clearance mastery — alpha.31
+
+Lasting Graft is a fixed three-mark Hard charter. A host with a personal
+extraction trace can offer eight tokens to open it in a cleared dimension.
+Recover a living scion at the second mark and hold the graft at the third
+before carrying the scion home. Local threats can answer the defense, while
+the dimension stays cleared and its background Bloom pressure stays quiet.
+Extraction grants the usual Hard gear proof and two Return Knots.

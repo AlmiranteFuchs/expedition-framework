@@ -118,7 +118,15 @@ public class ExpeditionMenu extends ChestMenu {
         return !startable.isEmpty() && com.expeditions.core.FrontierProgression.isAftergrowth(startable.get(expeditionIndex));
     }
 
-    private boolean fixedRoute() { return guided() || aftergrowth(); }
+    private boolean mastery() {
+        return !startable.isEmpty() && com.expeditions.core.FrontierProgression.isMastery(startable.get(expeditionIndex));
+    }
+
+    private boolean fixedRoute() { return guided() || aftergrowth() || mastery(); }
+
+    private int fixedCheckpointCount() {
+        return mastery() ? com.expeditions.core.FrontierProgression.MASTERY_CHECKPOINTS : 2;
+    }
 
     private ExpeditionOptions options() {
         return new ExpeditionOptions(startable.isEmpty()
@@ -271,12 +279,13 @@ public class ExpeditionMenu extends ChestMenu {
                         "gui.expeditions.expedition", lore));
             }
             List<Component> brief = new ArrayList<>();
-            int checkpoints = fixedRoute() ? 2
+            int checkpoints = fixedRoute() ? fixedCheckpointCount()
                     : CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]
                     : selected.route() instanceof com.expeditions.core.RouteGeneration generated
                             ? generated.checkpoints() : ((com.expeditions.core.ExpeditionRoute) selected.route()).checkpoints().size();
             brief.add(Component.literal("Route: " + checkpoints + " checkpoints, then extraction"));
             if (aftergrowth()) brief.add(Component.translatable("gui.expeditions.aftergrowth_brief"));
+            if (mastery()) brief.add(Component.translatable("gui.expeditions.mastery_brief"));
             int bonuses = selected.bonusTokens() + selected.objectives().stream().mapToInt(o -> o.bonusTokens()).sum();
             bonuses += selected.commissionPool().stream().mapToInt(o -> o.bonusTokens()).max().orElse(0);
             if (guided()) {
@@ -329,7 +338,8 @@ public class ExpeditionMenu extends ChestMenu {
             container.setItem(SLOT_READINESS, button(ready ? Items.LIME_DYE : Items.RED_DYE,
                     "gui.expeditions.requirements", requirements));
         }
-        Difficulty difficulty = fixedRoute() ? Difficulty.STANDARD : Difficulty.values()[difficultyIndex];
+        Difficulty difficulty = mastery() ? Difficulty.HARD
+                : fixedRoute() ? Difficulty.STANDARD : Difficulty.values()[difficultyIndex];
         container.setItem(SLOT_DIFFICULTY, button(Items.IRON_SWORD,
                 "gui.expeditions.difficulty",
                 List.of(Component.literal(difficulty.name()),
@@ -355,6 +365,9 @@ public class ExpeditionMenu extends ChestMenu {
     }
 
     private static String proofHint(String key) {
+        if (key.startsWith(com.expeditions.core.FrontierProgression.EXTRACTION_TRACE_PREFIX)) {
+            return "Extract from this dimension to bring back a personal trace.";
+        }
         return switch (key) {
             case "expeditions:field_clear" -> "Complete Field Survey or First Bearing to earn its proof.";
             case "expeditions:salvage_clear" -> "Complete Deep Salvage to earn its proof.";
@@ -366,7 +379,7 @@ public class ExpeditionMenu extends ChestMenu {
 
     private String routeSummary() {
         if (startable.isEmpty()) return "Unavailable";
-        if (fixedRoute()) return "2 checkpoints";
+        if (fixedRoute()) return fixedCheckpointCount() + " checkpoints";
         var route = startable.get(expeditionIndex).route();
         if (route instanceof com.expeditions.core.ExpeditionRoute authored) return authored.checkpoints().size() + " (authored)";
         int count = CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]

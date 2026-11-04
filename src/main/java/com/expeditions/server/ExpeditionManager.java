@@ -218,7 +218,9 @@ public final class ExpeditionManager {
                         .findFirst()
                         .orElseThrow(() -> new IllegalStateException(
                                 "Unknown or unavailable expedition: " + requested.expeditionId()));
-        if (FrontierThreat.rulesActive() && !FrontierProgression.isAftergrowth(definition)) {
+        boolean aftergrowth = FrontierProgression.isAftergrowth(definition);
+        boolean mastery = FrontierProgression.isMastery(definition);
+        if (FrontierThreat.rulesActive() && !aftergrowth && !mastery) {
             definition = prepareFrontier(definition);
         }
         boolean guided = ExpeditionOptions.FIRST_BEARING.equals(definition.id());
@@ -229,10 +231,11 @@ public final class ExpeditionManager {
                 || !(definition.route() instanceof RouteGeneration))) {
             throw new IllegalStateException("First Bearing needs a generated Overworld survey route");
         }
-        boolean aftergrowth = FrontierProgression.isAftergrowth(definition);
         var options = guided ? new ExpeditionOptions(definition.id(), Difficulty.STANDARD,
                 ExpeditionOptions.GUIDED_CHECKPOINTS, 0, true)
                 : aftergrowth ? new ExpeditionOptions(definition.id(), Difficulty.STANDARD, 2, 0, requested.solo())
+                : mastery ? new ExpeditionOptions(definition.id(), Difficulty.HARD,
+                        FrontierProgression.MASTERY_CHECKPOINTS, 0, requested.solo())
                 : requested;
         RequirementCheck requirements = ledger.checkRequirements(
                 player.getUUID(), definition,
@@ -382,7 +385,7 @@ public final class ExpeditionManager {
         }
         // Every expedition stirs the organism a little — pressure is the
         // dimension-wide threat counter hordes and waves read.
-        if (!aftergrowth) {
+        if (!aftergrowth && !mastery) {
             ExpeditionEventHandler.stirPressure(data, level, definition.dimension(),
                     ExpeditionTuning.integer(definition.dimension(), "pressure.per_run_start",
                             ExpeditionsConfig.pressurePerRunStart()));
@@ -462,6 +465,8 @@ public final class ExpeditionManager {
             if (!data.isDimensionCleared(dimension)) continue;
             var survey = FrontierProgression.aftergrowth(dimension);
             if (!startable.containsKey(survey.id()) && isStartable(survey)) offered.add(survey);
+            var mastery = FrontierProgression.mastery(dimension);
+            if (!startable.containsKey(mastery.id()) && isStartable(mastery)) offered.add(mastery);
         }
         return List.copyOf(offered);
     }
@@ -526,7 +531,8 @@ public final class ExpeditionManager {
             run.joinParty(player.getUUID());
             applyMemberEffects(run, player);
             ServerLevel runLevel = levelFor(run.definition().dimension());
-            if (runLevel != null && !FrontierProgression.isAftergrowth(run.definition())) {
+            if (runLevel != null && !FrontierProgression.isAftergrowth(run.definition())
+                    && !FrontierProgression.isMastery(run.definition())) {
                 extendRouteForMember(run, runLevel);
             }
             player.displayClientMessage(Component.translatable(
@@ -721,7 +727,7 @@ public final class ExpeditionManager {
                 ledger.grantUnlock(member, RECLAIMING_GEAR + run.definition().dimension());
             }
         }
-        if (!FrontierProgression.isAftergrowth(run.definition())) {
+        if (!FrontierProgression.isAftergrowth(run.definition()) && !FrontierProgression.isMastery(run.definition())) {
             data.recordCampaignCompletion(run.definition().dimension());
             ExpeditionEventHandler.stirPressure(data, player.serverLevel(),
                     run.definition().dimension(),
@@ -769,7 +775,7 @@ public final class ExpeditionManager {
     }
 
     private static final String RECLAIMING_GEAR = "expeditions:reclaiming_gear/";
-    private static final String RECLAIMING_TRACE = "expeditions:reclaiming/";
+    private static final String RECLAIMING_TRACE = FrontierProgression.EXTRACTION_TRACE_PREFIX;
 
     public List<String> reclaimingDimensions(UUID player) {
         var dimensions = new java.util.TreeSet<String>();
@@ -1898,6 +1904,9 @@ public final class ExpeditionManager {
     private static void grantArtifact(ServerPlayer player, ExpeditionRun run) {
         ItemStack stack = new ItemStack(ModItems.EXPEDITION_ARTIFACT.get());
         stack.set(ModDataComponents.RUN_ID.get(), run.runId().toString());
+        if (FrontierProgression.isMastery(run.definition())) {
+            stack.set(DataComponents.ITEM_NAME, Component.translatable("item.expeditions.living_scion"));
+        }
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
