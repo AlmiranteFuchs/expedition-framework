@@ -677,9 +677,16 @@ harvest by a party member carrying the field compass in the destination
 dimension. Item pickup and Fortune yields do not affect the count. Progress
 uses the existing saved objective record.
 
-The next variety slice should choose one optional commission from an authored
-pool and save that choice with the route. The briefing should tell the party
-what it drew before anyone crosses. Deep Rock Galactic's mission assignments
+### Rotating commissions — alpha.29
+
+Deep Salvage now draws one commission at deployment. The Wayroot lists the
+possibilities before deployment and announces the selection when the entrance
+opens. The cargo and siege remain the charter's main work. Datapacks can add a
+`commission_pool` array using the same entries as `objectives`. Pool entries
+must be optional and independent of checkpoints. The selected entry is saved
+with the run's objectives so reloads never reroll it.
+
+Deep Rock Galactic's mission assignments
 and optional challenges are a reference for keeping the main extraction goal
 legible while giving the party a reason to detour. Alex's Caves is a reference
 for using a discovery in the world to give the guidebook something concrete to

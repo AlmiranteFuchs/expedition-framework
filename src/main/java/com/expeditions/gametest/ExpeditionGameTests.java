@@ -1402,10 +1402,12 @@ public final class ExpeditionGameTests {
                     {"id": "logs", "description": "Collect 2 logs",
                      "type": "collect_items", "tag": "minecraft:logs",
                      "count": 2, "bonus_tokens": 2},
-                    {"id": "bark", "description": "Cut a bark sample",
-                     "type": "harvest", "tag": "minecraft:logs", "count": 1},
                     {"id": "speedy", "description": "Finish within a minute",
                      "type": "time_limit", "seconds": 60, "bonus_tokens": 7}
+                  ],
+                  "commission_pool": [
+                    {"id": "bark", "description": "Cut a bark sample",
+                     "type": "harvest", "tag": "minecraft:logs", "count": 1}
                   ]
                 }
                 """;
@@ -1421,6 +1423,11 @@ public final class ExpeditionGameTests {
                     "all five objectives must be defined");
             helper.assertTrue(run.objectiveStates().size() == 5,
                     "every defined objective must be tracked from run start");
+            var restored = roundTrip(helper, helper.getLevel().getServer()).ledger()
+                    .activeRun(player.getUUID()).orElseThrow();
+            helper.assertTrue(restored.definition().commissionPool().isEmpty()
+                            && restored.objectiveState("bark").isPresent(),
+                    "the drawn commission persists as a fixed objective without rerolling");
 
             var sample = new BlockPos(3, 1, 3);
             player.setGameMode(GameType.SURVIVAL);
@@ -3778,11 +3785,13 @@ public final class ExpeditionGameTests {
             var kinds = salvage.objectives().stream()
                     .map(ExpeditionObjective::kind).toList();
             for (ObjectiveKind kind : List.of(ObjectiveKind.VISIT_CHECKPOINT,
-                    ObjectiveKind.RECOVER_ARTIFACT, ObjectiveKind.DEFEND_DEVICE,
-                    ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT)) {
+                    ObjectiveKind.RECOVER_ARTIFACT, ObjectiveKind.DEFEND_DEVICE)) {
                 helper.assertTrue(kinds.contains(kind),
                         "deep_salvage must compose a " + kind + " objective");
             }
+            helper.assertTrue(salvage.commissionPool().stream().map(ExpeditionObjective::kind).toList()
+                            .equals(List.of(ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT)),
+                    "deep_salvage offers a harvest or timed commission");
             boolean refused = false;
             try {
                 manager.startRun(player, terminalPos,

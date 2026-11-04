@@ -209,7 +209,9 @@ public class ExpeditionMenu extends ChestMenu {
                 sendSapTrail(player, graft, aperture);
             }
             player.closeContainer();
-            player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
+            if (startable.get(expeditionIndex).commissionPool().isEmpty()) {
+                player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
+            }
         } catch (IllegalStateException e) {
             LOGGER.warn("Expedition start refused for {}: {}",
                     player.getScoreboardName(), e.getMessage());
@@ -279,6 +281,7 @@ public class ExpeditionMenu extends ChestMenu {
             brief.add(Component.literal("Route: " + checkpoints + " checkpoints, then extraction"));
             if (aftergrowth()) brief.add(Component.translatable("gui.expeditions.aftergrowth_brief"));
             int bonuses = selected.bonusTokens() + selected.objectives().stream().mapToInt(o -> o.bonusTokens()).sum();
+            bonuses += selected.commissionPool().stream().mapToInt(o -> o.bonusTokens()).max().orElse(0);
             if (guided()) {
                 brief.add(Component.translatable("gui.expeditions.training_brief"));
                 brief.add(Component.translatable("gui.expeditions.training_rewards", selected.tokenReward() + bonuses));
@@ -293,6 +296,12 @@ public class ExpeditionMenu extends ChestMenu {
             for (var objective : selected.objectives()) {
                 if (guided() && objective.id().equals("practice_complete") && !objective.required()) continue;
                 brief.add(Component.literal((objective.required() ? "! " : "+ ") + objective.description()));
+            }
+            if (!selected.commissionPool().isEmpty()) {
+                brief.add(Component.translatable("gui.expeditions.commission_pool"));
+                for (var commission : selected.commissionPool()) {
+                    brief.add(Component.literal("  " + commission.description()));
+                }
             }
             if (!guided()) {
                 if (selected.objectives().isEmpty()) brief.add(Component.literal("! Activate every checkpoint and use extraction."));

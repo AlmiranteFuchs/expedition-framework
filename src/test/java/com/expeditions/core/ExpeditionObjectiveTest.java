@@ -41,6 +41,23 @@ class ExpeditionObjectiveTest {
     // ---- Objective construction validation --------------------------------
 
     @Test
+    void commissionSelectionFreezesOneOptionalObjective() {
+        var fixed = ExpeditionObjective.visitCheckpoint("start", "Reach the mark", true, 1, 0);
+        var bark = ExpeditionObjective.harvest("bark", "Cut bark", false, null, "minecraft:logs", 2, 4);
+        var haste = ExpeditionObjective.timeLimit("haste", "Beat the dusk", false, 400, 6);
+        var charter = new ExpeditionDefinition("expeditions:trial", "Trial", 0, "minecraft:overworld",
+                route(), 8, 0, 0, List.of(fixed), ExpeditionModifiers.NONE, Set.of(), Set.of(),
+                0, CampaignState.FRONTIER, false, List.of(bark, haste));
+        assertEquals(List.of(fixed, haste), charter.withCommission(1).objectives());
+        assertTrue(charter.withCommission(1).commissionPool().isEmpty());
+        assertEquals(List.of(bark, haste), charter.commissionPool());
+        assertThrows(IllegalArgumentException.class, () -> new ExpeditionDefinition(
+                "expeditions:trial", "Trial", 0, "minecraft:overworld", route(), 8, 0, 0,
+                List.of(fixed), ExpeditionModifiers.NONE, Set.of(), Set.of(), 0,
+                CampaignState.FRONTIER, false, List.of(bark, bark)));
+    }
+
+    @Test
     void harvestClampsToItsTarget() {
         var objective = ExpeditionObjective.harvest("bark", "Cut a bark sample", false,
                 null, "minecraft:logs", 2, 4);

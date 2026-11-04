@@ -58,7 +58,9 @@
       "seconds": 90,
       "required": true,
       "bonus_tokens": 15
-    },
+    }
+  ],
+  "commission_pool": [
     {
       "id": "scrap",
       "description": "Cut four bark samples",

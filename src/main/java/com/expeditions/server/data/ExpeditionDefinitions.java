@@ -133,7 +133,8 @@ public final class ExpeditionDefinitions {
                 parseKeys(json.get("grants")),
                 optionalInt(json, "cost_tokens", 0),
                 parseCampaignState(json.get("min_campaign_state")),
-                optionalBool(json, "big_bad", false));
+                optionalBool(json, "big_bad", false),
+                parseObjectives(json.get("commission_pool")));
     }
 
     /**

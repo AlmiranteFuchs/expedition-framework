@@ -39,6 +39,7 @@
   "message.expeditions.member_left": "A member left your expedition party.",
   "message.expeditions.challenge_horde": "Something heard the stump.",
   "message.expeditions.objective_completed": "Objective complete: %1$s",
+  "message.expeditions.commission": "The Wayroot opens. Field commission: %1$s",
   "message.expeditions.objectives_missing": "Required objectives unfinished: %1$s",
   "message.expeditions.artifact_recovered": "The stump yields its sealed cargo.",
   "message.expeditions.defense_started": "Hold the ward for %s seconds.",
@@ -276,5 +277,6 @@
   "gui.expeditions.wayroot_frame_busy": "The arch is holding another charter.",
   "block.expeditions.graft_post": "Pale Graft Post",
   "gui.expeditions.survey_fixed": "This survey has a fixed route and pace.",
-  "gui.expeditions.aftergrowth_brief": "Return to quiet ground. No checkpoint hordes. The hollow yields two Return Knots."
+  "gui.expeditions.aftergrowth_brief": "Return to quiet ground. No checkpoint hordes. The hollow yields two Return Knots.",
+  "gui.expeditions.commission_pool": "One optional commission will be drawn at deployment"
 }

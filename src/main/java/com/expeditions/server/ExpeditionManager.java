@@ -355,8 +355,12 @@ public final class ExpeditionManager {
                 .setValue(com.expeditions.block.ExpeditionPortalBlock.FRAMED, framed), 3);
         data.trackMarker(portalDimension, portalPos);
 
+        int commissionIndex = definition.commissionPool().isEmpty() ? -1
+                : rng.nextInt(definition.commissionPool().size());
+        ExpeditionDefinition runDefinition = commissionIndex < 0 ? definition
+                : definition.withCommission(commissionIndex);
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(),
-                Set.of(player.getUUID()), definition,
+                Set.of(player.getUUID()), runDefinition,
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
                 toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
                 toWaypoint(entryPos), level.getGameTime(), options, portalDimension);
@@ -370,6 +374,10 @@ public final class ExpeditionManager {
                             + definition.costTokens());
         }
         ledger.startRun(run);
+        if (commissionIndex >= 0) {
+            player.displayClientMessage(Component.translatable(
+                    "message.expeditions.commission", definition.commissionPool().get(commissionIndex).description()), true);
+        }
         // Every expedition stirs the organism a little — pressure is the
         // dimension-wide threat counter hordes and waves read.
         if (!aftergrowth) {

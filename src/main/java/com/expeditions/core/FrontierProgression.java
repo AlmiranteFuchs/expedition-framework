@@ -11,7 +11,7 @@ public final class FrontierProgression {
         var requires=new HashSet<>(base.requires());requires.add("expeditions:field_clear");
         return new ExpeditionDefinition(base.id(),base.displayName(),base.difficulty(),base.dimension(),base.route(),
                 base.tokenReward(),base.bonusTokens(),base.bonusTimeTicks(),base.objectives(),base.modifiers(),
-                requires,base.grants(),base.costTokens(),base.minCampaignState(),base.bigBad());
+                requires,base.grants(),base.costTokens(),base.minCampaignState(),base.bigBad(),base.commissionPool());
     }
     public static ExpeditionDefinition liberation(ExpeditionDefinition base) {
         var route=base.route() instanceof RouteGeneration g?g.withCheckpoints(3):base.route();
