@@ -33,7 +33,9 @@ ROOT = os.path.join(os.path.dirname(__file__), "..",
                     "src/main/resources/assets/expeditions")
 SOUNDS_DIR = os.path.join(ROOT, "sounds")
 SR = 44100
-PEAK = 0.85  # ≈ -1.4 dBFS
+# Vorbis decodes with intersample overshoot on sharp transients —
+# keep ~3dB true-peak headroom or the codec clips what PCM wouldn't.
+PEAK = 0.70  # ≈ -3 dBFS
 
 
 # ----------------------------------------------------------------- core dsp
@@ -255,6 +257,31 @@ def whisper(dur, seed, gain=1.0):
     return [s * gain for s in out]
 
 
+def creak(dur, f_lo, f_hi, seed, gain=1.0):
+    """Living-wood groan: a jittery pitch-rising saw through a resonant
+    band — fibers under load."""
+    rng = random.Random(seed)
+    n = int(dur * SR)
+    src = [0.0] * n
+    ph = 0.0
+    for i in range(n):
+        t = i / SR
+        f = f_lo + (f_hi - f_lo) * (t / dur) + rng.uniform(-18, 18)
+        ph += 2 * math.pi * f / SR
+        src[i] = math.sin(ph) + 0.35 * math.sin(2 * ph)
+    return [s * gain for s in bp_sweep(src, 350, 800, 5.0)]
+
+
+def wood_knock(dst, at, gain=1.0, freq=400, seed=301):
+    """Short woody impact — branch, not board."""
+    k = apply_env(sine(lambda t: freq - freq * 0.6 * t, 0.07),
+                  decay_tau=0.025, sustain=0.0)
+    mix(dst, lp(k, freq * 2.5), gain, at)
+    tick = apply_env(bp(noise(0.03, seed), freq * 2, 3.0),
+                     decay_tau=0.012, sustain=0.0)
+    mix(dst, tick, gain * 0.4, at)
+
+
 def clunk(dst, at, gain=1.0, freq=90):
     """Dead mechanical impact — the Charter's machines still moving."""
     k = apply_env(sine(lambda t: freq - freq * 0.5 * t, 0.14),
@@ -369,13 +396,21 @@ def b_terminal_refuse():
 
 
 def b_checkpoint_activate():
-    """Dread toll: a deep bell struck once, answered a semitone up —
-    the resonance is *wrong*, plus a long cold exhale."""
-    out = buf(2.4)
-    toll(out, note(33), 0.0, 1.8, 0.8)            # A1
-    toll(out, note(33) * 2 ** (1 / 12), 0.35, 1.9, 0.35)  # minor 2nd rub
-    mix(out, breath(1.6, 17, attack=0.5, cutoff=700), 0.5, 0.4)
-    return finalize(reverb(out, wet=0.42))
+    """The witness stamps its answer: a ground-shaking stomp, wood
+    cracking under the weight, a rumble rolling out, and then one low
+    restrained note — the Charter's instrument, not a fanfare."""
+    out = buf(2.0)
+    impact = apply_env(sine(lambda t: 78 - 48 * t, 0.22),
+                       decay_tau=0.08, sustain=0.0)
+    mix(out, lp(impact, 320), 1.0)
+    crack = apply_env(bp(noise(0.1, 201), 750, 2.0), decay_tau=0.035,
+                    sustain=0.0)
+    mix(out, crack, 0.6, 0.012)
+    rumble = apply_env(lp(noise(0.7, 203), 150), attack=0.02,
+                     decay_tau=0.3, sustain=0.0)
+    mix(out, rumble, 0.5, 0.05)
+    toll(out, note(45), 0.28, 1.5, 0.28)  # one low held answer
+    return finalize(reverb(out, wet=0.35))
 
 
 def b_portal_open():
@@ -563,6 +598,195 @@ def b_organism_roar():
     return finalize(reverb(out, wet=0.3))
 
 
+def _b_bloom_source(opening, seed):
+    """The heart's membrane shutter — a wet peel, not a trapdoor."""
+    out = buf(0.7)
+    sq = squelch(0.55, seed, drips=1,
+                 f_sweep=(250, 750) if opening else (750, 180))
+    mix(out, sq, 0.9)
+    if not opening:
+        clunk(out, 0.32, gain=0.35, freq=110)
+    return finalize(out)
+
+
+def b_bloom_source_open():
+    return _b_bloom_source(True, 211)
+
+
+def b_bloom_source_close():
+    return _b_bloom_source(False, 212)
+
+
+def b_resonance_fuel():
+    """A LIVING machine swallowing essence — gulp, then the beat
+    moves into the casing."""
+    out = buf(0.9)
+    gulp = squelch(0.4, 221, drips=1, f_sweep=(500, 150))
+    mix(out, gulp, 0.7)
+    mix(out, heartbeat(0.6, lub_f=62, dub_f=50, wet=0.0, seed=223), 0.4, 0.25)
+    return finalize(out)
+
+
+def b_resonance_work():
+    """Loopable operating thrum — machine hum with a pulse riding it."""
+    dur = 2.0
+    n = int(dur * SR)
+    out = buf(dur)
+    for f, g in ((55.0, 0.45), (110.0, 0.22), (165.0, 0.08), (220.0, 0.05)):
+        cycles = round(f * dur)
+        cyc_f = cycles / dur
+        for i in range(n):
+            out[i] += g * math.sin(2 * math.pi * cyc_f * i / n)
+    pulse = [0.55 + 0.45 * max(0.0, math.sin(2 * math.pi * (3 / dur) *
+                                           i / n)) for i in range(n)]
+    grind = lp(bp(noise(dur, 225), 700, 2.0), 1600)
+    for i in range(n):
+        out[i] = out[i] * (0.6 + 0.4 * pulse[i]) + grind[i] * 0.12 * pulse[i]
+    return finalize(out)
+
+
+def b_resonance_complete():
+    """Work done: a deep ring held too long, then a settling clunk."""
+    out = buf(1.6)
+    toll(out, note(52), 0.0, 1.2, 0.5)   # E3 — resonant, not bright
+    clunk(out, 0.85, gain=0.5, freq=75)
+    return finalize(reverb(out, wet=0.3))
+
+
+def b_recall_answer():
+    """The recall tree answers in the route instruments' register:
+    two wood knocks and a low held ring."""
+    out = buf(1.4)
+    wood_knock(out, 0.0, gain=0.8, freq=330)
+    wood_knock(out, 0.16, gain=0.6, freq=290)
+    toll(out, note(45), 0.2, 1.0, 0.3)
+    return finalize(reverb(out, wet=0.3))
+
+
+def b_basin_reclaim():
+    """Items dissolve into Return Sap — a busy bubbling dissolve,
+    then the basin swallows."""
+    out = buf(1.2)
+    rng = random.Random(231)
+    for i in range(9):
+        t = 0.05 + i * 0.09 + rng.uniform(0, 0.05)
+        f = rng.uniform(300, 900)
+        drip = apply_env(sine(lambda tt, f=f: f * (1 - 1.8 * tt), 0.08),
+                         decay_tau=0.03, sustain=0.0)
+        mix(out, drip, rng.uniform(0.15, 0.35), t)
+    mix(out, squelch(0.6, 233, drips=2, f_sweep=(600, 200)), 0.5, 0.4)
+    toll(out, note(45), 0.7, 0.8, 0.18)
+    return finalize(out)
+
+
+def b_wayroot_graft():
+    """Sap drawn up through the graft — a creak settling under load,
+    a wet draw, a short ring."""
+    out = buf(1.1)
+    mix(out, creak(0.5, 140, 260, 241), 0.5, 0.05)
+    mix(out, squelch(0.45, 243, drips=2, f_sweep=(300, 650)), 0.4, 0.3)
+    toll(out, note(52), 0.55, 0.7, 0.2)
+    return finalize(out)
+
+
+# ------------------------------------------------------- rootbound guardian
+def b_guardian_windup():
+    """Living wood drawn taut — rising creak, fibers ticking, about
+    to release."""
+    out = buf(0.8)
+    mix(out, creak(0.6, 120, 320, 251), 0.8)
+    rng = random.Random(253)
+    for i in range(4):
+        wood_knock(out, 0.1 + i * 0.1 + rng.uniform(0, 0.04),
+                   gain=rng.uniform(0.15, 0.3), freq=rng.uniform(500, 800))
+    mix(out, apply_env(lp(noise(0.5, 255), 400), attack=0.3,
+                     decay_tau=0.3, sustain=0.0), 0.3, 0.15)
+    return finalize(out)
+
+
+def b_guardian_strike():
+    """The blow lands: massive stomp through the ground, wood
+    splintering, debris settling."""
+    out = buf(1.4)
+    impact = apply_env(sine(lambda t: 65 - 40 * t, 0.3),
+                       decay_tau=0.12, sustain=0.0)
+    mix(out, lp(impact, 280), 1.0)
+    crack = apply_env(bp(noise(0.14, 261), 900, 2.0), decay_tau=0.05,
+                    sustain=0.0)
+    mix(out, crack, 0.7, 0.015)
+    crack2 = apply_env(bp(noise(0.1, 263), 1600, 3.0), decay_tau=0.04,
+                     sustain=0.0)
+    mix(out, crack2, 0.35, 0.03)
+    debris = apply_env(lp(noise(0.9, 265), 700), attack=0.05,
+                     decay_tau=0.35, sustain=0.0)
+    mix(out, debris, 0.35, 0.1)
+    return finalize(reverb(out, wet=0.25))
+
+
+def b_guardian_enrage():
+    """Half dead means twice as angry: a creak torn up into a roar."""
+    out = buf(1.7)
+    mix(out, creak(0.5, 100, 300, 271), 0.6)
+    mix(out, formant_growl(1.2, 70, 273, formants=(350, 900), trem_hz=10.0),
+        0.7, 0.3)
+    mix(out, apply_env(sine(lambda t: 48 - 10 * t, 1.4), attack=0.2,
+                       decay_tau=0.6, sustain=0.0), 0.7, 0.3)
+    mix(out, breath(1.2, 275, attack=0.4, cutoff=700), 0.4, 0.4)
+    return finalize(reverb(out, wet=0.3))
+
+
+def b_guardian_hurt(seed):
+    """Bark splitting under the hit — short crack and groan."""
+    rng = random.Random(seed)
+    out = buf(0.45)
+    crack = apply_env(bp(noise(0.1, seed), rng.uniform(900, 1500), 3.0),
+                    decay_tau=0.04, sustain=0.0)
+    mix(out, crack, 0.8)
+    mix(out, creak(0.3, 150, rng.uniform(180, 260), seed + 1), 0.4, 0.05)
+    return finalize(out)
+
+
+def b_guardian_death():
+    """The roots let go: a long splitting crack, the trunk-groan
+    sagging, then everything comes down at once."""
+    out = buf(2.6)
+    mix(out, creak(1.2, 260, 60, 281), 0.7)
+    crack = apply_env(bp(noise(0.3, 283), 1100, 2.0), decay_tau=0.12,
+                    sustain=0.0)
+    mix(out, crack, 0.8, 0.9)
+    mix(out, lp(sub_drop(1.0, 80, 22), 300), 0.8, 1.0)
+    mix(out, apply_env(lp(noise(1.2, 285), 500), attack=0.1,
+                     decay_tau=0.5, sustain=0.0), 0.4, 1.1)
+    mix(out, whisper(0.9, 287, gain=0.14), 1.2)
+    return finalize(reverb(out, wet=0.35))
+
+
+# -------------------------------------------------------- events / journal
+def b_frontier_warning():
+    """Something out there noticed. A pulse you feel more than hear,
+    then the whisper — escalation, not alarm."""
+    out = buf(1.8)
+    for i, at in enumerate((0.0, 0.5)):
+        pulse = apply_env(sine(lambda t: 55 - 8 * t, 0.3),
+                          decay_tau=0.14, sustain=0.0)
+        mix(out, lp(pulse, 200), 0.8 - 0.2 * i, at)
+    mix(out, drone(1.2, (110, 110 * 2 ** (1 / 12))), 0.15, 0.4)
+    mix(out, whisper(1.0, 291, gain=0.2), 0.6)
+    return finalize(reverb(out, wet=0.3))
+
+
+def b_journal_discovery():
+    """The field journal stirs: pages turning on their own, and under
+    the paper — the whisper reads along."""
+    out = buf(1.2)
+    for i, at in enumerate((0.0, 0.18)):
+        swish = apply_env(hp(noise(0.14, 295 + i), 1800), attack=0.03,
+                          decay_tau=0.05, sustain=0.0)
+        mix(out, swish, 0.5 - 0.15 * i, at)
+    mix(out, whisper(0.9, 297, gain=0.25), 0.3)
+    return finalize(out)
+
+
 # ---------------------------------------------------------------- registry
 # (event key, [relative ogg paths], builder-per-file or shared builder)
 def _variants(builder, seeds):
@@ -605,6 +829,37 @@ REGISTRY = [
      ["horde/spawn"], [b_horde_spawn]),
     ("event.organism.roar",
      ["organism/roar"], [b_organism_roar]),
+    ("block.bloom_source.open",
+     ["bloom_source/open"], [b_bloom_source_open]),
+    ("block.bloom_source.close",
+     ["bloom_source/close"], [b_bloom_source_close]),
+    ("block.resonance_machine.fuel",
+     ["resonance/fuel"], [b_resonance_fuel]),
+    ("block.resonance_machine.work",
+     ["resonance/work"], [b_resonance_work]),
+    ("block.resonance_machine.complete",
+     ["resonance/complete"], [b_resonance_complete]),
+    ("block.recall_tree.answer",
+     ["recall/answer"], [b_recall_answer]),
+    ("block.reclaiming_basin.reclaim",
+     ["basin/reclaim"], [b_basin_reclaim]),
+    ("block.wayroot.graft",
+     ["wayroot/graft"], [b_wayroot_graft]),
+    ("entity.rootbound_guardian.windup",
+     ["guardian/windup"], [b_guardian_windup]),
+    ("entity.rootbound_guardian.strike",
+     ["guardian/strike"], [b_guardian_strike]),
+    ("entity.rootbound_guardian.enrage",
+     ["guardian/enrage"], [b_guardian_enrage]),
+    ("entity.rootbound_guardian.hurt",
+     ["guardian/hurt1", "guardian/hurt2"],
+     _variants(b_guardian_hurt, (271, 272))),
+    ("entity.rootbound_guardian.death",
+     ["guardian/death"], [b_guardian_death]),
+    ("event.frontier.warning",
+     ["frontier/warning"], [b_frontier_warning]),
+    ("item.expedition_field_journal.discovery",
+     ["journal/discovery"], [b_journal_discovery]),
 ]
 
 
@@ -616,7 +871,8 @@ def main():
             data = build()
             path = os.path.join(SOUNDS_DIR, rel + ".ogg")
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            sf.write(path, data, SR, format="OGG", subtype="VORBIS")
+            sf.write(path, data, SR, format="OGG", subtype="VORBIS",
+                     compression_level=0.7)
             print(f"  {rel + '.ogg':<28} {len(data) / SR:5.2f}s")
         sounds_json[event] = {
             "sounds": [f"expeditions:{p}" for p in paths],

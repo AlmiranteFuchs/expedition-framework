@@ -13,6 +13,18 @@
     ],
     "subtitle": "subtitles.expeditions.block.assimilation_layer.spread"
   },
+  "block.bloom_source.close": {
+    "sounds": [
+      "expeditions:bloom_source/close"
+    ],
+    "subtitle": "subtitles.expeditions.block.bloom_source.close"
+  },
+  "block.bloom_source.open": {
+    "sounds": [
+      "expeditions:bloom_source/open"
+    ],
+    "subtitle": "subtitles.expeditions.block.bloom_source.open"
+  },
   "block.expedition_checkpoint.activate": {
     "sounds": [
       "expeditions:checkpoint/activate"
@@ -49,6 +61,73 @@
     ],
     "subtitle": "subtitles.expeditions.block.expedition_terminal.refuse"
   },
+  "block.recall_tree.answer": {
+    "sounds": [
+      "expeditions:recall/answer"
+    ],
+    "subtitle": "subtitles.expeditions.block.recall_tree.answer"
+  },
+  "block.reclaiming_basin.reclaim": {
+    "sounds": [
+      "expeditions:basin/reclaim"
+    ],
+    "subtitle": "subtitles.expeditions.block.reclaiming_basin.reclaim"
+  },
+  "block.resonance_machine.complete": {
+    "sounds": [
+      "expeditions:resonance/complete"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.complete"
+  },
+  "block.resonance_machine.fuel": {
+    "sounds": [
+      "expeditions:resonance/fuel"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.fuel"
+  },
+  "block.resonance_machine.work": {
+    "sounds": [
+      "expeditions:resonance/work"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.work"
+  },
+  "block.wayroot.graft": {
+    "sounds": [
+      "expeditions:wayroot/graft"
+    ],
+    "subtitle": "subtitles.expeditions.block.wayroot.graft"
+  },
+  "entity.rootbound_guardian.death": {
+    "sounds": [
+      "expeditions:guardian/death"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.death"
+  },
+  "entity.rootbound_guardian.enrage": {
+    "sounds": [
+      "expeditions:guardian/enrage"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.enrage"
+  },
+  "entity.rootbound_guardian.hurt": {
+    "sounds": [
+      "expeditions:guardian/hurt1",
+      "expeditions:guardian/hurt2"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.hurt"
+  },
+  "entity.rootbound_guardian.strike": {
+    "sounds": [
+      "expeditions:guardian/strike"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.strike"
+  },
+  "entity.rootbound_guardian.windup": {
+    "sounds": [
+      "expeditions:guardian/windup"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.windup"
+  },
   "event.expedition.complete": {
     "sounds": [
       "expeditions:event/complete"
@@ -72,6 +151,12 @@
       "expeditions:event/start"
     ],
     "subtitle": "subtitles.expeditions.event.expedition.start"
+  },
+  "event.frontier.warning": {
+    "sounds": [
+      "expeditions:frontier/warning"
+    ],
+    "subtitle": "subtitles.expeditions.event.frontier.warning"
   },
   "event.horde.spawn": {
     "sounds": [
@@ -102,5 +187,11 @@
       "expeditions:compass/ping"
     ],
     "subtitle": "subtitles.expeditions.item.expedition_compass.ping"
+  },
+  "item.expedition_field_journal.discovery": {
+    "sounds": [
+      "expeditions:journal/discovery"
+    ],
+    "subtitle": "subtitles.expeditions.item.expedition_field_journal.discovery"
   }
 }
