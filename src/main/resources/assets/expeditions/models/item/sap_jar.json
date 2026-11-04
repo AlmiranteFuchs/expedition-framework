@@ -1,3 +1,10 @@
 {
-  "parent": "expeditions:block/sap_jar"
+  "loader": "neoforge:separate_transforms",
+  "base": { "parent": "expeditions:block/sap_jar" },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": { "layer0": "expeditions:item/sap_jar" }
+    }
+  }
 }
