@@ -1,0 +1,246 @@
+{
+  "block.assimilation_heart.beat": {
+    "sounds": [
+      "expeditions:heart/beat"
+    ],
+    "subtitle": "subtitles.expeditions.block.assimilation_heart.beat"
+  },
+  "block.assimilation_layer.spread": {
+    "sounds": [
+      "expeditions:layer/spread1",
+      "expeditions:layer/spread2",
+      "expeditions:layer/spread3"
+    ],
+    "subtitle": "subtitles.expeditions.block.assimilation_layer.spread"
+  },
+  "block.bloom_source.close": {
+    "sounds": [
+      "expeditions:bloom_source/close"
+    ],
+    "subtitle": "subtitles.expeditions.block.bloom_source.close"
+  },
+  "block.bloom_source.open": {
+    "sounds": [
+      "expeditions:bloom_source/open"
+    ],
+    "subtitle": "subtitles.expeditions.block.bloom_source.open"
+  },
+  "block.expedition_checkpoint.activate": {
+    "sounds": [
+      "expeditions:checkpoint/activate"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_checkpoint.activate"
+  },
+  "block.expedition_device.activate": {
+    "sounds": [
+      "expeditions:device/activate"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_device.activate"
+  },
+  "block.expedition_device.damage": {
+    "sounds": [
+      "expeditions:device/damage1",
+      "expeditions:device/damage2"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_device.damage"
+  },
+  "block.expedition_device.destroy": {
+    "sounds": [
+      "expeditions:device/destroy"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_device.destroy"
+  },
+  "block.expedition_portal.hum": {
+    "sounds": [
+      "expeditions:portal/hum"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_portal.hum"
+  },
+  "block.expedition_portal.open": {
+    "sounds": [
+      "expeditions:portal/open"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_portal.open"
+  },
+  "block.expedition_portal.travel": {
+    "sounds": [
+      "expeditions:portal/travel"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_portal.travel"
+  },
+  "block.expedition_terminal.activate": {
+    "sounds": [
+      "expeditions:terminal/activate"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_terminal.activate"
+  },
+  "block.expedition_terminal.refuse": {
+    "sounds": [
+      "expeditions:terminal/refuse"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_terminal.refuse"
+  },
+  "block.field_ward.extinguish": {
+    "sounds": [
+      "expeditions:field_ward/extinguish"
+    ],
+    "subtitle": "subtitles.expeditions.block.field_ward.extinguish"
+  },
+  "block.field_ward.ignite": {
+    "sounds": [
+      "expeditions:field_ward/ignite"
+    ],
+    "subtitle": "subtitles.expeditions.block.field_ward.ignite"
+  },
+  "block.recall_tree.answer": {
+    "sounds": [
+      "expeditions:recall/answer"
+    ],
+    "subtitle": "subtitles.expeditions.block.recall_tree.answer"
+  },
+  "block.reclaiming_basin.reclaim": {
+    "sounds": [
+      "expeditions:basin/reclaim"
+    ],
+    "subtitle": "subtitles.expeditions.block.reclaiming_basin.reclaim"
+  },
+  "block.resonance_machine.complete": {
+    "sounds": [
+      "expeditions:resonance/complete"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.complete"
+  },
+  "block.resonance_machine.fuel": {
+    "sounds": [
+      "expeditions:resonance/fuel"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.fuel"
+  },
+  "block.resonance_machine.work": {
+    "sounds": [
+      "expeditions:resonance/work"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.work"
+  },
+  "block.sap_vessel.fill": {
+    "sounds": [
+      "expeditions:sap_vessel/fill"
+    ],
+    "subtitle": "subtitles.expeditions.block.sap_vessel.fill"
+  },
+  "block.sap_vessel.recycle": {
+    "sounds": [
+      "expeditions:sap_vessel/recycle"
+    ],
+    "subtitle": "subtitles.expeditions.block.sap_vessel.recycle"
+  },
+  "block.wayroot.graft": {
+    "sounds": [
+      "expeditions:wayroot/graft"
+    ],
+    "subtitle": "subtitles.expeditions.block.wayroot.graft"
+  },
+  "entity.rootbound_guardian.death": {
+    "sounds": [
+      "expeditions:guardian/death"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.death"
+  },
+  "entity.rootbound_guardian.enrage": {
+    "sounds": [
+      "expeditions:guardian/enrage"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.enrage"
+  },
+  "entity.rootbound_guardian.hurt": {
+    "sounds": [
+      "expeditions:guardian/hurt1",
+      "expeditions:guardian/hurt2"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.hurt"
+  },
+  "entity.rootbound_guardian.strike": {
+    "sounds": [
+      "expeditions:guardian/strike"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.strike"
+  },
+  "entity.rootbound_guardian.windup": {
+    "sounds": [
+      "expeditions:guardian/windup"
+    ],
+    "subtitle": "subtitles.expeditions.entity.rootbound_guardian.windup"
+  },
+  "event.expedition.complete": {
+    "sounds": [
+      "expeditions:event/complete"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.complete"
+  },
+  "event.expedition.fail": {
+    "sounds": [
+      "expeditions:event/fail"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.fail"
+  },
+  "event.expedition.redeem": {
+    "sounds": [
+      "expeditions:event/redeem"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.redeem"
+  },
+  "event.expedition.start": {
+    "sounds": [
+      "expeditions:event/start"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.start"
+  },
+  "event.frontier.warning": {
+    "sounds": [
+      "expeditions:frontier/warning"
+    ],
+    "subtitle": "subtitles.expeditions.event.frontier.warning"
+  },
+  "event.horde.spawn": {
+    "sounds": [
+      "expeditions:horde/spawn"
+    ],
+    "subtitle": "subtitles.expeditions.event.horde.spawn"
+  },
+  "event.infection.heartbeat": {
+    "sounds": [
+      "expeditions:infection/heartbeat"
+    ],
+    "subtitle": "subtitles.expeditions.event.infection.heartbeat"
+  },
+  "event.organism.roar": {
+    "sounds": [
+      "expeditions:organism/roar"
+    ],
+    "subtitle": "subtitles.expeditions.event.organism.roar"
+  },
+  "item.expedition_compass.chime": {
+    "sounds": [
+      "expeditions:compass/chime"
+    ],
+    "subtitle": "subtitles.expeditions.item.expedition_compass.chime"
+  },
+  "item.expedition_compass.ping": {
+    "sounds": [
+      "expeditions:compass/ping"
+    ],
+    "subtitle": "subtitles.expeditions.item.expedition_compass.ping"
+  },
+  "item.expedition_field_journal.discovery": {
+    "sounds": [
+      "expeditions:journal/discovery"
+    ],
+    "subtitle": "subtitles.expeditions.item.expedition_field_journal.discovery"
+  },
+  "item.resonance_cell.insert": {
+    "sounds": [
+      "expeditions:cell/insert"
+    ],
+    "subtitle": "subtitles.expeditions.item.resonance_cell.insert"
+  }
+}
