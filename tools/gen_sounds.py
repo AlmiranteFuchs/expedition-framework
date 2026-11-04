@@ -329,9 +329,11 @@ def squelch(dur, seed, drips=3, f_sweep=(900, 220)):
     for _ in range(drips):
         t = rng.uniform(0.05, dur * 0.8)
         f = rng.uniform(220, 620)
-        drip = apply_env(sine(lambda tt, f=f: f * math.exp(-1.3 * tt), 0.1),
-                         decay_tau=0.035, sustain=0.0)
-        mix(out, lp(drip, 1200), rng.uniform(0.15, 0.3), t)
+        # a grain of filtered noise, not a tone — micro-squelch, not
+        # a cartoon drip
+        grain = apply_env(bp(noise(0.06, rng.randint(1, 99999)), f, 5.0),
+                          decay_tau=0.02, sustain=0.0)
+        mix(out, grain, rng.uniform(0.15, 0.3), t)
     return out
 
 
@@ -554,12 +556,20 @@ def b_infection_heartbeat():
 
 
 def b_layer_spread(seed):
-    """Wet slither plus flesh tearing — the colony reaching."""
+    """Wet flesh crawling over the surface: a granular sliding mass,
+    fine crackle, the occasional tear. No drips — this is a sheet of
+    it, not a leaking tap."""
     rng = random.Random(seed)
-    out = squelch(0.7, seed, drips=rng.randint(2, 4))
-    tear = apply_env(bp_sweep(noise(0.4, seed + 1), 2500, 600, 3.0),
+    out = squelch(0.75, seed, drips=rng.randint(2, 3))
+    # granular crawl — lowpassed noise with per-sample amplitude
+    # jitter reads as a million tiny wet movements
+    crawl = lp(noise(0.7, seed + 5), 500)
+    for i in range(len(crawl)):
+        crawl[i] *= 0.4 + 0.6 * rng.random()
+    mix(out, apply_env(crawl, attack=0.05, decay_tau=0.3, sustain=0.0), 0.4)
+    tear = apply_env(bp_sweep(noise(0.4, seed + 1), 1400, 450, 3.0),
                      attack=0.02, decay_tau=0.15, sustain=0.0)
-    mix(out, tear, 0.3, rng.uniform(0.05, 0.25))
+    mix(out, tear, 0.3, rng.uniform(0.1, 0.35))
     return finalize(out)
 
 
