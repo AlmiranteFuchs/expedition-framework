@@ -761,34 +761,21 @@ public final class ExpeditionManager {
     boolean reclaim(ServerPlayer player, String dimension, int slot,
             com.expeditions.block.entity.SapVesselBlockEntity vessel) {
         if (!reclaimingDimensions(player.getUUID()).contains(dimension)) return false;
-        var offers = ReclaimingOffers.forDimension(dimension);
+        var offers = ReclaimingOffers.forDimension(dimension, player.serverLevel());
         if (slot < 0 || slot >= offers.size()) return false;
         if (slot == 2 && !canReclaimGear(player.getUUID(), dimension)) return reclaimRefused(player, "gear");
         var offer = offers.get(slot);
         var tank = vessel.tank();
         if (tank.getFluidAmount() < offer.sap()) return reclaimRefused(player, "sap");
+        if (offer.finds().isEmpty()) return reclaimRefused(player, "empty_trace");
         var inventory = player.getInventory();
-        if (offer.feedCount() > 0 && inventory.items.stream().filter(stack -> stack.is(offer.feed())).mapToInt(ItemStack::getCount).sum() < offer.feedCount()) {
-            return reclaimRefused(player, "feed");
-        }
-        var cargo = offer.stack();
-        var bonus = offer.bonus();
         long empty = inventory.items.stream().filter(ItemStack::isEmpty).count();
-        if (empty < emptySlotsNeeded(inventory, cargo) + emptySlotsNeeded(inventory, bonus)) {
+        if (offer.finds().stream().anyMatch(find -> empty < emptySlotsNeeded(inventory, find.stack()))) {
             return reclaimRefused(player, "room");
         }
-        int remainingFeed = offer.feedCount();
-        for (var stack : inventory.items) {
-            if (remainingFeed == 0) break;
-            if (stack.is(offer.feed())) {
-                int consumed = Math.min(remainingFeed, stack.getCount());
-                stack.shrink(consumed);
-                remainingFeed -= consumed;
-            }
-        }
+        var cargo = offer.draw(player.getRandom());
         tank.drain(offer.sap(), net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
         inventory.add(cargo);
-        if (player.getRandom().nextInt(4) == 0) inventory.add(bonus);
         inventory.setChanged();
         player.displayClientMessage(Component.translatable("message.expeditions.basin_reclaimed"), true);
         player.playNotifySound(SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.55f, 0.8f);

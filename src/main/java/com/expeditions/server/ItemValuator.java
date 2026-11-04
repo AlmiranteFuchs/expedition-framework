@@ -30,6 +30,8 @@ public final class ItemValuator {
             case UNCOMMON -> 2;
             case RARE -> 4;
             case EPIC -> 8;
+            // NeoForge lets mods register additional rarity constants.
+            default -> 10;
         };
         // Unstackables are almost always equipment — a tier on their own.
         if (stack.getMaxStackSize() == 1) {

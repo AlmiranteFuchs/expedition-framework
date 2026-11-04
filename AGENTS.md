@@ -219,10 +219,12 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   can go unfinished.
 - Token economy: `ExpeditionLedger.spendTokens` deducts only when the balance
   covers the full cost. The Reclaiming Basin settles an exact quote only after
-  checking personal extraction proof, Return Sap, feedstock, and inventory room. The
+  checking personal extraction proof, Return Sap, and inventory room. The
   `expeditions:reclaiming/` unlock prefix is reserved for durable personal
   dimension traces. Older trophies and completed history can supply proof.
-  Bound Gear requires a Hard or Brutal extraction trace.
+  Gear requires a Hard or Brutal extraction trace. Basin pools are namespace
+  scoped, weighted from item value, and omit blocks and recognizable gated
+  items. The Sap Jar recycler consumes only whole items with tank space.
   Completion bonus drops still use the `expeditions:reward_items/<dimension
   path>` tags with the `default` fallback.
 - `ItemValuator` scores a stack from data components + NeoForge `c:` tags —

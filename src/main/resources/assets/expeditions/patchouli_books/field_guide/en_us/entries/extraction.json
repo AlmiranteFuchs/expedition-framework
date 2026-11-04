@@ -33,7 +33,12 @@
     {
       "type": "patchouli:text",
       "title": "What can be used again",
-      "text": "traces you brought home. Worked stock and gear need feedstock as well as sap. Harder charters open Bound Gear."
+      "text": "traces you brought home. The ledger sorts finds into materials, curiosities and gear. Harder charters open gear traces."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What can be used again",
+      "text": "Crouch and offer unwanted items to a Sap Jar. The roots break them down into sap. A hopper can feed the jar from above."
     }
   ],
   "advancement": "expeditions:journal/extraction"

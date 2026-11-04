@@ -622,11 +622,15 @@ chunk, and validate on real block state — not heightmap assumptions.
   Basin holds 2,000 mB. A Rootwick sends 25 mB per second toward its copper
   outlet, horizontally or downward. Create can mix the same ingredients and
   move the sap through the standard block fluid capability.
-- **Reclaiming Basin** — choose a recovered dimension and a cache. Loose
-  Gatherings cost 250 mB, Worked Stock costs 500 mB plus raw feedstock, and
-  Bound Gear costs 1,000 mB plus crafting material. Hard and Brutal
-  extractions open Bound Gear for their dimension. Each cache shows its
-  guaranteed haul and a one-in-four bonus. Tokens still cover charter fees.
+- **Reclaiming Basin** — a recovered dimension opens weighted item pools
+  from its registry namespace. Materials cost 250 mB, Curiosities 500 mB,
+  and Gear 1,000 mB. Hard and Brutal extractions open Gear. The ledger shows
+  example finds and their chances. Vanilla dimensions share the vanilla
+  catalog. Tokens still cover charter fees.
+- **Recycling** — crouch and use an unwanted stack on a Sap Jar, or feed
+  it through the top with a hopper. The jar consumes only whole items that
+  fit. Low-value items yield 1 mB each and more valuable items can yield up
+  to 25 mB. Damaged equipment yields less.
 - **Tier-weighted pools** — drop chances weight by `ItemValuator`, which
   scores items from their own data components (rarity, food, durability,
   attribute modifiers) plus the NeoForge `c:` convention tags (gems, ingots,

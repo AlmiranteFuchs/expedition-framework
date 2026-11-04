@@ -46,6 +46,16 @@ public class SapVesselBlock extends Block implements EntityBlock {
 
     public Kind kind() { return kind; }
 
+    /** Explicit recycling uses crouch even when the held item normally bypasses block use. */
+    public static void allowRecyclingInteraction(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+        if (event.getEntity().isShiftKeyDown() && !event.getItemStack().isEmpty()
+                && event.getLevel().getBlockState(event.getPos()).getBlock() instanceof SapVesselBlock block
+                && block.kind == Kind.JAR
+                && event.getUseBlock() != net.neoforged.neoforge.common.util.TriState.FALSE) {
+            event.setUseBlock(net.neoforged.neoforge.common.util.TriState.TRUE);
+        }
+    }
+
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         if (kind != Kind.WICK) return box(2, 0, 2, 14, 15, 14);
@@ -92,6 +102,19 @@ public class SapVesselBlock extends Block implements EntityBlock {
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
+        if (kind == Kind.JAR && player.isShiftKeyDown() && !stack.isEmpty()) {
+            if (!level.isClientSide && level.getBlockEntity(pos) instanceof SapVesselBlockEntity vessel) {
+                int used = vessel.recycle(stack, false);
+                if (used > 0) {
+                    stack.shrink(used);
+                    player.getInventory().setChanged();
+                    player.displayClientMessage(Component.translatable("message.expeditions.sap_recycled", used), true);
+                } else {
+                    player.displayClientMessage(Component.translatable("message.expeditions.sap_full"), true);
+                }
+            }
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (kind == Kind.JAR && stack.is(Items.WATER_BUCKET)) {
             if (!level.isClientSide && level.getBlockEntity(pos) instanceof SapVesselBlockEntity vessel) {
                 var essence = find(player, ModItems.ASSIMILATION_ESSENCE.get());

@@ -15,11 +15,22 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
 public final class SapVesselBlockEntity extends BlockEntity {
     public static final int BASIN_CAPACITY = 2000;
     private final SapVesselBlock.Kind kind;
     private final FluidTank tank;
+    private final ItemStackHandler recycler = new ItemStackHandler(1) {
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            validateSlotIndex(slot);
+            int used = recycle(stack, simulate);
+            return stack.copyWithCount(stack.getCount() - used);
+        }
+    };
 
     public SapVesselBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SAP_VESSEL.get(), pos, state);
@@ -47,11 +58,25 @@ public final class SapVesselBlockEntity extends BlockEntity {
 
     public FluidTank tank() { return tank; }
 
+    public int recycle(ItemStack stack, boolean simulate) {
+        if (kind != SapVesselBlock.Kind.JAR || stack.isEmpty()) return 0;
+        int yield = Math.clamp(com.expeditions.server.ItemValuator.score(stack), 1, 25);
+        if (stack.isDamaged()) {
+            yield = Math.max(1, (int) ((long) yield * (stack.getMaxDamage() - stack.getDamageValue()) / stack.getMaxDamage()));
+        }
+        int used = Math.min(stack.getCount(), tank.getSpace() / yield);
+        if (used > 0 && !simulate) tank.fill(new FluidStack(ModFluids.SAP.get(), used * yield), FluidAction.EXECUTE);
+        return used;
+    }
+
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, ModBlockEntities.SAP_VESSEL.get(),
                 (vessel, side) -> vessel.kind != SapVesselBlock.Kind.WICK || side == null
                         || side.getAxis() == vessel.getBlockState().getValue(BlockStateProperties.FACING).getAxis()
                         ? vessel.tank : null);
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.SAP_VESSEL.get(),
+                (vessel, side) -> vessel.kind == SapVesselBlock.Kind.JAR
+                        && (side == null || side == net.minecraft.core.Direction.UP) ? vessel.recycler : null);
     }
 
     public void wickTick(Level level, BlockPos pos, BlockState state) {

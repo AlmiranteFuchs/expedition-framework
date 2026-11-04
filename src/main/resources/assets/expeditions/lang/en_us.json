@@ -248,9 +248,9 @@
   "item.expeditions.return_knot": "Return Knot",
   "block.expeditions.sap_jar": "Sap Jar",
   "block.expeditions.rootwick": "Rootwick",
-  "gui.expeditions.basin_tier_0": "Loose Gatherings · %1$s × %2$s",
-  "gui.expeditions.basin_tier_1": "Worked Stock · %1$s × %2$s",
-  "gui.expeditions.basin_tier_2": "Bound Gear · %1$s × %2$s",
+  "gui.expeditions.basin_tier_0": "Materials",
+  "gui.expeditions.basin_tier_1": "Curiosities",
+  "gui.expeditions.basin_tier_2": "Gear",
   "gui.expeditions.basin_feed": "Feed: %1$s × %2$s",
   "gui.expeditions.basin_bonus": "1 in 4: %1$s × %2$s extra",
   "message.expeditions.basin_sap": "Pour more Return Sap into the bowl.",
@@ -259,5 +259,12 @@
   "message.expeditions.sap_amount": "Return Sap: %1$s / %2$s mB.",
   "message.expeditions.sap_ingredients": "Bring a Return Knot and Essence to the jar.",
   "message.expeditions.sap_full": "The jar needs room for a full bucket.",
-  "message.expeditions.sap_brewed": "The knot loosens into amber sap."
+  "message.expeditions.sap_brewed": "The knot loosens into amber sap.",
+  "gui.expeditions.basin_weighted_0": "Common stock and rarer fragments.",
+  "gui.expeditions.basin_weighted_1": "Unusual finds caught in the grain.",
+  "gui.expeditions.basin_weighted_2": "Tools and equipment held in a deeper trace.",
+  "gui.expeditions.basin_find": "%1$s × %2$s · %3$s%%",
+  "gui.expeditions.basin_more": "… and %s other finds",
+  "message.expeditions.basin_empty_trace": "This trace holds nothing of that kind.",
+  "message.expeditions.sap_recycled": "The roots break down %s items into sap."
 }

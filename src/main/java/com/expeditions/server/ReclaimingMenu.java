@@ -60,7 +60,7 @@ public final class ReclaimingMenu extends ChestMenu {
                 || !getCarried().isEmpty()) return;
         if (slot == 18 || slot == 26) {
             index = Math.floorMod(index + (slot == 18 ? -1 : 1), dimensions.size());
-        } else if (slot >= 0 && slot < offers().size()) {
+        } else if (slot >= 0 && slot < 3) {
             if (level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
                     && manager.reclaim(serverPlayer, dimensions.get(index), slot, vessel)) {
                 level.sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
@@ -90,7 +90,7 @@ public final class ReclaimingMenu extends ChestMenu {
     }
 
     private List<ReclaimingOffers.Offer> offers() {
-        return ReclaimingOffers.forDimension(dimensions.get(index));
+        return ReclaimingOffers.forDimension(dimensions.get(index), level);
     }
 
     private void refresh(Player player) {
@@ -104,20 +104,21 @@ public final class ReclaimingMenu extends ChestMenu {
         var offers = offers();
         for (int slot = 0; slot < offers.size(); slot++) {
             var offer = offers.get(slot);
-            var quote = offer.stack();
-            quote.set(DataComponents.CUSTOM_NAME, Component.translatable("gui.expeditions.basin_tier_" + slot,
-                    quote.getCount(), offer.item().getDescription()));
+            var quote = offer.sample();
+            if (quote.isEmpty()) quote = new ItemStack(Items.DEAD_BUSH);
+            quote.set(DataComponents.CUSTOM_NAME, Component.translatable("gui.expeditions.basin_tier_" + slot));
             var notes = new java.util.ArrayList<Component>();
             boolean sealed = slot == 2 && !manager.canReclaimGear(player.getUUID(), dimensions.get(index));
-            notes.add(sealed ? Component.translatable("gui.expeditions.basin_field_sealed")
-                    : Component.translatable("gui.expeditions.basin_field_note", offer.extra().getDescription()));
-            if (offer.feedCount() > 0) notes.add(Component.translatable("gui.expeditions.basin_field_feed",
-                    offer.feedCount(), offer.feed().getDescription()));
+            notes.add(Component.translatable(sealed ? "gui.expeditions.basin_field_sealed"
+                    : offer.finds().isEmpty() ? "message.expeditions.basin_empty_trace" : "gui.expeditions.basin_weighted_" + slot));
             notes.add(Component.translatable("gui.expeditions.basin_price", offer.sap()));
-            notes.add(Component.translatable("gui.expeditions.basin_bonus", offer.extraCount(), offer.extra().getDescription()));
-            if (sealed) {
-                notes.add(Component.translatable("message.expeditions.basin_gear"));
+            int totalWeight = offer.finds().stream().mapToInt(ReclaimingOffers.Find::weight).sum();
+            for (var find : offer.finds().stream().sorted(java.util.Comparator.comparingInt(ReclaimingOffers.Find::weight)).limit(5).toList()) {
+                notes.add(Component.translatable("gui.expeditions.basin_find", find.stack().getCount(),
+                        find.stack().getHoverName(), String.format(java.util.Locale.ROOT, "%.2f", 100.0 * find.weight() / totalWeight)));
             }
+            if (offer.finds().size() > 5) notes.add(Component.translatable("gui.expeditions.basin_more", offer.finds().size() - 5));
+            if (sealed) notes.add(Component.translatable("message.expeditions.basin_gear"));
             quote.set(DataComponents.LORE, new ItemLore(notes));
             display.setItem(slot, quote);
         }

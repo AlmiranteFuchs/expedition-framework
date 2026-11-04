@@ -1777,30 +1777,25 @@ public final class ExpeditionGameTests {
         ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:overworld");
         var menu = new com.expeditions.server.ReclaimingMenu(2, player.getInventory(), level, position);
         menu.clicked(2, 0, pickup, player);
-        menu.clicked(1, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "locked gear and missing feedstock must refuse");
+        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "gear requires the hard charter trace");
         menu.clicked(0, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 1750
-                        && player.getInventory().countItem(Items.COBBLESTONE) == 32,
-                "rough supplies deliver the guaranteed haul and spend 250 mB");
-        player.getInventory().add(new ItemStack(Items.RAW_IRON, 6));
-        menu.clicked(1, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 1250
-                        && player.getInventory().countItem(Items.IRON_INGOT) == 8
-                        && player.getInventory().countItem(Items.RAW_IRON) == 0,
-                "worked stock consumes its exact sap and raw feed");
+        helper.assertTrue(vessel.tank().getFluidAmount() == 1750, "materials spend 250 mB");
+        var material = player.getInventory().items.stream().filter(stack -> !stack.isEmpty()).findFirst().orElseThrow();
+        helper.assertTrue(!(material.getItem() instanceof net.minecraft.world.item.BlockItem)
+                        && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(material.getItem()).getNamespace().equals("minecraft"),
+                "a vanilla trace yields a non-block item from its owning namespace");
+        player.getInventory().clearContent();
         ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming_gear/minecraft:overworld");
         menu.clicked(2, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 250
-                        && player.getInventory().countItem(Items.IRON_PICKAXE) == 1
-                        && player.getInventory().countItem(Items.IRON_INGOT) == 5
+        helper.assertTrue(vessel.tank().getFluidAmount() == 750
+                        && player.getInventory().items.stream().anyMatch(stack -> !stack.isEmpty())
                         && manager.tokenBalance(player.getUUID()) == 20,
-                "gear spends 1000 mB and three ingots, leaving charter tokens alone");
+                "unlocked gear spends 1000 mB and leaves charter tokens alone");
         for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
             player.getInventory().setItem(slot, new ItemStack(Items.DIRT, 64));
         }
-        menu.clicked(0, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 250, "a full inventory must leave sap intact");
+        menu.clicked(1, 0, pickup, player);
+        helper.assertTrue(vessel.tank().getFluidAmount() == 750, "a full inventory must leave sap intact");
         helper.succeed();
     }
 
@@ -1846,6 +1841,38 @@ public final class ExpeditionGameTests {
             helper.assertTrue(moved <= 50 && moved + from.getFluidInTank(0).getAmount() == 1000,
                     "rootwick must transfer at its slow rate without creating sap");
         });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_opts", batch = "sap_recycling")
+    public static void sapJarRecyclesHeldItemsAndHopperInputs(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.SURVIVAL);
+        var jar = helper.absolutePos(new BlockPos(1, 1, 2));
+        level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
+        player.moveTo(jar.getX() + 0.5, jar.getY(), jar.getZ() + 1.5);
+        var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(jar);
+        var hand = InteractionHand.MAIN_HAND;
+        player.setItemInHand(hand, new ItemStack(Items.DIRT, 16));
+        player.setShiftKeyDown(true);
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand,
+                new BlockHitResult(Vec3.atCenterOf(jar), Direction.UP, jar, false));
+        player.setShiftKeyDown(false);
+        helper.assertTrue(player.getItemInHand(hand).isEmpty() && vessel.tank().getFluidAmount() == 16,
+                "sneaking with a held block recycles it instead of placing it");
+        var chute = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK, jar, Direction.UP);
+        var sticks = new ItemStack(Items.STICK, 8);
+        helper.assertTrue(chute != null && chute.insertItem(0, sticks, true).isEmpty()
+                        && vessel.tank().getFluidAmount() == 16, "automation simulation must not brew sap");
+        helper.assertTrue(chute.insertItem(0, sticks, false).isEmpty() && vessel.tank().getFluidAmount() == 24,
+                "top-fed automation consumes the accepted items");
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
+                com.expeditions.registry.ModFluids.SAP.get(), 3975), execute);
+        helper.assertTrue(chute.insertItem(0, sticks, false).getCount() == 7
+                        && vessel.tank().getFluidAmount() == 4000 && sticks.getCount() == 8,
+                "a nearly full jar accepts only whole items that fit and returns the remainder");
+        helper.succeed();
     }
 
     /**

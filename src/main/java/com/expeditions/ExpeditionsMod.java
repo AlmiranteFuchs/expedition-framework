@@ -49,6 +49,7 @@ public class ExpeditionsMod {
         modContainer.registerConfig(ModConfig.Type.SERVER, ExpeditionsConfig.SPEC);
 
         IEventBus gameBus = NeoForge.EVENT_BUS;
+        gameBus.addListener(com.expeditions.block.SapVesselBlock::allowRecyclingInteraction);
         gameBus.addListener(ExpeditionEventHandler::onLivingDeath);
         gameBus.addListener(ExpeditionEventHandler::onItemPickup);
         gameBus.addListener(ExpeditionEventHandler::onPlayerLogin);

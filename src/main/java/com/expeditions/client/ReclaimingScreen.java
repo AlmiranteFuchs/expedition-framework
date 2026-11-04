@@ -65,7 +65,7 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
         for (var widget : children()) {
             if (widget instanceof Quote quote && quote.isHoveredOrFocused()) {
                 var lore = menu.getContainer().getItem(quote.slot).get(DataComponents.LORE);
-                int fieldLines = quote.slot == 0 ? 1 : 2;
+                int fieldLines = 1;
                 if (lore != null && lore.lines().size() > fieldLines) {
                     gui.renderComponentTooltip(font, lore.lines().subList(fieldLines, lore.lines().size()), mouseX, mouseY);
                 }
@@ -144,7 +144,7 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
             gui.fill(getX() + 1, y + 1, getX() + 20, y + 20, 0xffcdb38b);
             gui.renderItem(stack, getX() + 3, y + 3);
             gui.drawString(font, font.plainSubstrByWidth(name, available), x, y, color, false);
-            int fieldLines = slot == 0 ? 1 : 2;
+            int fieldLines = 1;
             for (int line = 0; line < Math.min(fieldLines, notes.size()); line++) {
                 int noteY = y + 10 + 9 * line;
                 if (noteY + 8 >= getY() + getHeight()) break;
