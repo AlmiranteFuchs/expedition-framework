@@ -209,9 +209,6 @@ public class ExpeditionMenu extends ChestMenu {
                 sendSapTrail(player, graft, aperture);
             }
             player.closeContainer();
-            if (startable.get(expeditionIndex).commissionPool().isEmpty()) {
-                player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
-            }
         } catch (IllegalStateException e) {
             LOGGER.warn("Expedition start refused for {}: {}",
                     player.getScoreboardName(), e.getMessage());

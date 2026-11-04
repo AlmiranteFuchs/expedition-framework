@@ -377,6 +377,8 @@ public final class ExpeditionManager {
         if (commissionIndex >= 0) {
             player.displayClientMessage(Component.translatable(
                     "message.expeditions.commission", definition.commissionPool().get(commissionIndex).description()), true);
+        } else {
+            player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
         }
         // Every expedition stirs the organism a little — pressure is the
         // dimension-wide threat counter hordes and waves read.

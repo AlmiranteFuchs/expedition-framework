@@ -1385,7 +1385,8 @@ public final class ExpeditionGameTests {
      * objective's bonus — awarded exactly once.
      */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_loot", batch = "expedition_w")
-    public static void objectivesProgressAndPayOut(GameTestHelper helper) {
+    public static void objectivesProgressAndPayOut(GameTestHelper helper)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         String json = """
                 {
                   "display_name": "Bounty Trial",
@@ -1445,6 +1446,20 @@ public final class ExpeditionGameTests {
             helper.assertTrue(player.gameMode.destroyBlock(fieldSample), "the field sample can be harvested");
             helper.assertTrue(run.objectiveState("bark").orElseThrow().completed(),
                     "a tagged block harvested in the field must count");
+            var orders = new java.util.ArrayList<Component>();
+            var capture = new net.minecraft.commands.CommandSource() {
+                @Override public void sendSystemMessage(Component text) { orders.add(text); }
+                @Override public boolean acceptsSuccess() { return true; }
+                @Override public boolean acceptsFailure() { return true; }
+                @Override public boolean shouldInformAdmins() { return false; }
+            };
+            helper.getLevel().getServer().getCommands().getDispatcher().execute("expeditions status",
+                    player.createCommandSourceStack().withSource(capture));
+            helper.assertTrue(orders.stream().anyMatch(line -> line.getContents()
+                            instanceof net.minecraft.network.chat.contents.TranslatableContents order
+                            && order.getKey().equals("message.expeditions.field_order_optional")
+                            && order.getArgs()[0].equals("Cut a bark sample")),
+                    "the status command shows the actual field commission");
 
             manager.activateCheckpoint(player,
                     ExpeditionManager.toPos(run.checkpoints().get(0)));

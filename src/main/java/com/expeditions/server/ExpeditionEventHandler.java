@@ -521,13 +521,29 @@ public final class ExpeditionEventHandler {
         }
         ExpeditionManager manager = ExpeditionManager.get(player.server);
         manager.activeRun(player.getUUID()).ifPresentOrElse(
-                run -> run.nextCheckpoint().ifPresentOrElse(
+                run -> {
+                    run.nextCheckpoint().ifPresentOrElse(
                         next -> player.sendSystemMessage(Component.translatable(
                                 "message.expeditions.next_checkpoint",
                                 run.completedCheckpoints() + 1, run.totalCheckpoints(),
                                 format(next))),
                         () -> player.sendSystemMessage(Component.translatable(
-                                "message.expeditions.all_checkpoints", format(run.exit())))),
+                                "message.expeditions.all_checkpoints", format(run.exit()))));
+                    for (var objective : run.definition().objectives()) {
+                        var state = run.objectiveState(objective.id()).orElseThrow();
+                        String progressKey = state.completed() ? "message.expeditions.field_order_done"
+                                : run.objectiveFailed(objective.id()) ? "message.expeditions.field_order_failed"
+                                : switch (objective.kind()) {
+                                    case COLLECT_ITEMS, HARVEST -> "message.expeditions.field_order_count";
+                                    case TIME_LIMIT -> "message.expeditions.field_order_on_return";
+                                    default -> "message.expeditions.field_order_open";
+                                };
+                        var progress = Component.translatable(progressKey, state.progress(), objective.progressTarget());
+                        ctx.getSource().sendSuccess(() -> Component.translatable(objective.required()
+                                ? "message.expeditions.field_order_required" : "message.expeditions.field_order_optional",
+                                objective.description(), progress), false);
+                    }
+                },
                 () -> player.sendSystemMessage(Component.translatable(
                         "message.expeditions.status_none")));
         return 1;
@@ -570,7 +586,6 @@ public final class ExpeditionEventHandler {
         try {
             ExpeditionManager.get(player.server)
                     .startRun(player, player.blockPosition(), options);
-            player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
             return 1;
         } catch (IllegalStateException e) {
             player.sendSystemMessage(Component.literal(e.getMessage()));
