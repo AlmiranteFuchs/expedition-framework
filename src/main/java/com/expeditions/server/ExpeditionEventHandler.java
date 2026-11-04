@@ -300,6 +300,13 @@ public final class ExpeditionEventHandler {
         event.getDispatcher().register(Commands.literal("expeditions")
                 .then(Commands.literal("balance").executes(ExpeditionEventHandler::balance))
                 .then(Commands.literal("status").executes(ExpeditionEventHandler::status))
+                .then(Commands.literal("bearing").executes(context -> {
+                    ServerPlayer player = player(context);
+                    if (player == null) return 0;
+                    if (ExpeditionManager.get(player.server).sharePartyBearing(player)) return 1;
+                    player.sendSystemMessage(Component.translatable("message.expeditions.party_bearing_unavailable"));
+                    return 0;
+                }))
                 .then(Commands.literal("abandon").executes(ExpeditionEventHandler::abandon))
                 .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem))
                 .then(Commands.literal("unlocks").executes(ExpeditionEventHandler::unlocks))
@@ -525,6 +532,7 @@ public final class ExpeditionEventHandler {
         ExpeditionManager manager = ExpeditionManager.get(player.server);
         manager.activeRun(player.getUUID()).ifPresentOrElse(
                 run -> {
+                    manager.showPartyBearing(player, run);
                     run.nextCheckpoint().ifPresentOrElse(
                         next -> player.sendSystemMessage(Component.translatable(
                                 "message.expeditions.next_checkpoint",

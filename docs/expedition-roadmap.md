@@ -793,3 +793,19 @@ warning. It approaches more slowly and shudders harder as it enrages.
 
 Resonance generators and the condenser make quiet, spaced work sounds
 while generating or refining. Each machine has a distinct cue.
+
+### Unattended verification checkpoint
+
+- Alpha.41 (`e487ac7`) passed 187 required GameTests. In the dev client,
+  the Audio Playtest charter opened, the first witness spawned a horde,
+  and the second deployed a defense. The unattended device fell and
+  returned the player to the Wayroot. Successful extraction, the
+  second-phase Guardian, and the machine sound mix still need client checks
+  before the cumulative release. The approval service reached its usage
+  limit during the Guardian probe.
+- The party navigation batch adds `/expeditions bearing`. Hold the issued
+  compass in the expedition dimension to share your current position for
+  one minute. The shared reading survives reconnects and is shown in
+  `/expeditions status`. The route needle keeps its own target.
+- Next gameplay batch: relay and endurance commissions. Keep markers and
+  their rewards in the existing atomic expedition save.

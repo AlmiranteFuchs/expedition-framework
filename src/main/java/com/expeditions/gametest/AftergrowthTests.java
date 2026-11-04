@@ -56,6 +56,15 @@ public final class AftergrowthTests {
             var portal = ExpeditionManager.toPos(run.portal());
             manager.enterPortal(owner, portal);
             manager.enterPortal(guest, portal);
+            var inventory = owner.getInventory();
+            for (int slot = 0; slot < 9; slot++) {
+                if (inventory.getItem(slot).is(ModItems.EXPEDITION_COMPASS.get())) inventory.selected = slot;
+            }
+            var compass = owner.getMainHandItem();
+            var tracker = compass.get(net.minecraft.core.component.DataComponents.LODESTONE_TRACKER);
+            helper.assertTrue(tracker != null && manager.sharePartyBearing(owner)
+                            && tracker.equals(compass.get(net.minecraft.core.component.DataComponents.LODESTONE_TRACKER)),
+                    "sharing a party bearing leaves the route compass pointed at its witness");
             helper.assertTrue(run.party().contains(guest.getUUID()) && run.totalCheckpoints() == 2,
                     "a guest can join without extending the quiet route");
             var cache = ExpeditionManager.toPos(run.fieldCache().orElseThrow());
@@ -74,6 +83,8 @@ public final class AftergrowthTests {
             var restored = ExpeditionSavedData.load(stored, level.registryAccess()).ledger().activeRun(owner.getUUID()).orElseThrow();
             helper.assertTrue(restored.fieldCache().equals(run.fieldCache()) && restored.fieldCacheOpened(),
                     "cache site and claim both survive save and reload");
+            helper.assertTrue(restored.partyBearing().equals(run.partyBearing()),
+                    "the shared bearing survives a save without extending its expiry");
             manager.completeRun(owner);
             helper.assertTrue(!level.getBlockState(cache).is(ModBlocks.FIELD_CACHE.get())
                             && owner.getInventory().countItem(ModItems.EXPEDITION_ARTIFACT.get()) == 0,

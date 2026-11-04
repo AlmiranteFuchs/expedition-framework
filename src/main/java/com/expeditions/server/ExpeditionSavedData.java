@@ -418,6 +418,12 @@ public class ExpeditionSavedData extends SavedData {
             var cache = runTag.getCompound("FieldCache");
             restored.restoreFieldCache(readWaypoint(cache), cache.getBoolean("Opened"));
         }
+        if (restored.isActive() && runTag.contains("PartyBearing", Tag.TAG_COMPOUND)) {
+            var bearing = runTag.getCompound("PartyBearing");
+            if (bearing.contains("Expires", Tag.TAG_LONG) && bearing.getLong("Expires") >= 0) {
+                restored.shareBearing(new ExpeditionRun.PartyBearing(readWaypoint(bearing), bearing.getLong("Expires")));
+            }
+        }
         return restored;
     }
 
@@ -579,6 +585,11 @@ public class ExpeditionSavedData extends SavedData {
             runTag.put(TAG_TERMINAL, writeWaypoint(run.terminal()));
             runTag.put(TAG_PORTAL, writeWaypoint(run.portal()));
             runTag.put(TAG_ENTRY, writeWaypoint(run.entry()));
+            if (run.isActive()) run.partyBearing().ifPresent(bearing -> {
+                var bearingTag = writeWaypoint(bearing.position());
+                bearingTag.putLong("Expires", bearing.expiresAt());
+                runTag.put("PartyBearing", bearingTag);
+            });
             run.fieldCache().ifPresent(position -> {
                 var cache = writeWaypoint(position);
                 cache.putBoolean("Opened", run.fieldCacheOpened());

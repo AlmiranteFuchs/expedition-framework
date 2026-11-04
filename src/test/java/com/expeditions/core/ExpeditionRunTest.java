@@ -52,6 +52,18 @@ class ExpeditionRunTest {
     }
 
     @Test
+    void partyBearingIsSeparateFromTheRouteAndCannotChangeAfterFailure() {
+        var run = newRun();
+        var bearing = new ExpeditionRun.PartyBearing(CP2, 1200);
+        run.shareBearing(bearing);
+        assertEquals(bearing, run.partyBearing().orElseThrow());
+        assertEquals(CP1, run.nextCheckpoint().orElseThrow());
+        assertThrows(IllegalArgumentException.class, () -> new ExpeditionRun.PartyBearing(CP2, -1));
+        run.fail();
+        assertThrows(IllegalStateException.class, () -> run.shareBearing(bearing));
+    }
+
+    @Test
     void checkpointsMustActivateInOrder() {
         ExpeditionRun run = newRun();
         assertThrows(IllegalStateException.class, () -> run.activateCheckpoint(CP2));

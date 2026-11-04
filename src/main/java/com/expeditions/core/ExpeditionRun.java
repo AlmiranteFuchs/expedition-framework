@@ -45,6 +45,21 @@ public final class ExpeditionRun {
     private final Waypoint entry;
     private final long startedGameTime;
     private Waypoint fieldCache;
+    private PartyBearing partyBearing;
+
+    public record PartyBearing(Waypoint position, long expiresAt) {
+        public PartyBearing {
+            java.util.Objects.requireNonNull(position);
+            if (expiresAt < 0) throw new IllegalArgumentException("Invalid bearing expiry");
+        }
+    }
+
+    public Optional<PartyBearing> partyBearing() { return Optional.ofNullable(partyBearing); }
+
+    public void shareBearing(PartyBearing bearing) {
+        ensureActive();
+        partyBearing = java.util.Objects.requireNonNull(bearing);
+    }
     private boolean fieldCacheOpened;
     private final List<UUID> challengeEntities;
     private final ExpeditionOptions options;

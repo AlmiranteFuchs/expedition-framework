@@ -126,6 +126,30 @@ public final class ExpeditionManager {
         return ledger.activeRun(playerId);
     }
 
+    public boolean sharePartyBearing(ServerPlayer player) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || !player.isHolding(ModItems.EXPEDITION_COMPASS.get())) return false;
+        run.shareBearing(new ExpeditionRun.PartyBearing(toWaypoint(player.blockPosition()),
+                player.serverLevel().getGameTime() + 20 * 60));
+        data.setDirty();
+        for (ServerPlayer member : player.serverLevel().players()) {
+            if (run.isMember(member.getUUID())) showPartyBearing(member, run);
+        }
+        return true;
+    }
+
+    public void showPartyBearing(ServerPlayer player, ExpeditionRun run) {
+        if (!run.isMember(player.getUUID())
+                || !run.definition().dimension().equals(player.level().dimension().location().toString())) return;
+        run.partyBearing().filter(bearing -> player.serverLevel().getGameTime() < bearing.expiresAt())
+                .ifPresent(bearing -> {
+                    var pos = bearing.position();
+                    player.sendSystemMessage(Component.translatable("message.expeditions.party_bearing",
+                            pos.x(), pos.y(), pos.z()));
+                });
+    }
+
     public Optional<ExpeditionRun> latestRun(UUID playerId) {
         return ledger.run(playerId);
     }
@@ -964,7 +988,10 @@ public final class ExpeditionManager {
     public Optional<ExpeditionRun> resumeOrFail(ServerPlayer player) {
         Optional<ExpeditionRun> active = ledger.activeRun(player.getUUID());
         if (active.isEmpty() || isRunRecoverable(active.get())) {
-            active.ifPresent(run -> forEachCompass(player, stack -> retarget(stack, run)));
+            active.ifPresent(run -> {
+                forEachCompass(player, stack -> retarget(stack, run));
+                showPartyBearing(player, run);
+            });
             return active;
         }
         ExpeditionRun run = active.get();
