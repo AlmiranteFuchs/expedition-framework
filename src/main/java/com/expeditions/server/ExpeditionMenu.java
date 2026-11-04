@@ -211,8 +211,8 @@ public class ExpeditionMenu extends ChestMenu {
                 sendSapTrail(player, nearPost, nearPost.add(0, 1.65, 0));
                 sendSapTrail(player, nearPost.add(0, 1.65, 0), crown);
                 sendSapTrail(player, crown, aperture);
-                player.playNotifySound(net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_RESONATE,
-                        net.minecraft.sounds.SoundSource.BLOCKS, 0.55f, 0.7f);
+                player.playNotifySound(com.expeditions.registry.ModSounds.WAYROOT_GRAFT.get(),
+                        net.minecraft.sounds.SoundSource.BLOCKS, 0.55f, 1f);
             } else {
                 sendSapTrail(player, graft, aperture);
             }

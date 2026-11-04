@@ -60,6 +60,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import com.expeditions.registry.ModSounds;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffect;
@@ -373,6 +374,7 @@ public final class ExpeditionManager {
                             + definition.costTokens());
         }
         ledger.startRun(run);
+        portalLevel.playSound(null, portalPos, ModSounds.PORTAL_OPEN.get(), SoundSource.BLOCKS, 0.8f, 1f);
         if (aftergrowth) placeFieldCache(run, level, adapter);
         if (commissionIndex >= 0) {
             player.displayClientMessage(Component.translatable(
@@ -587,6 +589,7 @@ public final class ExpeditionManager {
         if (destination != null) {
             player.teleportTo(destination, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
                     Set.of(), player.getYRot(), player.getXRot());
+            player.playNotifySound(ModSounds.PORTAL_TRAVEL.get(), SoundSource.PLAYERS, 0.8f, 1f);
             JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.WAYFINDING);
         }
         // Stepping through should feel like a deployment — title card up.
@@ -692,11 +695,8 @@ public final class ExpeditionManager {
                         Component.translatable("direction." + bearing.getName())), true);
             });
         }
-        // The witness answers the compass: wood first, then a restrained chime.
         player.serverLevel().playSound(null, pos,
-                SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.5f, 0.7f);
-        player.serverLevel().playSound(null, pos,
-                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.55f, 0.65f);
+                ModSounds.CHECKPOINT.get(), SoundSource.BLOCKS, 0.7f, 1f);
         player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
                 pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5,
                 12, 0.16, 0.3, 0.16, 0.008);
@@ -806,8 +806,7 @@ public final class ExpeditionManager {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
                 memberPlayer.playNotifySound(
-                        SoundEvents.AMETHYST_BLOCK_RESONATE,
-                        SoundSource.PLAYERS, 0.7f, 0.75f);
+                        ModSounds.RECALL.get(), SoundSource.PLAYERS, 0.75f, 1f);
             }
         }
         player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
@@ -1234,8 +1233,7 @@ public final class ExpeditionManager {
                 // Failure should land like failure: a power-down note as
                 // the Charter pulls you back, not silence.
                 if (run.status() == ExpeditionStatus.FAILED) {
-                    memberPlayer.playNotifySound(SoundEvents.BEACON_DEACTIVATE,
-                            SoundSource.PLAYERS, 0.8f, 0.6f);
+                    memberPlayer.playNotifySound(ModSounds.FAILURE.get(), SoundSource.PLAYERS, 0.75f, 1f);
                 }
                 removeMemberEffects(run, memberPlayer);
                 removeArtifacts(memberPlayer, run.runId());
@@ -1478,8 +1476,7 @@ public final class ExpeditionManager {
                 center.getX() + 0.5, center.getY() + 0.6,
                 center.getZ() + 0.5,
                 10, radius * 0.4, 0.4, radius * 0.4, 0.02);
-        level.playSound(null, center, SoundEvents.SCULK_SHRIEKER_SHRIEK,
-                SoundSource.HOSTILE, 0.85f, 0.6f);
+        level.playSound(null, center, ModSounds.HORDE.get(), SoundSource.HOSTILE, 0.85f, 1f);
     }
 
     /** The guardian's body must fit the real site geometry, just like a horde. */
@@ -1565,6 +1562,7 @@ public final class ExpeditionManager {
                 objective.timeLimitTicks(),
                 ExpeditionsConfig.defenseWaveSeconds() * 20L);
         JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.DEFENSE);
+        level.playSound(null, devicePos, ModSounds.DEVICE_START.get(), SoundSource.BLOCKS, 0.8f, 1f);
         spawnSiegeWave(run, level, devicePos);
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
@@ -1635,6 +1633,7 @@ public final class ExpeditionManager {
      */
     private void onDeviceDestroyed(ExpeditionRun run, ServerLevel level, BlockPos devicePos,
             String objectiveId) {
+        level.playSound(null, devicePos, ModSounds.DEVICE_BREAK.get(), SoundSource.BLOCKS, 0.8f, 1f);
         removeMarkerAt(level, devicePos);
         data.untrackMarker(level.dimension().location().toString(), devicePos);
         clearChallengeEntities(run, level, devicePos);

@@ -6,6 +6,7 @@ import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModCreativeTabs;
 import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
+import com.expeditions.registry.ModSounds;
 import com.expeditions.server.ExpeditionEventHandler;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
@@ -32,6 +33,7 @@ public class ExpeditionsMod {
         com.expeditions.registry.ModFluids.FLUIDS.register(modEventBus);
         modEventBus.addListener(com.expeditions.block.entity.SapVesselBlockEntity::registerCapabilities);
         ModBlocks.BLOCKS.register(modEventBus);
+        ModSounds.EVENTS.register(modEventBus);
         com.expeditions.registry.ModFeatures.FEATURES.register(modEventBus);
         modEventBus.addListener(com.expeditions.block.entity.ResonanceMachineBlockEntity::registerCapabilities);
         modEventBus.addListener(com.expeditions.item.ResonanceCellItem::registerCapabilities);

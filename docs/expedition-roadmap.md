@@ -760,3 +760,10 @@ with the run. The cache is removed when the route ends.
 Infuse two logs with Assimilation Essence to craft two Pale Wood blocks.
 Each makes four Pale Planks. Eight Pale Planks and a Dormant Flake craft
 the Pale Chest, which uses the standard chest inventory.
+
+### Expedition sound cues — alpha.38
+
+The custom sound set now scores opening and crossing the Wayroot, the
+witness's answer, a horde's direction, graft defense deployment and loss,
+and the party's return or failure. The horde cue originates at its incoming
+lane. Each wired event has a subtitle.
