@@ -1,0 +1,106 @@
+{
+  "block.assimilation_heart.beat": {
+    "sounds": [
+      "expeditions:heart/beat"
+    ],
+    "subtitle": "subtitles.expeditions.block.assimilation_heart.beat"
+  },
+  "block.assimilation_layer.spread": {
+    "sounds": [
+      "expeditions:layer/spread1",
+      "expeditions:layer/spread2",
+      "expeditions:layer/spread3"
+    ],
+    "subtitle": "subtitles.expeditions.block.assimilation_layer.spread"
+  },
+  "block.expedition_checkpoint.activate": {
+    "sounds": [
+      "expeditions:checkpoint/activate"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_checkpoint.activate"
+  },
+  "block.expedition_portal.hum": {
+    "sounds": [
+      "expeditions:portal/hum"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_portal.hum"
+  },
+  "block.expedition_portal.open": {
+    "sounds": [
+      "expeditions:portal/open"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_portal.open"
+  },
+  "block.expedition_portal.travel": {
+    "sounds": [
+      "expeditions:portal/travel"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_portal.travel"
+  },
+  "block.expedition_terminal.activate": {
+    "sounds": [
+      "expeditions:terminal/activate"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_terminal.activate"
+  },
+  "block.expedition_terminal.refuse": {
+    "sounds": [
+      "expeditions:terminal/refuse"
+    ],
+    "subtitle": "subtitles.expeditions.block.expedition_terminal.refuse"
+  },
+  "event.expedition.complete": {
+    "sounds": [
+      "expeditions:event/complete"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.complete"
+  },
+  "event.expedition.fail": {
+    "sounds": [
+      "expeditions:event/fail"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.fail"
+  },
+  "event.expedition.redeem": {
+    "sounds": [
+      "expeditions:event/redeem"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.redeem"
+  },
+  "event.expedition.start": {
+    "sounds": [
+      "expeditions:event/start"
+    ],
+    "subtitle": "subtitles.expeditions.event.expedition.start"
+  },
+  "event.horde.spawn": {
+    "sounds": [
+      "expeditions:horde/spawn"
+    ],
+    "subtitle": "subtitles.expeditions.event.horde.spawn"
+  },
+  "event.infection.heartbeat": {
+    "sounds": [
+      "expeditions:infection/heartbeat"
+    ],
+    "subtitle": "subtitles.expeditions.event.infection.heartbeat"
+  },
+  "event.organism.roar": {
+    "sounds": [
+      "expeditions:organism/roar"
+    ],
+    "subtitle": "subtitles.expeditions.event.organism.roar"
+  },
+  "item.expedition_compass.chime": {
+    "sounds": [
+      "expeditions:compass/chime"
+    ],
+    "subtitle": "subtitles.expeditions.item.expedition_compass.chime"
+  },
+  "item.expedition_compass.ping": {
+    "sounds": [
+      "expeditions:compass/ping"
+    ],
+    "subtitle": "subtitles.expeditions.item.expedition_compass.ping"
+  }
+}

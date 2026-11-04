@@ -87,5 +87,22 @@
   "gui.expeditions.locked_key": "Requires unlock: %1$s",
   "gui.expeditions.locked_cost": "Short %1$s tokens",
   "gui.expeditions.locked_campaign": "Dimension must be \"%1$s\" (is \"%2$s\")",
-  "gui.expeditions.click_cycle": "Click to change"
+  "gui.expeditions.click_cycle": "Click to change",
+  "subtitles.expeditions.block.assimilation_heart.beat": "The Bloom's heart beats",
+  "subtitles.expeditions.block.assimilation_layer.spread": "The Bloom creeps",
+  "subtitles.expeditions.block.expedition_checkpoint.activate": "Checkpoint resonates",
+  "subtitles.expeditions.block.expedition_portal.open": "Portal opens",
+  "subtitles.expeditions.block.expedition_portal.hum": "Portal hums",
+  "subtitles.expeditions.block.expedition_portal.travel": "Portal swallows",
+  "subtitles.expeditions.block.expedition_terminal.activate": "Terminal chirps",
+  "subtitles.expeditions.block.expedition_terminal.refuse": "Terminal refuses",
+  "subtitles.expeditions.event.expedition.start": "Expedition departs",
+  "subtitles.expeditions.event.expedition.complete": "Expedition completed",
+  "subtitles.expeditions.event.expedition.fail": "Expedition fails",
+  "subtitles.expeditions.event.expedition.redeem": "Tokens redeemed",
+  "subtitles.expeditions.event.horde.spawn": "The Bloom shrieks",
+  "subtitles.expeditions.event.infection.heartbeat": "Your heart beats wrong",
+  "subtitles.expeditions.event.organism.roar": "The Bloom roars",
+  "subtitles.expeditions.item.expedition_compass.ping": "Compass pulses",
+  "subtitles.expeditions.item.expedition_compass.chime": "Compass chimes"
 }
