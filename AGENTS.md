@@ -42,8 +42,9 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
 - Textures: `python3 tools/gen_textures.py` regenerates all asset PNGs
   (16×16, bone/ember ramps, top-left light, ordered dither — no noise)
 - Sounds: `python3 tools/gen_sounds.py` regenerates all `.ogg` SFX and
-  `sounds.json` (needs `pip3 install soundfile`; two voices — Charter
-  glass bells / Bloom wet sub-and-squelch; events not yet wired into code)
+  `sounds.json` (needs `pip3 install soundfile`; horror voicing — dying
+  Charter machinery vs wet sub-squelch whispering Bloom; events not
+  yet wired into code)
 
 Corporate proxy: TLS interception requires importing the corporate root CA into
 `$JAVA_HOME/lib/security/cacerts` before dependency resolution works.

@@ -3,12 +3,17 @@
 
 Every clip is synthesized from oscillators + filtered noise — no samples,
 no licensing surface, deterministic per seed. Style rules:
-  - two voices, mirroring the bone/ember duality of the texture set:
-      CHARTER — struck glass/ceramic, inharmonic bell partials, airy
-                whooshes; precise, cold, institutional
-      BLOOM   — sub-thumps, resonant squelch, formant shrieks; wet,
-                granular, alive
-  - one motif family (A-minor): stings, bells and chimes all speak it
+  - HORROR FIRST. The Bloom is an infection eating dimensions and it
+    WANTS you. No bells, no arpeggios, nothing bright. Everything is
+    tolls, drones, breath, wet tearing, sub pressure.
+  - two voices:
+      CHARTER — dying machinery: low clunks, warbling detuned tones,
+                tape hiss; institutional and already half-dead
+      BLOOM   — sub-thumps, resonant squelch, formant shrieks, and
+                whispered almost-speech (vowel-formant sweeps that
+                nearly resolve into words — that is the point)
+  - dread lives in dissonance: minor-second toll pairs, beating
+    detuned drones, pitch that sags instead of resolving
   - mono 44.1kHz, normalized to -1.5dBFS peak; positional events stay
     mono so the game engine spatialize them correctly
 
@@ -183,23 +188,90 @@ def finalize(x, peak=PEAK, tail_pad=0.05):
     return x
 
 
-# --------------------------------------------------------- charter voices
-# Inharmonic struck-glass partials — the Charter's institutional voice.
-GLASS_RATIOS = (1.0, 2.756, 5.404, 8.933)
-GLASS_AMPS = (1.0, 0.42, 0.18, 0.06)
-
-
-def bell(dst, freq, at, dur, gain, detune=0.0):
-    for r, a in zip(GLASS_RATIOS, GLASS_AMPS):
+# ------------------------------------------------------------- the voices
+def toll(dst, freq, at, dur, gain, detune=0.006):
+    """Funeral bell: inharmonic partials, deliberately mistuned, struck
+    soft — resonance that feels wrong, not bright."""
+    ratios = (1.0, 2.01, 2.74, 4.07, 5.43)
+    amps = (1.0, 0.35, 0.5, 0.22, 0.1)
+    for r, a in zip(ratios, amps):
         f = freq * r * (1 + detune)
-        tone = sine(f, dur)
-        # higher partials die faster — glass, not brass
-        tone = apply_env(tone, attack=0.003, decay_tau=dur / (3.5 * r),
-                         sustain=0.0)
+        tone = apply_env(sine(f, dur), attack=0.01,
+                         decay_tau=dur / (4.0 * r), sustain=0.0)
         mix(dst, tone, gain * a, at)
-    # attack tick
-    tick = apply_env(noise(0.02, int(freq)), decay_tau=0.006, sustain=0.0)
-    mix(dst, hp(tick, 3000), gain * 0.18, at)
+    thud = apply_env(lp(noise(0.1, int(freq)), 300), decay_tau=0.05,
+                   sustain=0.0)
+    mix(dst, thud, gain * 0.4, at)
+
+
+def drone(dur, freqs, gain=1.0, wobble_hz=0.0, wobble_depth=0.0):
+    """Beating detuned sines — close frequencies rubbing against each
+    other is the cheapest dread there is."""
+    out = buf(dur)
+    for i, f in enumerate(freqs):
+        if wobble_hz:
+            f_fn = lambda t, f=f, ph=i: f * (1 + wobble_depth *
+                                             math.sin(2 * math.pi *
+                                                      wobble_hz * t + ph))
+            tone = sine(f_fn, dur)
+        else:
+            tone = sine(f, dur)
+        mix(out, tone, gain / len(freqs))
+    return out
+
+
+def breath(dur, seed, attack=0.35, cutoff=900, gain=1.0):
+    """An exhale: shaped broadband noise, lowpassed into a hiss."""
+    n = apply_env(noise(dur, seed), attack=attack, decay_tau=dur * 0.35,
+                  sustain=0.0)
+    return [s * gain for s in lp(n, cutoff)]
+
+
+def whisper(dur, seed, gain=1.0):
+    """Almost-speech: noise swept across vowel formant pairs. It should
+    nearly say something — the Bloom reaching for your language.
+    Formant pairs approximate 'oo -> ah -> ee -> ah' at ~300-900Hz."""
+    n = noise(dur, seed)
+    out = buf(dur)
+    # two parallel formant bands drifting between vowel centers
+    f1_path = (700, 500, 800, 600, 350)
+    f2_path = (1200, 1700, 2400, 1500, 1100)
+    seg = len(n) // len(f1_path)
+    for k in range(len(f1_path)):
+        a, b = k * seg, min(len(n), (k + 1) * seg)
+        chunk = n[a:b]
+        mix(out, bp(chunk, f1_path[k], 6.0), 0.8, a / SR)
+        mix(out, bp(chunk, f2_path[k], 8.0), 0.5, a / SR)
+    out = apply_env(out, attack=0.1, decay_tau=dur * 0.4, sustain=0.0)
+    # amplitude gating — syllable-ish stutter
+    rng = random.Random(seed)
+    n2 = len(out)
+    rate = rng.uniform(5.0, 8.0)
+    for i in range(n2):
+        t = i / SR
+        gate = 0.35 + 0.65 * max(0.0, math.sin(2 * math.pi * rate * t +
+                                             rng.uniform(0, 0.4)))
+        out[i] *= gate
+    return [s * gain for s in out]
+
+
+def clunk(dst, at, gain=1.0, freq=90):
+    """Dead mechanical impact — the Charter's machines still moving."""
+    k = apply_env(sine(lambda t: freq - freq * 0.5 * t, 0.14),
+                  decay_tau=0.06, sustain=0.0)
+    mix(dst, lp(k, 700), gain, at)
+    tick = apply_env(noise(0.02, int(freq * 7)), decay_tau=0.008,
+                     sustain=0.0)
+    mix(dst, lp(tick, 2500), gain * 0.3, at)
+
+
+def warble(freq, dur, vib_hz=7.0, vib_depth=0.02, seed=3):
+    """A tone that can't hold pitch — warbling like a dying radio."""
+    rng = random.Random(seed)
+    drift = rng.uniform(-0.03, -0.08)
+    return sine(lambda t: freq * (1 + drift * t +
+                                  vib_depth * math.sin(2 * math.pi *
+                                                       vib_hz * t)), dur)
 
 
 def air_sweep(dur, f_lo, f_hi, q, seed, gain=1.0, reverse=False):
@@ -274,135 +346,164 @@ def formant_growl(dur, f0, seed, formants=(320, 850), trem_hz=9.0):
 
 # ------------------------------------------------------------- event builds
 def b_terminal_activate():
-    out = buf(0.8)
-    bell(out, note(81), 0.0, 0.5, 0.5)   # A5
-    bell(out, note(88), 0.09, 0.6, 0.4)  # E6
-    mix(out, air_sweep(0.18, 1500, 5000, 3, 11, 0.12))
+    """Dying machine acknowledging you: clunk, warbling tone, hiss."""
+    out = buf(0.9)
+    clunk(out, 0.0, gain=0.9, freq=85)
+    w = apply_env(warble(147, 0.5, vib_hz=6.5, vib_depth=0.025), attack=0.02,
+                  decay_tau=0.22, sustain=0.0)
+    mix(out, lp(w, 1200), 0.4, 0.1)
+    mix(out, lp(noise(0.4, 12), 1400), 0.12, 0.12)
     return finalize(out)
 
 
 def b_terminal_refuse():
-    out = buf(0.5)
-    for i, at in enumerate((0.0, 0.16)):
-        k = apply_env(sine(lambda t: 170 - 60 * t, 0.12),
-                      decay_tau=0.05, sustain=0.0)
-        mix(out, lp(k, 900), 0.8 - 0.15 * i, at)
-    mix(out, lp(noise(0.3, 4), 500), 0.1)
+    """Two dead thuds and a low wrong-note buzz. No."""
+    out = buf(0.7)
+    clunk(out, 0.0, gain=0.9, freq=70)
+    clunk(out, 0.22, gain=0.7, freq=60)
+    buzz = apply_env(lp([2 * ((60 * i / SR) % 1.0) - 1 for i in
+                         range(int(0.3 * SR))], 300),
+                   attack=0.01, decay_tau=0.12, sustain=0.0)
+    mix(out, buzz, 0.35, 0.05)
     return finalize(out)
 
 
 def b_checkpoint_activate():
-    out = buf(1.7)
-    for i, m in enumerate((69, 72, 76, 81)):  # A4 C5 E5 A5 — minor rise
-        bell(out, note(m), i * 0.11, 1.0, 0.4)
-    mix(out, air_sweep(0.5, 800, 6000, 4, 21, 0.15), 0.25)
-    return finalize(reverb(out, wet=0.3))
+    """Dread toll: a deep bell struck once, answered a semitone up —
+    the resonance is *wrong*, plus a long cold exhale."""
+    out = buf(2.4)
+    toll(out, note(33), 0.0, 1.8, 0.8)            # A1
+    toll(out, note(33) * 2 ** (1 / 12), 0.35, 1.9, 0.35)  # minor 2nd rub
+    mix(out, breath(1.6, 17, attack=0.5, cutoff=700), 0.5, 0.4)
+    return finalize(reverb(out, wet=0.42))
 
 
 def b_portal_open():
-    out = buf(1.9)
-    mix(out, sub_drop(1.2, 95, 27, 0.9))                      # the thoom
-    mix(out, air_sweep(1.4, 300, 3200, 2.5, 31, 0.3), 0.15)   # air rushing in
-    for i, m in enumerate((76, 81, 88)):
-        bell(out, note(m), 0.5 + i * 0.13, 1.1, 0.22)
-    return finalize(reverb(out, wet=0.35))
+    """Something opens its throat: sub thoom + wet gape + drone."""
+    out = buf(2.1)
+    mix(out, sub_drop(1.3, 85, 24, 0.9))
+    gape = squelch(1.0, 33, drips=2, f_sweep=(500, 140))
+    mix(out, gape, 0.5, 0.25)
+    mix(out, apply_env(drone(1.6, (55, 55 * 2 ** (1 / 12), 82.5)),
+                       attack=0.5, decay_tau=0.9, sustain=0.0), 0.35, 0.3)
+    mix(out, whisper(1.0, 35, gain=0.18), 0.7)
+    return finalize(reverb(out, wet=0.4))
 
 
 def b_portal_hum():
-    """Loopable ~3.2s ambient bed: beating lows + slow airy band."""
+    """Loopable ~3.2s dread bed: beating detuned subs, a slow air
+    band, and a faint whisper that never quite forms words."""
     dur = 3.2
+    n = int(dur * SR)
     out = buf(dur)
-    n = len(out)
-    # integer-cycle carriers so the loop point is seamless
-    for f, g in ((40.0, 0.5), (80.0, 0.3), (120.0, 0.12)):
+    # integer-cycle carriers so the loop point is seamless; the 3Hz
+    # beat between 40 and 43Hz is the unease
+    for f, g in ((40.0, 0.5), (43.0, 0.4), (80.0, 0.22), (121.0, 0.08)):
         cycles = round(f * dur)
         cyc_f = cycles / dur
         for i in range(n):
             out[i] += g * math.sin(2 * math.pi * cyc_f * i / n)
-    lfo = [0.65 + 0.35 * math.sin(2 * math.pi * (2 / dur) * i / n)
+    lfo = [0.6 + 0.4 * math.sin(2 * math.pi * (2 / dur) * i / n)
            for i in range(n)]
-    air = lp(bp(noise(dur, 41), 1200, 1.2), 3000)
+    air = lp(bp(noise(dur, 41), 900, 1.2), 2200)
     for i in range(n):
-        out[i] += air[i] * 0.25 * lfo[i]
+        out[i] += air[i] * 0.22 * lfo[i]
+    # whisper tucked under — looped so it stays seamless
+    w = whisper(dur, 43, gain=0.1)
+    for i in range(n):
+        out[i] += w[i]
     return finalize(out)
 
 
 def b_portal_travel():
-    out = buf(1.7)
-    # whoosh swells in then snaps to silence = stepping through
-    whoosh = apply_env(air_sweep(0.9, 400, 5200, 3.5, 51, 0.6),
-                       attack=0.55, decay_tau=0.3, sustain=0.0)
-    mix(out, whoosh)
-    mix(out, sub_drop(0.7, 80, 30, 0.7), 0.75)
-    bell(out, note(88), 0.82, 0.7, 0.3)
-    bell(out, note(93), 0.95, 0.6, 0.2)
-    return finalize(reverb(out, wet=0.28))
+    """It takes you: a long suck-in that snaps to a wet gulp, then the
+    world lands wrong (muffled boom, no air)."""
+    out = buf(1.8)
+    suck = air_sweep(0.85, 300, 4200, 3.5, 51, 0.5)
+    suck = apply_env(suck, attack=0.7, decay_tau=0.12, sustain=0.0)
+    mix(out, suck)
+    gulp = squelch(0.35, 53, drips=1, f_sweep=(400, 120))
+    mix(out, gulp, 0.7, 0.8)
+    mix(out, lp(sub_drop(0.6, 70, 26), 350), 0.8, 0.85)
+    mix(out, breath(0.6, 55, attack=0.15, cutoff=500), 0.4, 0.95)
+    return finalize(reverb(out, wet=0.25))
 
 
 def b_event_start():
-    out = buf(2.1)
-    mix(out, apply_env(sine(55, 1.4), attack=0.6, decay_tau=0.7,
-                       sustain=0.0), 0.5)
-    for i, m in enumerate((57, 62, 69)):  # A3 D4 A4 — the departure call
-        bell(out, note(m), 0.55 + i * 0.14, 1.2, 0.35)
-    mix(out, air_sweep(1.0, 500, 4000, 3, 61, 0.18), 0.5)
-    return finalize(reverb(out, wet=0.32))
+    """Departure: a door closing somewhere you'll never see. Deep boom,
+    a cluster of high detuned sines (barely audible, deeply wrong),
+    heartbeat underneath — then silence decides."""
+    out = buf(2.3)
+    mix(out, sub_drop(1.4, 70, 22, 0.9))
+    mix(out, apply_env(drone(1.8, (note(85), note(85) * 2 ** (1 / 12),
+                                  note(88)), wobble_hz=0.7,
+                             wobble_depth=0.004),
+                       attack=0.5, decay_tau=1.0, sustain=0.0), 0.22, 0.3)
+    mix(out, heartbeat(1.4, lub_f=50, dub_f=40, wet=0.0, seed=57), 0.35, 0.2)
+    return finalize(reverb(out, wet=0.35))
 
 
 def b_event_complete():
-    out = buf(2.5)
-    for i, m in enumerate((69, 72, 76, 81, 84)):
-        bell(out, note(m), i * 0.09, 1.5, 0.34)
-    bell(out, note(45), 0.0, 1.8, 0.3)  # low anchor
-    mix(out, air_sweep(1.4, 2000, 8000, 5, 71, 0.12), 0.3)
-    return finalize(reverb(out, wet=0.4))
+    """You got out. That is all this sting is allowed to say: one deep
+    toll, a long exhale, and the whisper follows you home."""
+    out = buf(2.6)
+    toll(out, note(33), 0.0, 2.0, 0.75)
+    mix(out, breath(2.0, 63, attack=0.35, cutoff=600), 0.55, 0.3)
+    mix(out, whisper(1.1, 67, gain=0.12), 1.3)
+    return finalize(reverb(out, wet=0.45))
 
 
 def b_event_fail():
-    out = buf(2.0)
-    for i, m in enumerate((69, 65)):  # A4 F4 — falls away
-        tone = apply_env(sine(lambda t, m=m: note(m) * (1 - 0.06 * t), 1.0),
-                         attack=0.01, decay_tau=0.55, sustain=0.0)
-        mix(out, lp(tone, 2200 - 900 * i), 0.5, i * 0.45)
-    mix(out, lp(sub_drop(1.4, 70, 24), 400), 0.7, 0.35)
+    """Everything sags. The pitch gives up mid-note — a machine dying
+    with you — then the Bloom grunts from very far away."""
+    out = buf(2.2)
+    sag = apply_env(warble(220, 1.6, vib_hz=9.0, vib_depth=0.05, seed=69),
+                    attack=0.01, decay_tau=0.7, sustain=0.0)
+    mix(out, lp(sag, 1500), 0.5)
+    mix(out, lp(sub_drop(1.5, 65, 20), 300), 0.7, 0.3)
+    grunt = formant_growl(0.7, 70, 71, formants=(250, 600), trem_hz=11.0)
+    mix(out, lp(grunt, 900), 0.4, 1.1)
     return finalize(reverb(out, wet=0.3))
 
 
 def b_event_redeem():
-    out = buf(1.0)
+    """Bone rattle: knuckle-bones shaken in a fist, then a dead clunk."""
+    out = buf(0.95)
     rng = random.Random(81)
-    for i in range(3):
-        f = rng.uniform(4200, 6600)
-        clink = apply_env(sine(f, 0.12), decay_tau=0.03, sustain=0.0)
-        mix(out, clink, 0.5, 0.02 + i * 0.09 + rng.uniform(0, 0.02))
-        clink2 = apply_env(sine(f * 2.76, 0.08), decay_tau=0.02, sustain=0.0)
-        mix(out, clink2, 0.15, 0.02 + i * 0.09)
-    bell(out, note(88), 0.32, 0.55, 0.3)
+    for i in range(5):
+        t = 0.02 + i * 0.07 + rng.uniform(0, 0.03)
+        f = rng.uniform(700, 1400)
+        knock = apply_env(bp(noise(0.05, 80 + i), f, 4.0),
+                          decay_tau=0.02, sustain=0.0)
+        mix(out, knock, rng.uniform(0.3, 0.55), t)
+    clunk(out, 0.42, gain=0.7, freq=75)
     return finalize(out)
 
 
 def b_compass_ping():
-    """Bone knock — the engine double-fires it for the lub-dub pulse."""
-    out = buf(0.25)
-    knock = apply_env(sine(lambda t: 210 - 320 * t, 0.09),
-                      decay_tau=0.025, sustain=0.0)
-    mix(out, lp(knock, 1400), 1.0)
+    """Bone knocked on a coffin lid — hollower than a clean tok.
+    The engine double-fires it for the lub-dub pulse."""
+    out = buf(0.3)
+    knock = apply_env(sine(lambda t: 180 - 260 * t, 0.1),
+                      decay_tau=0.03, sustain=0.0)
+    mix(out, lp(knock, 1100), 1.0)
+    res = apply_env(sine(340, 0.12), decay_tau=0.05, sustain=0.0)
+    mix(out, res, 0.2, 0.015)
     tick = apply_env(noise(0.015, 91), decay_tau=0.005, sustain=0.0)
-    mix(out, hp(tick, 2500), 0.22)
+    mix(out, hp(tick, 2500), 0.15)
     return finalize(out)
 
 
 def b_compass_chime():
-    """FM-ish glass bell; code sweeps pitch for elevation cues."""
-    out = buf(1.2)
-    car, mod = note(88), note(88) * 3.01
-    n = len(out)
-    for i in range(n):
-        t = i / SR
-        m = math.sin(2 * math.pi * mod * t) * math.exp(-t / 0.25) * 2.4
-        out[i] = math.sin(2 * math.pi * car * t + m)
-    out = apply_env(out, attack=0.004, decay_tau=0.35, sustain=0.0)
-    bell(out, note(100), 0.0, 0.9, 0.12)
+    """Not a chime — a voice humming one note wrong. Breath around a
+    slow-vibrato tone; the code sweeps pitch for elevation cues."""
+    out = buf(1.3)
+    v = apply_env(warble(392, 1.1, vib_hz=4.5, vib_depth=0.018, seed=93),
+                  attack=0.25, decay_tau=0.4, sustain=0.0)
+    mix(out, lp(v, 1600), 0.5)
+    mix(out, apply_env(bp(noise(1.1, 95), 1400, 1.5), attack=0.3,
+                     decay_tau=0.4, sustain=0.0), 0.25)
+    mix(out, whisper(0.8, 97, gain=0.15), 0.25)
     return finalize(out)
 
 
@@ -411,18 +512,27 @@ def b_heart_beat():
 
 
 def b_infection_heartbeat():
-    """The Bloom inside you — muffled, no air at all."""
-    x = heartbeat(0.75, lub_f=52, dub_f=40, wet=0.0, seed=111)
+    """The Bloom inside you — muffled, no air, and something moving
+    between the beats."""
+    x = heartbeat(0.75, lub_f=52, dub_f=40, wet=0.25, seed=111)
+    mix(x, squelch(0.4, 113, drips=1, f_sweep=(350, 120)), 0.15, 0.35)
     return finalize(lp(x, 300))
 
 
 def b_layer_spread(seed):
-    return finalize(squelch(0.65, seed, drips=random.Random(seed).randint(2, 4)))
+    """Wet slither plus flesh tearing — the colony reaching."""
+    rng = random.Random(seed)
+    out = squelch(0.7, seed, drips=rng.randint(2, 4))
+    tear = apply_env(bp_sweep(noise(0.4, seed + 1), 2500, 600, 3.0),
+                     attack=0.02, decay_tau=0.15, sustain=0.0)
+    mix(out, tear, 0.3, rng.uniform(0.05, 0.25))
+    return finalize(out)
 
 
 def b_horde_spawn():
-    """The Bloom calls the locals: formant shriek falling to a hiss."""
-    out = buf(1.5)
+    """The Bloom calls the locals: a shriek that is trying to be a
+    word, guttural breath, and the whisper riding under it all."""
+    out = buf(1.6)
     n = int(1.1 * SR)
     src = [0.0] * n
     for i in range(n):
@@ -432,20 +542,24 @@ def b_horde_spawn():
         src[i] = (2 * ph - 1) + 0.5 * math.sin(2 * math.pi * f * 0.5 * t)
     mix(out, apply_env(bp_sweep(src, 1800, 700, 8), attack=0.02,
                      decay_tau=0.45, sustain=0.0), 0.8)
-    breath = apply_env(bp(noise(1.4, 121), 900, 1.5), attack=0.3,
-                       decay_tau=0.5, sustain=0.0)
-    mix(out, breath, 0.4, 0.1)
-    return finalize(reverb(out, wet=0.2))
+    b_ = apply_env(bp(noise(1.4, 121), 900, 1.5), attack=0.3,
+                   decay_tau=0.5, sustain=0.0)
+    mix(out, b_, 0.4, 0.1)
+    mix(out, formant_growl(0.8, 85, 123, formants=(280, 700), trem_hz=13.0),
+        0.4, 0.5)
+    mix(out, whisper(1.2, 127, gain=0.22), 0.2)
+    return finalize(reverb(out, wet=0.25))
 
 
 def b_organism_roar():
-    out = buf(2.8)
-    mix(out, formant_growl(2.2, 55, 131, formants=(300, 780), trem_hz=8.0),
-        0.7, 0.15)
-    mix(out, apply_env(sine(lambda t: 42 - 8 * t, 2.4), attack=0.4,
-                       decay_tau=1.0, sustain=0.0), 0.8, 0.15)
-    mix(out, apply_env(lp(noise(2.4, 137), 900), attack=0.5,
-                       decay_tau=1.0, sustain=0.0), 0.35, 0.1)
+    """Short and unbearable — the pressure event, not a monster showreel."""
+    out = buf(1.8)
+    mix(out, formant_growl(1.4, 55, 131, formants=(300, 780), trem_hz=8.0),
+        0.7, 0.1)
+    mix(out, apply_env(sine(lambda t: 42 - 8 * t, 1.6), attack=0.25,
+                       decay_tau=0.7, sustain=0.0), 0.8, 0.1)
+    mix(out, apply_env(lp(noise(1.6, 137), 900), attack=0.35,
+                       decay_tau=0.7, sustain=0.0), 0.35, 0.05)
     return finalize(reverb(out, wet=0.3))
 
 
