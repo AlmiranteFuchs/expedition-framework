@@ -35,7 +35,52 @@ def item(name,draw):
     im=Image.new('RGBA',(16,16));draw(ImageDraw.Draw(im));save('item/'+name,im)
     write(Path('models/item/'+name+'.json'),{'parent':'minecraft:item/generated','textures':{'layer0':'expeditions:item/'+name}})
 
+def graft_materials():
+    """Carved bark clusters and quiet mineral patina for the doorway."""
+    bark = ['#443e35', '#63594a', '#897a65', '#ab9a80', '#c8b99b', '#dfd2b4', '#f1e6c8']
+    for name, shift in [('graft_bark', 0), ('graft_bark_turn', 4)]:
+        im = Image.new('RGBA', (16, 16), bark[4])
+        d = ImageDraw.Draw(im)
+        for x in range(16):
+            d.line((x, 0, x, 15), fill=bark[3 if (x + shift) % 7 in (0, 1) else 4])
+        for x in (2, 8, 13):
+            x = (x + shift) % 16
+            points = [(x,0),(x,3),((x+1)%16,5),((x+1)%16,9),(x,12),(x,15)]
+            if x == 15:
+                points = [(15,0),(15,15)]
+            d.line([(min(15, a+1), b) for a,b in points], fill=bark[5], width=2)
+            d.line(points, fill=bark[1], width=1)
+        x = 5 if shift == 0 else 10
+        d.polygon([(x,2),(x+2,3),(x+2,5),(x+1,7),(x-1,9),(x-1,5)], fill=bark[5])
+        d.line([(x,2),(x,5),(x-1,7),(x-1,9)], fill=bark[6])
+        d.line([(x+2,4),(x+2,6),(x,9),(x,12)], fill=bark[2])
+        d.line([(x+4,7),(x+3,9),(x+3,11),(x+4,12)], fill=bark[0])
+        d.line([(x+4,9),(x+4,11),(x+5,12)], fill=bark[3])
+        for point in [(x+1,4),(x+1,5),(x,6),(x+5,13)]:
+            d.point(point, fill=bark[6])
+        save('block/'+name, im)
+
+    rings = Image.new('RGBA',(16,16),bark[2]);d = ImageDraw.Draw(rings)
+    d.polygon([(2,2),(10,1),(14,4),(15,10),(12,14),(4,14),(1,10),(1,5)],fill=bark[5])
+    d.line([(2,7),(4,4),(9,3),(12,5),(13,9),(10,12),(5,12),(3,10)],fill=bark[3],width=1)
+    d.line([(5,7),(7,5),(10,6),(11,9),(9,10),(6,10),(5,9)],fill=bark[3],width=1)
+    d.line([(8,7),(8,9),(10,11),(12,14)],fill=bark[1])
+    d.point((7,7),fill=bark[6])
+    save('block/graft_end_grain', rings)
+
+    copper = Image.new('RGBA',(16,16),'#9b633f');d = ImageDraw.Draw(copper)
+    d.polygon([(0,0),(15,0),(15,3),(11,4),(6,3),(2,5),(0,5)],fill='#ba8154')
+    d.polygon([(0,14),(5,11),(10,12),(15,9),(15,15),(0,15)],fill='#6b4734')
+    d.line([(1,2),(7,2),(8,3),(13,3)],fill='#d2a16c')
+    d.line([(3,12),(5,10),(8,10),(10,8)],fill='#815035')
+    d.line([(4,11),(5,11),(6,10)],fill='#82775b')
+    d.line([(10,9),(11,8),(13,8)],fill='#6c7560')
+    d.point((9,7),fill='#af8557')
+    save('block/graft_copper', copper)
+
+
 def gen():
+    graft_materials()
     for name,pal in [('machine_bone',PALE),('machine_copper',COPPER),('machine_iron',METAL)]:save('block/'+name,panel(pal))
     end=Image.new('RGBA',(16,16),PALE[2]);e=ImageDraw.Draw(end)
     for inset,color in [(1,PALE[1]),(3,PALE[3]),(5,PALE[1]),(7,PALE[4])]:e.rectangle((inset,inset,15-inset,15-inset),outline=color)
@@ -137,6 +182,11 @@ def gen():
         'parent':'minecraft:block/block','textures':textures,'elements':exposed(basin),
         'render_type':'minecraft:cutout','ambientocclusion':False,
     })
+    graft_textures = dict(textures, bone='expeditions:block/graft_bark',
+                          bark_turn='expeditions:block/graft_bark_turn',
+                          end='expeditions:block/graft_end_grain',
+                          copper='expeditions:block/graft_copper',
+                          particle='expeditions:block/graft_bark')
     collar=[
         box([0,5,4],[16,11,12],'bone'), box([4,5,0],[12,11,16],'bone'),
         box([2,4,3],[5,12,13],'copper'), box([11,4,3],[14,12,13],'copper'),
@@ -146,7 +196,7 @@ def gen():
         box([5,8,12],[11,9,13],'iron'), box([7,6,13],[9,10,13.5],'resin'),
     ]
     write(Path('models/block/graft_collar.json'),{
-        'parent':'minecraft:block/block','textures':textures,'elements':exposed(collar),
+        'parent':'minecraft:block/block','textures':graft_textures,'elements':exposed(collar),
         'render_type':'minecraft:cutout','ambientocclusion':False,
     })
     write(Path('models/item/graft_collar.json'),{'parent':'expeditions:block/graft_collar'})
@@ -157,8 +207,22 @@ def gen():
         box([5,0,1],[10,16,3]), box([6,0,13],[11,16,15]),
         box([4,2,.5],[6,12,2]), box([10,6,14],[12,15,15.5]),
     ]
+    # Map the grain by position, so ribs share the trunk's pattern instead of
+    # repeating the same sliver on every face.
+    for part in post:
+        low, high = part['from'], part['to']
+        for face, data in part['faces'].items():
+            if face in ('up','down'):
+                data.update(texture='#end', uv=[low[0],low[2],high[0],high[2]])
+            else:
+                axis = 0 if face in ('north','south') else 2
+                start, end = low[axis], high[axis]
+                if face in ('north','east'):
+                    start, end = 16-end, 16-start
+                data.update(texture='#bone' if axis == 0 else '#bark_turn',
+                            uv=[start,16-high[1],end,16-low[1]])
     write(Path('models/block/graft_post.json'),{
-        'parent':'minecraft:block/block','textures':textures,'elements':exposed(post),
+        'parent':'minecraft:block/block','textures':graft_textures,'elements':exposed(post),
         'render_type':'minecraft:cutout','ambientocclusion':False,
     })
     write(Path('models/item/graft_post.json'),{'parent':'expeditions:block/graft_post'})

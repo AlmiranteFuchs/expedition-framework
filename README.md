@@ -26,7 +26,7 @@ The requirements leaf describes the frame's condition. Sealing a charter wakes
 the doorway. The first witness stump closes it and leaves the frame standing.
 A desk without a collar still uses its small overhead aperture.
 
-## Current starter progression (alpha.25)
+## Current starter progression (alpha.26)
 
 The Overworld is sheltered by the Stillness. Gather safe dormant flakes, make
 an early journal, and build a **Stillness Resonator + Essence Condenser** around a

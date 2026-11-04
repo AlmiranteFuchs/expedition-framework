@@ -1,18 +1,19 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "bone": "expeditions:block/machine_bone",
-    "copper": "expeditions:block/machine_copper",
+    "bone": "expeditions:block/graft_bark",
+    "copper": "expeditions:block/graft_copper",
     "iron": "expeditions:block/machine_iron",
     "glass": "expeditions:block/machine_glass",
     "resin": "expeditions:block/machine_resin",
     "chart": "expeditions:block/terminal_chart",
-    "end": "expeditions:block/wood_end",
+    "end": "expeditions:block/graft_end_grain",
     "knot": "expeditions:block/machine_knot",
     "heart": "expeditions:block/machine_heart",
     "severed": "expeditions:block/machine_severed",
     "empty": "expeditions:block/machine_empty",
-    "particle": "expeditions:block/machine_bone"
+    "particle": "expeditions:block/graft_bark",
+    "bark_turn": "expeditions:block/graft_bark_turn"
   },
   "elements": [
     {
