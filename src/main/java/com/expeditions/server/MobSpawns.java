@@ -34,6 +34,10 @@ public final class MobSpawns {
     private MobSpawns() {
     }
 
+    public static int checkpointApproachRadius() {
+        return Math.max(18, com.expeditions.ExpeditionsConfig.challengeHordeSpawnRadius());
+    }
+
     /** Keep a wave thematic, but do not let one oversized roll silence a viable biome. */
     public static Mob trySpawnFromPool(ServerLevel level, BlockPos center, int radius, String dimension) {
         return trySpawnFromPool(level, center, dimension, type -> trySpawn(type, level, center, radius));
@@ -54,22 +58,23 @@ public final class MobSpawns {
 
     /** One approach lane near the witness's elevation. A closed lane can be tried elsewhere. */
     static Mob tryApproach(EntityType<?> type, ServerLevel level, BlockPos center,
-            int radius, double bearing, java.util.List<BlockPos> occupied) {
+            int radius, double bearing, java.util.List<BlockPos> occupied, boolean covered) {
         if (!(type.create(level) instanceof Mob mob)) return null;
-        for (int distance = radius; distance >= Math.max(6, radius - 3); distance--) {
+        for (int distance = radius; distance >= radius - 3; distance--) {
             for (int offset : LANE_OFFSETS) {
                 double angle = bearing + offset * Math.PI / 18;
                 BlockPos column = center.offset((int) Math.round(Math.cos(angle) * distance), 0,
                         (int) Math.round(Math.sin(angle) * distance));
                 if (occupied.stream().anyMatch(pos -> pos.distSqr(column) < 4)
                         || level.players().stream().anyMatch(player -> !player.isSpectator()
-                                && player.blockPosition().closerThan(column.atY(player.getBlockY()), 5))) {
+                                && player.blockPosition().closerThan(column.atY(player.getBlockY()), 12))) {
                     continue;
                 }
                 level.getChunk(column);
                 var surface = findStandingSpot(level, column, center.getY(), 1, 3);
                 if (surface.isEmpty() || !level.getWorldBorder().isWithinBounds(surface.get())) continue;
                 var pos = surface.get();
+                if (covered && !hasCover(level, center, pos)) continue;
                 mob.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
                         level.random.nextFloat() * 360f, 0f);
                 if (!level.noCollision(mob)) continue;
@@ -79,6 +84,23 @@ public final class MobSpawns {
             }
         }
         return null;
+    }
+
+    /** Cover counts only when it hides the arrival from the witness and nearby players. */
+    static boolean hasCover(ServerLevel level, BlockPos witness, BlockPos arrival) {
+        var end = net.minecraft.world.phys.Vec3.atBottomCenterOf(arrival).add(0, 1, 0);
+        var origin = net.minecraft.world.phys.Vec3.atBottomCenterOf(witness).add(0, 1.65, 0);
+        if (level.clip(new net.minecraft.world.level.ClipContext(origin, end,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                net.minecraft.world.phys.shapes.CollisionContext.empty())).getType()
+                == net.minecraft.world.phys.HitResult.Type.MISS) return false;
+        return level.players().stream().filter(player -> !player.isSpectator()
+                && player.blockPosition().closerThan(witness, 40)).noneMatch(player ->
+                        level.clip(new net.minecraft.world.level.ClipContext(player.getEyePosition(), end,
+                                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                                net.minecraft.world.level.ClipContext.Fluid.NONE, player)).getType()
+                                == net.minecraft.world.phys.HitResult.Type.MISS);
     }
 
     /**

@@ -1226,7 +1226,7 @@ public final class ExpeditionGameTests {
                         == ExpeditionsConfig.challengeHordeSize(),
                 "horde must spawn the configured size, got " + run.challengeEntities().size());
         BlockPos firstCheckpoint = ExpeditionManager.toPos(run.checkpoints().get(0));
-        int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
+        int hordeRadius = MobSpawns.checkpointApproachRadius();
 
         // Mock players provide no chunk tickets, so freshly spawned mobs sit
         // in hidden entity sections until real tickets promote them — force
@@ -1235,7 +1235,8 @@ public final class ExpeditionGameTests {
         var staging = firstHorde.stream().map(id -> findEntity(level, firstCheckpoint, hordeRadius, id)).toList();
         for (Entity mob : staging) {
             helper.assertTrue(mob != null && Math.abs(mob.getBlockY() - firstCheckpoint.getY()) <= 2
-                            && !mob.blockPosition().closerThan(player.blockPosition().atY(mob.getBlockY()), 5),
+                            && !mob.blockPosition().closerThan(player.blockPosition().atY(mob.getBlockY()), 12)
+                            && !mob.blockPosition().closerThan(firstCheckpoint.atY(mob.getBlockY()), 14),
                     "horde staging must stay near the witness elevation and clear the player");
             helper.assertTrue(mob.getData(com.expeditions.registry.ModAttachments.ARRIVAL_GLOW_UNTIL) > level.getGameTime(),
                     "fresh attackers carry the temporary arrival shimmer");
@@ -2336,7 +2337,7 @@ public final class ExpeditionGameTests {
             ExpeditionRun run = startExpedition(helper, manager, player);
             List<UUID> horde;
             BlockPos checkpoint;
-            int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
+            int radius = MobSpawns.checkpointApproachRadius();
             try {
                 manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
                 useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
@@ -3992,7 +3993,7 @@ public final class ExpeditionGameTests {
             for (UUID id : run.challengeEntities()) {
                 Entity mob = findEntity(helper.getLevel(),
                         ExpeditionManager.toPos(run.checkpoints().get(0)),
-                        ExpeditionsConfig.challengeHordeSpawnRadius() + 8, id);
+                        MobSpawns.checkpointApproachRadius(), id);
                 helper.assertTrue(mob != null
                                 && mob.getData(ModAttachments.ASSIMILATED) == 3,
                         "a pressured horde member must arrive assimilated (stage 3)");
@@ -4363,7 +4364,7 @@ public final class ExpeditionGameTests {
             // promotion or lava-wander race can flake the assertion. The
             // broad ring can fit a mob on a lower ledge even where a
             // checkpoint horde has no reachable approach.
-            int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
+            int hordeRadius = MobSpawns.checkpointApproachRadius();
             for (UUID id : run.challengeEntities()) {
                 Entity attacker = findEntity(nether, checkpoint, hordeRadius, id);
                 helper.assertTrue(attacker != null && Math.abs(attacker.getBlockY() - checkpoint.getY()) <= 2,

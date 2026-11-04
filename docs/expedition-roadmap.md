@@ -767,3 +767,11 @@ The custom sound set now scores opening and crossing the Wayroot, the
 witness's answer, a horde's direction, graft defense deployment and loss,
 and the party's return or failure. The horde cue originates at its incoming
 lane. Each wired event has a subtitle.
+
+### Horde arrival visibility — alpha.39
+
+Checkpoint waves first look for walkable ground screened by terrain. They
+stage roughly 15–18 blocks out at the default range and leave 12 blocks
+around players. In open terrain the search begins behind the witness's
+activator. A quiet wood crack marks the incoming side. The alpha.38 sound
+wiring was removed after the listening pass.

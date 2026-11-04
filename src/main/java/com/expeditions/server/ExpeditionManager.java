@@ -60,7 +60,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import com.expeditions.registry.ModSounds;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffect;
@@ -374,7 +373,6 @@ public final class ExpeditionManager {
                             + definition.costTokens());
         }
         ledger.startRun(run);
-        portalLevel.playSound(null, portalPos, ModSounds.PORTAL_OPEN.get(), SoundSource.BLOCKS, 0.8f, 1f);
         if (aftergrowth) placeFieldCache(run, level, adapter);
         if (commissionIndex >= 0) {
             player.displayClientMessage(Component.translatable(
@@ -589,7 +587,6 @@ public final class ExpeditionManager {
         if (destination != null) {
             player.teleportTo(destination, entry.x() + 0.5, entry.y(), entry.z() + 0.5,
                     Set.of(), player.getYRot(), player.getXRot());
-            player.playNotifySound(ModSounds.PORTAL_TRAVEL.get(), SoundSource.PLAYERS, 0.8f, 1f);
             JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.WAYFINDING);
         }
         // Stepping through should feel like a deployment — title card up.
@@ -695,8 +692,11 @@ public final class ExpeditionManager {
                         Component.translatable("direction." + bearing.getName())), true);
             });
         }
+        // The witness answers the compass: wood first, then a restrained chime.
         player.serverLevel().playSound(null, pos,
-                ModSounds.CHECKPOINT.get(), SoundSource.BLOCKS, 0.7f, 1f);
+                SoundEvents.WOOD_HIT, SoundSource.BLOCKS, 0.5f, 0.7f);
+        player.serverLevel().playSound(null, pos,
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.55f, 0.65f);
         player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
                 pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5,
                 12, 0.16, 0.3, 0.16, 0.008);
@@ -806,7 +806,8 @@ public final class ExpeditionManager {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
                 memberPlayer.playNotifySound(
-                        ModSounds.RECALL.get(), SoundSource.PLAYERS, 0.75f, 1f);
+                        SoundEvents.AMETHYST_BLOCK_RESONATE,
+                        SoundSource.PLAYERS, 0.7f, 0.75f);
             }
         }
         player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
@@ -1233,7 +1234,8 @@ public final class ExpeditionManager {
                 // Failure should land like failure: a power-down note as
                 // the Charter pulls you back, not silence.
                 if (run.status() == ExpeditionStatus.FAILED) {
-                    memberPlayer.playNotifySound(ModSounds.FAILURE.get(), SoundSource.PLAYERS, 0.75f, 1f);
+                    memberPlayer.playNotifySound(SoundEvents.BEACON_DEACTIVATE,
+                            SoundSource.PLAYERS, 0.8f, 0.6f);
                 }
                 removeMemberEffects(run, memberPlayer);
                 removeArtifacts(memberPlayer, run.runId());
@@ -1356,7 +1358,7 @@ public final class ExpeditionManager {
         }
         BlockPos checkpoint = toPos(run.checkpoints()
                 .get(run.completedCheckpoints() - 1));
-        spawnHorde(run, level, checkpoint);
+        spawnHorde(run, level, checkpoint, player);
         if (run.challengeEntities().isEmpty()) {
             return;
         }
@@ -1375,7 +1377,7 @@ public final class ExpeditionManager {
      * nearest online party member; a configured type that is not a
      * {@link Mob} contributes nothing.
      */
-    private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center) {
+    private void spawnHorde(ExpeditionRun run, ServerLevel level, BlockPos center, ServerPlayer activator) {
         // One type per activation, rolled from the spawn site's own mob pool
         // (biome spawn table → tag override → config fallback).
         int size = (ExpeditionsConfig.challengeHordeSize()
@@ -1389,30 +1391,33 @@ public final class ExpeditionManager {
                 "pressure.horde_bonus_per", ExpeditionsConfig.pressureHordeBonusPer());
         boolean buffed = pressure >= ExpeditionTuning.integer(run.definition().dimension(),
                 "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
-        int radius = Math.max(7, ExpeditionsConfig.challengeHordeSpawnRadius());
+        int radius = MobSpawns.checkpointApproachRadius();
         if (size <= 0) return;
         double firstBearing = level.random.nextDouble() * Math.PI * 2;
+        double rearBearing = Math.toRadians(activator.getYRot()) - Math.PI / 2;
         List<BlockPos> occupied = new ArrayList<>();
         Mob first = MobSpawns.trySpawnFromPool(level, center, run.definition().dimension(), type -> {
-            for (int sector = 0; sector < 8; sector++) {
-                Mob placed = MobSpawns.tryApproach(type, level, center, radius,
-                        firstBearing + sector * Math.PI / 4, occupied);
+            for (int sector = 0; sector < 16; sector++) {
+                boolean hidden = sector < 8;
+                double bearing = (hidden ? firstBearing : rearBearing) + (sector % 8) * Math.PI / 4;
+                Mob placed = MobSpawns.tryApproach(type, level, center, radius, bearing, occupied, hidden);
                 if (placed != null) return placed;
             }
             return null;
         });
         if (first == null) return;
         BlockPos approach = first.blockPosition();
+        boolean covered = MobSpawns.hasCover(level, center, approach);
         double bearing = Math.atan2(approach.getZ() - center.getZ(), approach.getX() - center.getX());
         EntityType<?> type = first.getType();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            Mob candidate = i == 0 ? first : MobSpawns.tryApproach(type, level, center, radius, bearing, occupied);
+            Mob candidate = i == 0 ? first : MobSpawns.tryApproach(type, level, center, radius, bearing, occupied, covered);
             if (candidate == null) {
-                candidate = MobSpawns.tryApproach(type, level, center, radius, bearing + Math.PI / 3, occupied);
+                candidate = MobSpawns.tryApproach(type, level, center, radius, bearing + Math.PI / 3, occupied, covered);
             }
             if (candidate == null) {
-                candidate = MobSpawns.tryApproach(type, level, center, radius, bearing - Math.PI / 3, occupied);
+                candidate = MobSpawns.tryApproach(type, level, center, radius, bearing - Math.PI / 3, occupied, covered);
             }
             if (candidate == null) break;
             Mob mob = candidate;
@@ -1437,7 +1442,9 @@ public final class ExpeditionManager {
         }
         if (!spawned.isEmpty()) {
             run.trackChallengeEntities(spawned);
-            announceSpawn(level, approach, 3);
+            BlockPos cue = center.offset((approach.getX() - center.getX()) / 2, 0,
+                    (approach.getZ() - center.getZ()) / 2);
+            level.playSound(null, cue, SoundEvents.WOOD_BREAK, SoundSource.HOSTILE, 0.6f, 0.65f);
         }
     }
 
@@ -1476,7 +1483,8 @@ public final class ExpeditionManager {
                 center.getX() + 0.5, center.getY() + 0.6,
                 center.getZ() + 0.5,
                 10, radius * 0.4, 0.4, radius * 0.4, 0.02);
-        level.playSound(null, center, ModSounds.HORDE.get(), SoundSource.HOSTILE, 0.85f, 1f);
+        level.playSound(null, center, SoundEvents.SCULK_SHRIEKER_SHRIEK,
+                SoundSource.HOSTILE, 0.85f, 0.6f);
     }
 
     /** The guardian's body must fit the real site geometry, just like a horde. */
@@ -1562,7 +1570,6 @@ public final class ExpeditionManager {
                 objective.timeLimitTicks(),
                 ExpeditionsConfig.defenseWaveSeconds() * 20L);
         JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.DEFENSE);
-        level.playSound(null, devicePos, ModSounds.DEVICE_START.get(), SoundSource.BLOCKS, 0.8f, 1f);
         spawnSiegeWave(run, level, devicePos);
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
@@ -1633,7 +1640,6 @@ public final class ExpeditionManager {
      */
     private void onDeviceDestroyed(ExpeditionRun run, ServerLevel level, BlockPos devicePos,
             String objectiveId) {
-        level.playSound(null, devicePos, ModSounds.DEVICE_BREAK.get(), SoundSource.BLOCKS, 0.8f, 1f);
         removeMarkerAt(level, devicePos);
         data.untrackMarker(level.dimension().location().toString(), devicePos);
         clearChallengeEntities(run, level, devicePos);
@@ -1805,7 +1811,7 @@ public final class ExpeditionManager {
         if (run.challengeEntities().isEmpty()) {
             return;
         }
-        int radius = ExpeditionsConfig.challengeHordeSpawnRadius() + 16;
+        int radius = MobSpawns.checkpointApproachRadius() + 16;
         for (int cx = (center.getX() - radius) >> 4;
                 cx <= (center.getX() + radius) >> 4; cx++) {
             for (int cz = (center.getZ() - radius) >> 4;
@@ -1857,7 +1863,7 @@ public final class ExpeditionManager {
             Waypoint center = run.checkpoints().get(
                     Math.min(run.completedCheckpoints(), run.totalCheckpoints()) - 1);
             AABB box = columnBox(level, toPos(center),
-                    ExpeditionsConfig.challengeHordeSpawnRadius() + 17);
+                    MobSpawns.checkpointApproachRadius() + 17);
             for (UUID entityId : List.copyOf(run.challengeEntities())) {
                 Entity entity = findInSections(level, box, entityId);
                 if (entity != null) {
