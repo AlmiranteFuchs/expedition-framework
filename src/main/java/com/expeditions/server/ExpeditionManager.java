@@ -1016,6 +1016,29 @@ public final class ExpeditionManager {
         }
     }
 
+    public void surveyBiome(ServerPlayer player) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || !hasCompass(player)) {
+            return;
+        }
+        for (ExpeditionObjective objective : run.definition().objectives()) {
+            if (objective.kind() != ObjectiveKind.SCOUT
+                    || run.objectiveState(objective.id()).map(ObjectiveState::completed).orElse(true)) {
+                continue;
+            }
+            var biome = player.serverLevel().getBiome(player.blockPosition());
+            boolean matches = objective.item() == null
+                    ? biome.is(TagKey.create(Registries.BIOME, ResourceLocation.parse(objective.tag())))
+                    : biome.is(ResourceKey.create(Registries.BIOME, ResourceLocation.parse(objective.item())));
+            if (matches && run.addObjectiveProgress(objective.id(), 1)) {
+                player.displayClientMessage(Component.translatable(
+                        "message.expeditions.objective_completed", objective.description()), true);
+                data.setDirty();
+            }
+        }
+    }
+
     private static boolean matchesObjective(ItemStack stack, ExpeditionObjective objective) {
         if (objective.item() != null) {
             return BuiltInRegistries.ITEM.getOptional(ResourceLocation.parse(objective.item()))

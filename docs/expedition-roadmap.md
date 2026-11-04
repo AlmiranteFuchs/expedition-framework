@@ -710,3 +710,14 @@ The survey log in the held field journal records the party's actual orders,
 including the commission drawn when the Wayroot opened. Required work,
 optional work and gathering progress use the same labels as
 `/expeditions status`. Reopen the journal to refresh its snapshot.
+
+### Biome scouting — alpha.33
+
+A scout commission asks the party to find a kind of place. Deep Salvage can
+draw a forest bearing as its optional work. Datapacks define a `scout`
+objective with exactly one `biome` ID or biome `tag`. The party records the
+bearing when a member carrying the field compass reaches a matching biome in
+the destination dimension. The bearing is shared and pays at extraction.
+
+The [server presets](server-presets.md) cover a gentler introduction, the
+default Charter balance, and a harsher pressure curve with better bonus drops.

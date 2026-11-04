@@ -1404,7 +1404,9 @@ public final class ExpeditionGameTests {
                      "type": "collect_items", "tag": "minecraft:logs",
                      "count": 2, "bonus_tokens": 2},
                     {"id": "speedy", "description": "Finish within a minute",
-                     "type": "time_limit", "seconds": 60, "bonus_tokens": 7}
+                     "type": "time_limit", "seconds": 60, "bonus_tokens": 7},
+                    {"id": "bearing", "description": "Take an Overworld bearing",
+                     "type": "scout", "tag": "minecraft:is_overworld"}
                   ],
                   "commission_pool": [
                     {"id": "bark", "description": "Cut a bark sample",
@@ -1420,9 +1422,9 @@ public final class ExpeditionGameTests {
         try {
             ExpeditionDefinitions.reload(entries);
             ExpeditionRun run = startExpedition(helper, manager, player);
-            helper.assertTrue(run.definition().objectives().size() == 5,
-                    "all five objectives must be defined");
-            helper.assertTrue(run.objectiveStates().size() == 5,
+            helper.assertTrue(run.definition().objectives().size() == 6,
+                    "all six objectives must be defined");
+            helper.assertTrue(run.objectiveStates().size() == 6,
                     "every defined objective must be tracked from run start");
             var restored = roundTrip(helper, helper.getLevel().getServer()).ledger()
                     .activeRun(player.getUUID()).orElseThrow();
@@ -1436,7 +1438,13 @@ public final class ExpeditionGameTests {
             player.gameMode.destroyBlock(helper.absolutePos(sample));
             helper.assertTrue(!run.objectiveState("bark").orElseThrow().completed(),
                     "cutting a log before entering the portal must not count");
+            manager.surveyBiome(player);
+            helper.assertTrue(!run.objectiveState("bearing").orElseThrow().completed(),
+                    "a bearing taken before entry does not count");
             manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
+            manager.surveyBiome(player);
+            helper.assertTrue(run.objectiveState("bearing").orElseThrow().completed(),
+                    "surveying a matching biome during a run takes the bearing");
             var fieldSample = player.blockPosition().above(2);
             player.serverLevel().setBlockAndUpdate(fieldSample, Blocks.OAK_LOG.defaultBlockState());
             helper.assertTrue(player.getInventory().countItem(ModItems.EXPEDITION_COMPASS.get()) == 1,
@@ -3812,8 +3820,8 @@ public final class ExpeditionGameTests {
                         "deep_salvage must compose a " + kind + " objective");
             }
             helper.assertTrue(salvage.commissionPool().stream().map(ExpeditionObjective::kind).toList()
-                            .equals(List.of(ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT)),
-                    "deep_salvage offers a harvest or timed commission");
+                            .equals(List.of(ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT, ObjectiveKind.SCOUT)),
+                    "deep_salvage offers harvest, timed or biome commissions");
             boolean refused = false;
             try {
                 manager.startRun(player, terminalPos,

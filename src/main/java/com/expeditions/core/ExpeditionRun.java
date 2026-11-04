@@ -776,9 +776,10 @@ public final class ExpeditionRun {
             throw new IllegalArgumentException("Objective progress must be >= 0");
         }
         ExpeditionObjective objective = objective(objectiveId);
-        if (objective.kind() != ObjectiveKind.COLLECT_ITEMS && objective.kind() != ObjectiveKind.HARVEST) {
+        if (objective.kind() != ObjectiveKind.COLLECT_ITEMS && objective.kind() != ObjectiveKind.HARVEST
+                && objective.kind() != ObjectiveKind.SCOUT) {
             throw new IllegalArgumentException(
-                    "Objective \"" + objectiveId + "\" does not count gathered resources");
+                    "Objective \"" + objectiveId + "\" does not track field observations or gathered resources");
         }
         ObjectiveState state = state(objectiveId);
         if (state.completed()) {

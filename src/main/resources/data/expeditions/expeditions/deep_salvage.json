@@ -77,6 +77,13 @@
       "seconds": 600,
       "required": false,
       "bonus_tokens": 10
+    },
+    {
+      "id": "canopy",
+      "description": "Take a bearing beneath a forest canopy",
+      "type": "scout",
+      "tag": "minecraft:is_forest",
+      "bonus_tokens": 10
     }
   ]
 }

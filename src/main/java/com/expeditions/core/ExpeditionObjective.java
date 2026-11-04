@@ -55,8 +55,12 @@ public record ExpeditionObjective(String id, String description, boolean require
                 count = 0;
                 timeLimitTicks = 0;
             }
-            case COLLECT_ITEMS, HARVEST -> {
-                String type = kind == ObjectiveKind.HARVEST ? "harvest" : "collect_items";
+            case COLLECT_ITEMS, HARVEST, SCOUT -> {
+                String type = switch (kind) {
+                    case HARVEST -> "harvest";
+                    case SCOUT -> "scout";
+                    default -> "collect_items";
+                };
                 boolean hasItem = item != null && !item.isBlank();
                 boolean hasTag = tag != null && !tag.isBlank();
                 if (hasItem == hasTag) {
@@ -75,6 +79,7 @@ public record ExpeditionObjective(String id, String description, boolean require
                             type + " objective \"" + id + "\" needs a count >= 1");
                 }
                 checkpoint = 0;
+                if (kind == ObjectiveKind.SCOUT) count = 1;
                 timeLimitTicks = 0;
             }
             case TIME_LIMIT -> {
@@ -142,6 +147,13 @@ public record ExpeditionObjective(String id, String description, boolean require
                 ObjectiveKind.HARVEST, 0, block, tag, count, 0, bonusTokens);
     }
 
+    /** A scout objective completes on the first survey of a matching biome. */
+    public static ExpeditionObjective scout(String id, String description,
+            boolean required, String biome, String tag, int bonusTokens) {
+        return new ExpeditionObjective(id, description, required,
+                ObjectiveKind.SCOUT, 0, biome, tag, 1, 0, bonusTokens);
+    }
+
     /** A timed objective: completes only if the run finishes within {@code ticks}. */
     public static ExpeditionObjective timeLimit(String id, String description,
             boolean required, long ticks, int bonusTokens) {
@@ -172,7 +184,7 @@ public record ExpeditionObjective(String id, String description, boolean require
     /** Progress value at which this objective completes. */
     public int progressTarget() {
         return switch (kind) {
-            case VISIT_CHECKPOINT, RECOVER_ARTIFACT, DEFEND_DEVICE -> 1;
+            case VISIT_CHECKPOINT, RECOVER_ARTIFACT, DEFEND_DEVICE, SCOUT -> 1;
             case COLLECT_ITEMS, HARVEST -> count;
             case TIME_LIMIT -> (int) Math.min(timeLimitTicks, Integer.MAX_VALUE);
         };

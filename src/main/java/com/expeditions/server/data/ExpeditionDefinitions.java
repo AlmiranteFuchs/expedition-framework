@@ -305,6 +305,8 @@ public final class ExpeditionDefinitions {
                     objectives.add(ExpeditionObjective.harvest(id, description, required,
                             block, tag, requiredInt(json, "count"), bonus));
                 }
+                case "scout" -> objectives.add(ExpeditionObjective.scout(id, description, required,
+                        optionalString(json, "biome", null), optionalString(json, "tag", null), bonus));
                 case "time_limit" -> objectives.add(ExpeditionObjective.timeLimit(
                         id, description, required,
                         (long) requiredInt(json, "seconds") * TICKS_PER_SECOND, bonus));

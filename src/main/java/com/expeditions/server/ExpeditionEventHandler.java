@@ -134,6 +134,9 @@ public final class ExpeditionEventHandler {
                 Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
             }
             CompassPing.onPlayerTick(player);
+            if (player.tickCount % 20 == 0 && !player.isSpectator()) {
+                ExpeditionManager.get(player.server).surveyBiome(player);
+            }
             if (player.tickCount > 0 && player.tickCount % 40 == 0) JournalDiscovery.observe(player);
             dwellPressure(player);
             Assimilation.onPlayerTick(player);

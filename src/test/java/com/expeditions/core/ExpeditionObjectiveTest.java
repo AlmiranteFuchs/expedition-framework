@@ -41,6 +41,18 @@ class ExpeditionObjectiveTest {
     // ---- Objective construction validation --------------------------------
 
     @Test
+    void scoutingLatchesOneObservationAndRejectsAmbiguousTargets() {
+        assertThrows(IllegalArgumentException.class, () -> ExpeditionObjective.scout(
+                "bearing", "Take a bearing", false, "minecraft:forest", "minecraft:is_forest", 5));
+        var scout = ExpeditionObjective.scout("bearing", "Take a bearing", false,
+                null, "minecraft:is_forest", 5);
+        var run = newRun(scout);
+        assertTrue(run.addObjectiveProgress("bearing", 1));
+        assertFalse(run.addObjectiveProgress("bearing", 1));
+        assertEquals(1, run.objectiveState("bearing").orElseThrow().progress());
+    }
+
+    @Test
     void commissionSelectionFreezesOneOptionalObjective() {
         var fixed = ExpeditionObjective.visitCheckpoint("start", "Reach the mark", true, 1, 0);
         var bark = ExpeditionObjective.harvest("bark", "Cut bark", false, null, "minecraft:logs", 2, 4);
