@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "tag": "minecraft:leaves"
+    },
+    {
+      "item": "expeditions:dormant_flake"
+    }
+  ],
+  "result": {
+    "id": "expeditions:stillwood_leaves",
+    "count": 2
+  }
+}

@@ -1,10 +1,1 @@
-{
-  "loader": "neoforge:separate_transforms",
-  "base": { "parent": "expeditions:block/graft_post" },
-  "perspectives": {
-    "gui": {
-      "parent": "minecraft:item/generated",
-      "textures": { "layer0": "expeditions:item/graft_post" }
-    }
-  }
-}
+{ "parent": "expeditions:block/graft_post" }

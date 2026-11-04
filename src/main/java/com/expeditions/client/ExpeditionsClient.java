@@ -94,6 +94,10 @@ public class ExpeditionsClient {
                 ModBlocks.ASSIMILATION_LAYER.get(), RenderType.translucent()));
         event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(
                 ModBlocks.EXPEDITION_PORTAL.get(), RenderType.cutout()));
+        event.enqueueWork(() -> {
+            ItemBlockRenderTypes.setRenderLayer(com.expeditions.registry.ModFluids.SAP.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(com.expeditions.registry.ModFluids.FLOWING_SAP.get(), RenderType.translucent());
+        });
         event.enqueueWork(() -> ItemProperties.register(
                 ModItems.EXPEDITION_COMPASS.get(),
                 ResourceLocation.withDefaultNamespace("angle"),

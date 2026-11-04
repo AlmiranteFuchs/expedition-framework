@@ -23,6 +23,11 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> PALE_WOOD = ITEMS.registerSimpleBlockItem("pale_wood", ModBlocks.PALE_WOOD);
     public static final DeferredItem<BlockItem> PALE_PLANKS = ITEMS.registerSimpleBlockItem("pale_planks", ModBlocks.PALE_PLANKS);
     public static final DeferredItem<BlockItem> PALE_CHEST = ITEMS.registerSimpleBlockItem("pale_chest", ModBlocks.PALE_CHEST);
+    public static final DeferredItem<BlockItem> STILLWOOD_LEAVES = ITEMS.registerSimpleBlockItem("stillwood_leaves", ModBlocks.STILLWOOD_LEAVES);
+    public static final DeferredItem<BlockItem> STILLWOOD_ROOT = ITEMS.registerSimpleBlockItem("stillwood_root", ModBlocks.STILLWOOD_ROOT);
+    public static final DeferredItem<Item> ROOTBOUND_GUARDIAN_SPAWN_EGG = ITEMS.register("rootbound_guardian_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(ModEntities.ROOTBOUND_GUARDIAN,
+                    0xb8ad94, 0xd48936, new Item.Properties()));
     public static final DeferredItem<Item> RETURN_SAP_BUCKET = ITEMS.register("return_sap_bucket",
             () -> new net.minecraft.world.item.BucketItem(ModFluids.SAP.get(),
                     new Item.Properties().craftRemainder(net.minecraft.world.item.Items.BUCKET).stacksTo(1)));

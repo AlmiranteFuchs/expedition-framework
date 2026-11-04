@@ -14,7 +14,8 @@ foreach ($entry in $source.palette.GetEnumerator()) {
 
 $board = $null
 if ($Preview) {
-    $board = [Drawing.Bitmap]::new(640, 148 * [Math]::Ceiling($source.icons.Count / 4))
+    $columns = [Math]::Min(4, $source.icons.Count)
+    $board = [Drawing.Bitmap]::new(160 * $columns, 148 * [Math]::Ceiling($source.icons.Count / $columns))
     $canvas = [Drawing.Graphics]::FromImage($board)
     $canvas.Clear([Drawing.Color]::FromArgb(34, 31, 29))
     $canvas.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
@@ -37,8 +38,8 @@ foreach ($entry in $source.icons.GetEnumerator()) {
     }
     $image.Save((Join-Path $assets "textures/item/$name.png"), [Drawing.Imaging.ImageFormat]::Png)
     if ($board) {
-        $left = 160 * ($index % 4)
-        $top = 148 * [Math]::Floor($index / 4)
+        $left = 160 * ($index % $columns)
+        $top = 148 * [Math]::Floor($index / $columns)
         $canvas.DrawImage($image, [Drawing.Rectangle]::new($left + 31, $top + 10, 96, 96))
         $canvas.DrawImageUnscaled($image, $left + 14, $top + 111)
         $canvas.DrawString($name.Replace('_', ' '), [Drawing.SystemFonts]::DefaultFont,

@@ -1897,6 +1897,19 @@ public final class ExpeditionGameTests {
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
         helper.assertTrue(player.getItemInHand(hand).is(ModItems.RETURN_SAP_BUCKET.get())
                         && from.getFluidInTank(0).isEmpty(), "an empty bucket retrieves a full bucket of sap");
+        var poured = helper.absolutePos(new BlockPos(1, 2, 1));
+        level.setBlockAndUpdate(poured, Blocks.AIR.defaultBlockState());
+        var filledBucket = player.getItemInHand(hand);
+        var sapBucket = (net.minecraft.world.item.BucketItem) filledBucket.getItem();
+        helper.assertTrue(sapBucket.emptyContents(player, level, poured, null, filledBucket)
+                        && level.getFluidState(poured).isSource()
+                        && level.getFluidState(poured).getType() == com.expeditions.registry.ModFluids.SAP.get(),
+                "the bucket can pour a Return Sap source into the world");
+        var pickup = (net.minecraft.world.level.block.BucketPickup) level.getBlockState(poured).getBlock();
+        var recovered = pickup.pickupBlock(player, level, poured, level.getBlockState(poured));
+        helper.assertTrue(recovered.is(ModItems.RETURN_SAP_BUCKET.get()) && level.getFluidState(poured).isEmpty(),
+                "the source can be picked up into a sap bucket");
+        player.setItemInHand(hand, recovered);
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand,
                 new BlockHitResult(Vec3.atCenterOf(bowl), Direction.UP, bowl, false));
         helper.assertTrue(to.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET),
@@ -1910,6 +1923,30 @@ public final class ExpeditionGameTests {
             helper.assertTrue(moved >= 25, "rootwick must deliver sap to the basin");
             helper.assertTrue(moved <= 50 && moved + from.getFluidInTank(0).getAmount() == 1000,
                     "rootwick must transfer at its slow rate without creating sap");
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_modded_horde",
+            batch = "create_sap_tank")
+    public static void createTankAcceptsReturnSap(GameTestHelper helper) {
+        var tank = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                .getOptional(ResourceLocation.parse("create:fluid_tank"));
+        if (tank.isEmpty()) {
+            helper.succeed();
+            return;
+        }
+        var level = helper.getLevel();
+        var pos = helper.absolutePos(new BlockPos(2, 1, 2));
+        level.setBlockAndUpdate(pos, tank.orElseThrow().defaultBlockState());
+        helper.succeedWhen(() -> {
+            var handler = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK,
+                    pos, Direction.UP);
+            var sap = new net.neoforged.neoforge.fluids.FluidStack(com.expeditions.registry.ModFluids.SAP.get(), 1000);
+            var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+            helper.assertTrue(handler != null && handler.fill(sap, execute) == 1000,
+                    "Create's tank accepts one bucket of Return Sap");
+            helper.assertTrue(handler.drain(sap, execute).getAmount() == 1000,
+                    "Create's tank returns the same fluid and volume");
         });
     }
 

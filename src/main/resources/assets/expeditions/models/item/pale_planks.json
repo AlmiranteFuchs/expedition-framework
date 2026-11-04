@@ -1,10 +1,1 @@
-{
-  "loader": "neoforge:separate_transforms",
-  "base": { "parent": "expeditions:block/pale_planks" },
-  "perspectives": {
-    "gui": {
-      "parent": "minecraft:item/generated",
-      "textures": { "layer0": "expeditions:item/pale_planks" }
-    }
-  }
-}
+{ "parent": "expeditions:block/pale_planks" }

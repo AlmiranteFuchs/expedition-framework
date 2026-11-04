@@ -27,6 +27,12 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, Block> PALE_PLANKS = BLOCKS.register("pale_planks",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_WHITE).strength(2).sound(SoundType.WOOD)));
+    public static final DeferredHolder<Block, Block> STILLWOOD_LEAVES = BLOCKS.register("stillwood_leaves",
+            () -> new net.minecraft.world.level.block.LeavesBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(0.2f).sound(SoundType.GRASS).noOcclusion()));
+    public static final DeferredHolder<Block, Block> STILLWOOD_ROOT = BLOCKS.register("stillwood_root",
+            () -> new net.minecraft.world.level.block.RotatedPillarBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(2).sound(SoundType.WOOD)));
     public static final DeferredHolder<Block, Block> PALE_CHEST = BLOCKS.register("pale_chest",
             () -> new com.expeditions.block.PaleChestBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.5f).sound(SoundType.WOOD).noOcclusion()));
@@ -57,7 +63,8 @@ public final class ModBlocks {
 
     public static final DeferredHolder<Block, net.minecraft.world.level.block.LiquidBlock> RETURN_SAP = BLOCKS.register(
             "return_sap", () -> new net.minecraft.world.level.block.LiquidBlock(ModFluids.SAP.get(),
-                    BlockBehaviour.Properties.of().noCollission().strength(100).noLootTable().liquid()));
+                    BlockBehaviour.Properties.of().replaceable().noCollission().strength(100).noLootTable().liquid()
+                            .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
     public static final DeferredHolder<Block, Block> SAP_JAR = BLOCKS.register("sap_jar",
             () -> new com.expeditions.block.SapVesselBlock(BlockBehaviour.Properties.of().strength(2)
                     .sound(SoundType.WOOD).noOcclusion(), com.expeditions.block.SapVesselBlock.Kind.JAR));
