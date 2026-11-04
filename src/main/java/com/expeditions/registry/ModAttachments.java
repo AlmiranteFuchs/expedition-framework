@@ -21,6 +21,13 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>,AttachmentType<HiveFocus>> HIVE_FOCUS =
             ATTACHMENTS.register("hive_focus",()->AttachmentType.builder(()->HiveFocus.EMPTY).build());
 
+    public static final int ARRIVAL_GLOW_TICKS = 32;
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Long>> ARRIVAL_GLOW_UNTIL =
+            ATTACHMENTS.register("arrival_glow_until", () -> AttachmentType.builder(() -> 0L)
+                    .sync((holder, to) -> NetworkRegistry.hasChannel(
+                            to.connection, SyncAttachmentsPayload.TYPE.id()), ByteBufCodecs.VAR_LONG)
+                    .build());
+
     /**
      * Assimilation stage carried by an entity: 0 clean, 1-3 increasingly
      * taken. Set on expedition-spawned hordes (the organism's antibodies

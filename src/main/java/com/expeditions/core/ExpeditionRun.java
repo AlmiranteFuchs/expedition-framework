@@ -716,6 +716,14 @@ public final class ExpeditionRun {
         }
     }
 
+    /** Keep both siege clocks still while the party is away from the device. */
+    public void pauseDefense(long ticks) {
+        if (defense != null && ticks > 0) {
+            defense = new DefenseState(defense.objectiveId(), defense.device(), defense.hp(),
+                    defense.maxHp(), defense.endTick() + ticks, defense.nextWaveTick() + ticks);
+        }
+    }
+
     /**
      * Objective states keyed by objective id (unmodifiable, definition
      * order). Every objective declared by the definition has an entry even

@@ -4,6 +4,7 @@ import com.expeditions.core.SafeColumnSearch;
 import com.expeditions.server.dimension.DestinationChecks;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Function;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
@@ -28,19 +29,54 @@ public final class MobSpawns {
     /** Fixed columns in the deterministic ring sweep fallback. */
     private static final int SWEEP_ANGLES = 8;
     private static final int SWEEP_RADII = 3;
+    private static final int[] LANE_OFFSETS = {0, -1, 1, -2, 2, -3, 3};
 
     private MobSpawns() {
     }
 
     /** Keep a wave thematic, but do not let one oversized roll silence a viable biome. */
     public static Mob trySpawnFromPool(ServerLevel level, BlockPos center, int radius, String dimension) {
+        return trySpawnFromPool(level, center, dimension, type -> trySpawn(type, level, center, radius));
+    }
+
+    static Mob trySpawnFromPool(ServerLevel level, BlockPos center, String dimension,
+            Function<EntityType<?>, Mob> place) {
         java.util.Set<EntityType<?>> rejected = new java.util.HashSet<>();
         for (int attempt = 0; attempt < 16; attempt++) {
             EntityType<?> type = HordePools.pickExcluding(level, center, dimension, level.random, rejected);
             if (type == null) return null;
-            Mob mob = trySpawn(type, level, center, radius);
+            Mob mob = place.apply(type);
             if (mob != null) return mob;
             rejected.add(type);
+        }
+        return null;
+    }
+
+    /** One approach lane near the witness's elevation. A closed lane can be tried elsewhere. */
+    static Mob tryApproach(EntityType<?> type, ServerLevel level, BlockPos center,
+            int radius, double bearing, java.util.List<BlockPos> occupied) {
+        if (!(type.create(level) instanceof Mob mob)) return null;
+        for (int distance = radius; distance >= Math.max(6, radius - 3); distance--) {
+            for (int offset : LANE_OFFSETS) {
+                double angle = bearing + offset * Math.PI / 18;
+                BlockPos column = center.offset((int) Math.round(Math.cos(angle) * distance), 0,
+                        (int) Math.round(Math.sin(angle) * distance));
+                if (occupied.stream().anyMatch(pos -> pos.distSqr(column) < 4)
+                        || level.players().stream().anyMatch(player -> !player.isSpectator()
+                                && player.blockPosition().closerThan(column.atY(player.getBlockY()), 5))) {
+                    continue;
+                }
+                level.getChunk(column);
+                var surface = findStandingSpot(level, column, center.getY(), 1, 3);
+                if (surface.isEmpty() || !level.getWorldBorder().isWithinBounds(surface.get())) continue;
+                var pos = surface.get();
+                mob.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                        level.random.nextFloat() * 360f, 0f);
+                if (!level.noCollision(mob)) continue;
+                mob.setOnGround(true);
+                var path = mob.getNavigation().createPath(center, 2);
+                if (path != null && path.canReach()) return mob;
+            }
         }
         return null;
     }
@@ -110,10 +146,15 @@ public final class MobSpawns {
      */
     public static Optional<BlockPos> findStandingSpot(ServerLevel level,
             BlockPos column, int nearY) {
+        return findStandingSpot(level, column, nearY, SCAN_UP, SCAN_DOWN);
+    }
+
+    private static Optional<BlockPos> findStandingSpot(ServerLevel level,
+            BlockPos column, int nearY, int scanUp, int scanDown) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(
                 column.getX(), 0, column.getZ());
-        int top = Math.min(level.getMaxBuildHeight() - 1, nearY + SCAN_UP);
-        int bottom = Math.max(level.getMinBuildHeight() + 1, nearY - SCAN_DOWN);
+        int top = Math.min(level.getMaxBuildHeight() - 1, nearY + scanUp);
+        int bottom = Math.max(level.getMinBuildHeight() + 1, nearY - scanDown);
         OptionalInt y = SafeColumnSearch.findStandingY(
                 yy -> DestinationChecks.isFree(level, pos.setY(yy)),
                 yy -> DestinationChecks.isSturdyFloor(level, pos.setY(yy)),

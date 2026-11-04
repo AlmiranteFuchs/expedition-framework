@@ -28,8 +28,9 @@ public class ExpeditionCheckpointBlock extends RouteMarkerBlock {
             try {
                 manager.activateCheckpoint(serverPlayer, pos);
             } catch (IllegalStateException e) {
-                player.displayClientMessage(Component.translatable(
-                        "message.expeditions.wrong_checkpoint"), true);
+                String message = e.getMessage();
+                player.displayClientMessage(Component.translatable(message != null && message.startsWith("message.expeditions.")
+                        ? message : "message.expeditions.wrong_checkpoint"), true);
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);

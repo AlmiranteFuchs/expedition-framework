@@ -1232,6 +1232,19 @@ public final class ExpeditionGameTests {
         // in hidden entity sections until real tickets promote them — force
         // the chunks and wait for promotion so cleanup can reach them.
         List<UUID> firstHorde = List.copyOf(run.challengeEntities());
+        var staging = firstHorde.stream().map(id -> findEntity(level, firstCheckpoint, hordeRadius, id)).toList();
+        for (Entity mob : staging) {
+            helper.assertTrue(mob != null && Math.abs(mob.getBlockY() - firstCheckpoint.getY()) <= 2
+                            && !mob.blockPosition().closerThan(player.blockPosition().atY(mob.getBlockY()), 5),
+                    "horde staging must stay near the witness elevation and clear the player");
+            helper.assertTrue(mob.getData(com.expeditions.registry.ModAttachments.ARRIVAL_GLOW_UNTIL) > level.getGameTime(),
+                    "fresh attackers carry the temporary arrival shimmer");
+        }
+        var lead = staging.getFirst().blockPosition().subtract(firstCheckpoint);
+        helper.assertTrue(staging.stream().allMatch(mob -> {
+            var offset = mob.blockPosition().subtract(firstCheckpoint);
+            return lead.getX() * offset.getX() + lead.getZ() * offset.getZ() >= 0;
+        }), "the opening horde must come from one side of the witness");
         forceLoadArea(level, firstCheckpoint, hordeRadius);
         pollUntil(helper,
                 () -> firstHorde.stream().allMatch(id -> level.getEntity(id) != null),
@@ -2684,6 +2697,84 @@ public final class ExpeditionGameTests {
 
     // ---- Batch "defense": the destructible defense device -----------------
 
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_def", batch = "siege_targeting")
+    public static void siegeAttackersReachDeviceAndReinforce(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var manager = ExpeditionManager.get(level.getServer());
+        var player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        ExpeditionDefinitions.reload(Map.of(ResourceLocation.parse("test:siege_targeting"), JsonParser.parseString("""
+                {"dimension":"minecraft:overworld","checkpoints":[[352,352],[368,352]],"exit":[392,352],
+                 "objectives":[{"id":"graft","type":"defend_device","checkpoint":2,"seconds":60,"required":true}]}
+                """)));
+        try {
+            var run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().getFirst()));
+                var witness = ExpeditionManager.toPos(run.checkpoints().getLast());
+                for (int i = 1; i <= 5; i++) level.setBlockAndUpdate(witness.above(i), Blocks.STONE.defaultBlockState());
+                try {
+                    manager.activateCheckpoint(player, witness);
+                    helper.fail("a blocked graft site must refuse activation");
+                } catch (IllegalStateException expected) {
+                    helper.assertTrue(run.completedCheckpoints() == 1 && run.defense().isEmpty(),
+                            "blocked deployment leaves the witness available for a retry");
+                } finally {
+                    for (int i = 1; i <= 5; i++) level.removeBlock(witness.above(i), false);
+                }
+                manager.activateCheckpoint(player, witness);
+                var device = ExpeditionManager.toPos(run.defense().orElseThrow().device());
+                var openingWave = List.copyOf(run.challengeEntities());
+                int radius = ExpeditionsConfig.challengeHordeSpawnRadius() + 2;
+                helper.assertTrue(!openingWave.isEmpty(), "the siege must have an opening wave");
+                player.setPos(device.getX() + 64.5, device.getY(), device.getZ() + 0.5);
+                var beforePause = run.defense().orElseThrow();
+                manager.tickDefenses();
+                var paused = run.defense().orElseThrow();
+                helper.assertTrue(paused.endTick() == beforePause.endTick() + 20
+                                && paused.nextWaveTick() == beforePause.nextWaveTick() + 20,
+                        "walking away pauses both survival and reinforcements");
+                player.setPos(device.getX() + 0.5, device.getY(), device.getZ() + 0.5);
+                var savedAttacker = findEntity(level, device, radius, openingWave.getFirst());
+                var tag = new CompoundTag();
+                helper.assertTrue(savedAttacker != null && savedAttacker.save(tag), "the attacker can be saved");
+                var reloaded = EntityType.loadEntityRecursive(tag, level, entity -> entity);
+                helper.assertTrue(reloaded instanceof Mob, "the attacker can be reloaded");
+                com.expeditions.server.ChallengeOwnership.onJoin(
+                        new net.neoforged.neoforge.event.entity.EntityJoinLevelEvent(reloaded, level, true));
+                helper.assertTrue(((Mob) reloaded).goalSelector.getAvailableGoals().stream()
+                                .anyMatch(goal -> goal.getGoal() instanceof com.expeditions.entity.AttackDeviceGoal),
+                        "the reloaded attacker restores its device target");
+                forceLoadArea(level, device, radius);
+                boolean[] checkingReinforcements = {false};
+                pollUntil(helper, () -> run.defense().map(state -> state.hp() < state.maxHp()).orElse(false),
+                        "a siege mob to reach and damage the device", () -> {
+                            for (UUID id : openingWave) {
+                                Entity mob = findEntity(level, device, radius, id);
+                                if (mob != null) mob.discard();
+                            }
+                            helper.runAfterDelay(ExpeditionsConfig.defenseWaveSeconds() * 20L + 20, () -> {
+                                try {
+                                    helper.assertTrue(run.challengeEntities().stream().anyMatch(id -> !openingWave.contains(id)),
+                                            "a later wave must reinforce the siege after the first wave is cleared");
+                                    helper.succeed();
+                                } finally {
+                                    failRunIfActive(manager, player);
+                                }
+                            });
+                            checkingReinforcements[0] = true;
+                        }, 140, () -> "device=" + run.defense(), () -> {
+                            if (!checkingReinforcements[0]) failRunIfActive(manager, player);
+                        });
+            } catch (Throwable failure) {
+                failRunIfActive(manager, player);
+                throw failure;
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+    }
+
     /**
      * Activating the declared checkpoint deploys the device and rolls the
      * first siege wave; surviving the duration completes the objective
@@ -2702,7 +2793,7 @@ public final class ExpeditionGameTests {
                   "tokens": 10,
                   "objectives": [
                     {"id": "siege", "description": "Hold the device",
-                     "type": "defend_device", "checkpoint": 1, "seconds": 3,
+                     "type": "defend_device", "checkpoint": 2, "seconds": 3,
                      "bonus_tokens": 7, "required": true}
                   ]
                 }
@@ -2721,13 +2812,24 @@ public final class ExpeditionGameTests {
             try {
                 manager.activateCheckpoint(player,
                         ExpeditionManager.toPos(run.checkpoints().get(0)));
+                var previousWave = List.copyOf(run.challengeEntities());
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(1)));
                 devicePos = ExpeditionManager.toPos(
                         run.defense().orElseThrow().device());
+                player.setPos(devicePos.getX() + 0.5, devicePos.getY(), devicePos.getZ() + 0.5);
                 helper.assertTrue(level.getBlockState(devicePos)
                                 .is(ModBlocks.EXPEDITION_DEVICE.get()),
                         "the declared checkpoint must deploy the device");
                 helper.assertTrue(!run.challengeEntities().isEmpty(),
                         "the first siege wave must spawn");
+                for (UUID id : run.challengeEntities()) {
+                    helper.assertTrue(!previousWave.contains(id), "the previous checkpoint horde must stand down");
+                    var attacker = findEntity(level, devicePos, ExpeditionsConfig.challengeHordeSpawnRadius() + 2, id);
+                    helper.assertTrue(attacker instanceof Mob mob && mob.goalSelector.getAvailableGoals().stream()
+                                    .anyMatch(goal -> goal.getGoal() instanceof com.expeditions.entity.AttackDeviceGoal),
+                            "the opening wave must survive cleanup and every attacker must target the device");
+                }
             } catch (Throwable t) {
                 failRunIfActive(manager, player);
                 throw t;
@@ -2745,8 +2847,6 @@ public final class ExpeditionGameTests {
                                 .is(ModBlocks.EXPEDITION_DEVICE.get()),
                         "a survived device must be removed");
 
-                manager.activateCheckpoint(player,
-                        ExpeditionManager.toPos(run.checkpoints().get(1)));
                 ExpeditionRun done = manager.completeRun(player);
                 helper.assertTrue(done.tokensAwarded() == 17,
                         "the defense bonus must pay, was " + done.tokensAwarded());
@@ -4261,16 +4361,19 @@ public final class ExpeditionGameTests {
             // is deterministic when probed through MobSpawns directly:
             // it positions the mob without adding it, so no entity-section
             // promotion or lava-wander race can flake the assertion. The
-            // sweep inside trySpawn also settles ring viability: a ring
-            // that can host a mob must have produced the tracked horde.
+            // broad ring can fit a mob on a lower ledge even where a
+            // checkpoint horde has no reachable approach.
             int hordeRadius = ExpeditionsConfig.challengeHordeSpawnRadius();
+            for (UUID id : run.challengeEntities()) {
+                Entity attacker = findEntity(nether, checkpoint, hordeRadius, id);
+                helper.assertTrue(attacker != null && Math.abs(attacker.getBlockY() - checkpoint.getY()) <= 2,
+                        "a Nether horde must stage at the witness's elevation");
+            }
             EntityType<?> type = HordePools.pick(nether, checkpoint,
                     run.definition().dimension(), nether.random);
             Mob probe = MobSpawns.trySpawn(type, nether, checkpoint,
                     hordeRadius);
             if (probe != null) {
-                helper.assertTrue(!run.challengeEntities().isEmpty(),
-                        "a viable ring must have produced a nether horde");
                 BlockPos feet = probe.blockPosition();
                 probe.discard();
                 helper.assertTrue(

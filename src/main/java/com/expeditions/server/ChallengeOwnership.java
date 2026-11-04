@@ -1,18 +1,28 @@
 package com.expeditions.server;
 
+import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.ExpeditionRun;
+import com.expeditions.entity.AttackDeviceGoal;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 
 /** Durable ownership closes the cleanup seam when a mob wanders out of its spawn column. */
 public final class ChallengeOwnership {
     private static final String RUN = "expeditions:challenge_run";
+    private static final String SIEGE_DEVICE = "expeditions:siege_device";
     private ChallengeOwnership() { }
 
     public static void mark(Entity entity, ExpeditionRun run) {
         entity.getPersistentData().putUUID(RUN, run.runId());
+    }
+
+    public static void markSiege(Mob mob, ExpeditionRun run, BlockPos device) {
+        mark(mob, run);
+        mob.getPersistentData().putLong(SIEGE_DEVICE, device.asLong());
     }
 
     public static boolean cleanupIfEnded(Entity entity) {
@@ -55,6 +65,9 @@ public final class ChallengeOwnership {
         }
         for (var child : event.getChildren()) {
             mark(child, owner.get());
+            if (parent.getPersistentData().contains(SIEGE_DEVICE)) {
+                child.getPersistentData().putLong(SIEGE_DEVICE, parent.getPersistentData().getLong(SIEGE_DEVICE));
+            }
             child.setPersistenceRequired();
             child.setData(com.expeditions.registry.ModAttachments.ASSIMILATED,
                     parent.getData(com.expeditions.registry.ModAttachments.ASSIMILATED));
@@ -63,17 +76,37 @@ public final class ChallengeOwnership {
     }
 
     public static void onJoin(EntityJoinLevelEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel) || !(event.getEntity() instanceof net.minecraft.world.entity.Mob)) return;
-        Entity entity = event.getEntity();
+        if (!(event.getLevel() instanceof ServerLevel level) || !(event.getEntity() instanceof Mob entity)) return;
         // A legacy tracked UUID gains ownership when it is next loaded.
         if (!entity.getPersistentData().hasUUID(RUN)) {
             Integer stage = entity.getExistingDataOrNull(com.expeditions.registry.ModAttachments.ASSIMILATED);
             if ((stage == null || stage <= 0) && !(entity instanceof com.expeditions.entity.RootboundGuardian)) return;
-            ExpeditionManager.get(event.getLevel().getServer()).runs().stream()
+            ExpeditionManager.get(level.getServer()).runs().stream()
                     .filter(run -> run.challengeEntities().contains(entity.getUUID())).findFirst()
                     .ifPresent(run -> mark(entity, run));
         }
-        if (cleanupIfEnded(entity)) event.setCanceled(true);
+        if (cleanupIfEnded(entity)) {
+            event.setCanceled(true);
+            return;
+        }
+        // Earlier saves recorded siege ownership but omitted the attacker's assignment.
+        if (entity.getPersistentData().hasUUID(RUN) && !entity.getPersistentData().contains(SIEGE_DEVICE)
+                && !(entity instanceof com.expeditions.entity.RootboundGuardian)) {
+            var ownerId = entity.getPersistentData().getUUID(RUN);
+            ExpeditionManager.get(level.getServer()).runs().stream()
+                    .filter(run -> run.runId().equals(ownerId) && run.challengeEntities().contains(entity.getUUID())
+                            && run.definition().dimension().equals(level.dimension().location().toString()))
+                    .findFirst().flatMap(ExpeditionRun::defense)
+                    .ifPresent(defense -> entity.getPersistentData().putLong(SIEGE_DEVICE,
+                            ExpeditionManager.toPos(defense.device()).asLong()));
+        }
+        if (entity.getPersistentData().contains(SIEGE_DEVICE) && entity.getPersistentData().hasUUID(RUN)
+                && entity.goalSelector.getAvailableGoals().stream()
+                        .noneMatch(goal -> goal.getGoal() instanceof AttackDeviceGoal)) {
+            var device = BlockPos.of(entity.getPersistentData().getLong(SIEGE_DEVICE));
+            entity.goalSelector.addGoal(1, new AttackDeviceGoal(entity, device, entity.getPersistentData().getUUID(RUN),
+                    ExpeditionsConfig.defenseMobDamage(), ExpeditionsConfig.defenseMobAttackTicks()));
+        }
     }
 
     public static void onLeave(EntityLeaveLevelEvent event) {
