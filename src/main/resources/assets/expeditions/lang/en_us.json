@@ -34,6 +34,8 @@
   "message.expeditions.expedition_not_restored": "Your expedition could not be restored and has failed.",
   "message.expeditions.balance": "Expedition tokens: %1$s",
   "message.expeditions.status_none": "No active expedition.",
+  "message.expeditions.defense_already_active": "The first graft is still holding.",
+  "message.expeditions.defense_site_blocked": "Clear the space above the witness so the graft can rise.",
   "message.expeditions.field_order_required": "Required · %1$s (%2$s)",
   "message.expeditions.field_order_optional": "Optional · %1$s (%2$s)",
   "message.expeditions.field_order_done": "complete",

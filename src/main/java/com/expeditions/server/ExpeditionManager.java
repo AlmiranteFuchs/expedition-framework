@@ -23,7 +23,6 @@ import com.expeditions.core.RouteSpec;
 import com.expeditions.core.WeatherModifier;
 import com.expeditions.core.DefenseState;
 import com.expeditions.core.Waypoint;
-import com.expeditions.entity.AttackDeviceGoal;
 import com.expeditions.item.ExpeditionArtifactItem;
 import com.expeditions.registry.ModAttachments;
 import com.expeditions.registry.ModBlocks;
@@ -107,9 +106,6 @@ public final class ExpeditionManager {
     private static final int[][] JITTER = {
             {16, 0}, {-16, 0}, {0, 16}, {0, -16},
             {16, 16}, {-16, -16}, {16, -16}, {-16, 16}};
-
-    private static final org.slf4j.Logger LOGGER =
-            com.mojang.logging.LogUtils.getLogger();
 
     private final MinecraftServer server;
     private final ExpeditionLedger ledger;
@@ -581,6 +577,15 @@ public final class ExpeditionManager {
     public ExpeditionRun activateCheckpoint(ServerPlayer player, BlockPos pos) {
         ExpeditionRun run = requireActive(player.getUUID());
         requireRunDimension(run, player.serverLevel());
+        var defenseObjective = run.definition().defenseObjectiveAt(run.completedCheckpoints() + 1);
+        BlockPos devicePos = null;
+        if (defenseObjective.isPresent() && run.nextCheckpoint().filter(toWaypoint(pos)::equals).isPresent()) {
+            if (run.defense().isPresent()) {
+                throw new IllegalStateException("message.expeditions.defense_already_active");
+            }
+            devicePos = defenseSite(player.serverLevel(), pos).orElseThrow(
+                    () -> new IllegalStateException("message.expeditions.defense_site_blocked"));
+        }
         run.activateCheckpoint(toWaypoint(pos));
         JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.CHECKPOINTS);
         for (UUID member : run.party()) {
@@ -612,8 +617,9 @@ public final class ExpeditionManager {
         }
         // A checkpoint holding the defense device deploys it — the only
         // valid activation stage is its declared checkpoint.
-        run.definition().defenseObjectiveAt(run.completedCheckpoints())
-                .ifPresent(objective -> startSiege(player, run, objective));
+        if (devicePos != null) {
+            startSiege(player, run, defenseObjective.orElseThrow(), devicePos);
+        }
         // Guaranteed tokens are banked per checkpoint — they are paid into
         // member balances immediately and survive failure, death and
         // restarts. Completion only tops members up to their full share.
@@ -908,6 +914,7 @@ public final class ExpeditionManager {
     public Optional<ExpeditionRun> resumeOrFail(ServerPlayer player) {
         Optional<ExpeditionRun> active = ledger.activeRun(player.getUUID());
         if (active.isEmpty() || isRunRecoverable(active.get())) {
+            active.ifPresent(run -> forEachCompass(player, stack -> retarget(stack, run)));
             return active;
         }
         ExpeditionRun run = active.get();
@@ -1462,24 +1469,19 @@ public final class ExpeditionManager {
      * an immediate first wave. The device is a marker — it shares the
      * pickaxe protection and the orphan-pruning safety net.
      */
+    private static Optional<BlockPos> defenseSite(ServerLevel level, BlockPos checkpoint) {
+        for (int offset = 1; offset <= 5; offset++) {
+            BlockPos site = checkpoint.above(offset);
+            if (!level.isOutsideBuildHeight(site) && level.getBlockState(site).canBeReplaced()) {
+                return Optional.of(site);
+            }
+        }
+        return Optional.empty();
+    }
+
     private void startSiege(ServerPlayer player, ExpeditionRun run,
-            ExpeditionObjective objective) {
+            ExpeditionObjective objective, BlockPos devicePos) {
         ServerLevel level = player.serverLevel();
-        // The device goes above the just-activated checkpoint, but never over
-        // another marker: two runs in the same dimension can resolve
-        // overlapping positions, and clobbering a shared checkpoint would
-        // silently destroy another run. Take the first replaceable spot in a
-        // bounded column; if none exists the siege does not start.
-        BlockPos devicePos = toPos(run.checkpoints()
-                .get(run.completedCheckpoints() - 1)).above();
-        for (int i = 0; i < 4 && !level.getBlockState(devicePos).canBeReplaced(); i++) {
-            devicePos = devicePos.above();
-        }
-        if (!level.getBlockState(devicePos).canBeReplaced()) {
-            LOGGER.warn("No room for a defense device above {}; siege for run {} not started",
-                    devicePos, run.runId());
-            return;
-        }
         level.setBlock(devicePos, ModBlocks.EXPEDITION_DEVICE.get().defaultBlockState(), 3);
         data.trackMarker(level.dimension().location().toString(), devicePos);
         long now = level.getGameTime();
@@ -1515,9 +1517,17 @@ public final class ExpeditionManager {
         });
     }
 
-    /** Whether {@code pos} is the live device of an active run's siege. */
-    public boolean isDefenseDeviceAt(ServerLevel level, BlockPos pos) {
-        return defenseRunAt(level, pos).isPresent();
+    /** Whether these attackers own a live siege with defenders in range. */
+    public boolean isAttendedDefense(ServerLevel level, BlockPos pos, UUID runId) {
+        return defenseRunAt(level, pos).filter(run -> run.runId().equals(runId)
+                && hasDefenderNearby(run, level, pos)).isPresent();
+    }
+
+    private static boolean hasDefenderNearby(ExpeditionRun run, ServerLevel level, BlockPos pos) {
+        return level.players().stream().anyMatch(player -> run.isMember(player.getUUID())
+                && player.isAlive() && !player.isSpectator()
+                && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5,
+                        pos.getZ() + 0.5) <= 32 * 32);
     }
 
     /** Status of the device at {@code pos} for player feedback, if live. */
@@ -1566,6 +1576,8 @@ public final class ExpeditionManager {
         if (objective != null && objective.required() && run.isActive()) {
             run.fail("device_destroyed");
             endRun(run);
+        } else {
+            retargetPartyCompasses(run, null);
         }
     }
 
@@ -1595,9 +1607,15 @@ public final class ExpeditionManager {
                 }
                 continue;
             }
+            if (!hasDefenderNearby(run, level, devicePos)) {
+                run.pauseDefense(20);
+                data.setDirty();
+                continue;
+            }
             Optional<ExpeditionObjective> survived = run.completeDefenseIfExpired(now);
             if (survived.isPresent()) {
                 standDownDevice(run, level, devicePos);
+                retargetPartyCompasses(run, null);
                 for (UUID member : run.party()) {
                     ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
                     if (memberPlayer != null) {
@@ -1671,10 +1689,7 @@ public final class ExpeditionManager {
             if (buffed) {
                 pressureBuffs(mob);
             }
-            mob.goalSelector.addGoal(1, new AttackDeviceGoal(mob, devicePos,
-                    ExpeditionsConfig.defenseMobDamage(),
-                    ExpeditionsConfig.defenseMobAttackTicks()));
-            ChallengeOwnership.mark(mob, run);
+            ChallengeOwnership.markSiege(mob, run, devicePos);
             if (level.addFreshEntity(mob)) {
                 spawned.add(mob.getUUID());
             }
@@ -1912,7 +1927,8 @@ public final class ExpeditionManager {
     /** Points every expedition compass of every online member at the next target. */
     private void retargetPartyCompasses(ExpeditionRun run, ServerPlayer activator) {
         for (UUID member : run.party()) {
-            ServerPlayer memberPlayer = member.equals(activator.getUUID()) ? activator : server.getPlayerList().getPlayer(member);
+            ServerPlayer memberPlayer = activator != null && member.equals(activator.getUUID())
+                    ? activator : server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
                 forEachCompass(memberPlayer, stack -> retarget(stack, run));
             }
@@ -2030,7 +2046,7 @@ public final class ExpeditionManager {
 
     /** The position the compass should point at: next checkpoint, else the exit. */
     private static Waypoint nextTarget(ExpeditionRun run) {
-        return run.nextCheckpoint().orElse(run.exit());
+        return run.defense().map(DefenseState::device).orElseGet(() -> run.nextCheckpoint().orElse(run.exit()));
     }
 
     private static void retarget(ItemStack stack, ExpeditionRun run) {

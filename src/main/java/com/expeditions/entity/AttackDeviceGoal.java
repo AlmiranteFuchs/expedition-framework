@@ -2,6 +2,7 @@ package com.expeditions.entity;
 
 import com.expeditions.server.ExpeditionManager;
 import java.util.EnumSet;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -26,14 +27,16 @@ public class AttackDeviceGoal extends Goal {
 
     private final Mob mob;
     private final BlockPos device;
+    private final UUID runId;
     private final int damage;
     private final int intervalTicks;
     private int cooldown;
     private int repathDelay;
 
-    public AttackDeviceGoal(Mob mob, BlockPos device, int damage, int intervalTicks) {
+    public AttackDeviceGoal(Mob mob, BlockPos device, UUID runId, int damage, int intervalTicks) {
         this.mob = mob;
         this.device = device.immutable();
+        this.runId = runId;
         this.damage = damage;
         this.intervalTicks = intervalTicks;
         setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
@@ -43,7 +46,7 @@ public class AttackDeviceGoal extends Goal {
     public boolean canUse() {
         return mob.level() instanceof ServerLevel level
                 && ExpeditionManager.get(level.getServer())
-                        .isDefenseDeviceAt(level, device);
+                        .isAttendedDefense(level, device, runId);
     }
 
     @Override

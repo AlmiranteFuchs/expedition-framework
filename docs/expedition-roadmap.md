@@ -729,3 +729,11 @@ siege uses its own attackers and reinforcement schedule. Siege mobs approach
 the device from an adjacent reachable space and damage it until the defenders
 intercept them. The defense suite covers a later checkpoint's opening wave,
 device damage from a spawned attacker, and a follow-up wave.
+
+### Defense attendance and recovery — alpha.35
+
+The compass points to the active defense device, then returns to the next
+witness or the Hollow when the hold resolves. At least one living party
+member must be within 32 blocks to advance the hold. Outside that range,
+the survival and reinforcement clocks pause and siege mobs stop attacking
+the device. An attacker's device assignment survives entity reload.

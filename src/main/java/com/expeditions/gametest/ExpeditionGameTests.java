@@ -2698,11 +2698,40 @@ public final class ExpeditionGameTests {
             var run = startExpedition(helper, manager, player);
             try {
                 manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().getFirst()));
-                manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().getLast()));
+                var witness = ExpeditionManager.toPos(run.checkpoints().getLast());
+                for (int i = 1; i <= 5; i++) level.setBlockAndUpdate(witness.above(i), Blocks.STONE.defaultBlockState());
+                try {
+                    manager.activateCheckpoint(player, witness);
+                    helper.fail("a blocked graft site must refuse activation");
+                } catch (IllegalStateException expected) {
+                    helper.assertTrue(run.completedCheckpoints() == 1 && run.defense().isEmpty(),
+                            "blocked deployment leaves the witness available for a retry");
+                } finally {
+                    for (int i = 1; i <= 5; i++) level.removeBlock(witness.above(i), false);
+                }
+                manager.activateCheckpoint(player, witness);
                 var device = ExpeditionManager.toPos(run.defense().orElseThrow().device());
                 var openingWave = List.copyOf(run.challengeEntities());
                 int radius = ExpeditionsConfig.challengeHordeSpawnRadius() + 2;
                 helper.assertTrue(!openingWave.isEmpty(), "the siege must have an opening wave");
+                player.setPos(device.getX() + 64.5, device.getY(), device.getZ() + 0.5);
+                var beforePause = run.defense().orElseThrow();
+                manager.tickDefenses();
+                var paused = run.defense().orElseThrow();
+                helper.assertTrue(paused.endTick() == beforePause.endTick() + 20
+                                && paused.nextWaveTick() == beforePause.nextWaveTick() + 20,
+                        "walking away pauses both survival and reinforcements");
+                player.setPos(device.getX() + 0.5, device.getY(), device.getZ() + 0.5);
+                var savedAttacker = findEntity(level, device, radius, openingWave.getFirst());
+                var tag = new CompoundTag();
+                helper.assertTrue(savedAttacker != null && savedAttacker.save(tag), "the attacker can be saved");
+                var reloaded = EntityType.loadEntityRecursive(tag, level, entity -> entity);
+                helper.assertTrue(reloaded instanceof Mob, "the attacker can be reloaded");
+                com.expeditions.server.ChallengeOwnership.onJoin(
+                        new net.neoforged.neoforge.event.entity.EntityJoinLevelEvent(reloaded, level, true));
+                helper.assertTrue(((Mob) reloaded).goalSelector.getAvailableGoals().stream()
+                                .anyMatch(goal -> goal.getGoal() instanceof com.expeditions.entity.AttackDeviceGoal),
+                        "the reloaded attacker restores its device target");
                 forceLoadArea(level, device, radius);
                 boolean[] checkingReinforcements = {false};
                 pollUntil(helper, () -> run.defense().map(state -> state.hp() < state.maxHp()).orElse(false),
@@ -2775,6 +2804,7 @@ public final class ExpeditionGameTests {
                         ExpeditionManager.toPos(run.checkpoints().get(1)));
                 devicePos = ExpeditionManager.toPos(
                         run.defense().orElseThrow().device());
+                player.setPos(devicePos.getX() + 0.5, devicePos.getY(), devicePos.getZ() + 0.5);
                 helper.assertTrue(level.getBlockState(devicePos)
                                 .is(ModBlocks.EXPEDITION_DEVICE.get()),
                         "the declared checkpoint must deploy the device");
