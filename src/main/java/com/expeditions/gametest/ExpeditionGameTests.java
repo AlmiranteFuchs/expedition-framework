@@ -2684,6 +2684,55 @@ public final class ExpeditionGameTests {
 
     // ---- Batch "defense": the destructible defense device -----------------
 
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_def", batch = "siege_targeting")
+    public static void siegeAttackersReachDeviceAndReinforce(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var manager = ExpeditionManager.get(level.getServer());
+        var player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        ExpeditionDefinitions.reload(Map.of(ResourceLocation.parse("test:siege_targeting"), JsonParser.parseString("""
+                {"dimension":"minecraft:overworld","checkpoints":[[352,352],[368,352]],"exit":[392,352],
+                 "objectives":[{"id":"graft","type":"defend_device","checkpoint":2,"seconds":60,"required":true}]}
+                """)));
+        try {
+            var run = startExpedition(helper, manager, player);
+            try {
+                manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().getFirst()));
+                manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().getLast()));
+                var device = ExpeditionManager.toPos(run.defense().orElseThrow().device());
+                var openingWave = List.copyOf(run.challengeEntities());
+                int radius = ExpeditionsConfig.challengeHordeSpawnRadius() + 2;
+                helper.assertTrue(!openingWave.isEmpty(), "the siege must have an opening wave");
+                forceLoadArea(level, device, radius);
+                boolean[] checkingReinforcements = {false};
+                pollUntil(helper, () -> run.defense().map(state -> state.hp() < state.maxHp()).orElse(false),
+                        "a siege mob to reach and damage the device", () -> {
+                            for (UUID id : openingWave) {
+                                Entity mob = findEntity(level, device, radius, id);
+                                if (mob != null) mob.discard();
+                            }
+                            helper.runAfterDelay(ExpeditionsConfig.defenseWaveSeconds() * 20L + 20, () -> {
+                                try {
+                                    helper.assertTrue(run.challengeEntities().stream().anyMatch(id -> !openingWave.contains(id)),
+                                            "a later wave must reinforce the siege after the first wave is cleared");
+                                    helper.succeed();
+                                } finally {
+                                    failRunIfActive(manager, player);
+                                }
+                            });
+                            checkingReinforcements[0] = true;
+                        }, 140, () -> "device=" + run.defense(), () -> {
+                            if (!checkingReinforcements[0]) failRunIfActive(manager, player);
+                        });
+            } catch (Throwable failure) {
+                failRunIfActive(manager, player);
+                throw failure;
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+    }
+
     /**
      * Activating the declared checkpoint deploys the device and rolls the
      * first siege wave; surviving the duration completes the objective
@@ -2702,7 +2751,7 @@ public final class ExpeditionGameTests {
                   "tokens": 10,
                   "objectives": [
                     {"id": "siege", "description": "Hold the device",
-                     "type": "defend_device", "checkpoint": 1, "seconds": 3,
+                     "type": "defend_device", "checkpoint": 2, "seconds": 3,
                      "bonus_tokens": 7, "required": true}
                   ]
                 }
@@ -2721,6 +2770,9 @@ public final class ExpeditionGameTests {
             try {
                 manager.activateCheckpoint(player,
                         ExpeditionManager.toPos(run.checkpoints().get(0)));
+                var previousWave = List.copyOf(run.challengeEntities());
+                manager.activateCheckpoint(player,
+                        ExpeditionManager.toPos(run.checkpoints().get(1)));
                 devicePos = ExpeditionManager.toPos(
                         run.defense().orElseThrow().device());
                 helper.assertTrue(level.getBlockState(devicePos)
@@ -2728,6 +2780,13 @@ public final class ExpeditionGameTests {
                         "the declared checkpoint must deploy the device");
                 helper.assertTrue(!run.challengeEntities().isEmpty(),
                         "the first siege wave must spawn");
+                for (UUID id : run.challengeEntities()) {
+                    helper.assertTrue(!previousWave.contains(id), "the previous checkpoint horde must stand down");
+                    var attacker = findEntity(level, devicePos, ExpeditionsConfig.challengeHordeSpawnRadius() + 2, id);
+                    helper.assertTrue(attacker instanceof Mob mob && mob.goalSelector.getAvailableGoals().stream()
+                                    .anyMatch(goal -> goal.getGoal() instanceof com.expeditions.entity.AttackDeviceGoal),
+                            "the opening wave must survive cleanup and every attacker must target the device");
+                }
             } catch (Throwable t) {
                 failRunIfActive(manager, player);
                 throw t;
@@ -2745,8 +2804,6 @@ public final class ExpeditionGameTests {
                                 .is(ModBlocks.EXPEDITION_DEVICE.get()),
                         "a survived device must be removed");
 
-                manager.activateCheckpoint(player,
-                        ExpeditionManager.toPos(run.checkpoints().get(1)));
                 ExpeditionRun done = manager.completeRun(player);
                 helper.assertTrue(done.tokensAwarded() == 17,
                         "the defense bonus must pay, was " + done.tokensAwarded());

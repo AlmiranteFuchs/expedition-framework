@@ -721,3 +721,11 @@ the destination dimension. The bearing is shared and pays at extraction.
 
 The [server presets](server-presets.md) cover a gentler introduction, the
 default Charter balance, and a harsher pressure curve with better bonus drops.
+
+### Defense waves — alpha.34
+
+The previous checkpoint's horde is cleared before the siege begins. An active
+siege uses its own attackers and reinforcement schedule. Siege mobs approach
+the device from an adjacent reachable space and damage it until the defenders
+intercept them. The defense suite covers a later checkpoint's opening wave,
+device damage from a spawned attacker, and a follow-up wave.

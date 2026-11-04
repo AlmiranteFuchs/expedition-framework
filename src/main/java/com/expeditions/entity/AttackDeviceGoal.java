@@ -21,7 +21,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
  * run's challenge-entity cleanup anyway.
  */
 public class AttackDeviceGoal extends Goal {
-    /** Horizontal reach at which a hit lands, squared. */
+    /** Three-dimensional reach at which a hit lands, squared. */
     private static final double REACH_SQR = 4.0;
 
     private final Mob mob;
@@ -29,13 +29,14 @@ public class AttackDeviceGoal extends Goal {
     private final int damage;
     private final int intervalTicks;
     private int cooldown;
+    private int repathDelay;
 
     public AttackDeviceGoal(Mob mob, BlockPos device, int damage, int intervalTicks) {
         this.mob = mob;
         this.device = device.immutable();
         this.damage = damage;
         this.intervalTicks = intervalTicks;
-        setFlags(EnumSet.of(Goal.Flag.MOVE));
+        setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
     }
 
     @Override
@@ -63,8 +64,11 @@ public class AttackDeviceGoal extends Goal {
         double distSqr = mob.distanceToSqr(device.getX() + 0.5,
                 device.getY() + 0.5, device.getZ() + 0.5);
         if (distSqr > REACH_SQR) {
-            mob.getNavigation().moveTo(device.getX() + 0.5,
-                    device.getY() + 0.5, device.getZ() + 0.5, 1.0);
+            if (--repathDelay <= 0) {
+                repathDelay = 10;
+                // The device occupies its target cell. A path may end beside it.
+                mob.getNavigation().moveTo(mob.getNavigation().createPath(device, 1), 1.0);
+            }
             return;
         }
         mob.getNavigation().stop();

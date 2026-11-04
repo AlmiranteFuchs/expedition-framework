@@ -594,6 +594,11 @@ public final class ExpeditionManager {
         if (run.completedCheckpoints() == 1) {
             closePortal(run);
         }
+        // Clear the previous challenge before the siege adds this mark's attackers.
+        if (run.completedCheckpoints() >= 2 && run.defense().isEmpty()) {
+            clearChallengeEntities(run, player.serverLevel(),
+                    toPos(run.checkpoints().get(run.completedCheckpoints() - 2)));
+        }
         // A checkpoint holding the mission cargo issues the run's artifact
         // exactly once; repeat activations never duplicate the item.
         if (!run.artifactIssued()
@@ -627,12 +632,6 @@ public final class ExpeditionManager {
             }
         }
         retargetPartyCompasses(run, player);
-        // The previous challenge spawned around the checkpoint before this
-        // one; its chunks may be unloaded now that the party moved on.
-        if (run.completedCheckpoints() >= 2) {
-            clearChallengeEntities(run, player.serverLevel(),
-                    toPos(run.checkpoints().get(run.completedCheckpoints() - 2)));
-        }
         if (run.definition().defenseObjectiveAt(run.completedCheckpoints()).isEmpty()
                 && run.definition().artifactObjectiveAt(run.completedCheckpoints()).isEmpty()) {
             player.displayClientMessage(Component.translatable(run.allCheckpointsDone()
@@ -1284,7 +1283,8 @@ public final class ExpeditionManager {
             }
             return;
         }
-        if (run.options().guided() || FrontierProgression.isAftergrowth(run.definition()) || !ExpeditionsConfig.challengesEnabled()) {
+        if (run.defense().isPresent() || run.options().guided() || FrontierProgression.isAftergrowth(run.definition())
+                || !ExpeditionsConfig.challengesEnabled()) {
             return;
         }
         ServerLevel level = player.serverLevel();
