@@ -808,3 +808,24 @@ while generating or refining. Each machine has a distinct cue.
   the world and expires on its original clock across reloads.
 - Next gameplay batch: relay and endurance commissions. Keep markers and
   their rewards in the existing atomic expedition save.
+
+
+### Alpha.44 release candidate verification
+
+- Live defense in the disposable Audio Playtest charter exposed a 126-tick ward loss
+  under high pressure. Siege mobs now spawn at least six blocks away horizontally
+  and path to cardinal attack positions within reach of the ward.
+- The first wave uses the configured base size. Pressure still increases the
+  size of later waves. The revised client showed three opening spiders at
+  7–8 blocks and six reinforcements. The assisted ward attempt ended after
+  448 ticks when another wave destroyed the device.
+- The first test of the wider spawn ring timed out waiting for device damage.
+  After the navigation change, all seven focused defense GameTests passed.
+  A subsequent full attempt collided with client recompilation and logged
+  missing classes. The final sequential build, alphaBundle, 202 unit tests,
+  and 188 required GameTests passed.
+- The debug Guardian advanced through all three attacks below half health.
+  The remaining release checks are a successful live extraction, visual
+  readability of the Guardian's ring and shiver, and the machine sound mix
+  while working and idle. Publish the tested JAR and checksum after those
+  checks, then implement relay and endurance commissions.

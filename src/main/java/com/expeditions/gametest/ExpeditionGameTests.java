@@ -2776,6 +2776,8 @@ public final class ExpeditionGameTests {
                 var savedAttacker = findEntity(level, device, radius, openingWave.getFirst());
                 var tag = new CompoundTag();
                 helper.assertTrue(savedAttacker != null && savedAttacker.save(tag), "the attacker can be saved");
+                helper.assertTrue(savedAttacker.blockPosition().atY(device.getY()).distSqr(device) >= 36,
+                        "the opening wave needs an approach lane outside immediate melee range");
                 var reloaded = EntityType.loadEntityRecursive(tag, level, entity -> entity);
                 helper.assertTrue(reloaded instanceof Mob, "the attacker can be reloaded");
                 com.expeditions.server.ChallengeOwnership.onJoin(

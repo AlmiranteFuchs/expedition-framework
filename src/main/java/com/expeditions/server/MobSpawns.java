@@ -114,16 +114,21 @@ public final class MobSpawns {
      */
     public static Mob trySpawn(EntityType<?> type, ServerLevel level,
             BlockPos center, int radius) {
+        return trySpawn(type, level, center, 2, radius);
+    }
+
+    static Mob trySpawn(EntityType<?> type, ServerLevel level,
+            BlockPos center, int minDistance, int radius) {
         for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
             Mob mob = tryColumn(type, level, center,
                     level.getRandom().nextDouble() * Math.PI * 2,
-                    2 + level.getRandom().nextInt(radius - 1));
+                    minDistance + level.getRandom().nextInt(radius - minDistance + 1));
             if (mob != null) {
                 return mob;
             }
         }
         for (int ri = 0; ri < SWEEP_RADII; ri++) {
-            int distance = Math.max(2, radius * (ri + 1) / (SWEEP_RADII + 1));
+            int distance = Math.max(minDistance, radius * (ri + 1) / (SWEEP_RADII + 1));
             for (int ai = 0; ai < SWEEP_ANGLES; ai++) {
                 Mob mob = tryColumn(type, level, center,
                         ai * Math.PI / 4 + ri * 0.41, distance);

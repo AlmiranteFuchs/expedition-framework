@@ -1606,7 +1606,7 @@ public final class ExpeditionManager {
                 objective.timeLimitTicks(),
                 ExpeditionsConfig.defenseWaveSeconds() * 20L);
         JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.DEFENSE);
-        spawnSiegeWave(run, level, devicePos);
+        spawnSiegeWave(run, level, devicePos, true);
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer != null) {
@@ -1743,7 +1743,7 @@ public final class ExpeditionManager {
                 continue;
             }
             if (run.defenseWaveDue(now)) {
-                spawnSiegeWave(run, level, devicePos);
+                spawnSiegeWave(run, level, devicePos, false);
                 run.defenseWaveSpawned(now + ExpeditionsConfig.defenseWaveSeconds() * 20L);
             }
             data.setDirty();
@@ -1763,7 +1763,7 @@ public final class ExpeditionManager {
      * rolls from the device's own natural mob pool like any horde. Each
      * mob pathfinds to the device and chips it; players intercept them.
      */
-    private void spawnSiegeWave(ExpeditionRun run, ServerLevel level, BlockPos devicePos) {
+    private void spawnSiegeWave(ExpeditionRun run, ServerLevel level, BlockPos devicePos, boolean opening) {
         int alive = 0;
         for (UUID entityId : run.challengeEntities()) {
             if (level.getEntity(entityId) != null) {
@@ -1773,23 +1773,26 @@ public final class ExpeditionManager {
         int room = ExpeditionsConfig.defenseMobCap() - alive;
         int pressure = data.pressure(run.definition().dimension());
         int count = Math.min(room, ExpeditionsConfig.defenseWaveSize()
-                + pressure
+                + (opening ? 0 : pressure
                         / ExpeditionTuning.integer(run.definition().dimension(),
                                 "pressure.horde_bonus_per",
-                                ExpeditionsConfig.pressureHordeBonusPer()));
+                                ExpeditionsConfig.pressureHordeBonusPer())));
         if (count <= 0) {
             return;
         }
         boolean buffed = pressure
                 >= ExpeditionTuning.integer(run.definition().dimension(),
                         "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
-        int radius = ExpeditionsConfig.challengeHordeSpawnRadius();
-        Mob first = MobSpawns.trySpawnFromPool(level, devicePos, radius, run.definition().dimension());
+        // Keep the ward out of melee reach at spawn, even on a tight defense site.
+        int minDistance = 7;
+        int radius = Math.max(8, ExpeditionsConfig.challengeHordeSpawnRadius());
+        Mob first = MobSpawns.trySpawnFromPool(level, devicePos, run.definition().dimension(),
+                type -> MobSpawns.trySpawn(type, level, devicePos, minDistance, radius));
         if (first == null) return;
         EntityType<?> type = first.getType();
         List<UUID> spawned = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Mob mob = i == 0 ? first : MobSpawns.trySpawn(type, level, devicePos, radius);
+            Mob mob = i == 0 ? first : MobSpawns.trySpawn(type, level, devicePos, minDistance, radius);
             if (mob == null) {
                 continue;
             }

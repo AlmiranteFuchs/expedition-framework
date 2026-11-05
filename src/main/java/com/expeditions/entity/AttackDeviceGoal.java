@@ -2,8 +2,10 @@ package com.expeditions.entity;
 
 import com.expeditions.server.ExpeditionManager;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Mob;
@@ -69,8 +71,15 @@ public class AttackDeviceGoal extends Goal {
         if (distSqr > REACH_SQR) {
             if (--repathDelay <= 0) {
                 repathDelay = 10;
-                // The device occupies its target cell. A path may end beside it.
-                mob.getNavigation().moveTo(mob.getNavigation().createPath(device, 1), 1.0);
+                // Pick an exact attack position so navigation cannot stop diagonally
+                // below the ward, outside the goal's three-dimensional reach.
+                var attackPositions = new HashSet<BlockPos>();
+                for (Direction side : Direction.Plane.HORIZONTAL) {
+                    BlockPos adjacent = device.relative(side);
+                    attackPositions.add(adjacent);
+                    attackPositions.add(adjacent.below());
+                }
+                mob.getNavigation().moveTo(mob.getNavigation().createPath(attackPositions, 0), 1.0);
             }
             return;
         }
