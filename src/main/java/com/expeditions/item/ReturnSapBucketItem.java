@@ -54,7 +54,7 @@ public final class ReturnSapBucketItem extends BucketItem {
         private FluidStack fluid;
 
         Wrapper(ItemStack stack) {
-            container = stack.copyWithCount(1);
+            container = stack;
             fluid = com.expeditions.core.ReturnSap.of(source(stack), 1000);
         }
 
@@ -74,18 +74,13 @@ public final class ReturnSapBucketItem extends BucketItem {
         }
 
         @Override public FluidStack drain(int maxDrain, FluidAction action) {
-            int moved = Math.min(maxDrain, fluid.getAmount());
-            if (moved <= 0) {
+            if (container.getCount() != 1 || maxDrain < 1000 || fluid.isEmpty()) {
                 return FluidStack.EMPTY;
             }
-            var drained = com.expeditions.core.ReturnSap.of(
-                    com.expeditions.core.ReturnSap.dimension(fluid), moved);
+            var drained = fluid.copy();
             if (action.execute()) {
-                if (fluid.getAmount() - moved <= 0) {
-                    container = new ItemStack(net.minecraft.world.item.Items.BUCKET);
-                } else {
-                    fluid.shrink(moved);
-                }
+                fluid = FluidStack.EMPTY;
+                container = new ItemStack(net.minecraft.world.item.Items.BUCKET);
             }
             return drained;
         }

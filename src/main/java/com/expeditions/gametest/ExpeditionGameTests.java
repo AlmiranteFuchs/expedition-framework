@@ -2098,17 +2098,68 @@ public final class ExpeditionGameTests {
         var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
         vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
                 net.minecraft.world.level.material.Fluids.WATER, 1000), execute);
+        var water = new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 1000);
+        vessel.tank().fill(water, execute);
+        helper.assertTrue(!vessel.startSteep("minecraft:the_nether") && vessel.tank().getFluidAmount() == 2000,
+                "an overfilled jar refuses the knot without consuming water");
+        vessel.tank().drain(1000, execute);
         var knot = new ItemStack(ModItems.RETURN_KNOT.get());
         com.expeditions.item.ReturnKnotItem.bind(knot, "minecraft:the_nether");
         helper.assertTrue(vessel.startSteep(com.expeditions.item.ReturnKnotItem.source(knot)),
                 "a bound knot steeps in water");
         vessel.steepTicks = 0;
+        vessel.tank().fill(water, execute);
+        helper.assertTrue(!vessel.catalyze() && vessel.steeping() && vessel.tank().getFluidAmount() == 2000,
+                "extra water after steeping leaves the knot and water intact");
+        vessel.tank().drain(1000, execute);
         helper.assertTrue(vessel.catalyze() && com.expeditions.core.ReturnSap
                         .dimension(vessel.tank().getFluid()).equals("minecraft:the_nether"),
                 "the steep settles into the knot's own dimension, not the jar's");
         helper.assertTrue(vessel.tank().fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 100),
                         net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE) == 0,
                 "a foreign trace cannot mix into the jar");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", templateNamespace = "expeditions_opts", batch = "sap_wells")
+    public static void legacyBasinLoadsItsSapBeforeLevelAttachment(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var pos = helper.absolutePos(new BlockPos(1, 1, 2));
+        var state = ModBlocks.RECLAIMING_BASIN.get().defaultBlockState();
+        level.setBlockAndUpdate(pos, state);
+        var previous = new net.neoforged.neoforge.fluids.capability.templates.FluidTank(2000);
+        previous.setFluid(com.expeditions.core.ReturnSap.of("", 1700));
+        var tag = new CompoundTag();
+        tag.put("Sap", previous.writeToNBT(level.registryAccess(), new CompoundTag()));
+        var restored = new com.expeditions.block.entity.SapVesselBlockEntity(pos, state);
+        restored.loadWithComponents(tag, level.registryAccess());
+        restored.setLevel(level);
+        restored.onLoad();
+        restored.onLoad();
+        helper.assertTrue(restored.sapFor(level.dimension().location().toString()) == 1700
+                        && restored.tank().isEmpty(),
+                "the old pooled tank migrates once, after the level is known");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", templateNamespace = "expeditions_opts", batch = "sap_wells")
+    public static void boundSapBucketOnlyDrainsOnceAndWhole(GameTestHelper helper) {
+        var bucket = new ItemStack(ModItems.RETURN_SAP_BUCKET.get());
+        com.expeditions.item.ReturnSapBucketItem.bind(bucket, "minecraft:the_nether");
+        var handler = bucket.getCapability(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.ITEM);
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        var simulate = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE;
+        helper.assertTrue(handler != null && handler.drain(500, execute).isEmpty()
+                        && handler.drain(1000, simulate).getAmount() == 1000
+                        && handler.getContainer().is(ModItems.RETURN_SAP_BUCKET.get()),
+                "partial and simulated drains leave the original bucket full");
+        var drained = handler.drain(1000, execute);
+        helper.assertTrue(drained.getAmount() == 1000
+                        && com.expeditions.core.ReturnSap.dimension(drained).equals("minecraft:the_nether")
+                        && handler.getContainer().is(Items.BUCKET)
+                        && handler.getFluidInTank(0).isEmpty()
+                        && handler.drain(1000, execute).isEmpty(),
+                "a full drain preserves the trace and empties the handler");
         helper.succeed();
     }
 

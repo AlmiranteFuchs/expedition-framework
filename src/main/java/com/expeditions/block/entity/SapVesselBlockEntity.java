@@ -223,7 +223,7 @@ public final class SapVesselBlockEntity extends BlockEntity {
 
     /** A knot dissolves into the water it stands in; unmarked knots assume local trace. */
     public boolean startSteep(String knotDimension) {
-        if (steeping() || !isWater(tank.getFluid()) || tank.getFluidAmount() < 1000) {
+        if (steeping() || !isWater(tank.getFluid()) || tank.getFluidAmount() != 1000) {
             return false;
         }
         steepDimension = knotDimension.isBlank() && getLevel() != null
@@ -235,7 +235,7 @@ public final class SapVesselBlockEntity extends BlockEntity {
 
     /** Essence is the solvent the memory yields to: steep + essence -> that dimension's sap. */
     public boolean catalyze() {
-        if (!steeped() || !isWater(tank.getFluid()) || tank.getFluidAmount() < 1000) {
+        if (!steeped() || !isWater(tank.getFluid()) || tank.getFluidAmount() != 1000) {
             return false;
         }
         // Capture first — draining the water fires the steep-cancel callback.
@@ -326,23 +326,33 @@ public final class SapVesselBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         tank.readFromNBT(registries, tag.getCompound("Sap"));
-        // Legacy basin saves stored one pooled tank — fold it into the
-        // vessel's own dimension so nothing already brewed is lost.
-        if (kind == SapVesselBlock.Kind.BASIN && tank.getFluid().is(ModFluids.SAP.get())
-                && !tank.isEmpty() && getLevel() != null) {
-            wells.put(getLevel().dimension().location().toString(),
-                    Math.min(BASIN_CAPACITY, tank.getFluidAmount()));
-            tank.setFluid(FluidStack.EMPTY);
+        if (kind != SapVesselBlock.Kind.BASIN) {
+            if (!tank.isFluidValid(tank.getFluid())) tank.setFluid(FluidStack.EMPTY);
+            else if (tank.getFluidAmount() > tank.getCapacity()) tank.getFluid().setAmount(tank.getCapacity());
         }
-        if (!tank.isFluidValid(tank.getFluid())) tank.setFluid(FluidStack.EMPTY);
-        else if (tank.getFluidAmount() > tank.getCapacity()) tank.getFluid().setAmount(tank.getCapacity());
         steepDimension = tag.getString("SteepDimension");
         steepTicks = tag.getInt("SteepTicks");
+        wells.clear();
         var wellsTag = tag.getCompound("Wells");
         for (String dimension : wellsTag.getAllKeys()) {
             if (wells.size() < BASIN_WELLS) {
                 wells.put(dimension, Math.min(BASIN_CAPACITY, wellsTag.getInt(dimension)));
             }
+        }
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        // Chunk loading reads the tag before attaching a level. Migrate only once
+        // the basin knows its dimension, and persist the resulting well.
+        if (kind == SapVesselBlock.Kind.BASIN && getLevel() instanceof net.minecraft.server.level.ServerLevel server
+                && tank.getFluid().is(ModFluids.SAP.get())) {
+            String dimension = server.dimension().location().toString();
+            wells.merge(dimension, Math.min(BASIN_CAPACITY, tank.getFluidAmount()),
+                    (current, legacy) -> Math.min(BASIN_CAPACITY, current + legacy));
+            tank.setFluid(FluidStack.EMPTY);
+            setChanged();
         }
     }
 }

@@ -184,6 +184,10 @@ public final class Assimilation {
     public static void touchLayer(ServerLevel level,BlockPos pos,BlockState state,LivingEntity host) {
         if(level.getBlockEntity(pos) instanceof AssimilationLayerBlockEntity layer && layer.heart()!=null
                 && (!level.isLoaded(layer.heart()) || !level.getBlockState(layer.heart()).is(ModBlocks.ASSIMILATION_HEART.get()))) return;
+        if (touchesLayer(level, pos, state, host)) onContact(host);
+    }
+
+    public static boolean touchesLayer(ServerLevel level, BlockPos pos, BlockState state, LivingEntity host) {
         AABB body=host.getBoundingBox().move(-pos.getX(),-pos.getY(),-pos.getZ());
         for(Direction support:MultifaceBlock.availableFaces(state)) {
             Direction normal=support.getOpposite();
@@ -199,9 +203,10 @@ public final class Assimilation {
                     case WEST -> new AABB(1-t,1-v1,1-u1,1,1-v0,1-u0);
                     case EAST -> new AABB(0,1-v1,u0,t,1-v0,u1);
                 };
-                if(body.intersects(face)) { onContact(host); return; }
+                if (body.intersects(face)) return true;
             }
         }
+        return false;
     }
 
     private static double advance(LivingEntity host,ServerLevel level,double floor,double warding) {

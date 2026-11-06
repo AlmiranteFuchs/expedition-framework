@@ -177,6 +177,20 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
      * wards make sterile ground — nothing inside their cover is taken,
      * and they are the only fence the reach respects.
      */
+    private boolean touchesColony(ServerLevel level, net.minecraft.world.entity.Mob mob) {
+        var body = mob.getBoundingBox();
+        for (var cell : BlockPos.betweenClosed(BlockPos.containing(body.minX, body.minY, body.minZ),
+                BlockPos.containing(body.maxX, body.maxY, body.maxZ))) {
+            if (!colony.contains(cell.asLong())) continue;
+            var state = level.getBlockState(cell);
+            if (state.is(ModBlocks.ASSIMILATION_LAYER.get())
+                    && level.getBlockEntity(cell) instanceof AssimilationLayerBlockEntity layer
+                    && getBlockPos().equals(layer.heart())
+                    && com.expeditions.server.Assimilation.touchesLayer(level, cell, state, mob)) return true;
+        }
+        return false;
+    }
+
     private void tryTake(ServerLevel level) {
         String dim = level.dimension().location().toString();
         int intervalTicks = ExpeditionTuning.integer(level.dimension(),
@@ -204,14 +218,15 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         var prey = level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, reach,
                 m -> m.isAlive() && !HiveMind.infected(m)
                         && !com.expeditions.server.AssimilationProtection.protectedFromInfection(m)
-                        && !FieldWardBlockEntity.covers(level, m.blockPosition()));
+                        && !FieldWardBlockEntity.covers(level, m.blockPosition())
+                        && touchesColony(level, m));
         prey.sort(java.util.Comparator.comparingDouble(
                 m -> m.blockPosition().distSqr(getBlockPos())));
         if (!prey.isEmpty()) {
             com.expeditions.server.Assimilation.take(prey.getFirst(), level, getBlockPos());
             return;
         }
-        // Nothing to take: the colony buds a husk of its own instead.
+        // No fauna touching this colony: bud a husk instead.
         var type = com.expeditions.server.HordePools.pick(level, getBlockPos(), dim, level.random);
         if (type == null || !(type.create(level) instanceof net.minecraft.world.entity.Mob husk)) {
             return;
