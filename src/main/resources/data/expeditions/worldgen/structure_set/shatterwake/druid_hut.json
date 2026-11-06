@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 5,
+    "separation": 2,
+    "salt": 52467186
+  },
+  "structures": [
+    {
+      "structure": "expeditions:shatterwake/druid_hut",
+      "weight": 1
+    }
+  ]
+}

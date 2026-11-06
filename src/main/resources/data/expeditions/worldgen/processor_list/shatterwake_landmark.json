@@ -1,0 +1,33 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:air"
+        },
+        {
+          "Name": "minecraft:structure_block"
+        },
+        {
+          "Name": "minecraft:structure_void"
+        },
+        {
+          "Name": "minecraft:jigsaw"
+        },
+        {
+          "Name": "minecraft:chest"
+        },
+        {
+          "Name": "minecraft:barrel"
+        },
+        {
+          "Name": "minecraft:spawner"
+        },
+        {
+          "Name": "minecraft:fire"
+        }
+      ]
+    }
+  ]
+}

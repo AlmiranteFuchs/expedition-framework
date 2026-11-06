@@ -1,13 +1,13 @@
 {
   "type": "expeditions:shatterwake",
   "generator": {
-    "type": "minecraft:noise",
+    "type": "expeditions:shatterwake",
     "settings": "expeditions:shatterwake",
     "biome_source": {
-      "type": "minecraft:multi_noise",
+      "type": "expeditions:echoes",
       "biomes": [
         {
-          "biome": "expeditions:buried_canopy",
+          "fallback": "expeditions:buried_canopy",
           "parameters": {
             "temperature": -0.55,
             "humidity": 0.55,
@@ -19,7 +19,20 @@
           }
         },
         {
-          "biome": "expeditions:pale_drift",
+          "fallback": "expeditions:buried_canopy",
+          "preferred": "twilightforest:spooky_forest",
+          "parameters": {
+            "temperature": -0.231,
+            "humidity": 0.231,
+            "continentalness": 0,
+            "erosion": 0,
+            "depth": 0,
+            "weirdness": 0,
+            "offset": 0
+          }
+        },
+        {
+          "fallback": "expeditions:pale_drift",
           "parameters": {
             "temperature": -0.55,
             "humidity": -0.55,
@@ -31,7 +44,20 @@
           }
         },
         {
-          "biome": "expeditions:cinder_shards",
+          "fallback": "expeditions:pale_drift",
+          "preferred": "aether:skyroot_grove",
+          "parameters": {
+            "temperature": -0.231,
+            "humidity": -0.231,
+            "continentalness": 0,
+            "erosion": 0,
+            "depth": 0,
+            "weirdness": 0,
+            "offset": 0
+          }
+        },
+        {
+          "fallback": "expeditions:cinder_shards",
           "parameters": {
             "temperature": 0.55,
             "humidity": -0.55,
@@ -43,10 +69,23 @@
           }
         },
         {
-          "biome": "expeditions:amber_reef",
+          "fallback": "expeditions:amber_reef",
           "parameters": {
             "temperature": 0.55,
             "humidity": 0.55,
+            "continentalness": 0,
+            "erosion": 0,
+            "depth": 0,
+            "weirdness": 0,
+            "offset": 0
+          }
+        },
+        {
+          "fallback": "expeditions:amber_reef",
+          "preferred": "the_bumblezone:floral_meadow",
+          "parameters": {
+            "temperature": 0.231,
+            "humidity": 0.231,
             "continentalness": 0,
             "erosion": 0,
             "depth": 0,

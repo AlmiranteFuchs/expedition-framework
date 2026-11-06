@@ -1,0 +1,9 @@
+{
+  "type": "expeditions:shatterwake_landmark",
+  "biomes": "#expeditions:shatterwake/aether_gate",
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn_overrides": {},
+  "start_pool": "expeditions:shatterwake/aether_gate",
+  "template": "aether:ruined_portal/portal_3"
+}

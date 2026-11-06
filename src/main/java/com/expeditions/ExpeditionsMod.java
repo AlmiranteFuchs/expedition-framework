@@ -34,6 +34,9 @@ public class ExpeditionsMod {
         ModBlocks.BLOCKS.register(modEventBus);
         com.expeditions.registry.ModFeatures.FEATURES.register(modEventBus);
         com.expeditions.registry.ModFeatures.MATERIAL_RULES.register(modEventBus);
+        com.expeditions.registry.ModFeatures.BIOME_SOURCES.register(modEventBus);
+        com.expeditions.registry.ModFeatures.CHUNK_GENERATORS.register(modEventBus);
+        com.expeditions.registry.ModFeatures.STRUCTURES.register(modEventBus);
         modEventBus.addListener(com.expeditions.block.entity.ResonanceMachineBlockEntity::registerCapabilities);
         modEventBus.addListener(com.expeditions.item.ResonanceCellItem::registerCapabilities);
         com.expeditions.registry.ModEntities.ENTITIES.register(modEventBus);

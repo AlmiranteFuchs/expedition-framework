@@ -1,0 +1,16 @@
+{
+  "values": [
+    {
+      "id": "twilightforest:spooky_forest",
+      "required": false
+    },
+    {
+      "id": "aether:skyroot_grove",
+      "required": false
+    },
+    {
+      "id": "the_bumblezone:floral_meadow",
+      "required": false
+    }
+  ]
+}

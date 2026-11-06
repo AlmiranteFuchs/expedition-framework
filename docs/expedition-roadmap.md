@@ -944,3 +944,23 @@ floor corrected it in the client. Fresh terrain at 1778, 101, 647 had
 Aether holystone, Twilight Forest mazestone, Bumblezone wax, and Create
 cut andesite in the same formation. The final build passed 203 unit
 tests and 190 required GameTests.
+
+### Shatterwake donor biomes and landmarks — alpha.48
+
+New chunks can carry real Skyroot Grove, Spooky Forest, and Floral Meadow
+biomes, including their native features and spawn tables. Missing optional
+mods resolve to the original Shatterwake biomes. Three locateable fragments
+use the installed mods' templates: Aether portal ruins, a Twilight Forest
+druid hut, and a Bumblezone hanging garden. They sit on checked shelves and
+omit loot containers and spawners. Only Shatterwake's structure sets run
+there, avoiding native generators that assume the terrain of their home world.
+
+The installed client verified all three biomes and all three landmarks.
+The fresh area around 6100, 174, -2400 naturally spawned Aether cockatrices,
+Twilight skeleton druids, and Bumblezone variant bees. The fallback registry
+test, 203 unit tests, and 190 required GameTests passed on the final build.
+The earlier siege reinforcement failure and unchanged passing rerun have
+separate logs. The installed-client probes also reproduced an Aether aercloud
+bounding-box crash and an empty depth-zero structure start before both fixes.
+
+Next roadmap batch is lasting reasons to revisit liberated dimensions.

@@ -26,7 +26,7 @@ public final class ShatterwakeRemnantFeature extends Feature<NoneFeatureConfigur
         if (!level.getLevel().dimension().location().equals(SHATTERWAKE)) return false;
         var origin = context.origin();
         if (origin.getY() < 48 || origin.getY() > 192) return false;
-        var biome = level.getBiome(origin).unwrapKey().orElseThrow().location().getPath();
+        var biome = level.getBiome(origin).unwrapKey().orElseThrow().location().toString();
         var bark = ModBlocks.STILLWOOD_ROOT.get().defaultBlockState();
         var ember = Blocks.OCHRE_FROGLIGHT.defaultBlockState();
         var skyStone = material("sky_stone", Blocks.CALCITE.defaultBlockState());
@@ -35,27 +35,27 @@ public final class ShatterwakeRemnantFeature extends Feature<NoneFeatureConfigur
         var casing = material("foundry_rubble", Blocks.ANDESITE.defaultBlockState());
         var side = context.random().nextBoolean() ? Direction.EAST : Direction.SOUTH;
         return switch (biome) {
-            case "pale_drift" -> {
+            case "expeditions:pale_drift", "aether:skyroot_grove" -> {
                 var log = material("skyroot", bark);
                 yield column(level, origin, ruins, skyStone, log, skyStone, ember)
                         | column(level, origin.relative(side), ruins, casing, log, bark)
                         | column(level, origin.relative(side, 2), skyStone, casing, log)
                         | column(level, origin.relative(side.getOpposite()), skyStone, ruins, bark);
             }
-            case "buried_canopy" -> {
+            case "expeditions:buried_canopy", "twilightforest:spooky_forest" -> {
                 yield column(level, origin, ruins, ruins, skyStone, bark, bark)
                         | column(level, origin.relative(side), ruins, comb, bark)
                         | column(level, origin.relative(side, 3), casing, ruins, bark, ember)
                         | column(level, origin.relative(side.getClockWise()), ruins, skyStone);
             }
-            case "amber_reef" -> {
+            case "expeditions:amber_reef", "the_bumblezone:floral_meadow" -> {
                 var wax = material("wax", Blocks.TERRACOTTA.defaultBlockState());
                 yield column(level, origin, ruins, wax, comb, comb, bark)
                         | column(level, origin.relative(side), casing, comb, wax, ember)
                         | column(level, origin.relative(side, 2), skyStone, wax, comb)
                         | column(level, origin.relative(side.getClockWise()), ruins, comb, bark);
             }
-            case "cinder_shards" -> {
+            case "expeditions:cinder_shards" -> {
                 var basalt = Blocks.SMOOTH_BASALT.defaultBlockState();
                 yield column(level, origin, basalt, casing, skyStone, casing, bark, ember)
                         | column(level, origin.relative(side), basalt, casing, ruins)

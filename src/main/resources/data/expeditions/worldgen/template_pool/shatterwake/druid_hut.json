@@ -1,0 +1,14 @@
+{
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "twilightforest:feature/druid_hut/druid_sideways",
+        "projection": "rigid",
+        "processors": "expeditions:shatterwake_landmark"
+      }
+    }
+  ]
+}

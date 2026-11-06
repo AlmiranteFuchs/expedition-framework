@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 5,
+    "separation": 2,
+    "salt": 52467185
+  },
+  "structures": [
+    {
+      "structure": "expeditions:shatterwake/aether_gate",
+      "weight": 1
+    }
+  ]
+}

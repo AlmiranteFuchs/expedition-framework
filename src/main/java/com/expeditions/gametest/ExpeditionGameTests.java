@@ -1541,8 +1541,25 @@ public final class ExpeditionGameTests {
     }
 
     @GameTest(template = "arena", templateNamespace = "expeditions_dim", batch = "shatterwake_worldgen")
-    public static void shatterwakeHasDryVoidAndFloatingTerrain(GameTestHelper helper) {
+    public static void shatterwakeHasDryVoidAndFloatingTerrain(GameTestHelper helper) throws Exception {
         var registries = helper.getLevel().registryAccess();
+        try (var resource = ExpeditionGameTests.class.getResourceAsStream("/data/expeditions/dimension/shatterwake.json")) {
+            var json = JsonParser.parseReader(new java.io.InputStreamReader(resource, java.nio.charset.StandardCharsets.UTF_8));
+            var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, registries);
+            var stem = net.minecraft.world.level.dimension.LevelStem.CODEC.parse(ops, json).getOrThrow();
+            helper.assertTrue(stem.generator() instanceof com.expeditions.worldgen.ShatterwakeChunkGenerator,
+                    "the dimension uses the structure-filtering generator");
+            var possible = stem.generator().getBiomeSource().possibleBiomes();
+            var biomes = registries.registryOrThrow(net.minecraft.core.registries.Registries.BIOME);
+            for (String id : List.of("expeditions:pale_drift", "expeditions:buried_canopy",
+                    "expeditions:amber_reef", "expeditions:cinder_shards",
+                    "aether:skyroot_grove", "twilightforest:spooky_forest", "the_bumblezone:floral_meadow")) {
+                var biomeKey = net.minecraft.resources.ResourceKey.create(
+                        net.minecraft.core.registries.Registries.BIOME, ResourceLocation.parse(id));
+                biomes.getHolder(biomeKey).ifPresent(biome -> helper.assertTrue(possible.contains(biome),
+                        "the generator includes the registered biome " + id));
+            }
+        }
         var key = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.NOISE_SETTINGS,
                 ResourceLocation.parse("expeditions:shatterwake"));
         var settings = registries.registryOrThrow(net.minecraft.core.registries.Registries.NOISE_SETTINGS)
