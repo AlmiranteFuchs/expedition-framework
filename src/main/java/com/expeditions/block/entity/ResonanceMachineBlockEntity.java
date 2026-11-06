@@ -151,7 +151,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                 case SEVERED -> SoundEvents.AMETHYST_BLOCK_RESONATE;
                 case CONDENSER -> SoundEvents.UI_STONECUTTER_TAKE_RESULT;
             };
-            level.playSound(null, pos, sound, SoundSource.BLOCKS, 0.32f,
+            level.playSound(null, pos, sound, SoundSource.BLOCKS, be.kind() == Kind.SEVERED ? 0.65f : 0.32f,
                     be.dynamo() ? 0.75f : 0.9f);
             be.nextWorkSound = level.getGameTime() + 34 + level.random.nextInt(13);
         }

@@ -4,6 +4,8 @@ import com.expeditions.core.GuardianAttack;
 import com.expeditions.server.ExpeditionManager;
 import java.util.EnumSet;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -30,9 +32,12 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 
 /** A rooted, telegraphed two-phase encounter. It never edits the arena terrain. */
 public final class RootboundGuardian extends Monster {
+    private static final DustParticleOptions RING_OUTER = new DustParticleOptions(new Vector3f(.95f, .57f, .2f), 1.35f);
+    private static final DustParticleOptions RING_INNER = new DustParticleOptions(new Vector3f(.93f, .89f, .77f), 1.2f);
     private static final EntityDataAccessor<Integer> WINDUP = SynchedEntityData.defineId(
             RootboundGuardian.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> ATTACK = SynchedEntityData.defineId(
@@ -132,12 +137,33 @@ public final class RootboundGuardian extends Monster {
 
     private void warning(ServerLevel level) {
         double r = attack().radius();
-        drawRing(level, r, ParticleTypes.SMALL_FLAME);
-        if (attack().innerRadius() > 0) {
-            drawRing(level, attack().innerRadius(), ParticleTypes.ASH);
+        if (attack() == GuardianAttack.ROOT_RING) {
+            drawGroundBoundary(level, r, 48, RING_OUTER);
+            drawGroundBoundary(level, attack().innerRadius(), 24, RING_INNER);
         } else {
+            drawRing(level, r, ParticleTypes.SMALL_FLAME);
             level.sendParticles(ParticleTypes.ASH, strike.x, strike.y + 0.3, strike.z, 8,
                     r * 0.35, 0.3, r * 0.35, 0.01);
+        }
+    }
+
+    private void drawGroundBoundary(ServerLevel level, double radius, int points, DustParticleOptions dust) {
+        BlockPos.MutableBlockPos ground = new BlockPos.MutableBlockPos();
+        for (int i = 0; i < points; i++) {
+            double angle = i * Math.PI * 2 / points;
+            double x = strike.x + Math.cos(angle) * radius;
+            double z = strike.z + Math.sin(angle) * radius;
+            ground.set(x, strike.y + 2, z);
+            for (int depth = 0; depth < 6; depth++, ground.move(Direction.DOWN)) {
+                var shape = level.getBlockState(ground).getCollisionShape(level, ground);
+                if (shape.isEmpty()) continue;
+                double surface = ground.getY() + shape.max(Direction.Axis.Y);
+                if (Math.abs(surface - strike.y) <= 2.5
+                        && level.getBlockState(ground.above()).getCollisionShape(level, ground.above()).isEmpty()) {
+                    level.sendParticles(dust, x, surface + .15, z, 1, 0, 0, 0, 0);
+                    break;
+                }
+            }
         }
     }
 

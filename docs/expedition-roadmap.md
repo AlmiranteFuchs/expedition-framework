@@ -834,3 +834,27 @@ while generating or refining. Each machine has a distinct cue.
   mix still needs a listening pass. The local JAR and SHA-256 are staged.
   Publish after the release checks, then implement relay and endurance
   commissions.
+
+
+### Alpha.44 final verification
+
+- The Guardian ring now marks its safe center with pale dust and its outer
+  boundary with amber. The markers follow nearby collision surfaces within
+  the attack's existing height limit. The client showed both boundaries
+  and the Guardian's ring windup in first person.
+- Two later GameTest runs exposed a siege stall. The diagnostic run showed
+  three slimes with active paths wandering away from the ward. The siege
+  goal now steers their native hop controller along its path. The complete
+  suite passed after the fix and again after the audio adjustment.
+- Minecraft-only playback captures confirmed all four work cues against
+  their idle baselines. Temporary simple-generator mode drove the generator
+  test fixtures. The condenser processed dormant flakes. The Severance
+  cue gain increased from 0.32 to 0.65, and its recorded peak rose from
+  235 to 432 PCM units at the same position. The idle peak was 21 after
+  the change. This was a signal check, with listening review still open.
+- Final build and alphaBundle passed with 202 unit tests, 188 required core
+  GameTests, and four installed-mod probes covering Aether, Bumblezone,
+  Twilight Forest, and Create.
+- Next batch is relay and endurance commissions. Resolve the optional
+  detour before briefing, persist it with the run, and settle rewards
+  at extraction.

@@ -7,9 +7,11 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.monster.Slime;
 
 /**
  * Siege behavior: pathfind to the expedition's defense device and chip its
@@ -80,6 +82,13 @@ public class AttackDeviceGoal extends Goal {
                     attackPositions.add(adjacent.below());
                 }
                 mob.getNavigation().moveTo(mob.getNavigation().createPath(attackPositions, 0), 1.0);
+            }
+            var path = mob.getNavigation().getPath();
+            if (mob.getMoveControl() instanceof Slime.SlimeMoveControl hops && path != null && !path.isDone()) {
+                var direction = path.getNextEntityPos(mob).subtract(mob.position());
+                float yaw = (float) (Mth.atan2(direction.z, direction.x) * Mth.RAD_TO_DEG) - 90;
+                hops.setDirection(yaw, true);
+                hops.setWantedMovement(1.0);
             }
             return;
         }

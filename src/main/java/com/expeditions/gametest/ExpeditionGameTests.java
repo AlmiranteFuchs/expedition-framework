@@ -2803,7 +2803,12 @@ public final class ExpeditionGameTests {
                                 }
                             });
                             checkingReinforcements[0] = true;
-                        }, 140, () -> "device=" + run.defense(), () -> {
+                        }, 140, () -> "device=" + run.defense() + ", attackers=" + openingWave.stream()
+                                .map(id -> findEntity(level, device, radius + 12, id))
+                                .map(entity -> entity == null ? "missing" : entity.getType().toShortString()
+                                        + " at " + entity.position() + (entity instanceof Mob mob
+                                                ? " path=" + mob.getNavigation().getPath() : ""))
+                                .toList(), () -> {
                             if (!checkingReinforcements[0]) failRunIfActive(manager, player);
                         });
             } catch (Throwable failure) {
