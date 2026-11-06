@@ -66,6 +66,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "A Quiet Market",
+      "text": "Buy dormant flakes from a farmer after the Overworld is liberated."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Things brought back",
       "text": "Recover a living Shutter Bloom, or obtain an instrument made from one."
     }

@@ -1,0 +1,20 @@
+{
+  "name": "A Quiet Market",
+  "icon": "expeditions:dormant_flake",
+  "category": "expeditions:thicket",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "expeditions:dormant_flake",
+      "text": "A farmer set out a little paper of flakes among the seed. They had sifted them from the rows after the ground went quiet. I paid two emeralds and left the rest for the village.",
+      "title": "A Quiet Market"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A Quiet Market",
+      "text": "Apprentice farmers in the liberated Overworld keep a small supply of dormant flakes. Look for the exchange when they open their stalls. It returns with their ordinary stock."
+    }
+  ],
+  "advancement": "expeditions:journal/quiet_market"
+}

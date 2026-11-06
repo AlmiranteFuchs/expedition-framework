@@ -978,3 +978,14 @@ hut and nearby terrain at 12008, 178, -6696. A neighboring shelf generated a
 Stillwood crown and amber light. Build and alpha bundle passed, including
 203 unit tests and 190 required GameTests. The next roadmap batch remains
 lasting reasons to revisit liberated dimensions.
+
+### Quiet Market — dev
+
+Apprentice and higher farmers in the liberated Overworld offer four dormant
+flakes for two emeralds at base price, with four purchases per restock.
+Existing villagers acquire the offer on their next interaction. A completed
+purchase unlocks A Quiet Market in the Field Journal. Guardian proof remains
+the requirement for attuning a Severance Core.
+
+Next liberated-dimension slice is dormant deposits along cleared Nether
+basalt-delta survey routes, followed by End survey salvage.

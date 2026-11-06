@@ -23,7 +23,15 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.trading.ItemCost;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.player.TradeWithVillagerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -47,6 +55,37 @@ public final class ExpeditionEventHandler {
     }
     public static void onFrontierExperience(net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event) {
         if(event.getEntity().getPersistentData().hasUUID(FrontierThreat.OWNER))event.setCanceled(true);
+    }
+
+    /** Existing villagers also learn the trade the first time their market opens after liberation. */
+    public static void onVillageMarketOpened(PlayerInteractEvent.EntityInteract event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator()
+                || !(event.getTarget() instanceof Villager villager) || !quietMarket(villager)
+                || villager.isTrading()) return;
+        var offers = villager.getOffers();
+        if (offers.stream().noneMatch(ExpeditionEventHandler::isDormantSupply)) {
+            offers.add(new MerchantOffer(new ItemCost(Items.EMERALD, 2),
+                    new ItemStack(com.expeditions.registry.ModItems.DORMANT_FLAKE.get(), 4), 4, 2, 0.05f));
+        }
+    }
+
+    public static void onVillageTrade(TradeWithVillagerEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player
+                && event.getAbstractVillager() instanceof Villager villager
+                && quietMarket(villager) && isDormantSupply(event.getMerchantOffer())) {
+            JournalDiscovery.unlock(player, com.expeditions.core.JournalChapter.QUIET_MARKET);
+        }
+    }
+
+    private static boolean quietMarket(Villager villager) {
+        return !villager.isBaby() && villager.getVillagerData().getProfession() == VillagerProfession.FARMER
+                && villager.getVillagerData().getLevel() >= 2 && villager.level() instanceof ServerLevel level
+                && level.dimension().equals(Level.OVERWORLD)
+                && ExpeditionManager.get(level.getServer()).savedData().isDimensionCleared("minecraft:overworld");
+    }
+
+    private static boolean isDormantSupply(MerchantOffer offer) {
+        return offer.getResult().is(com.expeditions.registry.ModItems.DORMANT_FLAKE.get());
     }
 
     private ExpeditionEventHandler() {

@@ -26,14 +26,14 @@ groups = [
      ['bloom', 'blood', 'pressure']),
     ('thicket', 'Under the bark', 'expeditions:attunement_sigil',
      'Later entries, left unfinished until their subjects have been encountered.',
-     ['guardian', 'liberation']),
+     ['guardian', 'liberation', 'quiet_market']),
 ]
 icons = {'first_steps':'expedition_field_journal', 'bloom':'assimilation_heart',
          'essence':'assimilation_essence', 'terminal':'expedition_terminal',
          'wayfinding':'expedition_compass', 'checkpoints':'expedition_checkpoint',
          'cargo':'expedition_artifact', 'defense':'expedition_checkpoint',
          'blood':'field_assay_kit', 'pressure':'assimilation_heart',
-         'extraction':'expedition_exit', 'guardian':'assimilation_heart', 'liberation':'attunement_sigil', 'preparation':'field_ward'}
+         'extraction':'expedition_exit', 'guardian':'assimilation_heart', 'liberation':'attunement_sigil', 'preparation':'field_ward', 'quiet_market':'dormant_flake'}
 
 write(ROOT / 'data/expeditions/patchouli_books/field_guide/book.json', {
     'name':'The Charter', 'landing_text':'A field copy of the Charter.$(br2)'

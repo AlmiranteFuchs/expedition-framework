@@ -125,6 +125,59 @@ public final class AftergrowthTests {
         helper.succeed();
     }
 
+    @GameTest(template = "arena", batch = "quiet_market")
+    public static void existingFarmerRestocksDormantSupplyAfterLiberation(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var data = ExpeditionManager.get(level.getServer()).savedData();
+        String dimension = level.dimension().location().toString();
+        boolean wasCleared = data.isDimensionCleared(dimension);
+        var farmer = helper.spawn(net.minecraft.world.entity.EntityType.VILLAGER, new BlockPos(2, 1, 2));
+        farmer.setVillagerData(farmer.getVillagerData()
+                .setProfession(net.minecraft.world.entity.npc.VillagerProfession.FARMER).setLevel(2));
+        var player = helper.makeMockServerPlayerInLevel();
+        try {
+            data.unclearDimension(dimension);
+            player.interactOn(farmer, net.minecraft.world.InteractionHand.MAIN_HAND);
+            helper.assertTrue(farmer.getOffers().stream().noneMatch(o -> o.getResult().is(ModItems.DORMANT_FLAKE.get())),
+                    "an uncleared Overworld farmer offers only ordinary stock");
+            player.closeContainer();
+
+            data.setDimensionCleared(dimension);
+            player.interactOn(farmer, net.minecraft.world.InteractionHand.MAIN_HAND);
+            helper.assertTrue(player.containerMenu instanceof net.minecraft.world.inventory.MerchantMenu,
+                    "the same farmer opens the ordinary trade menu");
+            var menu = (net.minecraft.world.inventory.MerchantMenu) player.containerMenu;
+            var offer = menu.getOffers().getLast();
+            helper.assertTrue(offer.getResult().is(ModItems.DORMANT_FLAKE.get())
+                            && offer.getResult().getCount() == 4 && offer.getCostA().getCount() == 2
+                            && offer.getMaxUses() == 4,
+                    "liberation adds a modest, finite dormant supply");
+            var discovery = com.expeditions.core.JournalChapter.QUIET_MARKET;
+            helper.assertTrue(!discovery.known(player.getData(com.expeditions.registry.ModAttachments.JOURNAL_DISCOVERIES)),
+                    "opening the market does not discover the journal entry");
+            player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.EMERALD, 2));
+            int tradeIndex = menu.getOffers().size() - 1;
+            menu.setSelectionHint(tradeIndex);
+            menu.tryMoveItems(tradeIndex);
+            menu.quickMoveStack(player, 2);
+            helper.assertTrue(offer.getUses() == 1 && player.getInventory().countItem(ModItems.DORMANT_FLAKE.get()) == 4
+                            && discovery.known(player.getData(com.expeditions.registry.ModAttachments.JOURNAL_DISCOVERIES)),
+                    "a completed purchase spends one use and records the discovery");
+            player.closeContainer();
+
+            var saved = farmer.saveWithoutId(new net.minecraft.nbt.CompoundTag());
+            farmer.load(saved);
+            player.interactOn(farmer, net.minecraft.world.InteractionHand.MAIN_HAND);
+            var stocked = farmer.getOffers().stream().filter(o -> o.getResult().is(ModItems.DORMANT_FLAKE.get())).toList();
+            helper.assertTrue(stocked.size() == 1 && stocked.getFirst().getUses() == 1,
+                    "reopening after reload preserves a single offer and its used stock");
+        } finally {
+            player.closeContainer();
+            if (!wasCleared) data.unclearDimension(dimension);
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "arena", batch = "pale_chest")
     public static void paleChestStoresItemsAndOpens(GameTestHelper helper) {
         var level = helper.getLevel();

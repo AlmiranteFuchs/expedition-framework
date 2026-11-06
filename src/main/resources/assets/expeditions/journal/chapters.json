@@ -200,6 +200,16 @@
     ],
     "unlock_hint": "Return to country whose campaign has been brought to a close."
   },
+  "quiet_market": {
+    "title": "XV. A Quiet Market",
+    "pages": [
+      {
+        "heading": "A Quiet Market",
+        "body": "A farmer set out a little paper of flakes among the seed. They had sifted them from the rows after the ground went quiet. I paid two emeralds and left the rest for the village.\n\nApprentice farmers in the liberated Overworld keep a small supply of dormant flakes. Look for the exchange when they open their stalls. It returns with their ordinary stock."
+      }
+    ],
+    "unlock_hint": "Buy dormant flakes from a farmer after the Overworld is liberated."
+  },
   "preparation": {
     "title": "XIV. Things brought back",
     "pages": [
