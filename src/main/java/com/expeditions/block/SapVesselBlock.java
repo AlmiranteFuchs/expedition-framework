@@ -11,6 +11,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
@@ -24,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -34,12 +36,14 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 public class SapVesselBlock extends Block implements EntityBlock {
     public enum Kind { BASIN, JAR, WICK }
     public static final IntegerProperty SAP_LEVEL = IntegerProperty.create("sap_level", 0, 4);
+    public static final BooleanProperty WATER = BooleanProperty.create("water");
     private final Kind kind;
 
     public SapVesselBlock(Properties properties, Kind kind) {
         super(properties);
         this.kind = kind;
-        registerDefaultState(stateDefinition.any().setValue(SAP_LEVEL, 0).setValue(BlockStateProperties.FACING, Direction.NORTH));
+        var initial = stateDefinition.any().setValue(SAP_LEVEL, 0).setValue(BlockStateProperties.FACING, Direction.NORTH);
+        registerDefaultState(initial.setValue(WATER, false));
     }
 
     public Kind kind() { return kind; }
@@ -76,7 +80,7 @@ public class SapVesselBlock extends Block implements EntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(SAP_LEVEL, BlockStateProperties.FACING);
+        builder.add(SAP_LEVEL, BlockStateProperties.FACING, WATER);
     }
 
     @Override
@@ -104,7 +108,9 @@ public class SapVesselBlock extends Block implements EntityBlock {
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
-        if (kind == Kind.JAR && player.isShiftKeyDown() && !stack.isEmpty()) {
+        if (kind == Kind.JAR && player.isShiftKeyDown() && !stack.isEmpty()
+                && !stack.is(ModItems.RETURN_KNOT.get()) && !stack.is(ModItems.ASSIMILATION_ESSENCE.get())
+                && !stack.is(Items.WATER_BUCKET) && !stack.is(Items.BUCKET) && !stack.is(ModItems.RETURN_SAP_BUCKET.get())) {
             if (!level.isClientSide && level.getBlockEntity(pos) instanceof SapVesselBlockEntity vessel) {
                 int used = vessel.recycle(stack, false);
                 if (used > 0) {
@@ -126,10 +132,10 @@ public class SapVesselBlock extends Block implements EntityBlock {
                     stack.shrink(1);
                     level.playSound(null, pos, com.expeditions.registry.ModSounds.SAP_VESSEL_FILL.get(),
                             net.minecraft.sounds.SoundSource.BLOCKS, .8f, 1.0f);
-                    player.displayClientMessage(Component.translatable("message.expeditions.sap_steeping"), true);
+                    player.displayClientMessage(brewStatus(vessel), true);
                 } else {
-                    player.displayClientMessage(Component.translatable(vessel.steeping()
-                            ? "message.expeditions.sap_steeping" : "message.expeditions.sap_needs_water"), true);
+                    player.displayClientMessage(vessel.steeping() ? brewStatus(vessel)
+                            : Component.translatable("message.expeditions.sap_needs_water"), true);
                 }
                 return ItemInteractionResult.sidedSuccess(level.isClientSide);
             }
@@ -140,8 +146,8 @@ public class SapVesselBlock extends Block implements EntityBlock {
                             net.minecraft.sounds.SoundSource.BLOCKS, .8f, 1.0f);
                     player.displayClientMessage(Component.translatable("message.expeditions.sap_brewed"), true);
                 } else {
-                    player.displayClientMessage(Component.translatable(vessel.steeping()
-                            ? "message.expeditions.sap_steeping" : "message.expeditions.sap_ingredients"), true);
+                    player.displayClientMessage(vessel.steeping() ? brewStatus(vessel)
+                            : Component.translatable("message.expeditions.sap_ingredients"), true);
                 }
                 return ItemInteractionResult.sidedSuccess(level.isClientSide);
             }
@@ -151,7 +157,7 @@ public class SapVesselBlock extends Block implements EntityBlock {
                     vessel.tank().fill(water, FluidAction.EXECUTE);
                     level.playSound(null, pos, com.expeditions.registry.ModSounds.SAP_VESSEL_FILL.get(),
                             net.minecraft.sounds.SoundSource.BLOCKS, .8f, 1.0f);
-                    player.setItemInHand(hand, new ItemStack(Items.BUCKET));
+                    player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.BUCKET)));
                     player.getInventory().setChanged();
                 } else {
                     player.displayClientMessage(Component.translatable("message.expeditions.sap_full"), true);
@@ -166,11 +172,10 @@ public class SapVesselBlock extends Block implements EntityBlock {
                             net.minecraft.sounds.SoundSource.BLOCKS, .8f, 1.0f);
                     ItemStack filled = SapVesselBlockEntity.isWater(drained) ? new ItemStack(Items.WATER_BUCKET)
                             : sapBucket(com.expeditions.core.ReturnSap.dimension(drained));
-                    player.setItemInHand(hand, filled);
+                    player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, filled));
                     player.getInventory().setChanged();
                 } else {
-                    player.displayClientMessage(Component.translatable("message.expeditions.sap_amount",
-                            vesselTotal(vessel), vesselCapacity(vessel)), true);
+                    player.displayClientMessage(vesselStatus(vessel), true);
                 }
                 return ItemInteractionResult.sidedSuccess(level.isClientSide);
             }
@@ -193,6 +198,23 @@ public class SapVesselBlock extends Block implements EntityBlock {
         return bucket;
     }
 
+    private static Component brewStatus(SapVesselBlockEntity vessel) {
+        if (vessel.steeped()) {
+            return Component.translatable(vessel.tank().getFluidAmount() == 1000
+                    ? "message.expeditions.sap_ready" : "message.expeditions.sap_needs_water");
+        }
+        return Component.translatable("message.expeditions.sap_steeping", vessel.steepSecondsRemaining());
+    }
+
+    private static Component vesselStatus(SapVesselBlockEntity vessel) {
+        if (vessel.steeping()) return brewStatus(vessel);
+        if (vessel.kind() == Kind.JAR && SapVesselBlockEntity.isWater(vessel.tank().getFluid())) {
+            int water = vessel.tank().getFluidAmount();
+            return water == 1000 ? Component.translatable("message.expeditions.sap_add_knot")
+                    : Component.translatable("message.expeditions.sap_needs_water");
+        }
+        return Component.translatable("message.expeditions.sap_amount", vesselTotal(vessel), vesselCapacity(vessel));
+    }
     private static int vesselTotal(SapVesselBlockEntity vessel) {
         return vessel.kind() == Kind.BASIN ? vessel.totalSap() : vessel.tank().getFluidAmount();
     }
@@ -206,8 +228,7 @@ public class SapVesselBlock extends Block implements EntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof SapVesselBlockEntity vessel) {
-            player.displayClientMessage(Component.translatable("message.expeditions.sap_amount",
-                    vesselTotal(vessel), vesselCapacity(vessel)), true);
+            player.displayClientMessage(vesselStatus(vessel), true);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

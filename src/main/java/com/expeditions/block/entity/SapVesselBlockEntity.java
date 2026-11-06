@@ -59,6 +59,24 @@ public final class SapVesselBlockEntity extends BlockEntity {
         };
         tank = new FluidTank(capacity, this::fluidAllowed) {
             @Override
+            public int fill(FluidStack resource, FluidAction action) {
+                if (kind == SapVesselBlock.Kind.JAR && isWater(resource)) {
+                    int amount = Math.min(resource.getAmount(), 1000 - getFluidAmount());
+                    return amount > 0 ? super.fill(resource.copyWithAmount(amount), action) : 0;
+                }
+                return super.fill(resource, action);
+            }
+
+            @Override
+            public FluidStack drain(int amount, FluidAction action) {
+                if (kind == SapVesselBlock.Kind.JAR && steeping() && isWater(getFluid())) {
+                    // Preserve the steep even if an external pump asks to empty the jar.
+                    amount = Math.min(amount, getFluidAmount() - 1000);
+                }
+                return amount > 0 ? super.drain(amount, action) : FluidStack.EMPTY;
+            }
+
+            @Override
             protected void onContentsChanged() {
                 // A steep lives in its water — draw the water off and the knot is lost with it.
                 if (kind == SapVesselBlock.Kind.JAR && steeping()
@@ -103,8 +121,10 @@ public final class SapVesselBlockEntity extends BlockEntity {
                 : tank.getFluidAmount();
         int capacity = kind == SapVesselBlock.Kind.BASIN ? BASIN_CAPACITY : tank.getCapacity();
         int visible = (amount * 4 + capacity - 1) / capacity;
-        if (state.getValue(SapVesselBlock.SAP_LEVEL) != visible) {
-            world.setBlock(worldPosition, state.setValue(SapVesselBlock.SAP_LEVEL, visible), 2);
+        var updated = state.setValue(SapVesselBlock.SAP_LEVEL, visible);
+        if (kind == SapVesselBlock.Kind.JAR) updated = updated.setValue(SapVesselBlock.WATER, isWater(tank.getFluid()));
+        if (state != updated) {
+            world.setBlock(worldPosition, updated, 2);
         }
     }
 
@@ -238,23 +258,31 @@ public final class SapVesselBlockEntity extends BlockEntity {
         if (!steeped() || !isWater(tank.getFluid()) || tank.getFluidAmount() != 1000) {
             return false;
         }
-        // Capture first — draining the water fires the steep-cancel callback.
-        String dimension = steepDimension;
-        tank.drain(1000, FluidAction.EXECUTE);
-        tank.fill(ReturnSap.of(dimension, 1000), FluidAction.EXECUTE);
+        tank.setFluid(ReturnSap.of(steepDimension, 1000));
         steepDimension = "";
         setChanged();
+        updateLevelProperty();
         if (getLevel() instanceof net.minecraft.server.level.ServerLevel server) {
             com.expeditions.server.ExpeditionEventHandler.bloomWork(server, worldPosition);
         }
         return true;
     }
 
+    public int steepSecondsRemaining() {
+        return (steepTicks + 19) / 20;
+    }
+
     public void jarTick(Level level) {
-        if (steepTicks > 0) {
-            steepTicks--;
-            if (steepTicks == 0) {
-                setChanged();
+        if (getBlockState().getValue(SapVesselBlock.WATER) != isWater(tank.getFluid())) updateLevelProperty();
+        if (!steeping() || steepTicks <= 0) return;
+        if (--steepTicks == 0) {
+            setChanged();
+            level.playSound(null, worldPosition, com.expeditions.registry.ModSounds.SAP_VESSEL_FILL.get(),
+                    net.minecraft.sounds.SoundSource.BLOCKS, 0.7f, 1.2f);
+            if (level instanceof net.minecraft.server.level.ServerLevel server) {
+                server.sendParticles(net.minecraft.core.particles.ParticleTypes.WAX_ON,
+                        worldPosition.getX() + 0.5, worldPosition.getY() + 0.9, worldPosition.getZ() + 0.5,
+                        5, 0.16, 0.08, 0.16, 0);
             }
         }
     }

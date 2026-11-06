@@ -2004,7 +2004,8 @@ public final class ExpeditionGameTests {
         var jarHit = new BlockHitResult(Vec3.atCenterOf(jar), Direction.UP, jar, false);
         player.setItemInHand(hand, new ItemStack(Items.WATER_BUCKET));
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
-        helper.assertTrue(from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET),
+        helper.assertTrue(from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET)
+                        && level.getBlockState(jar).getValue(com.expeditions.block.SapVesselBlock.WATER),
                 "a water bucket fills the jar for steeping");
         player.setItemInHand(hand, new ItemStack(ModItems.RETURN_KNOT.get()));
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
@@ -2016,10 +2017,16 @@ public final class ExpeditionGameTests {
         helper.assertTrue(from.getFluidInTank(0).is(com.expeditions.registry.ModFluids.SAP.get())
                         && from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).isEmpty(),
                 "essence settles the steep into one bucket of sap");
-        player.setItemInHand(hand, new ItemStack(Items.BUCKET));
+        helper.assertTrue(!level.getBlockState(jar).getValue(com.expeditions.block.SapVesselBlock.WATER),
+                "finished sap uses the amber model");
+        player.setItemInHand(hand, new ItemStack(Items.BUCKET, 3));
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
-        helper.assertTrue(player.getItemInHand(hand).is(ModItems.RETURN_SAP_BUCKET.get())
-                        && from.getFluidInTank(0).isEmpty(), "an empty bucket retrieves a full bucket of sap");
+        helper.assertTrue(player.getItemInHand(hand).getCount() == 2 && from.getFluidInTank(0).isEmpty(),
+                "drawing sap exchanges exactly one bucket from a stack");
+        var filled = player.getInventory().items.stream()
+                .filter(stack -> stack.is(ModItems.RETURN_SAP_BUCKET.get())).findFirst().orElseThrow();
+        player.setItemInHand(hand, filled.copy());
+        filled.shrink(1);
         var poured = helper.absolutePos(new BlockPos(1, 2, 1));
         level.setBlockAndUpdate(poured, Blocks.AIR.defaultBlockState());
         var filledBucket = player.getItemInHand(hand);
@@ -2099,19 +2106,25 @@ public final class ExpeditionGameTests {
         vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
                 net.minecraft.world.level.material.Fluids.WATER, 1000), execute);
         var water = new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 1000);
-        vessel.tank().fill(water, execute);
+        helper.assertTrue(vessel.tank().fill(water, execute) == 0 && vessel.tank().getFluidAmount() == 1000,
+                "the jar only accepts one bucket of water");
+        vessel.tank().setFluid(water.copyWithAmount(2000));
         helper.assertTrue(!vessel.startSteep("minecraft:the_nether") && vessel.tank().getFluidAmount() == 2000,
-                "an overfilled jar refuses the knot without consuming water");
+                "an old overfilled jar refuses the knot without consuming water");
         vessel.tank().drain(1000, execute);
         var knot = new ItemStack(ModItems.RETURN_KNOT.get());
         com.expeditions.item.ReturnKnotItem.bind(knot, "minecraft:the_nether");
         helper.assertTrue(vessel.startSteep(com.expeditions.item.ReturnKnotItem.source(knot)),
                 "a bound knot steeps in water");
         vessel.steepTicks = 0;
-        vessel.tank().fill(water, execute);
-        helper.assertTrue(!vessel.catalyze() && vessel.steeping() && vessel.tank().getFluidAmount() == 2000,
-                "extra water after steeping leaves the knot and water intact");
-        vessel.tank().drain(1000, execute);
+        helper.assertTrue(vessel.tank().fill(water, execute) == 0
+                        && vessel.tank().drain(1000, execute).isEmpty()
+                        && vessel.tank().drain(water, execute).isEmpty() && vessel.steeping(),
+                "pipes cannot dilute or drain the reserved steep");
+        vessel.tank().setFluid(water.copyWithAmount(2000));
+        helper.assertTrue(!vessel.catalyze() && vessel.tank().drain(2000, execute).getAmount() == 1000
+                        && vessel.tank().getFluidAmount() == 1000 && vessel.steeping(),
+                "older overfilled steeps can lose only surplus water");
         helper.assertTrue(vessel.catalyze() && com.expeditions.core.ReturnSap
                         .dimension(vessel.tank().getFluid()).equals("minecraft:the_nether"),
                 "the steep settles into the knot's own dimension, not the jar's");
