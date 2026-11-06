@@ -1950,20 +1950,21 @@ public final class ExpeditionGameTests {
         player.moveTo(position.getX() + 0.5, position.getY(), position.getZ() + 1.5);
         var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(position);
         var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
-        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
+        // Unmarked sap assumes the basin's local trace — overworld here.
+        vessel.fluidHandler().fill(new net.neoforged.neoforge.fluids.FluidStack(
                 com.expeditions.registry.ModFluids.SAP.get(), 2000), execute);
         var ledger = savedData(level.getServer()).ledger();
         ledger.addTokens(player.getUUID(), 20);
         var locked = new com.expeditions.server.ReclaimingMenu(1, player.getInventory(), level, position);
         var pickup = net.minecraft.world.inventory.ClickType.PICKUP;
         locked.clicked(0, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "unproven traces cannot take sap");
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 2000, "unproven traces cannot take sap");
         ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:overworld");
         var menu = new com.expeditions.server.ReclaimingMenu(2, player.getInventory(), level, position);
         menu.clicked(2, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 2000, "gear requires the hard charter trace");
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 2000, "gear requires the hard charter trace");
         menu.clicked(0, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 1750, "materials spend 250 mB");
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 1750, "materials spend 250 mB");
         var material = player.getInventory().items.stream().filter(stack -> !stack.isEmpty()).findFirst().orElseThrow();
         helper.assertTrue(!(material.getItem() instanceof net.minecraft.world.item.BlockItem)
                         && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(material.getItem()).getNamespace().equals("minecraft"),
@@ -1971,7 +1972,7 @@ public final class ExpeditionGameTests {
         player.getInventory().clearContent();
         ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming_gear/minecraft:overworld");
         menu.clicked(2, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 750
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 750
                         && player.getInventory().items.stream().anyMatch(stack -> !stack.isEmpty())
                         && manager.tokenBalance(player.getUUID()) == 20,
                 "unlocked gear spends 1000 mB and leaves charter tokens alone");
@@ -1979,7 +1980,7 @@ public final class ExpeditionGameTests {
             player.getInventory().setItem(slot, new ItemStack(Items.DIRT, 64));
         }
         menu.clicked(1, 0, pickup, player);
-        helper.assertTrue(vessel.tank().getFluidAmount() == 750, "a full inventory must leave sap intact");
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 750, "a full inventory must leave sap intact");
         helper.succeed();
     }
 
@@ -1998,16 +1999,24 @@ public final class ExpeditionGameTests {
         var from = level.getCapability(cap, jar, Direction.EAST);
         var to = level.getCapability(cap, bowl, Direction.WEST);
         helper.assertTrue(from != null && to != null, "standard block fluid capabilities are available");
-        player.getInventory().setItem(1, new ItemStack(ModItems.RETURN_KNOT.get()));
-        player.getInventory().setItem(2, new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
+        var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(jar);
         var hand = InteractionHand.MAIN_HAND;
-        player.setItemInHand(hand, new ItemStack(Items.WATER_BUCKET));
         var jarHit = new BlockHitResult(Vec3.atCenterOf(jar), Direction.UP, jar, false);
+        player.setItemInHand(hand, new ItemStack(Items.WATER_BUCKET));
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
-        helper.assertTrue(from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET)
-                        && player.getInventory().countItem(ModItems.RETURN_KNOT.get()) == 0
-                        && player.getInventory().countItem(ModItems.ASSIMILATION_ESSENCE.get()) == 0,
-                "water, Essence and a knot brew exactly one bucket");
+        helper.assertTrue(from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET),
+                "a water bucket fills the jar for steeping");
+        player.setItemInHand(hand, new ItemStack(ModItems.RETURN_KNOT.get()));
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
+        helper.assertTrue(vessel.steeping() && player.getItemInHand(hand).isEmpty(),
+                "a knot dissolves into the jar's water");
+        vessel.steepTicks = 0;
+        player.setItemInHand(hand, new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
+        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
+        helper.assertTrue(from.getFluidInTank(0).is(com.expeditions.registry.ModFluids.SAP.get())
+                        && from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).isEmpty(),
+                "essence settles the steep into one bucket of sap");
+        player.setItemInHand(hand, new ItemStack(Items.BUCKET));
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
         helper.assertTrue(player.getItemInHand(hand).is(ModItems.RETURN_SAP_BUCKET.get())
                         && from.getFluidInTank(0).isEmpty(), "an empty bucket retrieves a full bucket of sap");
@@ -2038,6 +2047,69 @@ public final class ExpeditionGameTests {
             helper.assertTrue(moved <= 50 && moved + from.getFluidInTank(0).getAmount() == 1000,
                     "rootwick must transfer at its slow rate without creating sap");
         });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_opts", batch = "sap_wells")
+    public static void basinKeepsTracesSeparateAndSpendsTheirs(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        var position = helper.absolutePos(new BlockPos(2, 1, 2));
+        level.setBlockAndUpdate(position, ModBlocks.RECLAIMING_BASIN.get().defaultBlockState());
+        player.moveTo(position.getX() + 0.5, position.getY(), position.getZ() + 1.5);
+        var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(position);
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        var handler = vessel.fluidHandler();
+        handler.fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 2000), execute);
+        handler.fill(com.expeditions.core.ReturnSap.of("minecraft:the_nether", 500), execute);
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 2000
+                        && vessel.sapFor("minecraft:the_nether") == 500
+                        && vessel.totalSap() == 2500,
+                "two traces keep their own wells in one basin");
+        helper.assertTrue(com.expeditions.core.ReturnSap.dimension(handler.getFluidInTank(0))
+                        .equals("minecraft:overworld"),
+                "each well surfaces as its own fluid tank for pipes");
+        var ledger = savedData(level.getServer()).ledger();
+        ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:overworld");
+        ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:the_nether");
+        var menu = new com.expeditions.server.ReclaimingMenu(3, player.getInventory(), level, position);
+        var pickup = net.minecraft.world.inventory.ClickType.PICKUP;
+        menu.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 1750
+                        && vessel.sapFor("minecraft:the_nether") == 500,
+                "the overworld tab only spends overworld sap");
+        menu.clicked(26, 0, pickup, player);
+        menu.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.sapFor("minecraft:the_nether") == 250,
+                "the nether tab draws on the nether well");
+        helper.assertTrue(handler.drain(com.expeditions.core.ReturnSap.of("minecraft:overworld", 100),
+                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE).getAmount() == 100
+                        && handler.drain(com.expeditions.core.ReturnSap.of("minecraft:the_end", 100),
+                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE).isEmpty(),
+                "pipes can only pull a trace the basin actually holds");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_opts", batch = "sap_wells")
+    public static void steepSettlesTheKnotsOwnDimension(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var jar = helper.absolutePos(new BlockPos(1, 1, 2));
+        level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
+        var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(jar);
+        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
+                net.minecraft.world.level.material.Fluids.WATER, 1000), execute);
+        var knot = new ItemStack(ModItems.RETURN_KNOT.get());
+        com.expeditions.item.ReturnKnotItem.bind(knot, "minecraft:the_nether");
+        helper.assertTrue(vessel.startSteep(com.expeditions.item.ReturnKnotItem.source(knot)),
+                "a bound knot steeps in water");
+        vessel.steepTicks = 0;
+        helper.assertTrue(vessel.catalyze() && com.expeditions.core.ReturnSap
+                        .dimension(vessel.tank().getFluid()).equals("minecraft:the_nether"),
+                "the steep settles into the knot's own dimension, not the jar's");
+        helper.assertTrue(vessel.tank().fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 100),
+                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE) == 0,
+                "a foreign trace cannot mix into the jar");
+        helper.succeed();
     }
 
     @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_modded_horde",
@@ -2088,8 +2160,7 @@ public final class ExpeditionGameTests {
         helper.assertTrue(chute.insertItem(0, sticks, false).isEmpty() && vessel.tank().getFluidAmount() == 24,
                 "top-fed automation consumes the accepted items");
         var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
-        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
-                com.expeditions.registry.ModFluids.SAP.get(), 3975), execute);
+        vessel.tank().fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 3975), execute);
         helper.assertTrue(chute.insertItem(0, sticks, false).getCount() == 7
                         && vessel.tank().getFluidAmount() == 4000 && sticks.getCount() == 8,
                 "a nearly full jar accepts only whole items that fit and returns the remainder");

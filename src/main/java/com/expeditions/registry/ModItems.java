@@ -19,7 +19,8 @@ public final class ModItems {
     public static final DeferredItem<Item> DISRUPTION_CHARM = ITEMS.register(
             "disruption_charm",()->new com.expeditions.item.DisruptionCharmItem(new Item.Properties().stacksTo(1)));
 
-    public static final DeferredItem<Item> RETURN_KNOT = ITEMS.registerSimpleItem("return_knot");
+    public static final DeferredItem<Item> RETURN_KNOT = ITEMS.register("return_knot",
+            () -> new com.expeditions.item.ReturnKnotItem(new Item.Properties().stacksTo(16)));
     public static final DeferredItem<BlockItem> PALE_WOOD = ITEMS.registerSimpleBlockItem("pale_wood", ModBlocks.PALE_WOOD);
     public static final DeferredItem<BlockItem> PALE_PLANKS = ITEMS.registerSimpleBlockItem("pale_planks", ModBlocks.PALE_PLANKS);
     public static final DeferredItem<BlockItem> PALE_CHEST = ITEMS.registerSimpleBlockItem("pale_chest", ModBlocks.PALE_CHEST);
@@ -38,7 +39,7 @@ public final class ModItems {
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(ModEntities.ROOTBOUND_GUARDIAN,
                     0xb8ad94, 0xd48936, new Item.Properties()));
     public static final DeferredItem<Item> RETURN_SAP_BUCKET = ITEMS.register("return_sap_bucket",
-            () -> new net.minecraft.world.item.BucketItem(ModFluids.SAP.get(),
+            () -> new com.expeditions.item.ReturnSapBucketItem(
                     new Item.Properties().craftRemainder(net.minecraft.world.item.Items.BUCKET).stacksTo(1)));
     public static final DeferredItem<BlockItem> SAP_JAR = ITEMS.registerSimpleBlockItem("sap_jar", ModBlocks.SAP_JAR);
     public static final DeferredItem<BlockItem> ROOTWICK = ITEMS.registerSimpleBlockItem("rootwick", ModBlocks.ROOTWICK);

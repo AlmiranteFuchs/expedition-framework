@@ -262,6 +262,26 @@ Corporate proxy: TLS interception requires importing the corporate root CA into
   items. The Sap Jar recycler consumes only whole items with tank space.
   Completion bonus drops still use the `expeditions:reward_items/<dimension
   path>` tags with the `default` fallback.
+- Dimension-typed sap: `ModDataComponents.RETURN_DIMENSION` stamps the source
+  dimension onto return knots (bound at extraction / cache fallback) and onto
+  `FluidStack`s of the single `return_sap` fluid (`ReturnSap.of/dimension/same`
+  helpers). Brewing is a steep: knot dissolves into a water-filled Sap Jar
+  (`sap.steepTicks`), essence catalyzes the settled steep into that knot's
+  dimension sap — `startSteep`/`catalyze` on `SapVesselBlockEntity`; draining
+  the water cancels the steep via `onContentsChanged`. The Reclaiming Basin
+  is a multi-well (`Map<dim,mB>`, 6 wells × 2 B) — each well is a fluid tank
+  slot for pipes, reclaim spends only the selected dimension's well, and
+  unmarked sap assumes local trace on fill (Create's mixing recipe output
+  included). `ReturnSapLiquidBlock` rebinds scooped buckets to the dimension
+  stood in; `ReturnSapBucketItem` carries the component on the item too.
+- Bloom-work pressure: `ExpeditionEventHandler.bloomWork` adds
+  `pressure.bloomWork` for unwarded Bloom-material operations (condensing,
+  recycling, reclaiming, catalyzing) — a covering field ward's `covers()` is
+  the muffler. Membrane gripping a machine sets `ResonanceStatus.CHOKED` —
+  no generation/refining until cleaned. Breach colonies `tryTake` unwarded
+  fauna into stage-3 extensions leashed to their heart (`microbiome.take_*`;
+  the leash withers when the heart dies), budding a horde-pool husk only
+  when nothing living is in reach.
 - `ItemValuator` scores a stack from data components + NeoForge `c:` tags —
   modded items rank on the same scale automatically. `ItemRewards.draw`
   turns a value budget (tokens × `dropValuePerToken`) into weighted stacks

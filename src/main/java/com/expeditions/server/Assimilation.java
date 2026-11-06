@@ -48,6 +48,8 @@ public final class Assimilation {
     /** Last announced stage — transitions whisper the escalation. */
     private static final String TAG_STAGE = "expeditions:assimilation_stage";
     private static final String TAG_CONTACT = "expeditions:assimilation_contact";
+    /** Heart a breach-taken mob is leashed to — the extension dies with it. */
+    private static final String TAG_BREACH_HEART = "expeditions:breach_heart";
     /** Entity tag marking the armor-stand effigies conversion leaves. */
     public static final String EFFIGY_TAG = "expeditions:assimilated";
 
@@ -83,6 +85,22 @@ public final class Assimilation {
      */
     public static void infect(LivingEntity player, double value) {
         player.getPersistentData().putDouble(TAG_INFECTION, value);
+    }
+
+    /**
+     * The colony claims a living extension outright — full stage-3 take,
+     * no exposure ladder — and leashes the body to its heart so the
+     * extension withers the moment the colony dies.
+     */
+    public static void take(Mob mob, ServerLevel level, net.minecraft.core.BlockPos heart) {
+        infect(mob, threshold(level, 3));
+        mob.setData(ModAttachments.ASSIMILATED, 3);
+        mob.getPersistentData().putLong(TAG_BREACH_HEART, heart.asLong());
+    }
+
+    /** Whether this body is a colony's leashed extension. */
+    public static boolean leashedTo(LivingEntity entity, net.minecraft.core.BlockPos heart) {
+        return entity.getPersistentData().getLong(TAG_BREACH_HEART) == heart.asLong();
     }
 
     /**
@@ -206,6 +224,14 @@ public final class Assimilation {
             boolean sheltered=Stillness.suppresses(level,mob.blockPosition());
             if(sheltered && flag>0){mob.setData(ModAttachments.ASSIMILATED,0);flag=0;}
             int interval=ExpeditionTuning.integer(level.dimension(),"microbiome.infection_interval_ticks",ExpeditionsConfig.infectionIntervalTicks());
+            long leash=mob.getPersistentData().getLong(TAG_BREACH_HEART);
+            if(leash!=0 && mob.tickCount%40==0){
+                var heart=net.minecraft.core.BlockPos.of(leash);
+                if(!level.hasChunkAt(heart) || !level.getBlockState(heart).is(ModBlocks.ASSIMILATION_HEART.get())){
+                    mob.getPersistentData().remove(TAG_BREACH_HEART);
+                    mob.hurt(mob.damageSources().source(ASSIMILATION_DAMAGE),Math.max(2f,mob.getMaxHealth()/4f));
+                }
+            }
             if(mob.tickCount>0 && mob.tickCount%interval==0) {
                 double value=advance(mob,level,flag>0 && Microbiome.enabledAt(level,mob.blockPosition())?threshold(level,1):0,1);
                 infect(mob,value); int stage=!sheltered && value>0?stageOf(level,value):0;

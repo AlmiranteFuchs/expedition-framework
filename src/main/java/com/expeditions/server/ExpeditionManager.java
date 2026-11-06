@@ -950,6 +950,7 @@ public final class ExpeditionManager {
                 var online = member.equals(player.getUUID()) ? player : server.getPlayerList().getPlayer(member);
                 if (online != null) {
                     var knot = new ItemStack(ModItems.RETURN_KNOT.get(), count);
+                    com.expeditions.item.ReturnKnotItem.bind(knot, run.definition().dimension());
                     if (!online.getInventory().add(knot)) online.drop(knot, false);
                 }
             }
@@ -990,8 +991,8 @@ public final class ExpeditionManager {
         if (slot < 0 || slot >= offers.size()) return false;
         if (slot == 2 && !canReclaimGear(player.getUUID(), dimension)) return reclaimRefused(player, "gear");
         var offer = offers.get(slot);
-        var tank = vessel.tank();
-        if (tank.getFluidAmount() < offer.sap()) return reclaimRefused(player, "sap");
+        // Reclaim spends from that dimension's own well — a trace only buys what it remembers.
+        if (vessel.sapFor(dimension) < offer.sap()) return reclaimRefused(player, "sap");
         if (offer.finds().isEmpty()) return reclaimRefused(player, "empty_trace");
         var inventory = player.getInventory();
         long empty = inventory.items.stream().filter(ItemStack::isEmpty).count();
@@ -999,11 +1000,12 @@ public final class ExpeditionManager {
             return reclaimRefused(player, "room");
         }
         var cargo = offer.draw(player.getRandom());
-        tank.drain(offer.sap(), net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+        vessel.drainSap(dimension, offer.sap());
         inventory.add(cargo);
         inventory.setChanged();
         player.displayClientMessage(Component.translatable("message.expeditions.basin_reclaimed"), true);
         player.playNotifySound(ModSounds.BASIN_RECLAIM.get(), SoundSource.PLAYERS, 0.55f, 0.8f);
+        ExpeditionEventHandler.bloomWork(player.serverLevel(), vessel.getBlockPos());
         return true;
     }
 

@@ -42,6 +42,18 @@ public final class ModDataComponents {
             DATA_COMPONENTS.register("resonance", () -> DataComponentType.<Integer>builder()
                     .persistent(Codec.INT).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.INT).build());
 
+    /**
+     * The dimension a return knot or return-sap batch remembers — the
+     * world the knot was tied in, and the only trace pool its sap can
+     * reclaim from. Empty means unmarked.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> RETURN_DIMENSION =
+            DATA_COMPONENTS.register("return_dimension",
+                    () -> DataComponentType.<String>builder()
+                            .persistent(Codec.STRING)
+                            .networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.STRING_UTF8)
+                            .build());
+
     /** Presentation only: 1 and 2 are witness stumps; 3 is the recall tree. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> GUIDED_STEP =
             DATA_COMPONENTS.register("guided_step", () -> DataComponentType.<Integer>builder()

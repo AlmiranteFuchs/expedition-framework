@@ -8,6 +8,7 @@ import com.expeditions.core.ResonancePower.Kind;
 import com.expeditions.item.SeveranceCoreItem;
 import com.expeditions.server.Stillness;
 import com.expeditions.registry.*;
+import com.expeditions.server.ExpeditionEventHandler;
 import com.expeditions.server.ExpeditionManager;
 import net.minecraft.core.*;
 import net.minecraft.nbt.CompoundTag;
@@ -106,10 +107,28 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
     }
     @Override public void onLoad(){super.onLoad();if(level instanceof ServerLevel server && breach)
         ExpeditionManager.get(server.getServer()).savedData().setStillnessBreach(worldPosition,true);}
+    /**
+     * Membrane reaches machinery: a colony face gripping any side of the
+     * casing smothers the machine outright — generation, refining and a
+     * running breach all stop until the coating is broken off. Stored
+     * charge still drains out; the choke silences the source, not the
+     * wires. This is the running cost of an unwarded colony: it can eat
+     * the farm that hosts it.
+     */
+    private static boolean choked(ServerLevel level,BlockPos pos){
+        for(Direction d:Direction.values()){
+            var coated=level.getBlockState(pos.relative(d));
+            if(coated.getBlock() instanceof com.expeditions.block.AssimilationLayerBlock
+                    && net.minecraft.world.level.block.MultifaceBlock.hasFace(coated,d.getOpposite()))return true;
+        }
+        return false;
+    }
     public static void tick(ServerLevel level,BlockPos pos,BlockState state,ResonanceMachineBlockEntity be){
         be.actualGeneration=0;boolean working=false,quiet=true,proven=false;
         boolean paused=level.hasNeighborSignal(pos);
         boolean simple=ExpeditionsConfig.simpleGenerators();
+        boolean smothered=choked(level,pos);
+        if(smothered&&be.breach){be.breach=false;ExpeditionManager.get(level.getServer()).savedData().setStillnessBreach(pos,false);be.setChanged();}
         if(simple&&be.dynamo()){be.fieldCount=1;be.lastFieldScan=Long.MIN_VALUE;}
         if(be.breach){
             if(be.energy()<20){be.breach=false;ExpeditionManager.get(level.getServer()).savedData().setStillnessBreach(pos,false);be.setChanged();}
@@ -122,11 +141,11 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
             }
             quiet=simple||Stillness.suppresses(level,pos) || ExpeditionManager.get(level.getServer()).savedData().isDimensionCleared(level.dimension().location().toString());
             proven=!simple&&be.kind()==Kind.SEVERED&&SeveranceCoreItem.valid(level,be.inventory.getStackInSlot(0));
-            be.generationRate=paused?0:ResonancePower.output(be.kind(),quiet,
+            be.generationRate=paused||smothered?0:ResonancePower.output(be.kind(),quiet,
                     !simple&&be.kind()==Kind.DORMANT?be.fieldCount(level):1,be.fuelTicks>0,proven,simple);
             int made=Math.min(be.generationRate,ResonanceProcessing.CAPACITY-be.energy());
             if(made>0){be.bank.add(made);be.actualGeneration=made;working=true;if(!simple&&be.kind()==Kind.LIVING)be.fuelTicks--;}
-        } else {
+        } else if(!smothered){
             var output=be.inventory.getStackInSlot(1);
             boolean room=output.isEmpty() || output.is(ModItems.ASSIMILATION_ESSENCE.get()) && output.getCount()<output.getMaxStackSize();
             if(room && be.energy()>=20){
@@ -140,6 +159,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                         var next=output.isEmpty()?new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()):output.copyWithCount(output.getCount()+1);
                         be.inventory.setStackInSlot(1,next);be.reserved=false;be.progress=0;
                         level.playSound(null,pos,ModSounds.RESONANCE_COMPLETE.get(),SoundSource.BLOCKS,.45f,1.2f);
+                        ExpeditionEventHandler.bloomWork(level,pos);
                     }
                 }
             }
@@ -185,6 +205,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
         }
         if(simple&&be.dynamo())be.status=paused?ResonanceStatus.REDSTONE_PAUSED:be.energy()>=ResonanceProcessing.CAPACITY
                 ?ResonanceStatus.BUFFER_FULL:ResonanceStatus.SIMPLE_GATHERING;
+        if(smothered)be.status=ResonanceStatus.CHOKED;
         boolean lit=working||!be.dynamo()&&be.activityTail>0;
         boolean core=simple&&be.dynamo() || be.kind()==Kind.DORMANT || be.kind()==Kind.LIVING || be.inventory.getStackInSlot(0).is(ModItems.SEVERANCE_CORE.get());
         if(state.getValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE)!=lit || state.getValue(com.expeditions.block.ResonanceMachineBlock.HAS_CORE)!=core)

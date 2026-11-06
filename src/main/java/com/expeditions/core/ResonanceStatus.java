@@ -4,7 +4,7 @@ package com.expeditions.core;
 public enum ResonanceStatus {
     NO_SAMPLE, NO_POWER, OUTPUT_BLOCKED, REFINING, BREACH_OPEN,
     GATHERING, BUFFER_FULL, REDSTONE_PAUSED, QUIET_GROUND_REQUIRED, NO_FUEL,
-    CORE_MISSING, CORE_UNBOUND, FIELD_CROWDED, SIMPLE_GATHERING;
+    CORE_MISSING, CORE_UNBOUND, FIELD_CROWDED, SIMPLE_GATHERING, CHOKED;
 
     public String translationKey(){return "machine.expeditions.state."+name().toLowerCase(java.util.Locale.ROOT);}
     public static ResonanceStatus byId(int id){return id>=0&&id<values().length?values()[id]:NO_POWER;}

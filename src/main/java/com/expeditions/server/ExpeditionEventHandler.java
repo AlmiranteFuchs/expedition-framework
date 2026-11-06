@@ -12,6 +12,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import net.minecraft.core.BlockPos;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -206,6 +207,25 @@ public final class ExpeditionEventHandler {
             p.playNotifySound(ModSounds.ORGANISM_ROAR.get(), SoundSource.HOSTILE,
                     empowered ? 0.85f : 0.45f,
                     empowered ? 0.55f : 0.85f);
+        }
+    }
+
+    /**
+     * Bloom-material work — refining essence, recycling to sap, drawing
+     * from a reclaiming basin — is quiet only inside a lit field ward's
+     * cover. Unwarded handling stirs {@code pressure.bloom_work} in the
+     * working dimension; cleared dimensions hold nothing left to rouse.
+     */
+    public static void bloomWork(ServerLevel level, BlockPos pos) {
+        if (com.expeditions.block.entity.FieldWardBlockEntity.covers(level, pos)) {
+            return;
+        }
+        var data = ExpeditionManager.get(level.getServer()).savedData();
+        String dimensionId = level.dimension().location().toString();
+        if (!data.isDimensionCleared(dimensionId)) {
+            stirPressure(data, level, dimensionId,
+                    ExpeditionTuning.integer(dimensionId, "pressure.bloom_work",
+                            ExpeditionsConfig.pressureBloomWork()));
         }
     }
 

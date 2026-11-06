@@ -69,9 +69,12 @@ public final class ReclaimingOffers {
 
     static ItemStack cacheReward(String dimension, ServerLevel level) {
         var curiosities = forDimension(dimension, level).get(1);
-        return curiosities.finds().isEmpty()
-                ? new ItemStack(com.expeditions.registry.ModItems.RETURN_KNOT.get())
-                : curiosities.draw(level.random);
+        if (!curiosities.finds().isEmpty()) {
+            return curiosities.draw(level.random);
+        }
+        var knot = new ItemStack(com.expeditions.registry.ModItems.RETURN_KNOT.get());
+        com.expeditions.item.ReturnKnotItem.bind(knot, dimension);
+        return knot;
     }
 
     private ReclaimingOffers() { }

@@ -78,8 +78,9 @@ public final class ReclaimingMenu extends ChestMenu {
     }
 
     private void updateSap() {
-        sap.set(level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
-                ? vessel.tank().getFluidAmount() : 0);
+        sap.set(!dimensions.isEmpty()
+                && level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
+                ? vessel.sapFor(dimensions.get(index)) : 0);
     }
 
     public int sapAmount() { return sap.get(); }
@@ -123,7 +124,9 @@ public final class ReclaimingMenu extends ChestMenu {
             display.setItem(slot, quote);
         }
         display.setItem(18, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_previous"));
-        display.setItem(22, label(new ItemStack(ModItems.RETURN_SAP_BUCKET.get()), "gui.expeditions.basin_account",
+        var account = new ItemStack(ModItems.RETURN_SAP_BUCKET.get());
+        com.expeditions.item.ReturnSapBucketItem.bind(account, dimensions.get(index));
+        display.setItem(22, label(account, "gui.expeditions.basin_account",
                 traceName(dimensions.get(index))));
         display.setItem(26, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_next"));
     }

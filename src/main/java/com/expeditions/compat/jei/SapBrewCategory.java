@@ -14,8 +14,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * "Essence + knot + water bucket into a sap jar" — the brew is hardcoded in
- * {@code SapVesselBlock.useItemOn}, so the recipe card is a fixed singleton.
+ * Water into the jar, a knot steeps in it, essence settles the steep into
+ * sap — the brew is hardcoded in {@code SapVesselBlock.useItemOn}, so the
+ * recipe card is a fixed singleton laid out in click order.
  */
 final class SapBrewCategory extends AbstractRecipeCategory<SapBrewCategory.Brew> {
     /** Marker recipe — inputs/output are constants of the interaction. */
@@ -32,9 +33,9 @@ final class SapBrewCategory extends AbstractRecipeCategory<SapBrewCategory.Brew>
     public void setRecipe(IRecipeLayoutBuilder builder, Brew recipe, IFocusGroup focuses) {
         builder.addInputSlot(4, 4).addItemStack(new ItemStack(Items.WATER_BUCKET))
                 .setStandardSlotBackground();
-        builder.addInputSlot(26, 4).addItemStack(new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()))
+        builder.addInputSlot(26, 4).addItemStack(new ItemStack(ModItems.RETURN_KNOT.get()))
                 .setStandardSlotBackground();
-        builder.addInputSlot(48, 4).addItemStack(new ItemStack(ModItems.RETURN_KNOT.get()))
+        builder.addInputSlot(48, 4).addItemStack(new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()))
                 .setStandardSlotBackground();
         builder.addOutputSlot(74, 4).addFluidStack(ModFluids.SAP.get(), 1000)
                 .setStandardSlotBackground();

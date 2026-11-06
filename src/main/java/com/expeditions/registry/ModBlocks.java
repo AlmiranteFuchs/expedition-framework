@@ -102,7 +102,7 @@ public final class ModBlocks {
                     .strength(2.5f).sound(SoundType.COPPER).noOcclusion()));
 
     public static final DeferredHolder<Block, net.minecraft.world.level.block.LiquidBlock> RETURN_SAP = BLOCKS.register(
-            "return_sap", () -> new net.minecraft.world.level.block.LiquidBlock(ModFluids.SAP.get(),
+            "return_sap", () -> new com.expeditions.block.ReturnSapLiquidBlock(ModFluids.SAP.get(),
                     BlockBehaviour.Properties.of().replaceable().noCollission().strength(100).noLootTable().liquid()
                             .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)));
     public static final DeferredHolder<Block, Block> SAP_JAR = BLOCKS.register("sap_jar",

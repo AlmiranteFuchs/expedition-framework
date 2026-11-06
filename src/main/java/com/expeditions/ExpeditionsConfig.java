@@ -204,6 +204,32 @@ public final class ExpeditionsConfig {
                     "0 turns decoration off entirely.")
             .defineInRange("expeditions.microbiome.growthChance", 0.30, 0.0, 1.0);
 
+    private static final ModConfigSpec.IntValue TAKE_INTERVAL = BUILDER
+            .comment("Ticks between a colony's reach into nearby life —",
+                    "unwarded living membrane on unsheltered ground takes",
+                    "one mob per interval, or buds a husk when nothing is",
+                    "near enough to take.")
+            .defineInRange("expeditions.microbiome.takeIntervalTicks", 800, 100, 72000);
+
+    private static final ModConfigSpec.IntValue TAKE_RADIUS = BUILDER
+            .comment("How far a colony reaches for living hosts to take.")
+            .defineInRange("expeditions.microbiome.takeRadius", 16, 4, 64);
+
+    private static final ModConfigSpec.IntValue TAKE_MAX = BUILDER
+            .comment("Living extensions one colony sustains — taken fauna",
+                    "and budded husks count together.")
+            .defineInRange("expeditions.microbiome.takeMax", 3, 0, 16);
+
+    private static final ModConfigSpec.IntValue TAKE_MIN_FACES = BUILDER
+            .comment("Covered faces a colony needs before it can reach",
+                    "into nearby life — scraps cannot hold extensions.")
+            .defineInRange("expeditions.microbiome.takeMinFaces", 12, 1, 256);
+
+    private static final ModConfigSpec.IntValue SAP_STEEP_TICKS = BUILDER
+            .comment("Ticks a return knot steeps in water before essence",
+                    "can catalyze it into return sap.")
+            .defineInRange("expeditions.sap.steepTicks", 600, 20, 24000);
+
     private static final ModConfigSpec.IntValue INFECTION_RADIUS = BUILDER
             .comment("Legacy compatibility setting. Infection now requires physical",
                     "contact with living tissue or an infected body; radius is not used.")
@@ -271,6 +297,14 @@ public final class ExpeditionsConfig {
     private static final ModConfigSpec.IntValue PRESSURE_COMPLETE = BUILDER
             .comment("Dimensional pressure gained when a run completes.")
             .defineInRange("expeditions.pressure.perRunCompletion", 10, 0, 1000);
+
+    private static final ModConfigSpec.IntValue PRESSURE_BLOOM_WORK = BUILDER
+            .comment("Dimensional pressure per unwarded Bloom-material",
+                    "operation — condensing essence, recycling to sap,",
+                    "reclaiming finds. A lit field ward covering the",
+                    "machine keeps the work silent; the organism otherwise",
+                    "smells its own being dissected.")
+            .defineInRange("expeditions.pressure.bloomWork", 2, 0, 1000);
 
     private static final ModConfigSpec.IntValue PRESSURE_MAX = BUILDER
             .comment("Pressure cap per dimension.")
@@ -639,6 +673,31 @@ public final class ExpeditionsConfig {
         return MICROBIOME_GROWTH_CHANCE.get();
     }
 
+    /** Ticks between a colony's reach into nearby life. */
+    public static int microbiomeTakeIntervalTicks() {
+        return TAKE_INTERVAL.get();
+    }
+
+    /** How far a colony reaches for living hosts to take. */
+    public static int microbiomeTakeRadius() {
+        return TAKE_RADIUS.get();
+    }
+
+    /** Living extensions one colony sustains. */
+    public static int microbiomeTakeMax() {
+        return TAKE_MAX.get();
+    }
+
+    /** Covered faces a colony needs before it can reach. */
+    public static int microbiomeTakeMinFaces() {
+        return TAKE_MIN_FACES.get();
+    }
+
+    /** Ticks a return knot steeps before essence catalyzes it. */
+    public static int sapSteepTicks() {
+        return SAP_STEEP_TICKS.get();
+    }
+
     /** Maximum distance from a marker its colony's heart may land. */
     public static int microbiomeMarkerColonyRadius() {
         return MICROBIOME_MARKER_RADIUS.get();
@@ -672,6 +731,11 @@ public final class ExpeditionsConfig {
     /** Pressure gained per run completed in a dimension. */
     public static int pressurePerRunCompletion() {
         return PRESSURE_COMPLETE.get();
+    }
+
+    /** Pressure per unwarded Bloom-material operation (condense, recycle, reclaim). */
+    public static int pressureBloomWork() {
+        return PRESSURE_BLOOM_WORK.get();
     }
 
     /** Pressure cap per dimension. */

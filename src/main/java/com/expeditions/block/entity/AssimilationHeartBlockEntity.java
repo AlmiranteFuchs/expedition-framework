@@ -51,6 +51,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class AssimilationHeartBlockEntity extends BlockEntity {
     private static final String TAG_COLONY = "Colony";
+    private static final String TAG_LAST_TAKE = "LastTake";
 
     /** Growth directions of a face: every axis other than the face's own. */
     private static final Map<Direction, List<Direction>> PERPENDICULAR = Map.of(
@@ -163,6 +164,77 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
             return;
         }
         heart.pulse(level);
+        heart.tryTake(level);
+    }
+
+    private long lastTake;
+
+    /**
+     * An unsheltered, established colony reaches into nearby life: it
+     * takes one unwarded mob per {@code microbiome.take_interval_ticks}
+     * as a living extension leashed to this heart, and buds a husk from
+     * the local horde pool when nothing living is in reach. Lit field
+     * wards make sterile ground — nothing inside their cover is taken,
+     * and they are the only fence the reach respects.
+     */
+    private void tryTake(ServerLevel level) {
+        String dim = level.dimension().location().toString();
+        int intervalTicks = ExpeditionTuning.integer(level.dimension(),
+                "microbiome.take_interval_ticks", ExpeditionsConfig.microbiomeTakeIntervalTicks());
+        if (level.getGameTime() - lastTake < intervalTicks
+                || coverage(level) < ExpeditionTuning.integer(level.dimension(),
+                        "microbiome.take_min_faces", ExpeditionsConfig.microbiomeTakeMinFaces())) {
+            return;
+        }
+        int radius = ExpeditionTuning.integer(level.dimension(),
+                "microbiome.take_radius", ExpeditionsConfig.microbiomeTakeRadius());
+        int max = ExpeditionTuning.integer(level.dimension(),
+                "microbiome.take_max", ExpeditionsConfig.microbiomeTakeMax());
+        lastTake = level.getGameTime();
+        setChanged();
+        if (max <= 0) {
+            return;
+        }
+        var reach = new net.minecraft.world.phys.AABB(getBlockPos()).inflate(radius);
+        var extensions = level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
+                reach.inflate(radius), m -> com.expeditions.server.Assimilation.leashedTo(m, getBlockPos()));
+        if (extensions.size() >= max) {
+            return;
+        }
+        var prey = level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, reach,
+                m -> m.isAlive() && !HiveMind.infected(m)
+                        && !com.expeditions.server.AssimilationProtection.protectedFromInfection(m)
+                        && !FieldWardBlockEntity.covers(level, m.blockPosition()));
+        prey.sort(java.util.Comparator.comparingDouble(
+                m -> m.blockPosition().distSqr(getBlockPos())));
+        if (!prey.isEmpty()) {
+            com.expeditions.server.Assimilation.take(prey.getFirst(), level, getBlockPos());
+            return;
+        }
+        // Nothing to take: the colony buds a husk of its own instead.
+        var type = com.expeditions.server.HordePools.pick(level, getBlockPos(), dim, level.random);
+        if (type == null || !(type.create(level) instanceof net.minecraft.world.entity.Mob husk)) {
+            return;
+        }
+        var cells = new ArrayList<>(colony);
+        for (int attempt = 0; attempt < 8; attempt++) {
+            BlockPos cell = cells.isEmpty() ? getBlockPos()
+                    : BlockPos.of(cells.get(level.random.nextInt(cells.size())));
+            husk.moveTo(cell.getX() + 0.5, cell.getY(), cell.getZ() + 0.5,
+                    level.random.nextFloat() * 360, 0);
+            if (level.noCollision(husk)) {
+                break;
+            }
+        }
+        if (!level.noCollision(husk)) {
+            husk.moveTo(getBlockPos().getX() + 0.5, getBlockPos().getY() + 1,
+                    getBlockPos().getZ() + 0.5, 0, 0);
+        }
+        com.expeditions.server.Assimilation.take(husk, level, getBlockPos());
+        husk.setPersistenceRequired();
+        level.addFreshEntity(husk);
+        level.playSound(null, getBlockPos(), ModSounds.HORDE_CUE.get(),
+                SoundSource.BLOCKS, .5f, .8f);
     }
 
     /**
@@ -352,6 +424,7 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        tag.putLong(TAG_LAST_TAKE, lastTake);
         tag.put(TAG_COLONY, new LongArrayTag(List.copyOf(colony)));
     }
 
@@ -359,6 +432,7 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         colony.clear();
+        lastTake = tag.getLong(TAG_LAST_TAKE);
         for (long p : tag.getLongArray(TAG_COLONY)) {
             colony.add(p);
         }
