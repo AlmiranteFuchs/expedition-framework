@@ -67,6 +67,8 @@ public class ExpeditionsClient {
                 event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("expeditions", "guided_bearing"), GuidedBearing::render));
         NeoForge.EVENT_BUS.addListener(CompassResonance::onClientTick);
         NeoForge.EVENT_BUS.addListener(InfectedMobEffects::onClientTick);
+        NeoForge.EVENT_BUS.addListener(ShatterwakeAtmosphere::onFog);
+        NeoForge.EVENT_BUS.addListener(ShatterwakeAtmosphere::onTick);
         NeoForge.EVENT_BUS.addListener(CompassResonance::onRenderHand);
         NeoForge.EVENT_BUS.addListener(ExpeditionsClient::onCompassTooltip);
     }

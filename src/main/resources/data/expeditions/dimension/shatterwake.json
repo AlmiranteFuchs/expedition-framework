@@ -1,0 +1,60 @@
+{
+  "type": "expeditions:shatterwake",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "expeditions:shatterwake",
+    "biome_source": {
+      "type": "minecraft:multi_noise",
+      "biomes": [
+        {
+          "biome": "expeditions:buried_canopy",
+          "parameters": {
+            "temperature": -0.55,
+            "humidity": 0.55,
+            "continentalness": 0,
+            "erosion": 0,
+            "depth": 0,
+            "weirdness": 0,
+            "offset": 0
+          }
+        },
+        {
+          "biome": "expeditions:pale_drift",
+          "parameters": {
+            "temperature": -0.55,
+            "humidity": -0.55,
+            "continentalness": 0,
+            "erosion": 0,
+            "depth": 0,
+            "weirdness": 0,
+            "offset": 0
+          }
+        },
+        {
+          "biome": "expeditions:cinder_shards",
+          "parameters": {
+            "temperature": 0.55,
+            "humidity": -0.55,
+            "continentalness": 0,
+            "erosion": 0,
+            "depth": 0,
+            "weirdness": 0,
+            "offset": 0
+          }
+        },
+        {
+          "biome": "expeditions:amber_reef",
+          "parameters": {
+            "temperature": 0.55,
+            "humidity": 0.55,
+            "continentalness": 0,
+            "erosion": 0,
+            "depth": 0,
+            "weirdness": 0,
+            "offset": 0
+          }
+        }
+      ]
+    }
+  }
+}

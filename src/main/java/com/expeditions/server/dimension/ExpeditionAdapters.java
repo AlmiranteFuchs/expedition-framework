@@ -3,7 +3,9 @@ package com.expeditions.server.dimension;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
@@ -20,6 +22,9 @@ public final class ExpeditionAdapters {
     static {
         register(new OverworldAdapter());
         register(new NetherAdapter());
+        // Charter instruments stay below the Shatterwake's upper fragments.
+        register(new AutomaticDimensionAdapter(ResourceKey.create(Registries.DIMENSION,
+                ResourceLocation.parse("expeditions:shatterwake")), 118));
     }
 
     private ExpeditionAdapters() {

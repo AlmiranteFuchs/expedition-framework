@@ -889,3 +889,39 @@ Rock Galactic's meteor field event. [Deep Rock Galactic Season 03](https://www.d
 - Next batch: liberated dimensions. Start with a modest dormant supply
   trade in cleared Overworld villages, then Nether basalt-delta deposits,
   End salvage utility, and settled landmarks and journal discoveries.
+
+
+### The Shatterwake — alpha.46
+
+The Bloom has taken hold where pieces of other worlds meet. The Shatterwake
+has two bands of floating terrain, deep faults, pale Stillwood, ash, amber
+motes, and fog that obscures distant shelves. Chorus flats, cinder shards,
+buried canopy, and amber reefs supply distinct terrain and hostile pools.
+The Wayroot offers the Shatterwake after Field Survey. The route adapter keeps
+charter sites on the lower band and leaves the high fragments to exploration.
+
+Optional material tags place Aether holystone and Skyroot, Twilight Forest
+mazestone, Bumblezone wax and patterned comb, and Create cut andesite.
+Vanilla blocks fill those roles on new terrain when the optional mods are
+absent. Exposed remnants and surface seams make the materials visible.
+Existing chunks retain their blocks after a terrain revision.
+
+The dimension takes its layered terrain from the design examples of The Aether
+and Ultra Amplified and its cross-world material idea from World Blender.
+[The Aether](https://github.com/The-Aether-Team/The-Aether) ·
+[Ultra Amplified](https://github.com/TelepathicGrunt/UltraAmplifiedDimension-Fabric) ·
+[World Blender](https://github.com/TelepathicGrunt/WorldBlender)
+
+- A first probe expected the flat GameTest server to instantiate the
+  dimension. The automated probe now samples the registered generator and
+  its fallback material. The installed client verifies the actual dimension.
+- The client completed an initial survey with debug travel and found all
+  four optional palettes. One leg climbed 74 blocks, so the adapter now
+  caps charter landings below the upper band. The next live charter
+  resolved all three witnesses and its exit at Y=102.
+- Fresh chunks on the final build generated Stillwood leaves, exposed
+  Aether Skyroot and patterned Bumblezone wax. The final candidate's
+  first suite failed the existing horde-roll test. The unchanged rerun
+  passed the build, alphaBundle, 203 unit tests, and 190 required GameTests.
+  The failed run and rerun have separate logs.
+- Next roadmap batch: lasting reasons to revisit liberated dimensions.

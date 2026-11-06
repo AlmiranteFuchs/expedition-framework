@@ -1,0 +1,19 @@
+{
+  "dimension": "expeditions:shatterwake",
+  "display_name": "Shatterwake",
+  "difficulty": 1,
+  "generate": {
+    "checkpoints": 3,
+    "min_spacing": 16,
+    "max_spacing": 30,
+    "entry_min": 24,
+    "entry_max": 54,
+    "exit_min": 14,
+    "exit_max": 24,
+    "max_attempts": 8
+  },
+  "tokens": 20,
+  "requires": [
+    "expeditions:field_clear"
+  ]
+}

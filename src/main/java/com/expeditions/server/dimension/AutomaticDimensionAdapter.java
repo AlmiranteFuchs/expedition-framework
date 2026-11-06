@@ -11,8 +11,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /** Conservative fallback for loaded dimensions without a specialized adapter. */
-public record AutomaticDimensionAdapter(ResourceKey<Level> dimension)
+public record AutomaticDimensionAdapter(ResourceKey<Level> dimension, int maxLandingY)
         implements ExpeditionDimensionAdapter {
+    public AutomaticDimensionAdapter(ResourceKey<Level> dimension) {
+        this(dimension, Integer.MAX_VALUE);
+    }
+
     @Override
     public Optional<BlockPos> resolveAnchor(ServerLevel level, RouteAnchor anchor) {
         if (!level.dimension().equals(dimension)) {
@@ -30,7 +34,7 @@ public record AutomaticDimensionAdapter(ResourceKey<Level> dimension)
                 ? level.getMinBuildHeight() + level.dimensionType().logicalHeight() - 8
                 : level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                         anchor.x(), anchor.z());
-        top = Math.min(top, level.getMaxBuildHeight() - 2);
+        top = Math.min(top, Math.min(maxLandingY, level.getMaxBuildHeight() - 2));
         OptionalInt y = SafeColumnSearch.findStandingY(
                 yy -> DestinationChecks.isFree(level, pos.setY(yy)),
                 yy -> DestinationChecks.isSturdyFloor(level, pos.setY(yy)),

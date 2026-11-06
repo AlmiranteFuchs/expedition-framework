@@ -33,6 +33,7 @@ public class ExpeditionsMod {
         modEventBus.addListener(com.expeditions.block.entity.SapVesselBlockEntity::registerCapabilities);
         ModBlocks.BLOCKS.register(modEventBus);
         com.expeditions.registry.ModFeatures.FEATURES.register(modEventBus);
+        com.expeditions.registry.ModFeatures.MATERIAL_RULES.register(modEventBus);
         modEventBus.addListener(com.expeditions.block.entity.ResonanceMachineBlockEntity::registerCapabilities);
         modEventBus.addListener(com.expeditions.item.ResonanceCellItem::registerCapabilities);
         com.expeditions.registry.ModEntities.ENTITIES.register(modEventBus);

@@ -1,0 +1,61 @@
+{
+  "has_precipitation": false,
+  "temperature": 0.55,
+  "downfall": 0.25,
+  "carvers": {},
+  "effects": {
+    "sky_color": 7830135,
+    "fog_color": 8947584,
+    "water_color": 6253929,
+    "water_fog_color": 3754049,
+    "grass_color": 7896432,
+    "foliage_color": 7502189,
+    "particle": {
+      "options": {
+        "type": "minecraft:ash"
+      },
+      "probability": 0.026
+    }
+  },
+  "spawners": {
+    "ambient": [],
+    "axolotls": [],
+    "creature": [],
+    "misc": [],
+    "monster": [
+      {
+        "type": "minecraft:enderman",
+        "weight": 45,
+        "minCount": 1,
+        "maxCount": 3
+      },
+      {
+        "type": "minecraft:skeleton",
+        "weight": 55,
+        "minCount": 1,
+        "maxCount": 3
+      }
+    ],
+    "underground_water_creature": [],
+    "water_ambient": [],
+    "water_creature": []
+  },
+  "spawn_costs": {},
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [
+      "expeditions:shatterwake_remnant"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      "minecraft:chorus_plant"
+    ],
+    []
+  ]
+}

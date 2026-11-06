@@ -1540,6 +1540,42 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "arena", templateNamespace = "expeditions_dim", batch = "shatterwake_worldgen")
+    public static void shatterwakeHasDryVoidAndFloatingTerrain(GameTestHelper helper) {
+        var registries = helper.getLevel().registryAccess();
+        var key = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.NOISE_SETTINGS,
+                ResourceLocation.parse("expeditions:shatterwake"));
+        var settings = registries.registryOrThrow(net.minecraft.core.registries.Registries.NOISE_SETTINGS)
+                .getHolderOrThrow(key);
+        var biomeKey = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.BIOME,
+                ResourceLocation.parse("expeditions:pale_drift"));
+        var biome = registries.registryOrThrow(net.minecraft.core.registries.Registries.BIOME)
+                .getHolderOrThrow(biomeKey);
+        var generator = new net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator(
+                new net.minecraft.world.level.biome.FixedBiomeSource(biome), settings);
+        var random = net.minecraft.world.level.levelgen.RandomState.create(registries.asGetterLookup(), key, 7231L);
+        var heights = net.minecraft.world.level.LevelHeightAccessor.create(-64, 320);
+        int shelves = 0;
+        int gaps = 0;
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                var column = generator.getBaseColumn(x * 36, z * 36, heights, random);
+                helper.assertTrue(column.getBlock(16).isAir() && column.getBlock(-60).isAir(),
+                        "open air extends below the shelves instead of an ocean floor");
+                int top = generator.getBaseHeight(x * 36, z * 36,
+                        net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, heights, random);
+                if (top == -64) gaps++;
+                else if (top >= 48 && top < 192) shelves++;
+            }
+        }
+        helper.assertTrue(shelves > 0 && gaps > 0, "the world contains both floating land and full-height gaps");
+        var fallback = new com.expeditions.worldgen.EchoMaterialRule(
+                ResourceLocation.parse("expeditions:shatterwake/test_missing"), Blocks.CALCITE.defaultBlockState());
+        helper.assertTrue(fallback.apply(null).tryApply(0, 0, 0).is(Blocks.CALCITE),
+                "missing optional materials use the vanilla fallback");
+        helper.succeed();
+    }
+
     @GameTest(template = "arena", templateNamespace = "expeditions_obj", batch = "detour_relay")
     public static void relayDetourPersistsAndPaysOnlyAtExtraction(GameTestHelper helper) {
         var level = helper.getLevel();
