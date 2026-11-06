@@ -14,8 +14,8 @@ public final class ModFluids {
     public static final net.neoforged.neoforge.registries.DeferredHolder<FluidType, FluidType> SAP_TYPE =
             TYPES.register("return_sap", () -> new FluidType(FluidType.Properties.create()
                     .descriptionId("fluid.expeditions.return_sap").density(1150).viscosity(1700).canConvertToSource(false)
-                    .sound(net.neoforged.neoforge.common.SoundActions.BUCKET_FILL, net.minecraft.sounds.SoundEvents.BUCKET_FILL)
-                    .sound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY, net.minecraft.sounds.SoundEvents.BUCKET_EMPTY)));
+                    .sound(net.neoforged.neoforge.common.SoundActions.BUCKET_FILL, ModSounds.SAP_FILL.get())
+                    .sound(net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY, ModSounds.SAP_EMPTY.get())));
     public static final net.neoforged.neoforge.registries.DeferredHolder<Fluid, BaseFlowingFluid.Source> SAP =
             FLUIDS.register("return_sap", () -> new BaseFlowingFluid.Source(properties()));
     public static final net.neoforged.neoforge.registries.DeferredHolder<Fluid, BaseFlowingFluid.Flowing> FLOWING_SAP =

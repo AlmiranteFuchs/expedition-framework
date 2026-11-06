@@ -6,7 +6,7 @@ import com.expeditions.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.sounds.SoundEvents;
+import com.expeditions.registry.ModSounds;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.LodestoneTracker;
@@ -53,10 +53,10 @@ public final class CompassPing {
         float pitch = CompassPulse.pitch(horizontal, vertical, range);
         int phase = player.tickCount % interval;
         if (phase == 0) {
-            player.playNotifySound(SoundEvents.WARDEN_HEARTBEAT,
+            player.playNotifySound(ModSounds.COMPASS_PING.get(),
                     SoundSource.PLAYERS, 1.0f, pitch);
         } else if (phase == CompassPulse.DUB_DELAY_TICKS) {
-            player.playNotifySound(SoundEvents.WARDEN_HEARTBEAT,
+            player.playNotifySound(ModSounds.COMPASS_PING.get(),
                     SoundSource.PLAYERS, 0.7f, pitch * 0.9f);
         }
     }

@@ -17,11 +17,12 @@
       "probability": 0.034
     },
     "mood_sound": {
-      "sound": "minecraft:ambient.cave",
+      "sound": "expeditions:ambient.shatterwake.mood",
       "tick_delay": 3800,
       "block_search_extent": 8,
       "offset": 2.0
-    }
+    },
+    "ambient_sound": "expeditions:ambient.shatterwake.pale_drift"
   },
   "spawners": {
     "ambient": [],

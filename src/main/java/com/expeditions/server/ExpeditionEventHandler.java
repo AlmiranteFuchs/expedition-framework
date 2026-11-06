@@ -6,6 +6,7 @@ import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModAttachments;
+import com.expeditions.registry.ModSounds;
 import com.expeditions.server.data.ExpeditionTuning;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -17,7 +18,6 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -203,7 +203,7 @@ public final class ExpeditionEventHandler {
             return;
         }
         for (ServerPlayer p : level.players()) {
-            p.playNotifySound(SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE,
+            p.playNotifySound(ModSounds.ORGANISM_ROAR.get(), SoundSource.HOSTILE,
                     empowered ? 0.85f : 0.45f,
                     empowered ? 0.55f : 0.85f);
         }

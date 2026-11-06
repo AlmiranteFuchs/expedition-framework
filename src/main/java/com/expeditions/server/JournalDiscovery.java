@@ -3,10 +3,10 @@ package com.expeditions.server;
 import com.expeditions.block.entity.AssimilationHeartBlockEntity;
 import com.expeditions.core.JournalChapter;
 import com.expeditions.registry.ModAttachments;
+import com.expeditions.registry.ModSounds;
 import com.expeditions.registry.ModItems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
 /** Server-observed discoveries; owning or opening a book never grants expedition rewards. */
@@ -24,7 +24,7 @@ public final class JournalDiscovery {
                 || player.getOffhandItem().is(ModItems.EXPEDITION_FIELD_JOURNAL.get());
         if (hasBook) {
             player.displayClientMessage(Component.translatable("message.expeditions.journal_discovery"), true);
-            player.playNotifySound(SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.5f, 0.8f);
+            player.playNotifySound(ModSounds.JOURNAL_DISCOVERY.get(), SoundSource.PLAYERS, 0.5f, 0.8f);
         }
     }
 

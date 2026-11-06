@@ -51,6 +51,8 @@ public final class ResonanceCellItem extends Item {
             var cell=storage(context.getItemInHand());boolean charging=player.isShiftKeyDown();
             int offered=charging?other.extractEnergy(cell.receiveEnergy(FieldEquipment.TRANSFER,true),true):cell.extractEnergy(other.receiveEnergy(FieldEquipment.TRANSFER,true),true);
             int moved=charging?cell.receiveEnergy(other.extractEnergy(offered,false),false):other.receiveEnergy(cell.extractEnergy(offered,false),false);
+            if(moved>0)player.playNotifySound(com.expeditions.registry.ModSounds.CELL_INSERT.get(),
+                    net.minecraft.sounds.SoundSource.BLOCKS,.7f,1.0f);
             player.displayClientMessage(Component.translatable("equipment.expeditions.transfer",moved,energy(context.getItemInHand()),FieldEquipment.CELL_CAPACITY),true);
             player.getInventory().setChanged();player.containerMenu.broadcastChanges();
         }

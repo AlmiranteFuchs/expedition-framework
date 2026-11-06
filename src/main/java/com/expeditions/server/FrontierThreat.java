@@ -5,6 +5,7 @@ import com.expeditions.core.FrontierAttention;
 import com.expeditions.core.FrontierAttention.Stage;
 import com.expeditions.core.CampaignState;
 import com.expeditions.registry.ModAttachments;
+import com.expeditions.registry.ModSounds;
 import com.expeditions.registry.ModEntities;
 import com.expeditions.server.data.ExpeditionTuning;
 import java.util.*;
@@ -17,7 +18,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.Difficulty;
@@ -95,7 +95,7 @@ public final class FrontierThreat {
                         remaining/60,String.format(Locale.ROOT,"%02d",remaining%60)));
         if(before==0 || FrontierAttention.stage(before,max)!=stage) {
             player.displayClientMessage(Component.translatable("frontier.expeditions.warning."+stage.name().toLowerCase(Locale.ROOT)), true);
-            level.playSound(null,player.blockPosition(),SoundEvents.AMETHYST_BLOCK_RESONATE,SoundSource.HOSTILE,.6f,stage==Stage.RECKONING?.5f:.8f);
+            level.playSound(null,player.blockPosition(),ModSounds.FRONTIER_WARNING.get(),SoundSource.HOSTILE,.6f,stage==Stage.RECKONING?.5f:.8f);
         }
         if(stage.ordinal()>=Stage.HUNTED.ordinal()) {
             JournalDiscovery.unlock(player,com.expeditions.core.JournalChapter.PRESSURE);

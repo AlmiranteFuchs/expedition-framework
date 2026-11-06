@@ -6,6 +6,7 @@ import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.core.RequirementCheck;
 import com.expeditions.core.Waypoint;
+import com.expeditions.registry.ModSounds;
 import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -211,13 +212,15 @@ public class ExpeditionMenu extends ChestMenu {
                 sendSapTrail(player, nearPost, nearPost.add(0, 1.65, 0));
                 sendSapTrail(player, nearPost.add(0, 1.65, 0), crown);
                 sendSapTrail(player, crown, aperture);
-                player.playNotifySound(net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_RESONATE,
+                player.playNotifySound(ModSounds.WAYROOT_GRAFT.get(),
                         net.minecraft.sounds.SoundSource.BLOCKS, 0.55f, 0.7f);
             } else {
                 sendSapTrail(player, graft, aperture);
             }
             player.closeContainer();
         } catch (IllegalStateException e) {
+            player.playNotifySound(ModSounds.TERMINAL_REFUSE.get(),
+                    net.minecraft.sounds.SoundSource.BLOCKS, .6f, 1.0f);
             LOGGER.warn("Expedition start refused for {}: {}",
                     player.getScoreboardName(), e.getMessage());
             player.sendSystemMessage(Component.literal(e.getMessage()));

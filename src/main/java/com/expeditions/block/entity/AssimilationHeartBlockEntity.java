@@ -4,6 +4,7 @@ import com.expeditions.ExpeditionsConfig;
 import com.expeditions.block.AssimilationLayerBlock;
 import com.expeditions.registry.ModBlockEntities;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.registry.ModSounds;
 import com.expeditions.server.Microbiome;
 import com.expeditions.server.HiveMind;
 import com.expeditions.server.data.ExpeditionTuning;
@@ -22,7 +23,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -152,7 +152,7 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         if(opening!=previous){
             level.setBlock(pos,state.setValue(com.expeditions.block.BloomSourceBlock.OPEN,opening),3);
             if(previous==0 && opening>0 || opening==0 && previous>0)
-                level.playSound(null,pos,opening>0?SoundEvents.BAMBOO_WOOD_TRAPDOOR_OPEN:SoundEvents.BAMBOO_WOOD_TRAPDOOR_CLOSE,
+                level.playSound(null,pos,opening>0?ModSounds.BLOOM_SOURCE_OPEN.get():ModSounds.BLOOM_SOURCE_CLOSE.get(),
                         SoundSource.BLOCKS,.32f,opening>0?.7f:.55f);
         }
         int interval = ExpeditionTuning.integer(level.dimension(),
@@ -176,6 +176,8 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
     }
     public void pulse(ServerLevel level) {
         if(!Microbiome.enabledAt(level,getBlockPos()))return;
+        level.playSound(null,getBlockPos(),ModSounds.HEART_BEAT.get(),
+                SoundSource.BLOCKS,.7f,1.0f);
         colony.removeIf(p -> !(level.getBlockState(BlockPos.of(p)).getBlock()
                 instanceof AssimilationLayerBlock));
         if (coverage(level) >= ExpeditionTuning.integer(level.dimension(),
@@ -262,7 +264,7 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
             // Audible creep: every new face lands with a wet sculk
             // spread — close enough and you hear the colony reaching.
             level.playSound(null, move.cell(),
-                    SoundEvents.SCULK_BLOCK_SPREAD, SoundSource.BLOCKS,
+                    ModSounds.LAYER_SPREAD.get(), SoundSource.BLOCKS,
                     0.9f, 0.75f);
             setChanged();
         }

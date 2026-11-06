@@ -11,7 +11,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
+import com.expeditions.registry.ModSounds;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -63,7 +63,7 @@ public final class CompassResonance {
             float note = age / 6.0f;
             float pitch = direction > 0 ? 0.8f + note * 0.16f
                     : direction < 0 ? 1.12f - note * 0.16f : 0.96f;
-            mc.player.playSound(SoundEvents.AMETHYST_BLOCK_CHIME, 0.35f, pitch);
+            mc.player.playSound(ModSounds.COMPASS_CHIME.get(), 0.35f, pitch);
         }
     }
 

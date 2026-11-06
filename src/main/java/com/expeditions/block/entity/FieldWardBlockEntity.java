@@ -23,10 +23,14 @@ public final class FieldWardBlockEntity extends BlockEntity {
     public boolean ignite(ItemStack cell){
         if(level==null||level.isClientSide||remaining()>0||!ResonanceCellItem.spend(cell,FieldEquipment.WARD_COST))return false;
         until=level.getGameTime()+FieldEquipment.WARD_TICKS;setChanged();
-        level.setBlockAndUpdate(worldPosition,getBlockState().setValue(BlockStateProperties.LIT,true));return true;
+        level.setBlockAndUpdate(worldPosition,getBlockState().setValue(BlockStateProperties.LIT,true));
+        level.playSound(null,worldPosition,com.expeditions.registry.ModSounds.FIELD_WARD_IGNITE.get(),
+                net.minecraft.sounds.SoundSource.BLOCKS,.8f,1.0f);return true;
     }
     public static void tick(Level l,BlockPos p,BlockState s,FieldWardBlockEntity be){
-        if(s.getValue(BlockStateProperties.LIT)&&be.remaining()==0)l.setBlockAndUpdate(p,s.setValue(BlockStateProperties.LIT,false));
+        if(s.getValue(BlockStateProperties.LIT)&&be.remaining()==0){l.setBlockAndUpdate(p,s.setValue(BlockStateProperties.LIT,false));
+            l.playSound(null,p,com.expeditions.registry.ModSounds.FIELD_WARD_EXTINGUISH.get(),
+                    net.minecraft.sounds.SoundSource.BLOCKS,.7f,1.0f);}
     }
     /** Small loaded-chunk scan; never force-load a camp or keep it running offline. */
     public static boolean covers(ServerLevel l,BlockPos p){

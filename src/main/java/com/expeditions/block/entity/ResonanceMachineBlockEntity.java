@@ -118,7 +118,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
             if(!simple && be.kind()==Kind.LIVING && be.fuelTicks==0 && be.energy()<ResonanceProcessing.CAPACITY
                     && !paused && be.inventory.getStackInSlot(0).is(ModItems.ASSIMILATION_ESSENCE.get())){
                 be.inventory.extractItem(0,1,false);be.fuelTicks=ResonancePower.LIVING_FUEL_TICKS;
-                level.playSound(null,pos,SoundEvents.WARDEN_HEARTBEAT,SoundSource.BLOCKS,.25f,1.2f);
+                level.playSound(null,pos,ModSounds.RESONANCE_FUEL.get(),SoundSource.BLOCKS,.25f,1.2f);
             }
             quiet=simple||Stillness.suppresses(level,pos) || ExpeditionManager.get(level.getServer()).savedData().isDimensionCleared(level.dimension().location().toString());
             proven=!simple&&be.kind()==Kind.SEVERED&&SeveranceCoreItem.valid(level,be.inventory.getStackInSlot(0));
@@ -139,17 +139,17 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                     if(be.progress>=ResonanceProcessing.PROCESS_TICKS){
                         var next=output.isEmpty()?new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()):output.copyWithCount(output.getCount()+1);
                         be.inventory.setStackInSlot(1,next);be.reserved=false;be.progress=0;
-                        level.playSound(null,pos,SoundEvents.AMETHYST_BLOCK_CHIME,SoundSource.BLOCKS,.45f,1.2f);
+                        level.playSound(null,pos,ModSounds.RESONANCE_COMPLETE.get(),SoundSource.BLOCKS,.45f,1.2f);
                     }
                 }
             }
         }
         if (working && !be.breach && level.getGameTime() >= be.nextWorkSound) {
             var sound = switch (be.kind()) {
-                case DORMANT -> SoundEvents.WOODEN_TRAPDOOR_CLOSE;
-                case LIVING -> SoundEvents.WARDEN_HEARTBEAT;
-                case SEVERED -> SoundEvents.AMETHYST_BLOCK_RESONATE;
-                case CONDENSER -> SoundEvents.UI_STONECUTTER_TAKE_RESULT;
+                case DORMANT -> ModSounds.RESONANCE_WORK_DORMANT.get();
+                case LIVING -> ModSounds.RESONANCE_WORK_LIVING.get();
+                case SEVERED -> ModSounds.RESONANCE_WORK_SEVERED.get();
+                case CONDENSER -> ModSounds.RESONANCE_WORK_CONDENSER.get();
             };
             level.playSound(null, pos, sound, SoundSource.BLOCKS, be.kind() == Kind.SEVERED ? 0.65f : 0.32f,
                     be.dynamo() ? 0.75f : 0.9f);

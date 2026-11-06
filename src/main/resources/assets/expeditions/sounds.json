@@ -1,4 +1,43 @@
 {
+  "ambient.shatterwake.amber_reef": {
+    "category": "ambient",
+    "sounds": [
+      "expeditions:ambient/amber_reef"
+    ],
+    "stream": true,
+    "subtitle": "subtitles.expeditions.ambient.shatterwake.amber_reef"
+  },
+  "ambient.shatterwake.buried_canopy": {
+    "category": "ambient",
+    "sounds": [
+      "expeditions:ambient/buried_canopy"
+    ],
+    "stream": true,
+    "subtitle": "subtitles.expeditions.ambient.shatterwake.buried_canopy"
+  },
+  "ambient.shatterwake.cinder_shards": {
+    "category": "ambient",
+    "sounds": [
+      "expeditions:ambient/cinder_shards"
+    ],
+    "stream": true,
+    "subtitle": "subtitles.expeditions.ambient.shatterwake.cinder_shards"
+  },
+  "ambient.shatterwake.mood": {
+    "category": "ambient",
+    "sounds": [
+      "expeditions:ambient/mood"
+    ],
+    "subtitle": "subtitles.expeditions.ambient.shatterwake.mood"
+  },
+  "ambient.shatterwake.pale_drift": {
+    "category": "ambient",
+    "sounds": [
+      "expeditions:ambient/pale_drift"
+    ],
+    "stream": true,
+    "subtitle": "subtitles.expeditions.ambient.shatterwake.pale_drift"
+  },
   "block.assimilation_heart.beat": {
     "sounds": [
       "expeditions:heart/beat"
@@ -54,7 +93,9 @@
     "sounds": [
       "expeditions:portal/hum"
     ],
-    "subtitle": "subtitles.expeditions.block.expedition_portal.hum"
+    "stream": true,
+    "subtitle": "subtitles.expeditions.block.expedition_portal.hum",
+    "volume": 0.8
   },
   "block.expedition_portal.open": {
     "sounds": [
@@ -116,11 +157,29 @@
     ],
     "subtitle": "subtitles.expeditions.block.resonance_machine.fuel"
   },
-  "block.resonance_machine.work": {
+  "block.resonance_machine.work.condenser": {
     "sounds": [
-      "expeditions:resonance/work"
+      "expeditions:resonance/condenser_work"
     ],
-    "subtitle": "subtitles.expeditions.block.resonance_machine.work"
+    "subtitle": "subtitles.expeditions.block.resonance_machine.work.condenser"
+  },
+  "block.resonance_machine.work.dormant": {
+    "sounds": [
+      "expeditions:resonance/dormant_work"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.work.dormant"
+  },
+  "block.resonance_machine.work.living": {
+    "sounds": [
+      "expeditions:resonance/living_work"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.work.living"
+  },
+  "block.resonance_machine.work.severed": {
+    "sounds": [
+      "expeditions:resonance/severed_work"
+    ],
+    "subtitle": "subtitles.expeditions.block.resonance_machine.work.severed"
   },
   "block.sap_vessel.fill": {
     "sounds": [
@@ -141,12 +200,14 @@
     "subtitle": "subtitles.expeditions.block.wayroot.graft"
   },
   "entity.rootbound_guardian.death": {
+    "attenuation_distance": 32,
     "sounds": [
       "expeditions:guardian/death"
     ],
     "subtitle": "subtitles.expeditions.entity.rootbound_guardian.death"
   },
   "entity.rootbound_guardian.enrage": {
+    "attenuation_distance": 32,
     "sounds": [
       "expeditions:guardian/enrage"
     ],
@@ -160,6 +221,7 @@
     "subtitle": "subtitles.expeditions.entity.rootbound_guardian.hurt"
   },
   "entity.rootbound_guardian.strike": {
+    "attenuation_distance": 24,
     "sounds": [
       "expeditions:guardian/strike"
     ],
@@ -183,12 +245,6 @@
     ],
     "subtitle": "subtitles.expeditions.event.expedition.fail"
   },
-  "event.expedition.redeem": {
-    "sounds": [
-      "expeditions:event/redeem"
-    ],
-    "subtitle": "subtitles.expeditions.event.expedition.redeem"
-  },
   "event.expedition.start": {
     "sounds": [
       "expeditions:event/start"
@@ -201,7 +257,14 @@
     ],
     "subtitle": "subtitles.expeditions.event.frontier.warning"
   },
+  "event.horde.cue": {
+    "sounds": [
+      "expeditions:horde/cue"
+    ],
+    "subtitle": "subtitles.expeditions.event.horde.cue"
+  },
   "event.horde.spawn": {
+    "attenuation_distance": 24,
     "sounds": [
       "expeditions:horde/spawn"
     ],
@@ -214,10 +277,23 @@
     "subtitle": "subtitles.expeditions.event.infection.heartbeat"
   },
   "event.organism.roar": {
+    "attenuation_distance": 32,
     "sounds": [
       "expeditions:organism/roar"
     ],
     "subtitle": "subtitles.expeditions.event.organism.roar"
+  },
+  "fluid.return_sap.empty": {
+    "sounds": [
+      "expeditions:sap/empty"
+    ],
+    "subtitle": "subtitles.expeditions.fluid.return_sap.empty"
+  },
+  "fluid.return_sap.fill": {
+    "sounds": [
+      "expeditions:sap/fill"
+    ],
+    "subtitle": "subtitles.expeditions.fluid.return_sap.fill"
   },
   "item.expedition_compass.chime": {
     "sounds": [

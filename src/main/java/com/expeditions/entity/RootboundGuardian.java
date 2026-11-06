@@ -3,6 +3,7 @@ package com.expeditions.entity;
 import com.expeditions.core.GuardianAttack;
 import com.expeditions.server.ExpeditionManager;
 import java.util.EnumSet;
+import com.expeditions.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -16,7 +17,6 @@ import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
@@ -99,7 +99,7 @@ public final class RootboundGuardian extends Monster {
         if (!enraged() && getHealth() <= getMaxHealth() * 0.5f) {
             entityData.set(ENRAGED, true);
             bossBar.setColor(BossEvent.BossBarColor.YELLOW);
-            server.playSound(null, blockPosition(), SoundEvents.WARDEN_ROAR, SoundSource.HOSTILE, 0.8f, 0.65f);
+            server.playSound(null, blockPosition(), ModSounds.GUARDIAN_ENRAGE.get(), SoundSource.HOSTILE, 0.8f, 0.65f);
             server.sendParticles(ParticleTypes.FLAME, getX(), getY() + 1.8, getZ(), 35, 0.7, 1.1, 0.7, 0.02);
         }
         int windup = windupTicks();
@@ -125,7 +125,7 @@ public final class RootboundGuardian extends Monster {
             strike = next == GuardianAttack.ROOT_BURST ? target.position() : position();
             entityData.set(WINDUP, next.warningTicks());
             sequence++;
-            server.playSound(null, blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE,
+            server.playSound(null, blockPosition(), ModSounds.GUARDIAN_WINDUP.get(),
                     SoundSource.HOSTILE, 1.1f, switch (next) {
                         case SWEEP -> 0.55f;
                         case ROOT_BURST -> 0.9f;
@@ -177,7 +177,7 @@ public final class RootboundGuardian extends Monster {
 
     private void strike(ServerLevel level) {
         double r = attack().radius();
-        level.playSound(null, BlockPos.containing(strike), SoundEvents.IRON_GOLEM_ATTACK,
+        level.playSound(null, BlockPos.containing(strike), ModSounds.GUARDIAN_STRIKE.get(),
                 SoundSource.HOSTILE, 1.6f, 0.55f);
         if (attack() == GuardianAttack.ROOT_RING) {
             drawRing(level, (r + attack().innerRadius()) / 2, ParticleTypes.POOF);
@@ -212,8 +212,8 @@ public final class RootboundGuardian extends Monster {
     @Override public void startSeenByPlayer(ServerPlayer player) { super.startSeenByPlayer(player); bossBar.addPlayer(player); }
     @Override public void stopSeenByPlayer(ServerPlayer player) { super.stopSeenByPlayer(player); bossBar.removePlayer(player); }
     @Override public void remove(RemovalReason reason) { bossBar.removeAllPlayers(); super.remove(reason); }
-    @Override protected SoundEvent getHurtSound(DamageSource source) { return SoundEvents.WOOD_BREAK; }
-    @Override protected SoundEvent getDeathSound() { return SoundEvents.WARDEN_DEATH; }
+    @Override protected SoundEvent getHurtSound(DamageSource source) { return ModSounds.GUARDIAN_HURT.get(); }
+    @Override protected SoundEvent getDeathSound() { return ModSounds.GUARDIAN_DEATH.get(); }
     @Override public boolean removeWhenFarAway(double distance) { return false; }
     @Override protected boolean shouldDespawnInPeaceful() { return false; }
 

@@ -181,6 +181,17 @@ def reverb(x, wet=0.22, fb=0.72):
     return [x[i] + acc[i] * scale for i in range(len(x))]
 
 
+def make_loop(x, fade=0.5):
+    """Rotate-and-blend loop trick: shift left by `fade` seconds and
+    append a segment crossfaded from the tail into the head. The old
+    seam ends up inside the crossfade, and the file boundary becomes
+    x[F-1] -> x[F] — continuous by construction."""
+    F = int(fade * SR)
+    y = [x[len(x) - F + i] * (1 - i / F) + x[i] * (i / F)
+         for i in range(F)]
+    return x[F:] + y
+
+
 def finalize(x, peak=PEAK, tail_pad=0.05):
     m = max((abs(s) for s in x), default=0.0)
     if m > 0:
@@ -442,11 +453,13 @@ def b_portal_hum():
             out[i] += g * math.sin(2 * math.pi * cyc_f * i / n)
     lfo = [0.6 + 0.4 * math.sin(2 * math.pi * (2 / dur) * i / n)
            for i in range(n)]
-    air = lp(bp(noise(dur, 41), 900, 1.2), 2200)
+    # noise/whisper layers aren't periodic — loop-blend them before
+    # mixing onto the (already seamless) carriers
+    air = make_loop(lp(bp(noise(dur, 41), 900, 1.2), 2200))
     for i in range(n):
         out[i] += air[i] * 0.22 * lfo[i]
     # whisper tucked under — looped so it stays seamless
-    w = whisper(dur, 43, gain=0.1)
+    w = make_loop(whisper(dur, 43, gain=0.1))
     for i in range(n):
         out[i] += w[i]
     return finalize(out)
@@ -500,20 +513,6 @@ def b_event_fail():
     grunt = formant_growl(0.7, 70, 71, formants=(250, 600), trem_hz=11.0)
     mix(out, lp(grunt, 900), 0.4, 1.1)
     return finalize(reverb(out, wet=0.3))
-
-
-def b_event_redeem():
-    """Bone rattle: knuckle-bones shaken in a fist, then a dead clunk."""
-    out = buf(0.95)
-    rng = random.Random(81)
-    for i in range(5):
-        t = 0.02 + i * 0.07 + rng.uniform(0, 0.03)
-        f = rng.uniform(350, 800)
-        knock = apply_env(bp(noise(0.05, 80 + i), f, 4.0),
-                          decay_tau=0.02, sustain=0.0)
-        mix(out, knock, rng.uniform(0.3, 0.55), t)
-    clunk(out, 0.42, gain=0.7, freq=75)
-    return finalize(out)
 
 
 def b_compass_ping():
@@ -633,33 +632,6 @@ def b_resonance_fuel():
     gulp = squelch(0.4, 221, drips=1, f_sweep=(500, 150))
     mix(out, gulp, 0.7)
     mix(out, heartbeat(0.6, lub_f=62, dub_f=50, wet=0.0, seed=223), 0.4, 0.25)
-    return finalize(out)
-
-
-def b_resonance_work():
-    """Loopable operating thrum — beating detuned subs under a low
-    rumble of moving parts, with an irregular laboring pulse. Machine
-    noise, not a chord."""
-    dur = 2.0
-    n = int(dur * SR)
-    out = buf(dur)
-    # detuned carriers — the 4.5Hz beat is the labored breathing
-    for f, g in ((52.0, 0.5), (56.5, 0.42), (104.0, 0.14), (127.0, 0.08)):
-        cycles = round(f * dur)
-        cyc_f = cycles / dur
-        for i in range(n):
-            out[i] += g * math.sin(2 * math.pi * cyc_f * i / n)
-    # irregular pulse: two incommensurate LFOs multiplied
-    rng = random.Random(225)
-    ph2 = rng.uniform(0, 6)
-    pulse = [max(0.0, math.sin(2 * math.pi * (3 / dur) * i / n)) *
-             (0.5 + 0.5 * math.sin(2 * math.pi * (7 / dur) * i / n + ph2))
-             for i in range(n)]
-    rumble = lp(noise(dur, 227), 240)
-    grind = lp(bp(noise(dur, 229), 480, 2.0), 900)
-    for i in range(n):
-        out[i] = out[i] * (0.55 + 0.45 * pulse[i]) + \
-            rumble[i] * 0.35 + grind[i] * 0.1 * pulse[i]
     return finalize(out)
 
 
@@ -806,6 +778,65 @@ def b_device_destroy():
     return finalize(reverb(out, wet=0.25))
 
 
+def b_resonance_work_dormant():
+    """DORMANT — a dead hollow knock on a cold casing."""
+    out = buf(0.5)
+    wood_knock(out, 0.0, gain=0.8, freq=140)
+    res = apply_env(sine(90, 0.3), decay_tau=0.15, sustain=0.0)
+    mix(out, res, 0.3)
+    return finalize(out)
+
+
+def b_resonance_work_living():
+    """LIVING — the heartbeat lives in the casing now."""
+    x = heartbeat(0.7, lub_f=56, dub_f=44, wet=0.3, seed=351)
+    return finalize(lp(x, 800))
+
+
+def b_resonance_work_severed():
+    """SEVERED — a resonant ring struck soft, tuned slightly flat."""
+    out = buf(1.0)
+    toll(out, note(52) * 2 ** (-0.03), 0.0, 0.9, 0.5)
+    return finalize(out)
+
+
+def b_resonance_work_condenser():
+    """CONDENSER — a slow grind, plate on plate, then settling."""
+    out = buf(0.7)
+    grind = apply_env(bp_sweep(noise(0.6, 353), 300, 700, 4.0),
+                      attack=0.05, decay_tau=0.25, sustain=0.0)
+    mix(out, grind, 0.6)
+    clunk(out, 0.45, gain=0.4, freq=100)
+    return finalize(out)
+
+
+def b_horde_cue():
+    """The horde staging on the approach — a branch underfoot, then
+    the whisper knows where you are."""
+    out = buf(1.1)
+    crack = apply_env(bp(noise(0.12, 355), 900, 2.5), decay_tau=0.05,
+                    sustain=0.0)
+    mix(out, crack, 0.8)
+    wood_knock(out, 0.02, gain=0.5, freq=280)
+    mix(out, whisper(0.8, 357, gain=0.2), 0.25)
+    return finalize(out)
+
+
+def b_sap_fill():
+    """Sap scooped in — same glug family as the vessel."""
+    return b_sap_vessel_fill()
+
+
+def b_sap_empty():
+    """Pouring sap out — a thick wet splat, slower than water."""
+    out = buf(1.0)
+    pour = apply_env(lp(noise(0.7, 361), 700), attack=0.15,
+                     decay_tau=0.3, sustain=0.0)
+    mix(out, pour, 0.5)
+    mix(out, squelch(0.45, 363, drips=3, f_sweep=(400, 150)), 0.4, 0.3)
+    return finalize(out)
+
+
 def b_cell_insert():
     """Socketing a resonance cell: clunk, contacts biting, the hum
     waking."""
@@ -914,13 +945,117 @@ def b_journal_discovery():
                           decay_tau=0.05, sustain=0.0)
         mix(out, swish, 0.5 - 0.15 * i, at)
     mix(out, whisper(0.9, 297, gain=0.25), 0.3)
-    return finalize(out)
+    return finalize(lp(out, 5200))  # soften digital hiss off the top
 
 
 # ---------------------------------------------------------------- registry
 # (event key, [relative ogg paths], builder-per-file or shared builder)
 def _variants(builder, seeds):
     return [functools.partial(builder, s) for s in seeds]
+
+
+def _ambient_loop(dur, seed, beds):
+    """Shared skeleton for the Shatterwake beds: detuned sub carriers on
+    integer cycles, loop-blended texture layers, finalize. `beds` is a
+    list of (signal, gain) mixed onto the carriers."""
+    n = int(dur * SR)
+    out = buf(dur)
+    for f, g in ((36.0, 0.5), (39.7, 0.38), (74.0, 0.18)):
+        cycles = round(f * dur)
+        cyc_f = cycles / dur
+        for i in range(n):
+            out[i] += g * math.sin(2 * math.pi * cyc_f * i / n)
+    for sig, g in beds:
+        for i in range(n):
+            out[i] += sig[i] * g
+    return finalize(out)
+
+
+def b_ambient_amber_reef():
+    """Amber reef: wet resonance — the dimension's sap veins glistening.
+    Low drone, slow squelch grains, sparse deep drips, a whisper that
+    never lands."""
+    dur = 9.0
+    drip = squelch(dur, 501, drips=7, f_sweep=(300, 120))
+    wet = make_loop(lp(drip, 700), fade=0.8)
+    w = make_loop(whisper(dur, 503, gain=0.09), fade=0.8)
+    air = make_loop(lp(bp(noise(dur, 505), 500, 1.0), 900), fade=0.8)
+    return _ambient_loop(dur, 507, [(wet, 0.5), (w, 1.0), (air, 0.3)])
+
+
+def b_ambient_buried_canopy():
+    """Buried canopy: a forest still creaking under the soil — muffled
+    wood groans and root-scratch over the sub bed."""
+    dur = 9.0
+    rng = random.Random(511)
+    groans = buf(dur)
+    for i in range(4):
+        t = rng.uniform(0.4, dur - 1.6)
+        f = rng.uniform(120, 260)
+        g = creak(1.3, f * 1.3, f * 0.8, 513 + i)
+        mix(groans, lp(g, 600), rng.uniform(0.25, 0.4), t)
+    scratch = make_loop(lp(hp(noise(dur, 517), 1500), 5000), fade=0.8)
+    lfo = [0.5 + 0.5 * math.sin(2 * math.pi * i / (len(scratch) / 3.7))
+           for i in range(len(scratch))]
+    for i in range(len(scratch)):
+        scratch[i] *= 0.12 * lfo[i]
+    return _ambient_loop(dur, 519, [(groans, 1.0), (scratch, 1.0)])
+
+
+def b_ambient_cinder_shards():
+    """Cinder shards: dry ash hiss, settling crackle ticks, and a deep
+    seismic rumble that never fully arrives."""
+    dur = 9.0
+    n = int(dur * SR)
+    ash = make_loop(lp(hp(noise(dur, 523), 900), 6000), fade=0.8)
+    lfo = [0.35 + 0.65 * (0.5 + 0.5 * math.sin(2 * math.pi * 0.13 * i / SR))
+           for i in range(n)]
+    for i in range(n):
+        ash[i] *= 0.16 * lfo[i]
+    rng = random.Random(529)
+    ticks = buf(dur)
+    for i in range(9):
+        t = rng.uniform(0.2, dur - 0.2)
+        tick = apply_env(bp(noise(0.02, 531 + i), rng.uniform(1800, 3400), 5.0),
+                         decay_tau=0.008, sustain=0.0)
+        mix(ticks, tick, rng.uniform(0.1, 0.3), t)
+    rumble = sine(lambda t: 27 + 4 * math.sin(2 * math.pi * 0.09 * t), dur)
+    rumble = [r * (0.5 + 0.5 * math.sin(2 * math.pi * 0.07 * i / SR))
+              for i, r in enumerate(rumble)]
+    return _ambient_loop(dur, 533, [(ash, 1.0), (ticks, 1.0), (rumble, 0.5)])
+
+
+def b_ambient_pale_drift():
+    """Pale drift: cold hollow wind through a place that forgot warmth —
+    a long band sweep, a thin dissonant air layer, one far knock."""
+    dur = 9.0
+    n = int(dur * SR)
+    wind = bp_sweep(noise(dur, 537), 220, 640, 1.6)
+    wind = make_loop(lp(wind, 1400), fade=0.8)
+    lfo = [0.4 + 0.6 * (0.5 + 0.5 * math.sin(2 * math.pi * 0.11 * i / SR))
+           for i in range(n)]
+    for i in range(n):
+        wind[i] *= 0.3 * lfo[i]
+    thin = drone(dur, (487.0, 491.0), gain=0.06, wobble_hz=0.21,
+                 wobble_depth=0.004)
+    thin = make_loop([t * (0.5 + 0.5 * math.sin(2 * math.pi * 0.17 * i / SR))
+                      for i, t in enumerate(thin)], fade=0.8)
+    knock = buf(dur)
+    wood_knock(knock, 6.1, gain=0.3, freq=210, seed=539)
+    knock = reverb(knock, wet=0.5)
+    return _ambient_loop(dur, 541, [(wind, 1.0), (thin, 1.0), (knock, 1.0)])
+
+
+def b_ambient_shatterwake_mood():
+    """The mood sting for dark pockets: a whispered almost-word rising
+    out of silence, then one low pulse — it noticed you."""
+    out = buf(3.4)
+    mix(out, whisper(1.8, 545, gain=0.35), 0.4)
+    pulse = apply_env(sine(52, 0.9), attack=0.02, decay_tau=0.25,
+                      sustain=0.0)
+    mix(out, lp(pulse, 220), 0.8, 2.1)
+    mix(out, breath(1.1, 547, attack=0.2, cutoff=500), 0.3, 1.9)
+    return finalize(reverb(out, wet=0.45))
 
 
 REGISTRY = [
@@ -942,8 +1077,6 @@ REGISTRY = [
      ["event/complete"], [b_event_complete]),
     ("event.expedition.fail",
      ["event/fail"], [b_event_fail]),
-    ("event.expedition.redeem",
-     ["event/redeem"], [b_event_redeem]),
     ("item.expedition_compass.ping",
      ["compass/ping"], [b_compass_ping]),
     ("item.expedition_compass.chime",
@@ -965,8 +1098,6 @@ REGISTRY = [
      ["bloom_source/close"], [b_bloom_source_close]),
     ("block.resonance_machine.fuel",
      ["resonance/fuel"], [b_resonance_fuel]),
-    ("block.resonance_machine.work",
-     ["resonance/work"], [b_resonance_work]),
     ("block.resonance_machine.complete",
      ["resonance/complete"], [b_resonance_complete]),
     ("block.recall_tree.answer",
@@ -1007,7 +1138,47 @@ REGISTRY = [
      ["frontier/warning"], [b_frontier_warning]),
     ("item.expedition_field_journal.discovery",
      ["journal/discovery"], [b_journal_discovery]),
+    ("block.resonance_machine.work.dormant",
+     ["resonance/dormant_work"], [b_resonance_work_dormant]),
+    ("block.resonance_machine.work.living",
+     ["resonance/living_work"], [b_resonance_work_living]),
+    ("block.resonance_machine.work.severed",
+     ["resonance/severed_work"], [b_resonance_work_severed]),
+    ("block.resonance_machine.work.condenser",
+     ["resonance/condenser_work"], [b_resonance_work_condenser]),
+    ("event.horde.cue",
+     ["horde/cue"], [b_horde_cue]),
+    ("fluid.return_sap.fill",
+     ["sap/fill"], [b_sap_fill]),
+    ("fluid.return_sap.empty",
+     ["sap/empty"], [b_sap_empty]),
+    ("ambient.shatterwake.amber_reef",
+     ["ambient/amber_reef"], [b_ambient_amber_reef]),
+    ("ambient.shatterwake.buried_canopy",
+     ["ambient/buried_canopy"], [b_ambient_buried_canopy]),
+    ("ambient.shatterwake.cinder_shards",
+     ["ambient/cinder_shards"], [b_ambient_cinder_shards]),
+    ("ambient.shatterwake.pale_drift",
+     ["ambient/pale_drift"], [b_ambient_pale_drift]),
+    ("ambient.shatterwake.mood",
+     ["ambient/mood"], [b_ambient_shatterwake_mood]),
 ]
+
+# Extra sounds.json fields per event (stream big loops, widen
+# attenuation for the loud stuff)
+EXTRAS = {
+    "block.expedition_portal.hum": {"stream": True, "volume": 0.8},
+    "event.organism.roar": {"attenuation_distance": 32},
+    "event.horde.spawn": {"attenuation_distance": 24},
+    "entity.rootbound_guardian.strike": {"attenuation_distance": 24},
+    "entity.rootbound_guardian.enrage": {"attenuation_distance": 32},
+    "entity.rootbound_guardian.death": {"attenuation_distance": 32},
+    "ambient.shatterwake.amber_reef": {"category": "ambient", "stream": True},
+    "ambient.shatterwake.buried_canopy": {"category": "ambient", "stream": True},
+    "ambient.shatterwake.cinder_shards": {"category": "ambient", "stream": True},
+    "ambient.shatterwake.pale_drift": {"category": "ambient", "stream": True},
+    "ambient.shatterwake.mood": {"category": "ambient"},
+}
 
 
 def main():
@@ -1021,10 +1192,12 @@ def main():
             sf.write(path, data, SR, format="OGG", subtype="VORBIS",
                      compression_level=0.7)
             print(f"  {rel + '.ogg':<28} {len(data) / SR:5.2f}s")
-        sounds_json[event] = {
+        entry = {
             "sounds": [f"expeditions:{p}" for p in paths],
             "subtitle": f"subtitles.expeditions.{event}",
         }
+        entry.update(EXTRAS.get(event, {}))
+        sounds_json[event] = entry
     with open(os.path.join(ROOT, "sounds.json"), "w") as f:
         json.dump(sounds_json, f, indent=2, sort_keys=True)
         f.write("\n")

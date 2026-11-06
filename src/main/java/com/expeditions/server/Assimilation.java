@@ -2,6 +2,7 @@ package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.registry.ModAttachments;
+import com.expeditions.registry.ModSounds;
 import com.expeditions.registry.ModItems;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.core.InfectionProgress;
@@ -147,7 +148,7 @@ public final class Assimilation {
             }
         }
         if (infection > 0) {
-            player.playNotifySound(net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT,
+            player.playNotifySound(ModSounds.INFECTION_HEARTBEAT.get(),
                     net.minecraft.sounds.SoundSource.PLAYERS,
                     0.25f + stage * 0.2f, 1.0f + stage * 0.08f);
         }

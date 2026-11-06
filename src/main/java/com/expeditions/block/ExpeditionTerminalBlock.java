@@ -70,6 +70,9 @@ public class ExpeditionTerminalBlock extends Block {
                 String dim=level.dimension().location().toString();
                 boolean ready=ExpeditionManager.get(server.server).canAttuneCore(dim);
                 if(ready)com.expeditions.item.SeveranceCoreItem.bind(stack,dim);
+                server.playNotifySound(ready?com.expeditions.registry.ModSounds.TERMINAL_ACTIVATE.get()
+                        :com.expeditions.registry.ModSounds.TERMINAL_REFUSE.get(),
+                        net.minecraft.sounds.SoundSource.BLOCKS,.6f,1.0f);
                 player.displayClientMessage(Component.translatable(ready?"machine.expeditions.core_attuned":"machine.expeditions.core_refused"),true);
                 server.inventoryMenu.broadcastChanges();
             }
@@ -81,6 +84,8 @@ public class ExpeditionTerminalBlock extends Block {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             String key = stack.get(ModDataComponents.ATTUNEMENT_KEY.get());
             if (key == null || key.isBlank()) {
+                serverPlayer.playNotifySound(com.expeditions.registry.ModSounds.TERMINAL_REFUSE.get(),
+                        net.minecraft.sounds.SoundSource.BLOCKS,.6f,1.0f);
                 serverPlayer.sendSystemMessage(Component.translatable(
                         "message.expeditions.attunement_inert"));
             } else if (ExpeditionManager.get(level.getServer())
@@ -88,6 +93,8 @@ public class ExpeditionTerminalBlock extends Block {
                 serverPlayer.sendSystemMessage(Component.translatable(
                         "message.expeditions.attuned", key));
             } else {
+                serverPlayer.playNotifySound(com.expeditions.registry.ModSounds.TERMINAL_REFUSE.get(),
+                        net.minecraft.sounds.SoundSource.BLOCKS,.6f,1.0f);
                 serverPlayer.sendSystemMessage(Component.translatable(
                         "message.expeditions.already_attuned", key));
             }
@@ -108,11 +115,15 @@ public class ExpeditionTerminalBlock extends Block {
                     run -> reportProgress(serverPlayer, run),
                     // The terminal's job is configuring the expedition: any
                     // click opens the options menu; its start button launches.
-                    () -> serverPlayer.openMenu(new SimpleMenuProvider(
+                    () -> {
+                        serverPlayer.playNotifySound(com.expeditions.registry.ModSounds.TERMINAL_ACTIVATE.get(),
+                                net.minecraft.sounds.SoundSource.BLOCKS,.6f,1.0f);
+                        serverPlayer.openMenu(new SimpleMenuProvider(
                             (id, inventory, p) -> new ExpeditionMenu(
                                     id, inventory, manager, pos,
                                     level.dimension().location().toString()),
-                            Component.translatable("gui.expeditions.terminal"))));
+                            Component.translatable("gui.expeditions.terminal")));
+                    });
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

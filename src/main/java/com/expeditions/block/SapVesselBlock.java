@@ -106,6 +106,8 @@ public class SapVesselBlock extends Block implements EntityBlock {
             if (!level.isClientSide && level.getBlockEntity(pos) instanceof SapVesselBlockEntity vessel) {
                 int used = vessel.recycle(stack, false);
                 if (used > 0) {
+                    level.playSound(null, pos, com.expeditions.registry.ModSounds.SAP_VESSEL_RECYCLE.get(),
+                            net.minecraft.sounds.SoundSource.BLOCKS, .8f, 1.0f);
                     stack.shrink(used);
                     player.getInventory().setChanged();
                     player.displayClientMessage(Component.translatable("message.expeditions.sap_recycled", used), true);
@@ -126,6 +128,8 @@ public class SapVesselBlock extends Block implements EntityBlock {
                     player.displayClientMessage(Component.translatable("message.expeditions.sap_full"), true);
                 } else {
                     vessel.tank().fill(sap, FluidAction.EXECUTE);
+                    level.playSound(null, pos, com.expeditions.registry.ModSounds.SAP_VESSEL_FILL.get(),
+                            net.minecraft.sounds.SoundSource.BLOCKS, .8f, 1.0f);
                     essence.shrink(1);
                     knot.shrink(1);
                     player.setItemInHand(hand, new ItemStack(Items.BUCKET));

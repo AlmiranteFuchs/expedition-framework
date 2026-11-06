@@ -94,6 +94,10 @@ public class ExpeditionPortalBlock extends Block {
             level.addParticle(net.minecraft.core.particles.ParticleTypes.SMALL_FLAME,
                     x, y, z, (pos.getX() + 0.5 - x) * 0.02, 0.005, (pos.getZ() + 0.5 - z) * 0.02);
         }
+        if (random.nextInt(64) == 0) {
+            level.playLocalSound(pos, com.expeditions.registry.ModSounds.PORTAL_HUM.get(),
+                    net.minecraft.sounds.SoundSource.BLOCKS, 0.5f, 1.0f, false);
+        }
     }
 
     @Override
