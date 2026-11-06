@@ -1,6 +1,6 @@
 {
   "type": "minecraft:add",
-  "argument1": -0.115,
+  "argument1": -0.165,
   "argument2": {
     "type": "minecraft:mul",
     "argument1": 3.0,
@@ -9,8 +9,8 @@
       "argument": {
         "type": "minecraft:noise",
         "noise": "expeditions:shatterwake/fault",
-        "xz_scale": 0.9,
-        "y_scale": 0
+        "xz_scale": 1.05,
+        "y_scale": 0.085
       }
     }
   }

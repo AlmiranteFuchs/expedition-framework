@@ -1,0 +1,83 @@
+{
+  "type": "minecraft:max",
+  "argument1": {
+    "type": "minecraft:min",
+    "argument1": {
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:y_clamped_gradient",
+        "from_y": 98,
+        "to_y": 123,
+        "from_value": -1.0,
+        "to_value": 1.0
+      },
+      "argument2": {
+        "type": "minecraft:y_clamped_gradient",
+        "from_y": 155,
+        "to_y": 195,
+        "from_value": 1.0,
+        "to_value": -1.0
+      }
+    },
+    "argument2": {
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:add",
+        "argument1": 0.16,
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": -1,
+          "argument2": {
+            "type": "minecraft:abs",
+            "argument": {
+              "type": "minecraft:noise",
+              "noise": "expeditions:shatterwake/fault",
+              "xz_scale": 1.52,
+              "y_scale": 0.19
+            }
+          }
+        }
+      },
+      "argument2": {
+        "type": "minecraft:add",
+        "argument1": -0.05,
+        "argument2": {
+          "type": "minecraft:noise",
+          "noise": "expeditions:shatterwake/upper_mass",
+          "xz_scale": 1.57,
+          "y_scale": 0.28
+        }
+      }
+    }
+  },
+  "argument2": {
+    "type": "minecraft:min",
+    "argument1": {
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:y_clamped_gradient",
+        "from_y": 105,
+        "to_y": 121,
+        "from_value": -1.0,
+        "to_value": 1.0
+      },
+      "argument2": {
+        "type": "minecraft:y_clamped_gradient",
+        "from_y": 128,
+        "to_y": 148,
+        "from_value": 1.0,
+        "to_value": -1.0
+      }
+    },
+    "argument2": {
+      "type": "minecraft:add",
+      "argument1": -0.25,
+      "argument2": {
+        "type": "minecraft:noise",
+        "noise": "expeditions:shatterwake/shard_grain",
+        "xz_scale": 0.67,
+        "y_scale": 0.47
+      }
+    }
+  }
+}

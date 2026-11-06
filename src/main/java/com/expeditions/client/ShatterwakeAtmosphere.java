@@ -20,10 +20,21 @@ final class ShatterwakeAtmosphere {
         if (camera == null || !camera.level().dimension().location().equals(DIMENSION)
                 || event.getMode() != FogRenderer.FogMode.FOG_TERRAIN || event.getType() != FogType.NONE
                 || event.getFarPlaneDistance() < 40) return;
-        float far = Math.min(112, event.getFarPlaneDistance());
+        float far = Math.min(82, event.getFarPlaneDistance());
         event.setFarPlaneDistance(far);
-        event.setNearPlaneDistance(Math.min(22, far * .35f));
+        event.setNearPlaneDistance(Math.min(16, far * .32f));
         event.setCanceled(true);
+    }
+
+    static void onFogColor(ViewportEvent.ComputeFogColor event) {
+        var camera = event.getCamera();
+        var entity = camera.getEntity();
+        if (entity == null || !entity.level().dimension().location().equals(DIMENSION)
+                || camera.getFluidInCamera() != FogType.NONE) return;
+        // Keep silhouettes against a warm, dark haze at the fixed night hour.
+        event.setRed(Math.max(.17f, event.getRed()));
+        event.setGreen(Math.max(.155f, event.getGreen()));
+        event.setBlue(Math.max(.14f, event.getBlue()));
     }
 
     static void onTick(ClientTickEvent.Post event) {
@@ -31,7 +42,7 @@ final class ShatterwakeAtmosphere {
         var level = minecraft.level;
         var camera = minecraft.getCameraEntity();
         if (level == null || camera == null || minecraft.isPaused()
-                || !level.dimension().location().equals(DIMENSION) || camera.tickCount % 9 != 0) return;
+                || !level.dimension().location().equals(DIMENSION) || camera.tickCount % 7 != 0) return;
         var random = level.random;
         var eye = camera.getEyePosition();
         double x = eye.x + (random.nextDouble() - .5) * 24;

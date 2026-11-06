@@ -3,10 +3,14 @@
   "argument": {
     "type": "minecraft:max",
     "argument1": {
-      "type": "minecraft:min",
-      "argument1": "expeditions:shatterwake/lower_shelf",
-      "argument2": "expeditions:shatterwake/fault_lines"
+      "type": "minecraft:max",
+      "argument1": {
+        "type": "minecraft:min",
+        "argument1": "expeditions:shatterwake/lower_shelf",
+        "argument2": "expeditions:shatterwake/fault_lines"
+      },
+      "argument2": "expeditions:shatterwake/upper_shelf"
     },
-    "argument2": "expeditions:shatterwake/upper_shelf"
+    "argument2": "expeditions:shatterwake/caught_fragments"
   }
 }

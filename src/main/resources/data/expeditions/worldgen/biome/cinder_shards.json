@@ -4,17 +4,23 @@
   "downfall": 0.25,
   "carvers": {},
   "effects": {
-    "sky_color": 7830135,
-    "fog_color": 8947584,
+    "sky_color": 4146242,
+    "fog_color": 6710366,
     "water_color": 6253929,
     "water_fog_color": 3754049,
-    "grass_color": 7896432,
-    "foliage_color": 7502189,
+    "grass_color": 6449246,
+    "foliage_color": 6711904,
     "particle": {
       "options": {
         "type": "minecraft:ash"
       },
-      "probability": 0.026
+      "probability": 0.034
+    },
+    "mood_sound": {
+      "sound": "minecraft:ambient.cave",
+      "tick_delay": 3800,
+      "block_search_extent": 8,
+      "offset": 2.0
     }
   },
   "spawners": {

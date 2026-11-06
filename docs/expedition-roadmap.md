@@ -925,3 +925,22 @@ and Ultra Amplified and its cross-world material idea from World Blender.
   passed the build, alphaBundle, 203 unit tests, and 190 required GameTests.
   The failed run and rerun have separate logs.
 - Next roadmap batch: lasting reasons to revisit liberated dimensions.
+
+
+### Shatterwake collision pass — alpha.47
+
+The Shatterwake is fixed at night. Shorter warm-gray fog hides distant
+shelves while keeping near silhouettes legible. Denser ash, occasional
+cave ambience, and isolated amber light mark the route through the gloom.
+
+Tilted faults cut uneven shelves. Rock ribs and debris hang between them,
+closing off some of the original sightlines. Biome transitions are closer
+together. Exposed rock faces and remnants combine materials from multiple
+worlds within the same formation. Existing terrain keeps its old shape.
+New terrain receives the revised density and materials.
+
+The first night pass was too dark to read at a distance. The fog color
+floor corrected it in the client. Fresh terrain at 1778, 101, 647 had
+Aether holystone, Twilight Forest mazestone, Bumblezone wax, and Create
+cut andesite in the same formation. The final build passed 203 unit
+tests and 190 required GameTests.

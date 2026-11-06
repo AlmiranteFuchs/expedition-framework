@@ -11,20 +11,33 @@
     }
   },
   "argument2": {
-    "type": "minecraft:min",
+    "type": "minecraft:add",
     "argument1": {
-      "type": "minecraft:y_clamped_gradient",
-      "from_y": 29,
-      "to_y": 66,
-      "from_value": -1.0,
-      "to_value": 1.0
+      "type": "minecraft:min",
+      "argument1": {
+        "type": "minecraft:y_clamped_gradient",
+        "from_y": 29,
+        "to_y": 66,
+        "from_value": -1.0,
+        "to_value": 1.0
+      },
+      "argument2": {
+        "type": "minecraft:y_clamped_gradient",
+        "from_y": 81,
+        "to_y": 123,
+        "from_value": 1.0,
+        "to_value": -1.0
+      }
     },
     "argument2": {
-      "type": "minecraft:y_clamped_gradient",
-      "from_y": 81,
-      "to_y": 123,
-      "from_value": 1.0,
-      "to_value": -1.0
+      "type": "minecraft:mul",
+      "argument1": 0.36,
+      "argument2": {
+        "type": "minecraft:noise",
+        "noise": "expeditions:shatterwake/shard_grain",
+        "xz_scale": 0.92,
+        "y_scale": 0.34
+      }
     }
   }
 }

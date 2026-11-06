@@ -29,32 +29,38 @@ public final class ShatterwakeRemnantFeature extends Feature<NoneFeatureConfigur
         var biome = level.getBiome(origin).unwrapKey().orElseThrow().location().getPath();
         var bark = ModBlocks.STILLWOOD_ROOT.get().defaultBlockState();
         var ember = Blocks.OCHRE_FROGLIGHT.defaultBlockState();
+        var skyStone = material("sky_stone", Blocks.CALCITE.defaultBlockState());
+        var ruins = material("forest_rubble", Blocks.MOSSY_COBBLESTONE.defaultBlockState());
+        var comb = material("comb", Blocks.HONEYCOMB_BLOCK.defaultBlockState());
+        var casing = material("foundry_rubble", Blocks.ANDESITE.defaultBlockState());
         var side = context.random().nextBoolean() ? Direction.EAST : Direction.SOUTH;
         return switch (biome) {
             case "pale_drift" -> {
-                var stone = material("sky_stone", Blocks.CALCITE.defaultBlockState());
                 var log = material("skyroot", bark);
-                yield column(level, origin, stone, stone, log, stone, ember)
-                        | column(level, origin.relative(side, 2), stone, log, stone);
+                yield column(level, origin, ruins, skyStone, log, skyStone, ember)
+                        | column(level, origin.relative(side), ruins, casing, log, bark)
+                        | column(level, origin.relative(side, 2), skyStone, casing, log)
+                        | column(level, origin.relative(side.getOpposite()), skyStone, ruins, bark);
             }
             case "buried_canopy" -> {
-                var stone = material("forest_rubble", Blocks.MOSSY_COBBLESTONE.defaultBlockState());
-                yield column(level, origin, stone, stone, stone, bark, bark)
-                        | column(level, origin.relative(side, 1), stone, stone, bark)
-                        | column(level, origin.relative(side, 3), stone, bark, ember);
+                yield column(level, origin, ruins, ruins, skyStone, bark, bark)
+                        | column(level, origin.relative(side), ruins, comb, bark)
+                        | column(level, origin.relative(side, 3), casing, ruins, bark, ember)
+                        | column(level, origin.relative(side.getClockWise()), ruins, skyStone);
             }
             case "amber_reef" -> {
-                var comb = material("comb", Blocks.HONEYCOMB_BLOCK.defaultBlockState());
-                var wax = material("wax", Blocks.YELLOW_TERRACOTTA.defaultBlockState());
-                yield column(level, origin, bark, wax, comb, comb, bark)
-                        | column(level, origin.relative(side, 1), bark, comb, wax, ember)
-                        | column(level, origin.relative(side, 2), bark, wax, comb);
+                var wax = material("wax", Blocks.TERRACOTTA.defaultBlockState());
+                yield column(level, origin, ruins, wax, comb, comb, bark)
+                        | column(level, origin.relative(side), casing, comb, wax, ember)
+                        | column(level, origin.relative(side, 2), skyStone, wax, comb)
+                        | column(level, origin.relative(side.getClockWise()), ruins, comb, bark);
             }
             case "cinder_shards" -> {
-                var stone = material("foundry_rubble", Blocks.ANDESITE.defaultBlockState());
                 var basalt = Blocks.SMOOTH_BASALT.defaultBlockState();
-                yield column(level, origin, basalt, stone, stone, bark, ember)
-                        | column(level, origin.relative(side, 2), basalt, basalt, stone);
+                yield column(level, origin, basalt, casing, skyStone, casing, bark, ember)
+                        | column(level, origin.relative(side), basalt, casing, ruins)
+                        | column(level, origin.relative(side, 2), ruins, basalt, casing)
+                        | column(level, origin.relative(side.getClockWise()), basalt, comb, bark);
             }
             default -> false;
         };
