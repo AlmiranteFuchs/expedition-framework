@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#expeditions:shatterwake_bloom",
+  "features": "expeditions:shatterwake_bloom",
+  "step": "top_layer_modification"
+}

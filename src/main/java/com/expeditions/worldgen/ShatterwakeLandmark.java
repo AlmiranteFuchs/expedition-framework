@@ -6,16 +6,23 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.Direction;
 import net.minecraft.core.QuartPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureType;
-import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
-import net.minecraft.world.level.levelgen.structure.pools.JigsawPlacement;
+import net.minecraft.world.level.levelgen.structure.pieces.PiecesContainer;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
-import net.minecraft.world.level.levelgen.structure.pools.alias.PoolAliasLookup;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 
 /** A recognizable piece of a donor world's architecture anchored to a shelf. */
@@ -72,6 +79,28 @@ public final class ShatterwakeLandmark extends Structure {
         var piece = new PoolElementStructurePiece(templates, element, origin, element.getGroundLevelDelta(), rotation,
                 element.getBoundingBox(templates, origin, rotation), LiquidSettings.IGNORE_WATERLOGGING);
         return Optional.of(new GenerationStub(new BlockPos(x, floor, z), pieces -> pieces.addPiece(piece)));
+    }
+
+    @Override
+    public void afterPlace(WorldGenLevel level, StructureManager manager, ChunkGenerator generator, RandomSource random,
+            BoundingBox writable, ChunkPos chunk, PiecesContainer pieces) {
+        var bounds = pieces.calculateBoundingBox();
+        for (int x = Math.max(bounds.minX(), writable.minX()); x <= Math.min(bounds.maxX(), writable.maxX()); x++) {
+            for (int z = Math.max(bounds.minZ(), writable.minZ()); z <= Math.min(bounds.maxZ(), writable.maxZ()); z++) {
+                for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
+                    // The same band crosses adjacent walls, even where the footprint spans two chunks.
+                    int band = Math.floorMod(2 * (x - bounds.minX()) + z - bounds.minZ() + 3 * (y - bounds.minY()), 19);
+                    if (band > 8) continue;
+                    var surface = new BlockPos(x, y, z);
+                    var state = level.getBlockState(surface);
+                    if (state.isAir() || state.is(BlockTags.LEAVES) || state.hasBlockEntity()) continue;
+                    for (Direction face : Direction.values()) {
+                        var film = surface.relative(face);
+                        if (writable.isInside(film)) ShatterwakeBloomFeature.coat(level, film, face.getOpposite(), band <= 5);
+                    }
+                }
+            }
+        }
     }
 
     @Override

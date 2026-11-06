@@ -35,5 +35,8 @@ public final class ModFeatures {
     public static final DeferredHolder<Feature<?>, com.expeditions.worldgen.ShatterwakeRemnantFeature> SHATTERWAKE_REMNANT =
             FEATURES.register("shatterwake_remnant", com.expeditions.worldgen.ShatterwakeRemnantFeature::new);
 
+    public static final DeferredHolder<Feature<?>, com.expeditions.worldgen.ShatterwakeBloomFeature> SHATTERWAKE_BLOOM =
+            FEATURES.register("shatterwake_bloom", com.expeditions.worldgen.ShatterwakeBloomFeature::new);
+
     private ModFeatures() { }
 }

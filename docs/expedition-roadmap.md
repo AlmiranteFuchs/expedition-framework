@@ -964,3 +964,17 @@ separate logs. The installed-client probes also reproduced an Aether aercloud
 bounding-box crash and an empty depth-zero structure start before both fixes.
 
 Next roadmap batch is lasting reasons to revisit liberated dimensions.
+
+### The Bloom takes root in Shatterwake — alpha.49
+
+New shelves grow patches of mature, infectious film with cold scars around
+the edges. Pale Stillwood crowns occasionally push through a shelf and hold
+a single amber light. Donor landmarks keep their architecture and gain a
+band of Bloom on exposed, sturdy faces. Decoration only occupies air, and
+the feature is confined to Shatterwake.
+
+The installed client generated living and dormant film on a fresh Twilight
+hut and nearby terrain at 12008, 178, -6696. A neighboring shelf generated a
+Stillwood crown and amber light. Build and alpha bundle passed, including
+203 unit tests and 190 required GameTests. The next roadmap batch remains
+lasting reasons to revisit liberated dimensions.
