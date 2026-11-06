@@ -18,6 +18,8 @@ import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.MultifaceSpreader;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -44,10 +46,28 @@ public class AssimilationLayerBlock extends MultifaceBlock implements EntityBloc
     public static final MapCodec<AssimilationLayerBlock> CODEC =
             simpleCodec(AssimilationLayerBlock::new);
 
+    /**
+     * Decorative sprite growths rendered inside the membrane's own cell:
+     * a tuft stands on a covered floor face ({@code down}), a drip hangs
+     * under a covered ceiling face ({@code up}). Both are flat cross
+     * sprites, never geometry, and die with the face that holds them.
+     */
+    public static final BooleanProperty TUFT = BooleanProperty.create("tuft");
+    public static final BooleanProperty DRIP = BooleanProperty.create("drip");
+
     private final MultifaceSpreader spreader = new MultifaceSpreader(this);
 
     public AssimilationLayerBlock(Properties properties) {
         super(properties);
+        registerDefaultState(defaultBlockState()
+                .setValue(TUFT, false).setValue(DRIP, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(
+            StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(TUFT, DRIP);
     }
 
     @Override
@@ -118,6 +138,11 @@ public class AssimilationLayerBlock extends MultifaceBlock implements EntityBloc
                 && !canAttachTo(level, neighborPos, direction.getOpposite())) {
             BlockState cleared = state.setValue(
                     MultifaceBlock.getFaceProperty(direction), false);
+            if (direction == Direction.DOWN) {
+                cleared = cleared.setValue(TUFT, false);
+            } else if (direction == Direction.UP) {
+                cleared = cleared.setValue(DRIP, false);
+            }
             return MultifaceBlock.hasAnyFace(cleared)
                     ? cleared
                     : Blocks.AIR.defaultBlockState();
@@ -149,19 +174,47 @@ public class AssimilationLayerBlock extends MultifaceBlock implements EntityBloc
         }
     }
 
+    /**
+     * Sprouts at most one sprite growth on a membrane cell: a tuft where
+     * a floor face is covered, a drip where a ceiling face is covered.
+     * Called on fresh covering acts and rarely from the ticker so mature
+     * colonies keep decorating. No-op when the roll fails or the covered
+     * faces already carry their growth.
+     */
+    public static boolean trySprout(net.minecraft.server.level.ServerLevel level,
+            BlockPos pos, BlockState state, double chance) {
+        if (level.random.nextDouble() >= chance) {
+            return false;
+        }
+        BlockState grown = null;
+        if (MultifaceBlock.hasFace(state, Direction.DOWN)
+                && !state.getValue(TUFT)) {
+            grown = state.setValue(TUFT, true);
+        } else if (MultifaceBlock.hasFace(state, Direction.UP)
+                && !state.getValue(DRIP)) {
+            grown = state.setValue(DRIP, true);
+        }
+        return grown != null && level.setBlock(pos, grown, 3);
+    }
+
     @Override public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(Level level,BlockState state,net.minecraft.world.level.block.entity.BlockEntityType<T> type){
         if(level.isClientSide || this instanceof DormantLayerBlock || type!=com.expeditions.registry.ModBlockEntities.ASSIMILATION_LAYER.get())return null;
         return (world,pos,s,entity)->{
             if((world.getGameTime()+pos.asLong())%20!=0)return;
             var be=(AssimilationLayerBlockEntity)entity;var server=(net.minecraft.server.level.ServerLevel)world;var heart=be.heart();
-            if(com.expeditions.server.Stillness.suppresses(server,pos) || heart!=null && world.hasChunkAt(heart) && !world.getBlockState(heart).is(com.expeditions.registry.ModBlocks.ASSIMILATION_HEART.get()))
+            if(com.expeditions.server.Stillness.suppresses(server,pos) || heart!=null && world.hasChunkAt(heart) && !world.getBlockState(heart).is(com.expeditions.registry.ModBlocks.ASSIMILATION_HEART.get())){
                 world.setBlockAndUpdate(pos,dormantState(s));
+                return;
+            }
+            trySprout(server,pos,s,com.expeditions.server.data.ExpeditionTuning.real(
+                    server.dimension(),"microbiome.growth_chance",
+                    com.expeditions.ExpeditionsConfig.microbiomeGrowthChance())*0.002);
         };
     }
     public static BlockState dormantState(BlockState living){
         var cold=com.expeditions.registry.ModBlocks.DORMANT_LAYER.get().defaultBlockState();
         for(Direction face:DIRECTIONS)cold=cold.setValue(MultifaceBlock.getFaceProperty(face),MultifaceBlock.hasFace(living,face));
-        return cold;
+        return cold.setValue(TUFT,living.getValue(TUFT)).setValue(DRIP,living.getValue(DRIP));
     }
 
     @Override

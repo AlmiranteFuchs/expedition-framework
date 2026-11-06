@@ -266,6 +266,13 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
             level.playSound(null, move.cell(),
                     ModSounds.LAYER_SPREAD.get(), SoundSource.BLOCKS,
                     0.9f, 0.75f);
+            // Sprite growths poke through fresh membrane: tufts on
+            // covered floors, drips under covered ceilings.
+            AssimilationLayerBlock.trySprout(level, move.cell(),
+                    level.getBlockState(move.cell()),
+                    ExpeditionTuning.real(level.dimension(),
+                            "microbiome.growth_chance",
+                            ExpeditionsConfig.microbiomeGrowthChance()));
             setChanged();
         }
     }

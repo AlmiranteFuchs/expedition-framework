@@ -72,6 +72,10 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   pale-wood derivative blocks' blockstates/models/textures/recipes/tags
   (needs PIL). Blockstate rotation tables match vanilla exactly — if you
   add a set member, extend the script, don't hand-write variants.
+- Colony growths: `python3 tools/gen_bloom_growths.py` regenerates the
+  tuft/drip cross sprites + models. They are `tuft`/`drip` properties on
+  `AssimilationLayerBlock` (not a separate block — the membrane owns its
+  cell); spread + ticker sprout them, `microbiome.growth_chance` tunes.
 - JEI: optional `compileOnly` API + `localRuntime` jar (not a published
   dependency); categories live in `com.expeditions.compat.jei`.
 

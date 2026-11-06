@@ -197,6 +197,13 @@ public final class ExpeditionsConfig {
                     "Beyond it (or 0) growth is direction-blind.")
             .defineInRange("expeditions.microbiome.huntRadius", 24, 0, 128);
 
+    private static final ModConfigSpec.DoubleValue MICROBIOME_GROWTH_CHANCE = BUILDER
+            .comment("Chance a freshly covered face sprouts a tuft or",
+                    "hanging drip — flat sprite growths, not geometry.",
+                    "Living membrane also resprouts slowly on its tick.",
+                    "0 turns decoration off entirely.")
+            .defineInRange("expeditions.microbiome.growthChance", 0.30, 0.0, 1.0);
+
     private static final ModConfigSpec.IntValue INFECTION_RADIUS = BUILDER
             .comment("Legacy compatibility setting. Infection now requires physical",
                     "contact with living tissue or an infected body; radius is not used.")
@@ -625,6 +632,11 @@ public final class ExpeditionsConfig {
     /** How far a heart senses living hosts for directional growth (0 = off). */
     public static int microbiomeHuntRadius() {
         return HUNT_RADIUS.get();
+    }
+
+    /** Chance a freshly covered face sprouts a tuft or hanging drip. */
+    public static double microbiomeGrowthChance() {
+        return MICROBIOME_GROWTH_CHANCE.get();
     }
 
     /** Maximum distance from a marker its colony's heart may land. */

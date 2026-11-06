@@ -23,6 +23,21 @@
     {
       "when": { "west": "true" },
       "apply": { "model": "expeditions:block/assimilation_layer", "x": 90, "y": 90, "uvlock": true }
+    },
+    {
+      "when": { "tuft": "true" },
+      "apply": [
+        { "model": "expeditions:block/bloom_tuft_a" },
+        { "model": "expeditions:block/bloom_tuft_b" },
+        { "model": "expeditions:block/bloom_tuft_c" }
+      ]
+    },
+    {
+      "when": { "drip": "true" },
+      "apply": [
+        { "model": "expeditions:block/bloom_drip_a" },
+        { "model": "expeditions:block/bloom_drip_b" }
+      ]
     }
   ]
 }
