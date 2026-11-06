@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    {
+      "item": "expeditions:pale_planks"
+    }
+  ],
+  "result": {
+    "id": "expeditions:pale_button",
+    "count": 1
+  }
+}

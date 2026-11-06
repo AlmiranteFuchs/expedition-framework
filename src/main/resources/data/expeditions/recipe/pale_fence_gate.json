@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "SPS",
+    "SPS"
+  ],
+  "key": {
+    "P": {
+      "item": "expeditions:pale_planks"
+    },
+    "S": {
+      "item": "minecraft:stick"
+    }
+  },
+  "result": {
+    "id": "expeditions:pale_fence_gate",
+    "count": 1
+  }
+}

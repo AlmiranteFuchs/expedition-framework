@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "P  ",
+    "PP ",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "expeditions:pale_planks"
+    }
+  },
+  "result": {
+    "id": "expeditions:pale_stairs",
+    "count": 4
+  }
+}

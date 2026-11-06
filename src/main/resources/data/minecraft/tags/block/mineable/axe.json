@@ -10,6 +10,14 @@
     "expeditions:pale_wood",
     "expeditions:pale_planks",
     "expeditions:pale_chest",
-    "expeditions:stillwood_root"
+    "expeditions:stillwood_root",
+    "expeditions:pale_slab",
+    "expeditions:pale_stairs",
+    "expeditions:pale_fence",
+    "expeditions:pale_fence_gate",
+    "expeditions:pale_door",
+    "expeditions:pale_trapdoor",
+    "expeditions:pale_button",
+    "expeditions:pale_pressure_plate"
   ]
 }

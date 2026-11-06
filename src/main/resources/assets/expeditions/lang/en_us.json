@@ -50,6 +50,14 @@
   "block.expeditions.field_cache": "Pale Field Cache",
   "block.expeditions.pale_wood": "Pale Wood",
   "block.expeditions.pale_planks": "Pale Planks",
+  "block.expeditions.pale_slab": "Pale Wood Slab",
+  "block.expeditions.pale_stairs": "Pale Wood Stairs",
+  "block.expeditions.pale_fence": "Pale Wood Fence",
+  "block.expeditions.pale_fence_gate": "Pale Wood Fence Gate",
+  "block.expeditions.pale_door": "Pale Wood Door",
+  "block.expeditions.pale_trapdoor": "Pale Wood Trapdoor",
+  "block.expeditions.pale_button": "Pale Wood Button",
+  "block.expeditions.pale_pressure_plate": "Pale Wood Pressure Plate",
   "block.expeditions.pale_chest": "Pale Chest",
   "block.expeditions.stillwood_leaves": "Stillwood Leaves",
   "block.expeditions.stillwood_root": "Stillwood Root",
@@ -361,5 +369,12 @@
   "subtitles.expeditions.ambient.shatterwake.buried_canopy": "The buried forest creaks",
   "subtitles.expeditions.ambient.shatterwake.cinder_shards": "Ash settles",
   "subtitles.expeditions.ambient.shatterwake.pale_drift": "Cold wind drifts",
-  "subtitles.expeditions.ambient.shatterwake.mood": "Something whispers your name"
+  "subtitles.expeditions.ambient.shatterwake.mood": "Something whispers your name",
+  "jei.expeditions.category.sap_brewing": "Sap Brewing",
+  "jei.expeditions.category.reclaiming": "Reclaiming Basin",
+  "jei.expeditions.reclaiming.tier": "%1$s mB sap",
+  "jei.expeditions.info.essence": "Processed in an Essence Condenser: any item assays into one Assimilation Essence for 4000 FE.",
+  "jei.expeditions.info.condenser": "Feed it items and energy; it condenses what it digests into Assimilation Essence.",
+  "jei.expeditions.info.return_knot": "Earned at extraction. One knot + one essence + a water bucket brews a bucket of Return Sap in a Sap Jar.",
+  "jei.expeditions.info.field_ward": "Feed a charged Resonance Cell to light the ward; it suppresses the Bloom's spread around your camp."
 }

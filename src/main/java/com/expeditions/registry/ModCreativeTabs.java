@@ -31,6 +31,14 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.RETURN_KNOT.get());
                         output.accept(ModItems.PALE_WOOD.get());
                         output.accept(ModItems.PALE_PLANKS.get());
+                        output.accept(ModItems.PALE_SLAB.get());
+                        output.accept(ModItems.PALE_STAIRS.get());
+                        output.accept(ModItems.PALE_FENCE.get());
+                        output.accept(ModItems.PALE_FENCE_GATE.get());
+                        output.accept(ModItems.PALE_DOOR.get());
+                        output.accept(ModItems.PALE_TRAPDOOR.get());
+                        output.accept(ModItems.PALE_BUTTON.get());
+                        output.accept(ModItems.PALE_PRESSURE_PLATE.get());
                         output.accept(ModItems.PALE_CHEST.get());
                         output.accept(ModItems.STILLWOOD_ROOT.get());
                         output.accept(ModItems.STILLWOOD_LEAVES.get());

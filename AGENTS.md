@@ -65,8 +65,15 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   `python3 tools/preview_heartwood.py` builds a before/after board in `build/`.
 - Sounds: `python3 tools/gen_sounds.py` regenerates all `.ogg` SFX and
   `sounds.json` (needs `pip3 install soundfile`; horror voicing — dying
-  Charter machinery vs wet sub-squelch whispering Bloom; events not
-  yet wired into code)
+  Charter machinery vs wet sub-squelch whispering Bloom). Events are
+  registered in `registry/ModSounds` and played at their call sites;
+  `tools/sound_spectra.py` renders spectrograms for audio QA.
+- Building sets: `python3 tools/gen_pale_wood_set.py` regenerates the
+  pale-wood derivative blocks' blockstates/models/textures/recipes/tags
+  (needs PIL). Blockstate rotation tables match vanilla exactly — if you
+  add a set member, extend the script, don't hand-write variants.
+- JEI: optional `compileOnly` API + `localRuntime` jar (not a published
+  dependency); categories live in `com.expeditions.compat.jei`.
 
 Corporate proxy: TLS interception requires importing the corporate root CA into
 `$JAVA_HOME/lib/security/cacerts` before dependency resolution works.

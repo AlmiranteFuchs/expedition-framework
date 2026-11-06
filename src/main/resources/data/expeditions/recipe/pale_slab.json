@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "expeditions:pale_planks"
+    }
+  },
+  "result": {
+    "id": "expeditions:pale_slab",
+    "count": 6
+  }
+}

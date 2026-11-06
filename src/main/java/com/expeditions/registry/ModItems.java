@@ -23,6 +23,15 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> PALE_WOOD = ITEMS.registerSimpleBlockItem("pale_wood", ModBlocks.PALE_WOOD);
     public static final DeferredItem<BlockItem> PALE_PLANKS = ITEMS.registerSimpleBlockItem("pale_planks", ModBlocks.PALE_PLANKS);
     public static final DeferredItem<BlockItem> PALE_CHEST = ITEMS.registerSimpleBlockItem("pale_chest", ModBlocks.PALE_CHEST);
+    public static final DeferredItem<BlockItem> PALE_SLAB = ITEMS.registerSimpleBlockItem("pale_slab", ModBlocks.PALE_SLAB);
+    public static final DeferredItem<BlockItem> PALE_STAIRS = ITEMS.registerSimpleBlockItem("pale_stairs", ModBlocks.PALE_STAIRS);
+    public static final DeferredItem<BlockItem> PALE_FENCE = ITEMS.registerSimpleBlockItem("pale_fence", ModBlocks.PALE_FENCE);
+    public static final DeferredItem<BlockItem> PALE_FENCE_GATE = ITEMS.registerSimpleBlockItem("pale_fence_gate", ModBlocks.PALE_FENCE_GATE);
+    public static final DeferredItem<net.minecraft.world.item.DoubleHighBlockItem> PALE_DOOR = ITEMS.register("pale_door",
+            () -> new net.minecraft.world.item.DoubleHighBlockItem(ModBlocks.PALE_DOOR.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> PALE_TRAPDOOR = ITEMS.registerSimpleBlockItem("pale_trapdoor", ModBlocks.PALE_TRAPDOOR);
+    public static final DeferredItem<BlockItem> PALE_BUTTON = ITEMS.registerSimpleBlockItem("pale_button", ModBlocks.PALE_BUTTON);
+    public static final DeferredItem<BlockItem> PALE_PRESSURE_PLATE = ITEMS.registerSimpleBlockItem("pale_pressure_plate", ModBlocks.PALE_PRESSURE_PLATE);
     public static final DeferredItem<BlockItem> STILLWOOD_LEAVES = ITEMS.registerSimpleBlockItem("stillwood_leaves", ModBlocks.STILLWOOD_LEAVES);
     public static final DeferredItem<BlockItem> STILLWOOD_ROOT = ITEMS.registerSimpleBlockItem("stillwood_root", ModBlocks.STILLWOOD_ROOT);
     public static final DeferredItem<Item> ROOTBOUND_GUARDIAN_SPAWN_EGG = ITEMS.register("rootbound_guardian_spawn_egg",

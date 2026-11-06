@@ -37,6 +37,40 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, Block> PALE_CHEST = BLOCKS.register("pale_chest",
             () -> new com.expeditions.block.PaleChestBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.5f).sound(SoundType.WOOD).noOcclusion()));
+
+    // Pale wood building set — derivatives keep the planks' look and stats.
+    public static final net.minecraft.world.level.block.state.properties.BlockSetType PALE_SET =
+            net.minecraft.world.level.block.state.properties.BlockSetType.register(
+                    new net.minecraft.world.level.block.state.properties.BlockSetType("expeditions:pale"));
+    public static final net.minecraft.world.level.block.state.properties.WoodType PALE_WOOD_TYPE =
+            net.minecraft.world.level.block.state.properties.WoodType.register(
+                    new net.minecraft.world.level.block.state.properties.WoodType("expeditions:pale", PALE_SET));
+
+    private static BlockBehaviour.Properties paleWood() {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.TERRACOTTA_WHITE).strength(2).sound(SoundType.WOOD);
+    }
+
+    public static final DeferredHolder<Block, Block> PALE_SLAB = BLOCKS.register("pale_slab",
+            () -> new net.minecraft.world.level.block.SlabBlock(paleWood()));
+    public static final DeferredHolder<Block, Block> PALE_STAIRS = BLOCKS.register("pale_stairs",
+            () -> new net.minecraft.world.level.block.StairBlock(
+                    PALE_PLANKS.get().defaultBlockState(), paleWood()));
+    public static final DeferredHolder<Block, Block> PALE_FENCE = BLOCKS.register("pale_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(paleWood()));
+    public static final DeferredHolder<Block, Block> PALE_FENCE_GATE = BLOCKS.register("pale_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(PALE_WOOD_TYPE, paleWood()));
+    public static final DeferredHolder<Block, Block> PALE_DOOR = BLOCKS.register("pale_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(PALE_SET, paleWood().noOcclusion()));
+    public static final DeferredHolder<Block, Block> PALE_TRAPDOOR = BLOCKS.register("pale_trapdoor",
+            () -> new net.minecraft.world.level.block.TrapDoorBlock(PALE_SET, paleWood().noOcclusion()));
+    public static final DeferredHolder<Block, Block> PALE_BUTTON = BLOCKS.register("pale_button",
+            () -> new net.minecraft.world.level.block.ButtonBlock(PALE_SET, 30,
+                    paleWood().noCollission().strength(0.5f)));
+    public static final DeferredHolder<Block, Block> PALE_PRESSURE_PLATE = BLOCKS.register(
+            "pale_pressure_plate",
+            () -> new net.minecraft.world.level.block.PressurePlateBlock(PALE_SET,
+                    paleWood().noCollission().strength(0.5f)));
     public static final DeferredHolder<Block, CommissionMarkerBlock> COMMISSION_MARKER =
             BLOCKS.register("commission_marker", () -> new CommissionMarkerBlock(BlockBehaviour.Properties.of()
                     .strength(-1, 3600000).sound(SoundType.WOOD).noLootTable().noOcclusion().noCollission()

@@ -7,6 +7,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -14,10 +15,10 @@ import net.minecraft.world.item.Items;
 import net.minecraft.core.component.DataComponents;
 import net.neoforged.neoforge.common.Tags;
 
-final class ReclaimingOffers {
-    record Find(ItemStack stack, int weight) { }
+public final class ReclaimingOffers {
+    public record Find(ItemStack stack, int weight) { }
 
-    record Offer(int sap, List<Find> finds) {
+    public record Offer(int sap, List<Find> finds) {
         ItemStack sample() {
             return finds.stream().min(java.util.Comparator.comparingInt(Find::weight))
                     .map(find -> find.stack().copy()).orElse(ItemStack.EMPTY);
@@ -38,7 +39,7 @@ final class ReclaimingOffers {
             "barrier", "knowledge", "operator", "jigsaw", "portal", "frame", "core", "sigil",
             "dragon", "star", "totem", "pattern", "template", "knot", "bucket");
 
-    static List<Offer> forDimension(String dimension, ServerLevel level) {
+    public static List<Offer> forDimension(String dimension, Level level) {
         var id = ResourceLocation.tryParse(dimension);
         List<List<Find>> categories = List.of(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
         if (id != null) for (var item : BuiltInRegistries.ITEM) {
