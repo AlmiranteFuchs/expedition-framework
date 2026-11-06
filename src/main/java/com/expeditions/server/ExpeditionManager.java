@@ -371,6 +371,20 @@ public final class ExpeditionManager {
 
         String dimension = definition.dimension();
         String portalDimension = portalLevel.dimension().location().toString();
+        int commissionIndex = definition.commissionPool().isEmpty() ? -1
+                : rng.nextInt(definition.commissionPool().size());
+        BlockPos commissionSite = null;
+        if (commissionIndex >= 0 && definition.commissionPool().get(commissionIndex).kind().needsCommissionSite()) {
+            commissionSite = findCommissionSite(level, adapter, checkpointPositions, entryPos, exitPos,
+                    level == portalLevel ? portalPos : null, rng);
+            if (commissionSite == null || !level.setBlockAndUpdate(commissionSite,
+                    ModBlocks.COMMISSION_MARKER.get().defaultBlockState())) {
+                commissionIndex = -1;
+                commissionSite = null;
+            } else {
+                data.trackMarker(dimension, commissionSite);
+            }
+        }
         for (BlockPos pos : checkpointPositions) {
             level.setBlock(pos, ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState(), 3);
             data.trackMarker(dimension, pos);
@@ -386,8 +400,6 @@ public final class ExpeditionManager {
                 .setValue(com.expeditions.block.ExpeditionPortalBlock.FRAMED, framed), 3);
         data.trackMarker(portalDimension, portalPos);
 
-        int commissionIndex = definition.commissionPool().isEmpty() ? -1
-                : rng.nextInt(definition.commissionPool().size());
         ExpeditionDefinition runDefinition = commissionIndex < 0 ? definition
                 : definition.withCommission(commissionIndex);
         ExpeditionRun run = ExpeditionRun.start(UUID.randomUUID(), player.getUUID(),
@@ -395,6 +407,7 @@ public final class ExpeditionManager {
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
                 toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
                 toWaypoint(entryPos), level.getGameTime(), options, portalDimension);
+        if (commissionSite != null) run.restoreCommissionSite(toWaypoint(commissionSite));
         // Charged last — after every validation and world change, when the
         // requirements check above guarantees the balance suffices. A spend
         // that still fails leaves orphan markers for start-up pruning.
@@ -407,8 +420,13 @@ public final class ExpeditionManager {
         ledger.startRun(run);
         if (aftergrowth) placeFieldCache(run, level, adapter);
         if (commissionIndex >= 0) {
-            player.displayClientMessage(Component.translatable(
-                    "message.expeditions.commission", definition.commissionPool().get(commissionIndex).description()), true);
+            var order = definition.commissionPool().get(commissionIndex);
+            if (commissionSite != null) {
+                player.displayClientMessage(Component.translatable("message.expeditions.detour_brief",
+                        order.description(), commissionSite.getX(), commissionSite.getY(), commissionSite.getZ()), true);
+            } else {
+                player.displayClientMessage(Component.translatable("message.expeditions.commission", order.description()), true);
+            }
         } else {
             player.displayClientMessage(Component.translatable("message.expeditions.portal_answers"), true);
         }
@@ -423,6 +441,80 @@ public final class ExpeditionManager {
         applyWeather(run, level);
         data.setDirty();
         return run;
+    }
+
+    private static BlockPos findCommissionSite(ServerLevel level, ExpeditionDimensionAdapter adapter,
+            List<BlockPos> checkpoints, BlockPos entry, BlockPos exit, BlockPos portal, RandomSource rng) {
+        BlockPos witness = checkpoints.get((checkpoints.size() - 1) / 2);
+        int bearing = rng.nextInt(8);
+        for (int i = 0; i < 8; i++) {
+            double angle = (bearing + i) * Math.PI / 4;
+            int x = witness.getX() + (int) Math.round(Math.cos(angle) * 18);
+            int z = witness.getZ() + (int) Math.round(Math.sin(angle) * 18);
+            var site = adapter.resolveAnchor(level, new RouteAnchor(x, z)).filter(pos ->
+                    Math.abs(pos.getY() - witness.getY()) <= 6 && level.getBlockState(pos).isAir()
+                    && !pos.closerThan(entry, 8) && !pos.closerThan(exit, 12)
+                    && (portal == null || !pos.closerThan(portal, 6))
+                    && checkpoints.stream().noneMatch(cp -> pos.closerThan(cp, 10)));
+            if (site.isPresent()) return site.get();
+        }
+        return null;
+    }
+
+    public void useCommissionMarker(ServerPlayer player, BlockPos pos) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || player.isSpectator() || !hasCompass(player)
+                || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || run.commissionSite().filter(toWaypoint(pos)::equals).isEmpty()
+                || !player.serverLevel().getBlockState(pos).is(ModBlocks.COMMISSION_MARKER.get())
+                || player.distanceToSqr(pos.getX() + .5, pos.getY(), pos.getZ() + .5) > 16) return;
+        if (run.plantRelay(player.getUUID())) {
+            completeCommission(player, run, pos);
+        } else if (run.beginEndurance(player.getUUID(), player.serverLevel().getGameTime())) {
+            player.displayClientMessage(Component.translatable("message.expeditions.detour_hold"), true);
+        }
+    }
+
+    public void tickCommission(ServerPlayer player) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || !run.holdingEndurance(player.getUUID())) return;
+        BlockPos pos = toPos(run.commissionSite().orElseThrow());
+        ServerLevel level = player.serverLevel();
+        boolean inside = player.isAlive() && !player.isSpectator()
+                && run.definition().dimension().equals(level.dimension().location().toString())
+                && player.distanceToSqr(pos.getX() + .5, pos.getY(), pos.getZ() + .5) <= 16
+                && level.getBlockState(pos).is(ModBlocks.COMMISSION_MARKER.get());
+        if (run.tickEndurance(player.getUUID(), level.getGameTime(), inside)) {
+            completeCommission(player, run, pos);
+        } else if (!run.holdingEndurance(player.getUUID())) {
+            player.displayClientMessage(Component.translatable("message.expeditions.detour_reset"), true);
+        } else if (run.enduranceTicks() > 0 && run.enduranceTicks() % 20 == 0) {
+            player.displayClientMessage(Component.translatable("message.expeditions.detour_countdown",
+                    20 - run.enduranceTicks() / 20), true);
+            for (int i = 0; i < 20; i++) {
+                double angle = i * Math.PI / 10;
+                level.sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
+                        pos.getX() + .5 + Math.cos(angle) * 4, pos.getY() + .15,
+                        pos.getZ() + .5 + Math.sin(angle) * 4, 1, 0, 0, 0, 0);
+            }
+        }
+    }
+
+    public void resetCommission(ServerPlayer player, boolean notify) {
+        ledger.activeRun(player.getUUID()).filter(run -> run.holdingEndurance(player.getUUID())).ifPresent(run -> {
+            run.resetEndurance(player.getUUID());
+            if (notify) player.displayClientMessage(Component.translatable("message.expeditions.detour_reset"), true);
+        });
+    }
+
+    private void completeCommission(ServerPlayer player, ExpeditionRun run, BlockPos pos) {
+        ServerLevel level = player.serverLevel();
+        level.setBlockAndUpdate(pos, level.getBlockState(pos).setValue(
+                net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT, true));
+        data.setDirty();
+        level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, .65f, .85f);
+        player.displayClientMessage(Component.translatable("message.expeditions.objective_completed",
+                run.detourCommission().orElseThrow().description()), true);
     }
 
     private void placeFieldCache(ExpeditionRun run, ServerLevel level, ExpeditionDimensionAdapter adapter) {
@@ -1180,6 +1272,7 @@ public final class ExpeditionManager {
                 .anyMatch(r -> (r.definition().dimension().equals(dimension)
                         && (r.checkpoints().contains(waypoint) || RecallTrees.contains(toPos(r.exit()), pos,data.recallTreeParts(dimension,toPos(r.exit())),markerLevel)
                                 || r.fieldCache().filter(waypoint::equals).isPresent()
+                                || r.commissionSite().filter(waypoint::equals).isPresent()
                                 || r.defense().map(d -> d.device().equals(waypoint))
                                         .orElse(false)))
                         || (r.portalOpen() && r.portalDimension().equals(dimension)
@@ -2015,6 +2108,13 @@ public final class ExpeditionManager {
                         ModBlocks.EXPEDITION_CHECKPOINT.get().defaultBlockState());
             }
         }
+        run.commissionSite().ifPresent(site -> {
+            BlockPos pos = toPos(site);
+            if (!isReferencedByActiveRun(dimension, pos)) {
+                removeMarkerAt(level, pos);
+                data.untrackMarker(dimension, pos);
+            }
+        });
         // Parts are tracked individually for crash pruning, and retained per position
         // while any other live route still needs them. Never remove unrelated blocks.
         for (BlockPos part : RecallTrees.allParts(toPos(run.exit()))) {
@@ -2223,6 +2323,7 @@ public final class ExpeditionManager {
                 || state.is(ModBlocks.EXPEDITION_PORTAL.get())
                 || state.is(ModBlocks.EXPEDITION_DEVICE.get())
                 || state.is(ModBlocks.FIELD_CACHE.get())
+                || state.is(ModBlocks.COMMISSION_MARKER.get())
                 || state.is(ModBlocks.RECALL_TREE_PART.get())) {
             level.removeBlock(pos, false);
         }

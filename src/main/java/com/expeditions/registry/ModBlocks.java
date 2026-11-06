@@ -3,6 +3,7 @@ package com.expeditions.registry;
 import com.expeditions.ExpeditionsMod;
 import com.expeditions.block.AssimilationHeartBlock;
 import com.expeditions.block.AssimilationLayerBlock;
+import com.expeditions.block.CommissionMarkerBlock;
 import com.expeditions.block.ExpeditionCheckpointBlock;
 import com.expeditions.block.ExpeditionDeviceBlock;
 import com.expeditions.block.ExpeditionExitBlock;
@@ -36,6 +37,11 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, Block> PALE_CHEST = BLOCKS.register("pale_chest",
             () -> new com.expeditions.block.PaleChestBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.5f).sound(SoundType.WOOD).noOcclusion()));
+    public static final DeferredHolder<Block, CommissionMarkerBlock> COMMISSION_MARKER =
+            BLOCKS.register("commission_marker", () -> new CommissionMarkerBlock(BlockBehaviour.Properties.of()
+                    .strength(-1, 3600000).sound(SoundType.WOOD).noLootTable().noOcclusion().noCollission()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
+                    .lightLevel(state -> state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.LIT) ? 8 : 2)));
     public static final DeferredHolder<Block, Block> FIELD_CACHE = BLOCKS.register("field_cache",
             () -> new com.expeditions.block.FieldCacheBlock(BlockBehaviour.Properties.of()
                     .strength(-1, 3600000).sound(SoundType.WOOD).noLootTable().noOcclusion()

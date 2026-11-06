@@ -12,6 +12,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Slime;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Siege behavior: pathfind to the expedition's defense device and chip its
@@ -68,8 +69,12 @@ public class AttackDeviceGoal extends Goal {
         if (cooldown > 0) {
             cooldown--;
         }
-        double distSqr = mob.distanceToSqr(device.getX() + 0.5,
-                device.getY() + 0.5, device.getZ() + 0.5);
+        var target = Vec3.atCenterOf(device);
+        var body = mob.getBoundingBox();
+        double distSqr = target.distanceToSqr(
+                Mth.clamp(target.x, body.minX, body.maxX),
+                Mth.clamp(target.y, body.minY, body.maxY),
+                Mth.clamp(target.z, body.minZ, body.maxZ));
         if (distSqr > REACH_SQR) {
             if (--repathDelay <= 0) {
                 repathDelay = 10;

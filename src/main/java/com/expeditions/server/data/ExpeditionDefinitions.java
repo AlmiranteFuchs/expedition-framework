@@ -4,6 +4,7 @@ import com.expeditions.core.EffectSpec;
 import com.expeditions.core.ExpeditionDefinition;
 import com.expeditions.core.ExpeditionModifiers;
 import com.expeditions.core.ExpeditionObjective;
+import com.expeditions.core.ObjectiveKind;
 import com.expeditions.core.ExpeditionRoute;
 import com.expeditions.core.RouteAnchor;
 import com.expeditions.core.RouteGeneration;
@@ -127,14 +128,14 @@ public final class ExpeditionDefinitions {
                 optionalInt(json, "tokens", 0),
                 optionalInt(json, "bonus_tokens", 0),
                 optionalInt(json, "bonus_time_seconds", 0) * TICKS_PER_SECOND,
-                parseObjectives(json.get("objectives")),
+                parseObjectives(json.get("objectives"), false),
                 parseModifiers(json.get("modifiers")),
                 parseKeys(json.get("requires")),
                 parseKeys(json.get("grants")),
                 optionalInt(json, "cost_tokens", 0),
                 parseCampaignState(json.get("min_campaign_state")),
                 optionalBool(json, "big_bad", false),
-                parseObjectives(json.get("commission_pool")));
+                parseObjectives(json.get("commission_pool"), true));
     }
 
     /**
@@ -250,7 +251,7 @@ public final class ExpeditionDefinitions {
      * {@code defend_device} takes {@code checkpoint} (the checkpoint that
      * deploys the device) plus {@code seconds} (the siege duration).
      */
-    private static List<ExpeditionObjective> parseObjectives(JsonElement element) {
+    private static List<ExpeditionObjective> parseObjectives(JsonElement element, boolean commissionPool) {
         if (element == null) {
             return List.of();
         }
@@ -268,6 +269,12 @@ public final class ExpeditionDefinitions {
             boolean required = optionalBool(json, "required", false);
             int bonus = optionalInt(json, "bonus_tokens", 0);
             switch (requiredString(json, "type")) {
+                case "relay", "endurance" -> {
+                    if (!commissionPool) throw new IllegalArgumentException("Detours belong in commission_pool");
+                    ObjectiveKind kind = requiredString(json, "type").equals("relay")
+                            ? ObjectiveKind.RELAY : ObjectiveKind.ENDURANCE;
+                    objectives.add(new ExpeditionObjective(id, description, required, kind, 0, null, null, 0, 0, bonus));
+                }
                 case "visit_checkpoint" -> objectives.add(ExpeditionObjective.visitCheckpoint(
                         id, description, required, requiredInt(json, "checkpoint"), bonus));
                 case "collect_items" -> {

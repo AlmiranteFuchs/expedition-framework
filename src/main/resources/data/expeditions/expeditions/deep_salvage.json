@@ -62,6 +62,18 @@
   ],
   "commission_pool": [
     {
+      "id": "graft_relay",
+      "description": "Plant a listening graft off the witness trail",
+      "type": "relay",
+      "bonus_tokens": 12
+    },
+    {
+      "id": "graft_endurance",
+      "description": "Hold a listening graft for twenty seconds",
+      "type": "endurance",
+      "bonus_tokens": 16
+    },
+    {
       "id": "scrap",
       "description": "Cut four bark samples",
       "type": "harvest",

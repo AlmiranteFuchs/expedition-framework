@@ -414,6 +414,9 @@ public class ExpeditionSavedData extends SavedData {
             restored.restoreGuardian(new com.expeditions.core.GuardianEncounter(
                     encounter.getUUID("EntityId"), encounter.getBoolean("Defeated")));
         }
+        if (runTag.contains("CommissionSite", Tag.TAG_COMPOUND)) {
+            restored.restoreCommissionSite(readWaypoint(runTag.getCompound("CommissionSite")));
+        }
         if (runTag.contains("FieldCache", Tag.TAG_COMPOUND)) {
             var cache = runTag.getCompound("FieldCache");
             restored.restoreFieldCache(readWaypoint(cache), cache.getBoolean("Opened"));
@@ -595,6 +598,7 @@ public class ExpeditionSavedData extends SavedData {
                 bearingTag.putLong("Expires", bearing.expiresAt());
                 runTag.put("PartyBearing", bearingTag);
             });
+            run.commissionSite().ifPresent(position -> runTag.put("CommissionSite", writeWaypoint(position)));
             run.fieldCache().ifPresent(position -> {
                 var cache = writeWaypoint(position);
                 cache.putBoolean("Opened", run.fieldCacheOpened());

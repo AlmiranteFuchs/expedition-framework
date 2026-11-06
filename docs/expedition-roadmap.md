@@ -858,3 +858,34 @@ while generating or refining. Each machine has a distinct cue.
 - Next batch is relay and endurance commissions. Resolve the optional
   detour before briefing, persist it with the run, and settle rewards
   at extraction.
+
+
+### Relay and endurance commissions — alpha.45
+
+Deep Salvage can draw a pale field graft detour. The party can plant a
+listening graft or hold its marked area. A single member has to stay
+inside for 20 consecutive seconds. Leaving, taking damage, or breaking
+the session resets the attempt. The compass keeps its main route and
+field orders carry the detour coordinates. Unsafe sites leave the
+charter available without that commission. The site and completed order
+persist in the run's atomic save. Grafts disappear when the run ends,
+and the existing extraction ledger pays the bonus once.
+
+The optional decision borrows the separate reward and exposure of Deep
+Rock Galactic's meteor field event. [Deep Rock Galactic Season 03](https://www.deeprockgalactic.com/season-03)
+
+- The focused objective suite passed. An initial full run exposed a
+  legacy field-order formatting mismatch and a bundled pool assertion.
+  The rerun exposed a slime body reaching the ward while its center was
+  outside the hit radius. Siege reach now measures from the mob's body.
+- The first full run on the final code failed the Bloom pillar spread
+  test. The unchanged rerun passed the build, alphaBundle, 203 unit
+  tests, and all 189 required core GameTests. Logs are separate in build.
+- The client planted and extracted a relay in installed Twilight
+  Forest. In the Overworld, a damage hit reset the endurance count, the
+  fresh 20-second attempt completed, and the exit paid eight tokens.
+  Travel used debug teleports. The server regression covers blocked
+  sites, save/reload, repeated interaction, cleanup, and extraction.
+- Next batch: liberated dimensions. Start with a modest dormant supply
+  trade in cleared Overworld villages, then Nether basalt-delta deposits,
+  End salvage utility, and settled landmarks and journal discoveries.

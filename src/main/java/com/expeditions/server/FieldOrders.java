@@ -19,9 +19,15 @@ public final class FieldOrders {
                         default -> "message.expeditions.field_order_open";
                     };
             var progress = Component.translatable(progressKey, state.progress(), objective.progressTarget());
+            Object description = objective.description();
+            if (objective.kind().needsCommissionSite() && !state.completed() && run.commissionSite().isPresent()) {
+                var site = run.commissionSite().orElseThrow();
+                description = Component.literal(objective.description()).append(Component.translatable(
+                        "message.expeditions.detour_coordinates", site.x(), site.y(), site.z()));
+            }
             return Component.translatable(objective.required()
                     ? "message.expeditions.field_order_required" : "message.expeditions.field_order_optional",
-                    objective.description(), progress);
+                    description, progress);
         }).toList();
     }
 }

@@ -104,6 +104,14 @@ public record ExpeditionObjective(String id, String description, boolean require
                 count = 0;
                 timeLimitTicks = 0;
             }
+            case RELAY, ENDURANCE -> {
+                if (required) throw new IllegalArgumentException("Detour commissions must be optional");
+                checkpoint = 0;
+                item = null;
+                tag = null;
+                count = 0;
+                timeLimitTicks = kind == ObjectiveKind.ENDURANCE ? 20 * 20 : 0;
+            }
             case DEFEND_DEVICE -> {
                 if (checkpoint < 1) {
                     throw new IllegalArgumentException(
@@ -184,7 +192,7 @@ public record ExpeditionObjective(String id, String description, boolean require
     /** Progress value at which this objective completes. */
     public int progressTarget() {
         return switch (kind) {
-            case VISIT_CHECKPOINT, RECOVER_ARTIFACT, DEFEND_DEVICE, SCOUT -> 1;
+            case VISIT_CHECKPOINT, RECOVER_ARTIFACT, DEFEND_DEVICE, SCOUT, RELAY, ENDURANCE -> 1;
             case COLLECT_ITEMS, HARVEST -> count;
             case TIME_LIMIT -> (int) Math.min(timeLimitTicks, Integer.MAX_VALUE);
         };

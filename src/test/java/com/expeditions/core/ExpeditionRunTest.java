@@ -33,6 +33,37 @@ class ExpeditionRunTest {
                 List.of(CP1, CP2, CP3), EXIT);
     }
 
+    @Test
+    void enduranceRequiresOneMemberForTwentyUninterruptedSeconds() {
+        var base = definition();
+        var order = new ExpeditionObjective("graft", "Hold the graft", false, ObjectiveKind.ENDURANCE,
+                0, null, null, 0, 0, 8);
+        var definition = new ExpeditionDefinition(base.id(), base.displayName(), 1, base.dimension(), base.route(),
+                8, 0, 0, List.of(order));
+        UUID owner = UUID.randomUUID();
+        UUID guest = UUID.randomUUID();
+        var run = ExpeditionRun.start(UUID.randomUUID(), owner, definition, List.of(CP1, CP2, CP3), EXIT);
+        run.restoreCommissionSite(new Waypoint(15, 64, 26));
+        run.joinParty(guest);
+        assertTrue(run.beginEndurance(owner, 0));
+        assertFalse(run.beginEndurance(guest, 0));
+        assertFalse(run.tickEndurance(owner, 1, true));
+        assertFalse(run.tickEndurance(owner, 2, false));
+        assertEquals(0, run.enduranceTicks());
+        assertTrue(run.beginEndurance(guest, 2));
+        assertFalse(run.tickEndurance(guest, 3, true));
+        run.resetEndurance(guest);
+        assertEquals(0, run.enduranceTicks());
+        assertTrue(run.beginEndurance(owner, 4));
+        assertFalse(run.tickEndurance(owner, 6, true));
+        assertFalse(run.holdingEndurance(owner));
+        assertTrue(run.beginEndurance(guest, 6));
+        for (int i = 7; i < 406; i++) assertFalse(run.tickEndurance(guest, i, true));
+        assertTrue(run.tickEndurance(guest, 406, true));
+        assertFalse(run.beginEndurance(owner, 407));
+        assertTrue(run.objectiveState("graft").orElseThrow().completed());
+    }
+
     private static ExpeditionRun fullyActivatedRun() {
         ExpeditionRun run = newRun();
         run.activateCheckpoint(CP1);

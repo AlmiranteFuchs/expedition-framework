@@ -134,6 +134,7 @@ public final class ExpeditionEventHandler {
                 Microbiome.onPlayerTick(player.serverLevel(), player.blockPosition());
             }
             CompassPing.onPlayerTick(player);
+            ExpeditionManager.get(player.server).tickCommission(player);
             if (player.tickCount % 20 == 0 && !player.isSpectator()) {
                 ExpeditionManager.get(player.server).surveyBiome(player);
             }
@@ -243,8 +244,17 @@ public final class ExpeditionEventHandler {
      * scaled by the hit — cutting the organism's tissue reads different
      * from cutting meat.
      */
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            ExpeditionManager.get(player.server).resetCommission(player, false);
+        }
+    }
+
     public static void onLivingHurt(LivingDamageEvent.Post event) {
         LivingEntity entity = event.getEntity();
+        if (event.getNewDamage() > 0 && entity instanceof ServerPlayer player) {
+            ExpeditionManager.get(player.server).resetCommission(player, true);
+        }
         if(event.getNewDamage()>0 && entity instanceof net.minecraft.world.entity.Mob victim
                 && event.getSource().getEntity() instanceof LivingEntity attacker) Assimilation.onAttacked(victim,attacker);
         if(event.getSource().getDirectEntity()==event.getSource().getEntity()

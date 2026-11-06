@@ -45,6 +45,10 @@ public final class ExpeditionRun {
     private final Waypoint entry;
     private final long startedGameTime;
     private Waypoint fieldCache;
+    private Waypoint commissionSite;
+    private UUID enduranceHolder;
+    private int enduranceTicks;
+    private long enduranceLastTick;
     private PartyBearing partyBearing;
     private long lastWitnessAt = -1;
 
@@ -427,6 +431,7 @@ public final class ExpeditionRun {
                     "The last member cannot leave run " + runId + "; fail it instead");
         }
         party.remove(playerId);
+        resetEndurance(playerId);
     }
 
     /**
@@ -621,6 +626,68 @@ public final class ExpeditionRun {
      */
     public boolean artifactIssued() {
         return artifactIssued;
+    }
+
+    public Optional<Waypoint> commissionSite() { return Optional.ofNullable(commissionSite); }
+
+    public Optional<ExpeditionObjective> detourCommission() {
+        return definition.objectives().stream().filter(o -> o.kind().needsCommissionSite()).findFirst();
+    }
+
+    public void restoreCommissionSite(Waypoint site) {
+        Objects.requireNonNull(site);
+        if (commissionSite != null || detourCommission().isEmpty() || checkpoints.contains(site)
+                || site.equals(exit) || site.equals(entry)) {
+            throw new IllegalArgumentException("Invalid detour commission site");
+        }
+        commissionSite = site;
+    }
+
+    public boolean plantRelay(UUID member) {
+        return canAttemptDetour(member, ObjectiveKind.RELAY) && finishDetour();
+    }
+
+    public boolean beginEndurance(UUID member, long now) {
+        if (enduranceHolder != null || !canAttemptDetour(member, ObjectiveKind.ENDURANCE)) return false;
+        enduranceHolder = member;
+        enduranceLastTick = now;
+        return true;
+    }
+
+    public boolean holdingEndurance(UUID member) {
+        return member.equals(enduranceHolder);
+    }
+
+    public int enduranceTicks() { return enduranceTicks; }
+
+    public void resetEndurance(UUID member) {
+        if (holdingEndurance(member)) {
+            enduranceHolder = null;
+            enduranceTicks = 0;
+        }
+    }
+
+    public boolean tickEndurance(UUID member, long now, boolean inside) {
+        if (!holdingEndurance(member)) return false;
+        if (!inside || !canAttemptDetour(member, ObjectiveKind.ENDURANCE) || now > enduranceLastTick + 1) {
+            resetEndurance(member);
+            return false;
+        }
+        if (now <= enduranceLastTick) return false;
+        enduranceLastTick = now;
+        if (++enduranceTicks < detourCommission().orElseThrow().timeLimitTicks()) return false;
+        resetEndurance(member);
+        return finishDetour();
+    }
+
+    private boolean canAttemptDetour(UUID member, ObjectiveKind kind) {
+        return isActive() && commissionSite != null && isMember(member)
+                && detourCommission().filter(o -> o.kind() == kind && !state(o.id()).completed()).isPresent();
+    }
+
+    private boolean finishDetour() {
+        objectiveStates.put(detourCommission().orElseThrow().id(), new ObjectiveState(1, true));
+        return true;
     }
 
     public Optional<Waypoint> fieldCache() { return Optional.ofNullable(fieldCache); }

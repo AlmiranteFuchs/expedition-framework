@@ -1,4 +1,10 @@
 {
+  "block.expeditions.commission_marker": "Field Graft",
+  "message.expeditions.detour_brief": "%s · %s, %s, %s",
+  "message.expeditions.detour_coordinates": " · %s, %s, %s",
+  "message.expeditions.detour_hold": "Keep the graft company for twenty seconds.",
+  "message.expeditions.detour_countdown": "Hold the graft · %s s",
+  "message.expeditions.detour_reset": "The graft went quiet. Touch it to begin again.",
   "block.expeditions.expedition_terminal": "Wayroot",
   "block.expeditions.expedition_checkpoint": "Witness Stump",
   "block.expeditions.expedition_exit": "Stillwood Hollow",

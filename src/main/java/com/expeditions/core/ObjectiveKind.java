@@ -40,5 +40,11 @@ public enum ObjectiveKind {
      * destruction marks the objective failed instead: an optional one just
      * never pays, a required one fails the run by mission rule.
      */
-    DEFEND_DEVICE
+    DEFEND_DEVICE,
+    RELAY,
+    ENDURANCE;
+
+    public boolean needsCommissionSite() {
+        return this == RELAY || this == ENDURANCE;
+    }
 }

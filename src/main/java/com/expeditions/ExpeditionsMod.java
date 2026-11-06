@@ -54,6 +54,7 @@ public class ExpeditionsMod {
         gameBus.addListener(ExpeditionEventHandler::onItemPickup);
         gameBus.addListener(net.neoforged.bus.api.EventPriority.LOWEST, ExpeditionEventHandler::onBlockHarvested);
         gameBus.addListener(ExpeditionEventHandler::onPlayerLogin);
+        gameBus.addListener(ExpeditionEventHandler::onPlayerLogout);
         gameBus.addListener(ExpeditionEventHandler::onServerStarted);
         gameBus.addListener(ExpeditionEventHandler::onServerTick);
         gameBus.addListener(ExpeditionEventHandler::onPlayerTick);

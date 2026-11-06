@@ -1540,6 +1540,67 @@ public final class ExpeditionGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "arena", templateNamespace = "expeditions_obj", batch = "detour_relay")
+    public static void relayDetourPersistsAndPaysOnlyAtExtraction(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var manager = ExpeditionManager.get(level.getServer());
+        var player = helper.makeMockServerPlayerInLevel();
+        var outsider = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.CREATIVE);
+        ExpeditionDefinitions.reload(Map.of(ResourceLocation.parse("test:detour"), JsonParser.parseString("""
+                {"dimension":"minecraft:overworld","checkpoints":[[1168,1152],[1200,1152]],"exit":[1232,1152],
+                 "tokens":8,"commission_pool":[{"id":"graft","type":"relay","bonus_tokens":12}]}
+                """)));
+        try {
+            var run = startExpedition(helper, manager, player);
+            try {
+                var site = run.commissionSite().orElseThrow();
+                var pos = ExpeditionManager.toPos(site);
+                helper.assertTrue(level.getBlockState(pos).is(ModBlocks.COMMISSION_MARKER.get()), "detour has a graft");
+                var restored = roundTrip(helper, level.getServer()).ledger().activeRun(player.getUUID()).orElseThrow();
+                helper.assertTrue(restored.commissionSite().orElseThrow().equals(site), "reload keeps the selected site");
+                useBlockAt(level, outsider, pos);
+                useBlockAt(level, player, pos);
+                helper.assertTrue(!run.objectiveState("graft").orElseThrow().completed(),
+                        "an outsider and an unentered member cannot plant");
+                manager.enterPortal(player, ExpeditionManager.toPos(run.portal()));
+                useBlockAt(level, player, pos);
+                useBlockAt(level, player, pos);
+                helper.assertTrue(run.objectiveState("graft").orElseThrow().completed(), "planting latches completion");
+                helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0, "relay credits wait for extraction");
+                for (var witness : run.checkpoints()) manager.activateCheckpoint(player, ExpeditionManager.toPos(witness));
+                manager.completeRun(player);
+                helper.assertTrue(manager.tokenBalance(player.getUUID()) == 20, "one relay bonus pays at extraction");
+                helper.assertTrue(!level.getBlockState(pos).is(ModBlocks.COMMISSION_MARKER.get()),
+                        "the graft despawns on extraction");
+
+                BlockPos witness = ExpeditionManager.toPos(run.checkpoints().getFirst());
+                var blocked = new java.util.ArrayList<BlockPos>();
+                try {
+                    for (int i = 0; i < 8; i++) {
+                        double angle = i * Math.PI / 4;
+                        var obstruction = witness.offset((int) Math.round(Math.cos(angle) * 18), 8,
+                                (int) Math.round(Math.sin(angle) * 18));
+                        helper.assertTrue(level.getBlockState(obstruction).isAir(), "fixture uses empty space");
+                        level.setBlockAndUpdate(obstruction, Blocks.STONE.defaultBlockState());
+                        blocked.add(obstruction);
+                    }
+                    var clearRoute = startExpedition(helper, manager, outsider);
+                    helper.assertTrue(clearRoute.commissionSite().isEmpty() && clearRoute.detourCommission().isEmpty(),
+                            "blocked detour candidates leave the main charter available with no false briefing");
+                } finally {
+                    failRunIfActive(manager, outsider);
+                    blocked.forEach(block -> level.removeBlock(block, false));
+                }
+            } finally {
+                failRunIfActive(manager, player);
+            }
+        } finally {
+            ExpeditionDefinitions.reload(Map.of());
+        }
+        helper.succeed();
+    }
+
     /**
      * Optional objectives missed entirely do not block completion: the run
      * pays only the deterministic base reward.
@@ -3965,8 +4026,9 @@ public final class ExpeditionGameTests {
                         "deep_salvage must compose a " + kind + " objective");
             }
             helper.assertTrue(salvage.commissionPool().stream().map(ExpeditionObjective::kind).toList()
-                            .equals(List.of(ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT, ObjectiveKind.SCOUT)),
-                    "deep_salvage offers harvest, timed or biome commissions");
+                            .equals(List.of(ObjectiveKind.RELAY, ObjectiveKind.ENDURANCE,
+                                    ObjectiveKind.HARVEST, ObjectiveKind.TIME_LIMIT, ObjectiveKind.SCOUT)),
+                    "deep_salvage offers detour, harvest, timed and biome commissions");
             boolean refused = false;
             try {
                 manager.startRun(player, terminalPos,
