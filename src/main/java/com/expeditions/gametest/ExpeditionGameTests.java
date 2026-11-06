@@ -2067,6 +2067,10 @@ public final class ExpeditionGameTests {
         var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
         var handler = vessel.fluidHandler();
         handler.fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 2000), execute);
+        var pickup = net.minecraft.world.inventory.ClickType.PICKUP;
+        var locked = new com.expeditions.server.ReclaimingMenu(2, player.getInventory(), level, position);
+        helper.assertTrue(locked.getContainer().getItem(13).getHoverName().getString().contains("unlock its salvage"),
+                "unproven stocked wells tell the player how to unlock salvage");
         handler.fill(com.expeditions.core.ReturnSap.of("minecraft:the_nether", 500), execute);
         helper.assertTrue(vessel.sapFor("minecraft:overworld") == 2000
                         && vessel.sapFor("minecraft:the_nether") == 500
@@ -2075,11 +2079,19 @@ public final class ExpeditionGameTests {
         helper.assertTrue(com.expeditions.core.ReturnSap.dimension(handler.getFluidInTank(0))
                         .equals("minecraft:overworld"),
                 "each well surfaces as its own fluid tank for pipes");
+        locked.broadcastChanges();
+        locked.clicked(26, 0, pickup, player);
+        helper.assertTrue(com.expeditions.item.ReturnSapBucketItem.source(locked.getContainer().getItem(22))
+                        .equals("minecraft:the_nether") && locked.sapAmount() == 500
+                        && locked.getContainer().getItem(0).isEmpty(),
+                "a Nether well filled while the menu is open appears locked with its own balance");
+        locked.clicked(0, 0, pickup, player);
+        helper.assertTrue(vessel.sapFor("minecraft:the_nether") == 500,
+                "a locked well cannot spend sap");
         var ledger = savedData(level.getServer()).ledger();
         ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:overworld");
         ledger.grantUnlock(player.getUUID(), "expeditions:reclaiming/minecraft:the_nether");
         var menu = new com.expeditions.server.ReclaimingMenu(3, player.getInventory(), level, position);
-        var pickup = net.minecraft.world.inventory.ClickType.PICKUP;
         menu.clicked(0, 0, pickup, player);
         helper.assertTrue(vessel.sapFor("minecraft:overworld") == 1750
                         && vessel.sapFor("minecraft:the_nether") == 500,

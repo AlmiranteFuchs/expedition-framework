@@ -7,6 +7,7 @@ import com.expeditions.registry.ModFluids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -142,6 +143,10 @@ public final class SapVesselBlockEntity extends BlockEntity {
 
     public int sapFor(String dimension) {
         return kind == SapVesselBlock.Kind.BASIN ? wells.getOrDefault(dimension, 0) : 0;
+    }
+
+    public Set<String> stockedDimensions() {
+        return Set.copyOf(wells.keySet());
     }
 
     public int totalSap() {

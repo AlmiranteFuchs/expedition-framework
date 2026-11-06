@@ -41,14 +41,13 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
         if (!account.isEmpty()) {
             gui.drawString(font, font.plainSubstrByWidth(account.getHoverName().getString(), imageWidth - 91),
                     leftPos + 12, topPos + 23, 0xff765539, false);
-        } else {
-            var note = menu.getContainer().getItem(13);
-            if (!note.isEmpty()) {
-                int y = topPos + 29;
-                for (var line : font.split(note.getHoverName(), imageWidth - 24)) {
-                    gui.drawString(font, line, leftPos + 12, y, INK, false);
-                    y += 11;
-                }
+        }
+        var note = menu.getContainer().getItem(13);
+        if (!note.isEmpty()) {
+            int y = topPos + (account.isEmpty() ? 29 : 41);
+            for (var line : font.split(note.getHoverName(), imageWidth - 24)) {
+                gui.drawString(font, line, leftPos + 12, y, INK, false);
+                y += 11;
             }
         }
         renderSapStain(gui, mouseX, mouseY);

@@ -313,6 +313,7 @@
   "message.expeditions.summary_withdrawn": "%1$s · The trail went cold (%2$s). %3$s tokens kept.",
   "block.expeditions.reclaiming_basin": "Reclaiming Basin",
   "gui.expeditions.basin_dormant": "The basin needs a trace from a successful expedition.",
+  "gui.expeditions.basin_locked_trace": "This well holds your sap. Complete and extract from a charter in this dimension to unlock its salvage.",
   "gui.expeditions.basin_price": "%s mB",
   "gui.expeditions.basin_previous": "Previous trace",
   "gui.expeditions.basin_next": "Next trace",

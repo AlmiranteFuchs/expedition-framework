@@ -1,8 +1,12 @@
 package com.expeditions.server;
 
+import com.expeditions.block.entity.SapVesselBlockEntity;
 import com.expeditions.registry.ModBlocks;
 import com.expeditions.registry.ModItems;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -24,7 +28,10 @@ public final class ReclaimingMenu extends ChestMenu {
     private final ServerLevel level;
     private final BlockPos basin;
     private final ExpeditionManager manager;
-    private final List<String> dimensions;
+    private final Set<String> traces;
+    private final UUID owner;
+    private Set<String> stocked = Set.of();
+    private List<String> dimensions = List.of();
     private final DataSlot sap = DataSlot.standalone();
     private int index;
 
@@ -33,7 +40,8 @@ public final class ReclaimingMenu extends ChestMenu {
         level = null;
         basin = BlockPos.ZERO;
         manager = null;
-        dimensions = List.of();
+        traces = Set.of();
+        owner = inventory.player.getUUID();
         addDataSlot(sap);
     }
 
@@ -42,9 +50,11 @@ public final class ReclaimingMenu extends ChestMenu {
         this.level = level;
         this.basin = basin.immutable();
         manager = ExpeditionManager.get(level.getServer());
-        dimensions = manager.reclaimingDimensions(inventory.player.getUUID());
+        owner = inventory.player.getUUID();
+        traces = Set.copyOf(manager.reclaimingDimensions(owner));
+        updateDimensions();
         addDataSlot(sap);
-        refresh(inventory.player);
+        refresh();
     }
 
     @Override
@@ -60,26 +70,43 @@ public final class ReclaimingMenu extends ChestMenu {
                 || !getCarried().isEmpty()) return;
         if (slot == 18 || slot == 26) {
             index = Math.floorMod(index + (slot == 18 ? -1 : 1), dimensions.size());
-        } else if (slot >= 0 && slot < 3) {
-            if (level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
+        } else if (slot >= 0 && slot < 3 && traces.contains(dimensions.get(index))) {
+            if (level.getBlockEntity(basin) instanceof SapVesselBlockEntity vessel
                     && manager.reclaim(serverPlayer, dimensions.get(index), slot, vessel)) {
                 level.sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
                         basin.getX() + 0.5, basin.getY() + 0.55, basin.getZ() + 0.5, 12, 0.2, 0.14, 0.2, 0);
             }
         }
-        refresh(player);
+        refresh();
         broadcastChanges();
     }
 
     @Override
     public void broadcastChanges() {
-        if (level != null) updateSap();
+        if (level != null) {
+            if (updateDimensions()) refresh();
+            else updateSap();
+        }
         super.broadcastChanges();
+    }
+
+    private boolean updateDimensions() {
+        Set<String> wells = level.getBlockEntity(basin) instanceof SapVesselBlockEntity vessel
+                ? vessel.stockedDimensions() : Set.of();
+        if (stocked.equals(wells) && (!dimensions.isEmpty() || traces.isEmpty())) return false;
+        stocked = wells;
+        String selected = dimensions.isEmpty() ? null : dimensions.get(index);
+        var available = new TreeSet<>(traces);
+        available.addAll(wells);
+        dimensions = List.copyOf(available);
+        index = selected == null ? -1 : dimensions.indexOf(selected);
+        if (index < 0) index = wells.stream().sorted().findFirst().map(dimensions::indexOf).orElse(0);
+        return true;
     }
 
     private void updateSap() {
         sap.set(!dimensions.isEmpty()
-                && level.getBlockEntity(basin) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
+                && level.getBlockEntity(basin) instanceof SapVesselBlockEntity vessel
                 ? vessel.sapFor(dimensions.get(index)) : 0);
     }
 
@@ -94,12 +121,22 @@ public final class ReclaimingMenu extends ChestMenu {
         return ReclaimingOffers.forDimension(dimensions.get(index), level);
     }
 
-    private void refresh(Player player) {
+    private void refresh() {
         var display = getContainer();
         display.clearContent();
         updateSap();
         if (dimensions.isEmpty()) {
             display.setItem(13, label(new ItemStack(Items.DEAD_BUSH), "gui.expeditions.basin_dormant"));
+            return;
+        }
+        display.setItem(18, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_previous"));
+        String dimension = dimensions.get(index);
+        var account = new ItemStack(ModItems.RETURN_SAP_BUCKET.get());
+        com.expeditions.item.ReturnSapBucketItem.bind(account, dimension);
+        display.setItem(22, label(account, "gui.expeditions.basin_account", traceName(dimension)));
+        display.setItem(26, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_next"));
+        if (!traces.contains(dimension)) {
+            display.setItem(13, label(new ItemStack(Items.DEAD_BUSH), "gui.expeditions.basin_locked_trace"));
             return;
         }
         var offers = offers();
@@ -109,7 +146,7 @@ public final class ReclaimingMenu extends ChestMenu {
             if (quote.isEmpty()) quote = new ItemStack(Items.DEAD_BUSH);
             quote.set(DataComponents.CUSTOM_NAME, Component.translatable("gui.expeditions.basin_tier_" + slot));
             var notes = new java.util.ArrayList<Component>();
-            boolean sealed = slot == 2 && !manager.canReclaimGear(player.getUUID(), dimensions.get(index));
+            boolean sealed = slot == 2 && !manager.canReclaimGear(owner, dimensions.get(index));
             notes.add(Component.translatable(sealed ? "gui.expeditions.basin_field_sealed"
                     : offer.finds().isEmpty() ? "message.expeditions.basin_empty_trace" : "gui.expeditions.basin_weighted_" + slot));
             notes.add(Component.translatable("gui.expeditions.basin_price", offer.sap()));
@@ -123,12 +160,6 @@ public final class ReclaimingMenu extends ChestMenu {
             quote.set(DataComponents.LORE, new ItemLore(notes));
             display.setItem(slot, quote);
         }
-        display.setItem(18, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_previous"));
-        var account = new ItemStack(ModItems.RETURN_SAP_BUCKET.get());
-        com.expeditions.item.ReturnSapBucketItem.bind(account, dimensions.get(index));
-        display.setItem(22, label(account, "gui.expeditions.basin_account",
-                traceName(dimensions.get(index))));
-        display.setItem(26, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_next"));
     }
 
     private static Component traceName(String dimension) {
