@@ -819,13 +819,18 @@ while generating or refining. Each machine has a distinct cue.
   size of later waves. The revised client showed three opening spiders at
   7–8 blocks and six reinforcements. The assisted ward attempt ended after
   448 ticks when another wave destroyed the device.
+- A separate assisted client run cleared siege mobs with a temporary debug
+  command block, held the ward for 35 seconds, and extracted through the
+  Stillwood exit. The debug block was removed. Combat balance still needs
+  an unassisted survival pass.
 - The first test of the wider spawn ring timed out waiting for device damage.
   After the navigation change, all seven focused defense GameTests passed.
   A subsequent full attempt collided with client recompilation and logged
   missing classes. The final sequential build, alphaBundle, 202 unit tests,
   and 188 required GameTests passed.
 - The debug Guardian advanced through all three attacks below half health.
-  The remaining release checks are a successful live extraction, visual
-  readability of the Guardian's ring and shiver, and the machine sound mix
-  while working and idle. Publish the tested JAR and checksum after those
-  checks, then implement relay and endurance commissions.
+  The Guardian's ring and shiver still need a visual review. The Minecraft
+  bridge does not expose client audio, so the working and idle machine
+  mix still needs a listening pass. The local JAR and SHA-256 are staged.
+  Publish after the release checks, then implement relay and endurance
+  commissions.
