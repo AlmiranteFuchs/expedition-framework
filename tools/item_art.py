@@ -137,6 +137,74 @@ def tissue(d, live):
     if live:d.point((7,7),fill=A[2]);d.point((9,9),fill=A[1])
 
 
+def field_specimens():
+    # Closed bark shutters, a frayed crust, and a tether with a small resin seal.
+    colors = {'o': B[0], 'd': B[1], 'h': B[2], 's': B[3], 'p': B[4], 'l': B[5], 'a': A[1]}
+    patterns = {
+        'dormant_heart': (
+            '................',
+            '.....o...o......',
+            '....oloooho.....',
+            '...olpplphso....',
+            '...olpsdphso....',
+            '..olpsddpphso...',
+            '..olpddspdhso...',
+            '..olpsdpsdhso...',
+            '..oppsdpsdhso...',
+            '..oppsdasdhso...',
+            '...oppsdshso....',
+            '...ooppdhsoo....',
+            '..ohspdddpsho...',
+            '.oohhssshhhooo..',
+            '....ooooooo.....',
+            '................',
+        ),
+        'dormant_layer': (
+            '................',
+            '................',
+            '.......o........',
+            '.....oolo..o....',
+            '...oolploooh....',
+            '..olpppspllho...',
+            '.olppsddppphho..',
+            'oolpsdppsphsho..',
+            '.opssppdpshhsoo.',
+            '..osshpdpsshoo..',
+            '...ohhsdshoo....',
+            '..oohhdhhoo.....',
+            '....ooooo.......',
+            '................',
+            '................',
+            '................',
+        ),
+        'return_knot': (
+            '................',
+            '................',
+            '.....oooo.......',
+            '....olppoo......',
+            '...olpshppoo....',
+            '..olps..ospso...',
+            '..olpso.ospho...',
+            '..opppsoospho...',
+            '...osplsappdo...',
+            '....odpaaassoo..',
+            '....olpaddphpo..',
+            '...olphooospso..',
+            '..olpso...opso..',
+            '..ooho.....ooo..',
+            '....o...........',
+            '................',
+        ),
+    }
+    for name, rows in patterns.items():
+        image = Image.new('RGBA', (16, 16))
+        for y, row in enumerate(rows):
+            for x, shade in enumerate(row):
+                if shade != '.':
+                    image.putpixel((x, y), rgba(colors[shade]))
+        save(name, image)
+
+
 def compass():
     im=Image.new('RGBA',(16,16));d=ImageDraw.Draw(im)
     d.polygon([(5,2),(10,2),(13,5),(13,11),(10,14),(4,14),(1,11),(1,6)],fill=B[0])
@@ -171,10 +239,11 @@ def gen():
     for name,draw in [('field_assay_kit',assay),('disruption_charm',charm),
                       ('assimilation_essence',essence),('expedition_artifact',artifact),('attunement_sigil',sigil),
                       ('dormant_flake',flakes),('dormant_knot',knot),('severance_core',core),('resonance_cell',cell),('survey_lens',lens)]:sprite(name,draw)
-    sprite('assimilation_layer',lambda d:tissue(d,True));sprite('dormant_layer',lambda d:tissue(d,False))
+    sprite('assimilation_layer',lambda d:tissue(d,True))
+    field_specimens()
     frames=compass()
     # GUI framing changes only; world geometry, selection and hand transforms stay authoritative.
-    for name in ['expedition_terminal','expedition_checkpoint','expedition_exit','assimilation_heart','dormant_heart',
+    for name in ['expedition_terminal','expedition_checkpoint','expedition_exit','assimilation_heart',
                  'stillness_dynamo','essence_condenser','living_heart_engine','severance_generator','field_ward']:
         path=ROOT/f'models/item/{name}.json';data=json.loads(path.read_text(encoding='utf-8'))
         data['gui_light']='side';data.setdefault('display',{})['gui']={'rotation':[30,225,0],'translation':[0,0,0],'scale':[.625,.625,.625]}

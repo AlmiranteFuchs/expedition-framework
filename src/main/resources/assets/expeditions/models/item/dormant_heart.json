@@ -1,23 +1,6 @@
 {
-  "parent": "expeditions:block/bloom_shutter_dormant",
-  "gui_light": "side",
-  "display": {
-    "gui": {
-      "rotation": [
-        30,
-        225,
-        0
-      ],
-      "translation": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        0.625,
-        0.625,
-        0.625
-      ]
-    }
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "expeditions:item/dormant_heart"
   }
 }

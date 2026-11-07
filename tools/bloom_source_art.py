@@ -93,7 +93,8 @@ def generate():
             for stage in range(5):variants[f'facing={direction},open={stage}']={'model':'expeditions:block/bloom_shutter_'+('dormant' if cold else str(stage)),'y':angle}
         write(Path(f'blockstates/{block}.json'),{'variants':variants})
         write(Path(f'models/block/{block}.json'),{'parent':'expeditions:block/bloom_shutter_'+('dormant' if cold else '0')})
-        write(Path(f'models/item/{block}.json'),{'parent':'expeditions:block/bloom_shutter_'+('dormant' if cold else '4')})
+        if not cold:
+            write(Path(f'models/item/{block}.json'),{'parent':'expeditions:block/bloom_shutter_4'})
     # The carried machine contains the same specimen, not a tiny painted cube.
     path=ROOT/'models/item/living_heart_engine.json'
     if path.exists():

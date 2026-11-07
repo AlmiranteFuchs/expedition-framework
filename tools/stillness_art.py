@@ -323,12 +323,6 @@ def gen():
         variants['facing='+direction]={'model':'expeditions:block/rootwick',**rotation}
     write(Path('blockstates/rootwick.json'),{'variants':variants})
     sap_liquids()
-    item('return_knot',lambda d:[
-        d.polygon([(3,4),(8,1),(13,4),(14,10),(9,14),(3,12),(1,8)],fill=PALE[1]),
-        d.polygon([(4,5),(8,3),(12,5),(12,10),(8,12),(4,10)],fill=PALE[3]),
-        d.line([(4,7),(7,5),(9,7),(8,10),(11,9)],fill=AMBER[2],width=2),
-        d.point((7,5),fill=AMBER[4]),
-    ])
     item('return_sap_bucket',lambda d:[
         d.polygon([(2,4),(13,4),(12,13),(10,15),(5,15),(3,12)],fill=METAL[0]),
         d.polygon([(3,5),(12,5),(11,13),(5,13)],fill=METAL[3]),
@@ -357,11 +351,11 @@ def gen():
         write(Path('blockstates/'+name+'.json'),{'variants':variants})
     write(Path('models/block/dormant_layer.json'),{'parent':'expeditions:block/assimilation_layer'})
     write(Path('blockstates/dormant_layer.json'),{'variants':{'':{'model':'expeditions:block/dormant_layer'}}})
-    write(Path('models/item/dormant_layer.json'),{'parent':'minecraft:item/generated','textures':{'layer0':'expeditions:item/dormant_flake'}})
     save('block/dormant_heart',panel(PALE))
     write(Path('models/block/dormant_heart.json'),{'parent':'minecraft:block/cube_all','textures':{'all':'expeditions:block/dormant_heart'}})
-    write(Path('models/item/dormant_heart.json'),{'parent':'expeditions:block/dormant_heart'})
     write(Path('blockstates/dormant_heart.json'),{'variants':{'':{'model':'expeditions:block/dormant_heart'}}})
+    from item_art import field_specimens
+    field_specimens()
     gui=Image.new('RGBA',(176,166),PALE[3]);d=ImageDraw.Draw(gui);d.rectangle((0,0,175,165),outline=METAL[0],width=3);d.rectangle((4,4,171,161),outline=COPPER[1]);d.line((5,17,170,17),fill=PALE[1]);d.rectangle((10,19,20,68),fill=METAL[0]);d.rectangle((11,20,19,67),outline=COPPER[1])
     for x,y in [(52,34),(112,34)]+[(7+c*18,83+r*18) for r in range(3) for c in range(9)]+[(7+c*18,141) for c in range(9)]:d.rectangle((x,y,x+17,y+17),fill=PALE[1]);d.rectangle((x+1,y+1,x+16,y+16),fill=PALE[2]);d.line((x+1,y+17,x+17,y+17),fill=PALE[5])
     d.line((80,42,103,42),fill=PALE[1],width=5);d.polygon([(99,36),(107,42),(99,48)],fill=PALE[1]);save('gui/resonance',gui)
