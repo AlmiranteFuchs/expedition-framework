@@ -43,12 +43,11 @@ public class ExpeditionsClient {
         modEventBus.addListener((net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent event) ->
                 event.registerFluidType(new net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions() {
                     @Override public ResourceLocation getStillTexture() {
-                        return ResourceLocation.withDefaultNamespace("block/water_still");
+                        return ResourceLocation.fromNamespaceAndPath(ExpeditionsMod.MOD_ID, "block/return_sap_still");
                     }
                     @Override public ResourceLocation getFlowingTexture() {
-                        return ResourceLocation.withDefaultNamespace("block/water_flow");
+                        return ResourceLocation.fromNamespaceAndPath(ExpeditionsMod.MOD_ID, "block/return_sap_flow");
                     }
-                    @Override public int getTintColor() { return 0xffbe7734; }
                 }, com.expeditions.registry.ModFluids.SAP_TYPE.get()));
         modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) -> {
                 event.register(com.expeditions.registry.ModMenus.EXPEDITION.get(), ExpeditionScreen::new);

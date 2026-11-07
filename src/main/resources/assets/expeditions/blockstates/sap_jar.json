@@ -1,17 +1,14 @@
 {
   "multipart": [
     {
-      "when": { "water": "true" },
-      "apply": { "model": "expeditions:block/sap_jar_water" }
-    },
-    {
       "apply": {
         "model": "expeditions:block/sap_jar"
       }
     },
     {
       "when": {
-        "sap_level": "1", "water": "false"
+        "sap_level": "1",
+        "water": "false"
       },
       "apply": {
         "model": "expeditions:block/sap_jar_sap_1"
@@ -19,7 +16,8 @@
     },
     {
       "when": {
-        "sap_level": "2", "water": "false"
+        "sap_level": "2",
+        "water": "false"
       },
       "apply": {
         "model": "expeditions:block/sap_jar_sap_2"
@@ -27,7 +25,8 @@
     },
     {
       "when": {
-        "sap_level": "3", "water": "false"
+        "sap_level": "3",
+        "water": "false"
       },
       "apply": {
         "model": "expeditions:block/sap_jar_sap_3"
@@ -35,10 +34,19 @@
     },
     {
       "when": {
-        "sap_level": "4", "water": "false"
+        "sap_level": "4",
+        "water": "false"
       },
       "apply": {
         "model": "expeditions:block/sap_jar_sap_4"
+      }
+    },
+    {
+      "when": {
+        "water": "true"
+      },
+      "apply": {
+        "model": "expeditions:block/sap_jar_water"
       }
     }
   ]

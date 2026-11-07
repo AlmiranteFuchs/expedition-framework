@@ -1,7 +1,10 @@
 {
   "parent": "minecraft:block/block",
+  "render_type": "minecraft:translucent",
+  "ambientocclusion": false,
   "textures": {
-    "resin": "expeditions:block/machine_resin"
+    "surface": "expeditions:block/return_sap_still",
+    "side": "expeditions:block/return_sap_side"
   },
   "elements": [
     {
@@ -16,17 +19,8 @@
         11.85
       ],
       "faces": {
-        "down": {
-          "texture": "#resin",
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ]
-        },
         "up": {
-          "texture": "#resin",
+          "texture": "#surface",
           "uv": [
             0,
             0,
@@ -35,25 +29,7 @@
           ]
         },
         "north": {
-          "texture": "#resin",
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ]
-        },
-        "south": {
-          "texture": "#resin",
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ]
-        },
-        "west": {
-          "texture": "#resin",
+          "texture": "#side",
           "uv": [
             0,
             0,
@@ -62,7 +38,25 @@
           ]
         },
         "east": {
-          "texture": "#resin",
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#side",
           "uv": [
             0,
             0,
@@ -72,6 +66,5 @@
         }
       }
     }
-  ],
-  "ambientocclusion": false
+  ]
 }

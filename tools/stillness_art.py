@@ -1,5 +1,6 @@
 """Native 16px field instruments and open-frame models. Never touches approved Bloom atlases."""
 import json
+from math import sin, tau
 from pathlib import Path
 from PIL import Image, ImageDraw
 
@@ -77,6 +78,71 @@ def graft_materials():
     d.line([(10,9),(11,8),(13,8)],fill='#6c7560')
     d.point((9,7),fill='#af8557')
     save('block/graft_copper', copper)
+
+
+def sap_liquids():
+    """Tileable amber ripples with a slower, directional animation on slopes."""
+    palette = [(111, 52, 24, 181), (145, 70, 29, 182), (174, 92, 39, 188),
+               (199, 118, 52, 193), (221, 153, 73, 204), (242, 193, 115, 222)]
+    for name, size in [('still', 16), ('flow', 32), ('side', 16)]:
+        colors = palette if name != 'still' else [
+            (138, 69, 30, 151), (147, 75, 32, 155), (154, 82, 36, 159),
+            (163, 89, 40, 167), (195, 121, 56, 183), (229, 163, 81, 202),
+        ]
+        frames = 16
+        image = Image.new('RGBA', (size, size * frames))
+        for frame in range(frames):
+            phase = tau * frame / frames
+            for y in range(size):
+                for x in range(size):
+                    u, v = tau * x / size, tau * y / size
+                    if name == 'flow':
+                        wave = sin(3*u + 0.65*sin(v + phase)) + 0.42*sin(2*v - phase + u)
+                        sheen = sin(2*u + v - phase)
+                    elif name == 'side':
+                        wave = sin(2*v + 0.50*sin(u + phase)) + 0.48*sin(u + v + phase)
+                        sheen = sin(3*u - v + phase)
+                    else:
+                        wave = sin(v + 0.78*sin(u - phase)) + 0.30*sin(u - v + phase)
+                        sheen = sin(u - 2*v + phase)
+                    color = 0 if wave < -1.1 else 1 if wave < -0.45 else 2 if wave < 0.35 else 3
+                    if wave > 0.92 and sheen > (0.82 if name == 'still' else 0.3):
+                        color = 5 if wave > 1.18 and sheen > 0.87 else 4
+                    image.putpixel((x, frame * size + y), colors[color])
+        asset = f'block/return_sap_{name}'
+        save(asset, image)
+        write(Path(f'textures/{asset}.png.mcmeta'), {
+            'animation': {'frametime': 2 if name == 'flow' else 4, 'interpolate': True}
+        })
+
+    # A flat reflective surface on top and a deeper, banded body below the meniscus.
+    for name, x, base, step in [('reclaiming_basin', 4.125, 5.4, .4), ('sap_jar', 4.15, 3.25, 2.25)]:
+        parts = [{'apply': {'model': f'expeditions:block/{name}'}}]
+        jar = name == 'sap_jar'
+        for fill in range(1, 5):
+            model = f'{name}_sap_{fill}'
+            faces = {face: {'texture': '#surface' if face == 'up' else '#side', 'uv': [0, 0, 16, 16]}
+                     for face in ('up', 'north', 'east', 'south', 'west')}
+            write(Path(f'models/block/{model}.json'), {
+                'parent': 'minecraft:block/block', 'render_type': 'minecraft:translucent',
+                'ambientocclusion': False,
+                'textures': {'surface': 'expeditions:block/return_sap_still',
+                             'side': 'expeditions:block/return_sap_side'},
+                'elements': [{'from': [x, base, x], 'to': [16-x, round(base+fill*step, 3), 16-x],
+                              'faces': faces}],
+            })
+            condition = {'sap_level': str(fill)}
+            if jar:
+                condition['water'] = 'false'
+            parts.append({'when': condition, 'apply': {'model': f'expeditions:block/{model}'}})
+        if jar:
+            parts.append({'when': {'water': 'true'}, 'apply': {'model': 'expeditions:block/sap_jar_water'}})
+        write(Path(f'blockstates/{name}.json'), {'multipart': parts})
+    write(Path('models/block/sap_jar_water.json'), {
+        'parent': 'expeditions:block/sap_jar_sap_1',
+        'textures': {'surface': 'minecraft:block/ice', 'side': 'minecraft:block/ice'},
+    })
+    write(Path('models/block/return_sap.json'), {'textures': {'particle': 'expeditions:block/return_sap_still'}})
 
 
 def gen():
@@ -256,16 +322,7 @@ def gen():
                                ('down',{'x':90}),('up',{'x':270})]:
         variants['facing='+direction]={'model':'expeditions:block/rootwick',**rotation}
     write(Path('blockstates/rootwick.json'),{'variants':variants})
-    for name,x,z,base,step in [('reclaiming_basin',4.125,4.125,5.4,.4),('sap_jar',4.15,4.15,3.25,2.25)]:
-        parts=[{'apply':{'model':'expeditions:block/'+name}}]
-        for fill in range(1,5):
-            write(Path(f'models/block/{name}_sap_{fill}.json'),{
-                'parent':'minecraft:block/block','textures':{'resin':textures['resin']},
-                'elements':[box([x,base,z],[16-x,base+fill*step,16-z],'resin')],
-                'ambientocclusion':False,
-            })
-            parts.append({'when':{'sap_level':str(fill)},'apply':{'model':f'expeditions:block/{name}_sap_{fill}'}})
-        write(Path('blockstates/'+name+'.json'),{'multipart':parts})
+    sap_liquids()
     item('return_knot',lambda d:[
         d.polygon([(3,4),(8,1),(13,4),(14,10),(9,14),(3,12),(1,8)],fill=PALE[1]),
         d.polygon([(4,5),(8,3),(12,5),(12,10),(8,12),(4,10)],fill=PALE[3]),
