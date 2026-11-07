@@ -138,72 +138,60 @@ def tissue(d, live):
 
 
 def field_specimens():
-    # Closed bark shutters, a frayed crust, and a tether with a small resin seal.
-    colors = {'o': B[0], 'd': B[1], 'h': B[2], 's': B[3], 'p': B[4], 'l': B[5], 'a': A[1]}
-    patterns = {
-        'dormant_heart': (
-            '................',
-            '.....o...o......',
-            '....oloooho.....',
-            '...olpplphso....',
-            '...olpsdphso....',
-            '..olpsddpphso...',
-            '..olpddspdhso...',
-            '..olpsdpsdhso...',
-            '..oppsdpsdhso...',
-            '..oppsdasdhso...',
-            '...oppsdshso....',
-            '...ooppdhsoo....',
-            '..ohspdddpsho...',
-            '.oohhssshhhooo..',
-            '....ooooooo.....',
-            '................',
-        ),
-        'dormant_layer': (
-            '................',
-            '................',
-            '.......o........',
-            '.....oolo..o....',
-            '...oolploooh....',
-            '..olpppspllho...',
-            '.olppsddppphho..',
-            'oolpsdppsphsho..',
-            '.opssppdpshhsoo.',
-            '..osshpdpsshoo..',
-            '...ohhsdshoo....',
-            '..oohhdhhoo.....',
-            '....ooooo.......',
-            '................',
-            '................',
-            '................',
-        ),
-        'return_knot': (
-            '................',
-            '................',
-            '.....oooo.......',
-            '....olppoo......',
-            '...olpshppoo....',
-            '..olps..ospso...',
-            '..olpso.ospho...',
-            '..opppsoospho...',
-            '...osplsappdo...',
-            '....odpaaassoo..',
-            '....olpaddphpo..',
-            '...olphooospso..',
-            '..olpso...opso..',
-            '..ooho.....ooo..',
-            '....o...........',
-            '................',
-        ),
-    }
-    for name, rows in patterns.items():
-        image = Image.new('RGBA', (16, 16))
-        for y, row in enumerate(rows):
-            for x, shade in enumerate(row):
-                if shade != '.':
-                    image.putpixel((x, y), rgba(colors[shade]))
-        save(name, image)
+    # Separate bark plates and open cord loops must survive the 16px inventory view.
+    outline, shadow, bark, light, edge = B[0], B[1], B[2], B[3], B[4]
 
+    def husk(d):
+        d.polygon([(1,2),(3,2),(5,6),(5,10),(7,12),(5,14),(2,11),(2,7)], fill=outline)
+        d.polygon([(2,3),(3,5),(4,7),(4,10),(5,12),(3,10)], fill=bark)
+        d.line([(2,3),(2,6),(3,8),(3,10)], fill=light)
+        d.point((2,3), fill=edge)
+        d.polygon([(7,0),(10,1),(10,4),(8,7),(8,11),(6,13),(5,10),(6,7),(7,5)], fill=outline)
+        d.polygon([(8,1),(9,2),(8,5),(7,7),(7,10),(6,11),(6,8),(7,5)], fill=bark)
+        d.line([(8,1),(8,4),(7,6)], fill=light)
+        d.point((8,1), fill=edge)
+        d.polygon([(13,3),(15,2),(14,7),(12,9),(12,12),(9,14),(7,13),(9,10),(10,6)], fill=outline)
+        d.polygon([(13,4),(13,7),(11,9),(11,11),(9,12),(10,9),(11,7)], fill=bark)
+        d.line([(13,4),(12,6),(11,7)], fill=light)
+        d.polygon([(3,11),(6,12),(9,11),(12,12),(11,15),(7,15),(4,14)], fill=outline)
+        d.line([(4,12),(6,13),(9,12),(11,12)], fill=bark)
+        d.line([(5,14),(8,14),(10,13)], fill=shadow)
+        d.point((9,10), fill=A[0])
+
+    def crust(d):
+        d.polygon([(1,9),(3,6),(6,6),(8,3),(12,2),(14,4),(11,7),(13,9),(10,12),(7,11),(5,14),(2,12)], fill=outline)
+        d.polygon([(2,9),(4,7),(7,7),(9,4),(12,3),(11,5),(8,8),(10,10),(8,10),(5,12),(3,11)], fill=bark)
+        d.line([(3,8),(6,8),(9,5),(11,4)], fill=light)
+        d.point((11,3), fill=edge)
+        d.line([(3,10),(5,10),(7,9)], fill=shadow)
+        d.line([(9,8),(11,9),(10,10)], fill=light)
+        d.line([(4,12),(5,11)], fill=light)
+        d.point((7,7), fill=outline)
+        d.point((10,5), fill=outline)
+
+    def tether(d):
+        # Two distinct loops, with the lower strand passing under the tied center.
+        d.line([(6,7),(3,6),(2,3),(4,1),(7,2),(8,5),(7,8)], fill=outline, width=3)
+        d.line([(6,7),(3,5),(3,3),(4,2),(6,3),(7,5),(6,7)], fill=bark)
+        d.line([(3,4),(3,3),(4,2),(6,3)], fill=light)
+        d.line([(8,7),(10,4),(13,4),(14,6),(13,9),(10,10),(8,8)], fill=outline, width=3)
+        d.line([(9,7),(11,5),(12,5),(13,6),(12,8),(10,9),(9,8)], fill=bark)
+        d.line([(11,5),(12,5),(13,6)], fill=light)
+        d.line([(7,9),(5,11),(4,14),(2,14)], fill=outline, width=3)
+        d.line([(7,9),(5,11),(4,13),(2,14)], fill=bark)
+        d.line([(6,10),(5,11),(4,13)], fill=light)
+        d.line([(9,9),(10,12),(13,14)], fill=outline, width=3)
+        d.line([(9,10),(10,12),(12,13)], fill=bark)
+        d.point((10,12), fill=light)
+        d.polygon([(5,7),(7,5),(10,7),(10,9),(8,11),(5,9)], fill=outline)
+        d.line([(6,7),(8,6),(9,7)], fill=light)
+        d.line([(6,8),(8,10),(9,9)], fill=bark)
+        d.point((7,8), fill=A[2])
+        d.point((8,8), fill=A[1])
+
+    sprite('dormant_heart', husk)
+    sprite('dormant_layer', crust)
+    sprite('return_knot', tether)
 
 def compass():
     im=Image.new('RGBA',(16,16));d=ImageDraw.Draw(im)
