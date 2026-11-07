@@ -138,26 +138,31 @@ def tissue(d, live):
 
 
 def field_specimens():
-    # Separate bark plates and open cord loops must survive the 16px inventory view.
+    # Concept B: folded bark around a dark hollow, and a single bound cord loop.
     outline, shadow, bark, light, edge = B[0], B[1], B[2], B[3], B[4]
 
     def husk(d):
-        d.polygon([(1,2),(3,2),(5,6),(5,10),(7,12),(5,14),(2,11),(2,7)], fill=outline)
-        d.polygon([(2,3),(3,5),(4,7),(4,10),(5,12),(3,10)], fill=bark)
-        d.line([(2,3),(2,6),(3,8),(3,10)], fill=light)
-        d.point((2,3), fill=edge)
-        d.polygon([(7,0),(10,1),(10,4),(8,7),(8,11),(6,13),(5,10),(6,7),(7,5)], fill=outline)
-        d.polygon([(8,1),(9,2),(8,5),(7,7),(7,10),(6,11),(6,8),(7,5)], fill=bark)
-        d.line([(8,1),(8,4),(7,6)], fill=light)
-        d.point((8,1), fill=edge)
-        d.polygon([(13,3),(15,2),(14,7),(12,9),(12,12),(9,14),(7,13),(9,10),(10,6)], fill=outline)
-        d.polygon([(13,4),(13,7),(11,9),(11,11),(9,12),(10,9),(11,7)], fill=bark)
-        d.line([(13,4),(12,6),(11,7)], fill=light)
-        d.polygon([(3,11),(6,12),(9,11),(12,12),(11,15),(7,15),(4,14)], fill=outline)
-        d.line([(4,12),(6,13),(9,12),(11,12)], fill=bark)
-        d.line([(5,14),(8,14),(10,13)], fill=shadow)
-        d.point((9,10), fill=A[0])
-
+        # The approved B silhouette is a folded husk with a dark recessed cavity.
+        d.polygon([(9,1),(12,1),(13,3),(12,5),(14,7),(13,11),(10,14),
+                   (5,15),(2,13),(1,10),(3,6),(6,3)], fill=outline)
+        d.polygon([(10,2),(12,2),(11,5),(13,7),(12,10),(9,13),
+                   (5,14),(3,12),(4,8),(7,4)], fill=C[0])
+        d.polygon([(9,5),(11,4),(11,7),(12,8),(10,11),(7,13),
+                   (5,12),(6,9)], fill='#69452f')
+        d.line([(9,7),(8,9),(6,11)], fill='#886044', width=2)
+        d.line([(10,6),(9,8),(8,9)], fill=C[0])
+        d.polygon([(9,1),(11,1),(10,3),(8,4),(7,6),(5,8),(4,11),
+                   (3,13),(2,11),(2,9),(4,5),(7,2)], fill=bark)
+        d.polygon([(9,2),(10,2),(8,4),(7,5),(6,7),(4,9),(3,12),
+                   (3,9),(5,5),(7,3)], fill=light)
+        d.line([(8,2),(6,4),(5,5)], fill=edge)
+        d.line([(7,5),(6,6),(5,8)], fill=shadow)
+        d.polygon([(12,10),(14,9),(13,12),(10,14),(6,15),(4,14),
+                   (7,13),(10,12)], fill=bark)
+        d.line([(13,10),(11,12),(8,13),(6,13)], fill=light)
+        d.line([(6,14),(9,14),(12,12)], fill=shadow)
+        d.line([(3,10),(3,13)], fill=A[1])
+        d.point((3,11), fill=A[2])
     def crust(d):
         d.polygon([(1,9),(3,6),(6,6),(8,3),(12,2),(14,4),(11,7),(13,9),(10,12),(7,11),(5,14),(2,12)], fill=outline)
         d.polygon([(2,9),(4,7),(7,7),(9,4),(12,3),(11,5),(8,8),(10,10),(8,10),(5,12),(3,11)], fill=bark)
@@ -170,25 +175,28 @@ def field_specimens():
         d.point((10,5), fill=outline)
 
     def tether(d):
-        # Two distinct loops, with the lower strand passing under the tied center.
-        d.line([(6,7),(3,6),(2,3),(4,1),(7,2),(8,5),(7,8)], fill=outline, width=3)
-        d.line([(6,7),(3,5),(3,3),(4,2),(6,3),(7,5),(6,7)], fill=bark)
-        d.line([(3,4),(3,3),(4,2),(6,3)], fill=light)
-        d.line([(8,7),(10,4),(13,4),(14,6),(13,9),(10,10),(8,8)], fill=outline, width=3)
-        d.line([(9,7),(11,5),(12,5),(13,6),(12,8),(10,9),(9,8)], fill=bark)
-        d.line([(11,5),(12,5),(13,6)], fill=light)
-        d.line([(7,9),(5,11),(4,14),(2,14)], fill=outline, width=3)
-        d.line([(7,9),(5,11),(4,13),(2,14)], fill=bark)
-        d.line([(6,10),(5,11),(4,13)], fill=light)
-        d.line([(9,9),(10,12),(13,14)], fill=outline, width=3)
-        d.line([(9,10),(10,12),(12,13)], fill=bark)
-        d.point((10,12), fill=light)
-        d.polygon([(5,7),(7,5),(10,7),(10,9),(8,11),(5,9)], fill=outline)
-        d.line([(6,7),(8,6),(9,7)], fill=light)
-        d.line([(6,8),(8,10),(9,9)], fill=bark)
-        d.point((7,8), fill=A[2])
-        d.point((8,8), fill=A[1])
-
+        # One open loop with a brown lashing and uneven loose tails, as in concept B.
+        d.polygon([(6,1),(10,1),(12,3),(13,5),(12,8),(10,10),
+                   (5,10),(3,8),(2,5),(3,3)], fill=outline)
+        d.line([(6,2),(9,2),(11,3),(12,5),(11,7),(10,8),
+                (5,8),(4,7),(3,5),(4,3),(6,2)], fill=bark, width=2)
+        d.line([(5,3),(6,2),(9,2),(10,3)], fill=light)
+        d.line([(4,4),(3,5),(4,7)], fill=light)
+        d.point((6,2), fill=edge)
+        d.line([(11,4),(11,6),(10,7)], fill=shadow)
+        # Clean central air leaves a readable opening even at native size.
+        d.polygon([(6,4),(9,4),(10,5),(9,7),(6,7),(5,5)], fill=(0,0,0,0))
+        d.line([(6,11),(5,12),(3,14)], fill=outline, width=3)
+        d.line([(6,11),(5,12),(3,13)], fill=bark)
+        d.point((4,13), fill=light)
+        d.line([(9,11),(10,13),(13,14)], fill=outline, width=3)
+        d.line([(9,11),(10,12),(12,14)], fill=bark)
+        d.line([(10,12),(11,13)], fill=light)
+        d.rectangle((4,8,10,11), fill=C[0])
+        d.line([(5,8),(9,8)], fill=C[1])
+        d.line([(5,10),(9,10)], fill=C[1])
+        d.point((5,9), fill=C[2])
+        d.point((9,9), fill=A[2])
     sprite('dormant_heart', husk)
     sprite('dormant_layer', crust)
     sprite('return_knot', tether)
