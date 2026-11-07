@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:blaze_rod",
+    "minecraft:ghast_tear",
+    "minecraft:golden_carrot",
+    "minecraft:golden_horse_armor",
+    "minecraft:music_disc_pigstep"
+  ]
+}

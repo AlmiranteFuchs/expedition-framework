@@ -246,8 +246,9 @@ def gen_assets(n, tex):
     w(f"{bm}/{n}_pressure_plate.json", model("pressure_plate_up", {"texture": planks}))
     w(f"{bm}/{n}_pressure_plate_down.json", model("pressure_plate_down", {"texture": planks}))
 
-    for k in ("slab", "stairs", "fence_gate", "trapdoor", "pressure_plate"):
+    for k in ("slab", "stairs", "fence_gate", "pressure_plate"):
         w(f"{im}/{n}_{k}.json", {"parent": f"expeditions:block/{n}_{k}"})
+    w(f"{im}/{n}_trapdoor.json", {"parent": f"expeditions:block/{n}_trapdoor_bottom"})
     w(f"{im}/{n}_fence.json", {"parent": f"expeditions:block/{n}_fence_inventory"})
     w(f"{im}/{n}_button.json", {"parent": f"expeditions:block/{n}_button_inventory"})
     w(f"{im}/{n}_door.json", {"parent": "minecraft:item/generated",

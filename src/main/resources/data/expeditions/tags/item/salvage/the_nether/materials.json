@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:quartz",
+    "minecraft:gold_nugget",
+    "minecraft:gold_ingot",
+    "minecraft:glowstone_dust",
+    "minecraft:magma_cream",
+    "minecraft:blaze_powder",
+    "minecraft:nether_wart",
+    "minecraft:fire_charge"
+  ]
+}

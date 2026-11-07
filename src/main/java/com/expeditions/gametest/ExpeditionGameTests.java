@@ -2058,6 +2058,15 @@ public final class ExpeditionGameTests {
 
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_opts", batch = "sap_wells")
     public static void basinKeepsTracesSeparateAndSpendsTheirs(GameTestHelper helper) {
+        var nether = com.expeditions.server.ReclaimingOffers.forDimension("minecraft:the_nether", helper.getLevel());
+        var end = com.expeditions.server.ReclaimingOffers.forDimension("minecraft:the_end", helper.getLevel());
+        helper.assertTrue(nether.stream().noneMatch(tier -> tier.finds().isEmpty())
+                        && end.stream().noneMatch(tier -> tier.finds().isEmpty())
+                        && nether.get(0).finds().stream().anyMatch(find -> find.stack().is(Items.QUARTZ))
+                        && nether.get(1).finds().stream().anyMatch(find -> find.stack().is(Items.GHAST_TEAR))
+                        && end.get(1).finds().stream().anyMatch(find -> find.stack().is(Items.SHULKER_SHELL))
+                        && nether.stream().flatMap(tier -> tier.finds().stream()).noneMatch(find -> find.stack().is(Items.SHULKER_SHELL)),
+                "Nether and End salvage use distinct native materials and curiosities across all three tiers");
         var level = helper.getLevel();
         var player = helper.makeMockServerPlayerInLevel();
         var position = helper.absolutePos(new BlockPos(2, 1, 2));

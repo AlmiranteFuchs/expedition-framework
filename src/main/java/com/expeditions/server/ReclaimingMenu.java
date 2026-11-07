@@ -134,6 +134,7 @@ public final class ReclaimingMenu extends ChestMenu {
         var account = new ItemStack(ModItems.RETURN_SAP_BUCKET.get());
         com.expeditions.item.ReturnSapBucketItem.bind(account, dimension);
         display.setItem(22, label(account, "gui.expeditions.basin_account", traceName(dimension)));
+        display.setItem(23, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_page", index + 1, dimensions.size()));
         display.setItem(26, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_next"));
         if (!traces.contains(dimension)) {
             display.setItem(13, label(new ItemStack(Items.DEAD_BUSH), "gui.expeditions.basin_locked_trace"));

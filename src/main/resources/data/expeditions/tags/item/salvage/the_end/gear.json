@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:diamond_pickaxe",
+    "minecraft:diamond_sword",
+    "minecraft:diamond_boots",
+    "minecraft:diamond_helmet",
+    "minecraft:bow",
+    "minecraft:shield"
+  ]
+}

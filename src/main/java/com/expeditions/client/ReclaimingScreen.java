@@ -51,6 +51,12 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
             }
         }
         renderSapStain(gui, mouseX, mouseY);
+        var page = menu.getContainer().getItem(23);
+        if (!page.isEmpty()) {
+            var label = page.getHoverName();
+            gui.drawString(font, label, leftPos + (imageWidth - font.width(label)) / 2,
+                    topPos + imageHeight - 14, INK, false);
+        }
         for (var widget : children()) {
             if (widget instanceof Quote quote) quote.render(gui, mouseX, mouseY, tick);
         }
@@ -162,7 +168,8 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
             setMessage(stack.getHoverName());
             int color = isHoveredOrFocused() ? 0xff9a4628 : INK;
             if (slot >= 3) {
-                gui.drawString(font, name, getX(), getY() + 3, color, false);
+                int labelX = slot == 26 ? getX() + getWidth() - font.width(name) : getX();
+                gui.drawString(font, name, labelX, getY() + 3, color, false);
                 return;
             }
             int x = getX() + 26;
@@ -171,7 +178,10 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
             gui.fill(getX(), y, getX() + 21, y + 21, 0xffb18c62);
             gui.fill(getX() + 1, y + 1, getX() + 20, y + 20, 0xffcdb38b);
             gui.renderItem(stack, getX() + 3, y + 3);
-            gui.drawString(font, font.plainSubstrByWidth(name, available), x, y, color, false);
+            var price = notes.size() > 1 ? notes.get(1) : Component.empty();
+            int priceWidth = font.width(price);
+            gui.drawString(font, price, getX() + getWidth() - priceWidth, y, 0xff765539, false);
+            gui.drawString(font, font.plainSubstrByWidth(name, available - priceWidth - 6), x, y, color, false);
             if (!notes.isEmpty()) {
                 gui.drawString(font, font.plainSubstrByWidth(notes.getFirst().getString(), available),
                         x, y + 10, 0xff765539, false);

@@ -989,3 +989,12 @@ the requirement for attuning a Severance Core.
 
 Next liberated-dimension slice is dormant deposits along cleared Nether
 basalt-delta survey routes, followed by End survey salvage.
+
+### Workshop and salvage polish — dev
+
+The pale trapdoor now uses the closed trapdoor model in inventory.
+The basin shows prices and page position without requiring a tooltip.
+Nether and End salvage draw from their own material, curiosity, and gear
+tags. Other dimensions still discover eligible items from their mod.
+JEI's brewing card shows the steeping step, and its condenser notes name
+dormant flakes as the input.
