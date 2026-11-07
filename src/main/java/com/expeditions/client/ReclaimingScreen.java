@@ -7,12 +7,15 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 
 /** Salvage ledger backed by the menu's synchronized quote stacks. */
 public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMenu> {
-    private static final int INK = 0xff4d3626;
+    private static final int INK = 0xff493a2c;
+    private static final ResourceLocation FRAME = ResourceLocation.parse("expeditions:salvage_frame");
+    private static final ResourceLocation LEAF = ResourceLocation.parse("expeditions:salvage_leaf");
     private int spacing;
 
     public ReclaimingScreen(ReclaimingMenu menu, Inventory inventory, Component title) {
@@ -22,31 +25,32 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
     @Override
     protected void init() {
         imageWidth = Math.min(252, width - 16);
-        imageHeight = Math.min(162, height - 16);
+        imageHeight = Math.min(176, height - 16);
         super.init();
-        spacing = Math.min(33, Math.max(21, (imageHeight - 54) / 3));
+        spacing = Math.min(34, Math.max(21, (imageHeight - 70) / 3));
         for (int slot = 0; slot < 3; slot++) {
-            addRenderableWidget(new Quote(leftPos + 12, topPos + 33 + slot * spacing, imageWidth - 24, spacing, slot));
+            addRenderableWidget(new Quote(leftPos + 15, topPos + 44 + slot * spacing, imageWidth - 44, spacing, slot));
         }
-        addRenderableWidget(new Quote(leftPos + 12, topPos + imageHeight - 17, 90, 14, 18));
-        addRenderableWidget(new Quote(leftPos + imageWidth - 102, topPos + imageHeight - 17, 90, 14, 26));
+        addRenderableWidget(new Quote(leftPos + 15, topPos + imageHeight - 28, 86, 14, 18));
+        addRenderableWidget(new Quote(leftPos + imageWidth - 101, topPos + imageHeight - 28, 86, 14, 26));
     }
 
     @Override
     public void render(GuiGraphics gui, int mouseX, int mouseY, float tick) {
         gui.fill(0, 0, width, height, 0x81221912);
         renderPaper(gui);
-        gui.drawString(font, Component.translatable("gui.expeditions.basin_ledger"), leftPos + 12, topPos + 10, INK, false);
+        var title = Component.translatable("gui.expeditions.basin_ledger");
+        gui.drawString(font, title, leftPos + (imageWidth - font.width(title)) / 2, topPos + 17, INK, false);
         var account = menu.getContainer().getItem(22);
         if (!account.isEmpty()) {
-            gui.drawString(font, font.plainSubstrByWidth(account.getHoverName().getString(), imageWidth - 91),
-                    leftPos + 12, topPos + 23, 0xff765539, false);
+            gui.drawString(font, font.plainSubstrByWidth(account.getHoverName().getString(), imageWidth - 34),
+                    leftPos + 20, topPos + 30, 0xff765539, false);
         }
         var note = menu.getContainer().getItem(13);
         if (!note.isEmpty()) {
-            int y = topPos + (account.isEmpty() ? 29 : 41);
-            for (var line : font.split(note.getHoverName(), imageWidth - 24)) {
-                gui.drawString(font, line, leftPos + 12, y, INK, false);
+            int y = topPos + (account.isEmpty() ? 42 : 48);
+            for (var line : font.split(note.getHoverName(), imageWidth - 48)) {
+                gui.drawString(font, line, leftPos + 17, y, INK, false);
                 y += 11;
             }
         }
@@ -55,7 +59,7 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
         if (!page.isEmpty()) {
             var label = page.getHoverName();
             gui.drawString(font, label, leftPos + (imageWidth - font.width(label)) / 2,
-                    topPos + imageHeight - 14, INK, false);
+                    topPos + imageHeight - 25, INK, false);
         }
         for (var widget : children()) {
             if (widget instanceof Quote quote) quote.render(gui, mouseX, mouseY, tick);
@@ -73,58 +77,31 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
     }
 
     private void renderPaper(GuiGraphics gui) {
-        int right = leftPos + imageWidth;
-        int bottom = topPos + imageHeight;
-        gui.fill(leftPos - 3, topPos + 3, right + 5, bottom + 6, 0x9b281e18);
-        gui.fill(leftPos - 2, topPos + 1, right + 2, bottom + 3, 0xff6e5942);
-        for (int row = 0; row < imageHeight; row++) {
-            int edge = row == 0 || row == imageHeight - 1 ? 4 : 1 + row / 5 % 3;
-            int y = topPos + row;
-            gui.fill(leftPos + edge, y, right - edge, y + 1, 0xffad8960);
-            gui.fill(leftPos + edge + 2, y, right - edge - 2, y + 1, 0xffdfc69b);
-        }
-        // Wear follows the edge of the leaf and stays out of the text's contrast range.
-        for (int mark = 0; mark < 34; mark++) {
-            int x = leftPos + 6 + (mark * 53) % (imageWidth - 12);
-            int y = topPos + 6 + (mark * 23) % (imageHeight - 12);
-            gui.fill(x, y, x + 1 + mark % 3, y + 1, 0x247d5e3b);
-        }
-        gui.hLine(leftPos + 10, right - 12, bottom - 3, 0xffb2936d);
-        int rootX = right - 34;
-        int rootY = topPos + 6;
-        // Stepped pressure marks left by the graft under the copper clip.
-        for (int step = 0; step < 8; step++) {
-            int x = rootX + step * 3;
-            int y = rootY + step / 2;
-            gui.fill(x, y, x + 4, y + 1, 0x596d5030);
-            if (step % 2 == 0) gui.fill(x + 1, y - 2, x + 2, y, 0x426d5030);
-        }
-        int clip = leftPos + imageWidth / 2;
-        gui.fill(clip - 13, topPos - 4, clip + 13, topPos + 4, 0xff67412b);
-        gui.fill(clip - 11, topPos - 3, clip + 11, topPos + 2, 0xffb47b49);
-        gui.hLine(clip - 9, clip + 9, topPos - 2, 0xffdfad71);
-        gui.fill(clip - 9, topPos, clip - 7, topPos + 2, 0xff795135);
-        gui.fill(clip + 7, topPos, clip + 9, topPos + 2, 0xff795135);
+        gui.blitSprite(FRAME, leftPos, topPos, imageWidth, imageHeight);
     }
 
     private void renderSapStain(GuiGraphics gui, int mouseX, int mouseY) {
-        int x = leftPos + imageWidth - 70;
-        int y = topPos + 20;
+        int x = leftPos + imageWidth - 23;
+        int y = topPos + 46;
+        int length = imageHeight - 84;
         int amount = menu.sapAmount();
         int capacity = SapVesselBlockEntity.BASIN_CAPACITY;
-        int filled = Math.clamp(amount * 54 / capacity, 0, 54);
-        gui.fill(x - 2, y - 1, x + 55, y + 8, 0xffc4a06e);
-        gui.fill(x, y + 1, x + 54, y + 7, 0xffd1b383);
+        int filled = Math.clamp(amount * (length - 4) / capacity, 0, length - 4);
+        gui.fill(x - 2, y - 2, x + 10, y + length + 2, 0xff59452f);
+        gui.fill(x - 1, y - 1, x + 9, y + length + 1, 0xff9a8060);
+        gui.fill(x, y, x + 8, y + length, 0xff493a2c);
+        gui.fill(x + 1, y + 1, x + 2, y + length - 1, 0xffc0ab8b);
         if (filled > 0) {
-            gui.fill(x, y + 1, x + filled, y + 7, 0xff985026);
-            gui.fill(x, y + 2, x + filled, y + 4, 0xffc48443);
-            gui.fill(x + filled - 1, y, x + filled, y + 8, 0xffa36035);
+            int surface = y + length - 2 - filled;
+            gui.fill(x + 2, surface, x + 7, y + length - 2, 0xff9b5728);
+            gui.fill(x + 3, surface, x + 5, y + length - 2, 0xffc88a3d);
+            gui.hLine(x + 2, x + 6, surface, 0xffe1b56e);
         }
         for (int mark = 1; mark < 4; mark++) {
-            int at = x + mark * 54 / 4;
-            gui.vLine(at, y + 4, y + 6, INK);
+            int at = y + mark * length / 4;
+            gui.hLine(x + 5, x + 7, at, 0xff372b20);
         }
-        if (mouseX >= x - 3 && mouseX <= x + 56 && mouseY >= y - 4 && mouseY <= y + 10) {
+        if (mouseX >= x - 3 && mouseX <= x + 11 && mouseY >= y - 3 && mouseY <= y + length + 3) {
             gui.renderTooltip(font, Component.translatable("message.expeditions.sap_amount", amount, capacity), mouseX, mouseY);
         }
     }
@@ -172,11 +149,12 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
                 gui.drawString(font, name, labelX, getY() + 3, color, false);
                 return;
             }
+            gui.blitSprite(LEAF, getX(), getY(), getWidth(), getHeight() - 1);
             int x = getX() + 26;
             int y = getY() + 4;
             int available = getWidth() - 26;
-            gui.fill(getX(), y, getX() + 21, y + 21, 0xffb18c62);
-            gui.fill(getX() + 1, y + 1, getX() + 20, y + 20, 0xffcdb38b);
+            gui.fill(getX(), y, getX() + 21, y + 21, 0xff927c5d);
+            gui.fill(getX() + 1, y + 1, getX() + 20, y + 20, 0xffb6a185);
             gui.renderItem(stack, getX() + 3, y + 3);
             var price = notes.size() > 1 ? notes.get(1) : Component.empty();
             int priceWidth = font.width(price);
@@ -186,7 +164,7 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
                 gui.drawString(font, font.plainSubstrByWidth(notes.getFirst().getString(), available),
                         x, y + 10, 0xff765539, false);
             }
-            gui.hLine(getX(), getX() + getWidth() - 1, getY() + getHeight() - 1, 0xffb5986b);
+
         }
     }
 }

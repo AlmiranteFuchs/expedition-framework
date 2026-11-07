@@ -10,7 +10,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 /** Small world-lit knot and flexing ribs. No world edits, custom packets or rotating chunk meshes. */
 public final class ResonanceRenderer implements BlockEntityRenderer<ResonanceMachineBlockEntity> {
-    private static final ResourceLocation BONE=ResourceLocation.parse("expeditions:textures/block/machine_bone.png");
+    private static final ResourceLocation BONE=ResourceLocation.parse("expeditions:textures/block/carved_bark.png");
     public ResonanceRenderer(BlockEntityRendererProvider.Context context) { }
     @Override public void render(ResonanceMachineBlockEntity be,float partial,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
         if(be.getLevel()==null || be.kind()==Kind.CONDENSER || !be.getBlockState().getValue(ResonanceMachineBlock.HAS_CORE))return;

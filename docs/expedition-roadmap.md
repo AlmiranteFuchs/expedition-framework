@@ -998,3 +998,9 @@ Nether and End salvage draw from their own material, curiosity, and gear
 tags. Other dimensions still discover eligible items from their mod.
 JEI's brewing card shows the steeping step, and its condenser notes name
 dormant flakes as the input.
+
+### Approved art family — dev
+
+Implemented the selected review directions M1B, M2C, M3A, M4C, T1A, T2B,
+T3B, T4A, W1A, W2A and W3C. The selected concepts, native sprite sheet and
+validation notes are in docs/art-direction/approved-2026-11-07.

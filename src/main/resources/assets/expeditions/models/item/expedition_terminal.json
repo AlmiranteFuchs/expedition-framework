@@ -1,6 +1,5 @@
 {
   "parent": "expeditions:block/expedition_terminal",
-  "gui_light": "side",
   "display": {
     "gui": {
       "rotation": [
@@ -19,5 +18,6 @@
         0.625
       ]
     }
-  }
+  },
+  "gui_light": "side"
 }

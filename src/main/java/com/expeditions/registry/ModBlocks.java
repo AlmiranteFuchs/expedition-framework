@@ -95,7 +95,7 @@ public final class ModBlocks {
                             .sound(SoundType.COPPER).noOcclusion()));
 
     public static final DeferredHolder<Block, Block> GRAFT_POST = BLOCKS.register("graft_post",
-            () -> new net.minecraft.world.level.block.RotatedPillarBlock(BlockBehaviour.Properties.of()
+            () -> new com.expeditions.block.GraftPostBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.0f).sound(SoundType.WOOD).noOcclusion()));
     public static final DeferredHolder<Block, Block> GRAFT_COLLAR = BLOCKS.register("graft_collar",
             () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)

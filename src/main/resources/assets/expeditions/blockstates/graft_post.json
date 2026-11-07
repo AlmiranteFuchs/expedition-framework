@@ -1,13 +1,65 @@
 {
   "variants": {
-    "axis=y": {
+    "axis=y,crown=north": {
+      "model": "expeditions:block/graft_post_crown",
+      "y": 0
+    },
+    "axis=y,crown=east": {
+      "model": "expeditions:block/graft_post_crown",
+      "y": 90
+    },
+    "axis=y,crown=south": {
+      "model": "expeditions:block/graft_post_crown",
+      "y": 180
+    },
+    "axis=y,crown=west": {
+      "model": "expeditions:block/graft_post_crown",
+      "y": 270
+    },
+    "axis=y,crown=up": {
       "model": "expeditions:block/graft_post"
     },
-    "axis=z": {
+    "axis=z,crown=north": {
       "model": "expeditions:block/graft_post",
       "x": 90
     },
-    "axis=x": {
+    "axis=z,crown=east": {
+      "model": "expeditions:block/graft_post",
+      "x": 90
+    },
+    "axis=z,crown=south": {
+      "model": "expeditions:block/graft_post",
+      "x": 90
+    },
+    "axis=z,crown=west": {
+      "model": "expeditions:block/graft_post",
+      "x": 90
+    },
+    "axis=z,crown=up": {
+      "model": "expeditions:block/graft_post",
+      "x": 90
+    },
+    "axis=x,crown=north": {
+      "model": "expeditions:block/graft_post",
+      "x": 90,
+      "y": 90
+    },
+    "axis=x,crown=east": {
+      "model": "expeditions:block/graft_post",
+      "x": 90,
+      "y": 90
+    },
+    "axis=x,crown=south": {
+      "model": "expeditions:block/graft_post",
+      "x": 90,
+      "y": 90
+    },
+    "axis=x,crown=west": {
+      "model": "expeditions:block/graft_post",
+      "x": 90,
+      "y": 90
+    },
+    "axis=x,crown=up": {
       "model": "expeditions:block/graft_post",
       "x": 90,
       "y": 90

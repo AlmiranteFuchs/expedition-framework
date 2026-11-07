@@ -43,6 +43,16 @@ public final class WayrootFrameTests {
             level.setBlockAndUpdate(opening.west().above(y), post);
             level.setBlockAndUpdate(opening.east().above(y), post);
         }
+        var crown = com.expeditions.block.GraftPostBlock.CROWN;
+        helper.assertTrue(level.getBlockState(opening.west().above(2)).getValue(crown) == Direction.EAST
+                        && level.getBlockState(opening.east().above(2)).getValue(crown) == Direction.WEST,
+                "the top posts turn their carved shoulders toward the collar");
+        level.removeBlock(opening.above(2), false);
+        helper.assertTrue(level.getBlockState(opening.west().above(2)).getValue(crown) == Direction.UP,
+                "removing the collar restores the ordinary post");
+        level.setBlockAndUpdate(opening.above(2), ModBlocks.GRAFT_COLLAR.get().defaultBlockState());
+        helper.assertTrue(level.getBlockState(opening.west().above(2)).getValue(crown) == Direction.EAST,
+                "replacing the collar reconnects its carved shoulder");
         level.setBlockAndUpdate(opening.above(), Blocks.STONE.defaultBlockState());
         try {
             try {

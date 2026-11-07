@@ -366,5 +366,7 @@ def gen():
     bloom_source()
     from item_art import gen as item_art
     item_art()
+    from approved_workshop_art import generate as approved_workshop
+    approved_workshop()
 
 if __name__=='__main__':gen()
