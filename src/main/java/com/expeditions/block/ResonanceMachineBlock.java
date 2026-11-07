@@ -29,6 +29,14 @@ public final class ResonanceMachineBlock extends HorizontalDirectionalBlock impl
     @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level l,BlockState s,BlockEntityType<T> t){
         return l.isClientSide||t!=ModBlockEntities.RESONANCE_MACHINE.get()?null:(world,p,state,be)->ResonanceMachineBlockEntity.tick((net.minecraft.server.level.ServerLevel)world,p,state,(ResonanceMachineBlockEntity)be);
     }
+    public static void allowCellInteraction(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+        if (event.getItemStack().is(ModItems.RESONANCE_CELL.get())
+                && event.getLevel().getBlockState(event.getPos()).getBlock() instanceof ResonanceMachineBlock
+                && event.getUseBlock() != net.neoforged.neoforge.common.util.TriState.FALSE) {
+            event.setUseBlock(net.neoforged.neoforge.common.util.TriState.TRUE);
+        }
+    }
+
     @Override protected ItemInteractionResult useItemOn(ItemStack stack,BlockState state,Level level,BlockPos p,Player player,InteractionHand hand,BlockHitResult hit){
         if(stack.is(ModItems.ATTUNEMENT_SIGIL.get()) && player.isShiftKeyDown()){
             if(level instanceof net.minecraft.server.level.ServerLevel && level.getBlockEntity(p) instanceof ResonanceMachineBlockEntity be){
@@ -36,10 +44,7 @@ public final class ResonanceMachineBlock extends HorizontalDirectionalBlock impl
             }
             return ItemInteractionResult.sidedSuccess(level.isClientSide);
         }
-        if(stack.is(ModItems.RESONANCE_CELL.get())){
-            com.expeditions.item.ResonanceCellItem.transferToBlock(new net.minecraft.world.item.context.UseOnContext(player,hand,hit));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide);
-        }
+
         open(level,p,player);return ItemInteractionResult.sidedSuccess(level.isClientSide);
     }
     @Override protected InteractionResult useWithoutItem(BlockState s,Level l,BlockPos p,Player player,BlockHitResult h){open(l,p,player);return InteractionResult.sidedSuccess(l.isClientSide);}

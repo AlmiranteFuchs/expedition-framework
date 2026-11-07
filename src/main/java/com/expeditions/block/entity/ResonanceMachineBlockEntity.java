@@ -23,11 +23,30 @@ import net.neoforged.neoforge.energy.*;
 import net.neoforged.neoforge.items.*;
 
 public final class ResonanceMachineBlockEntity extends BlockEntity {
-    public final ItemStackHandler inventory=new ItemStackHandler(2) {
-        @Override public boolean isItemValid(int slot,ItemStack stack) { return slot==0 && (!dynamo()||!ExpeditionsConfig.simpleGenerators()) && switch(kind()){
-            case DORMANT->false;case LIVING->stack.is(ModItems.ASSIMILATION_ESSENCE.get());
-            case SEVERED->stack.is(ModItems.SEVERANCE_CORE.get());case CONDENSER->stack.is(ModItems.DORMANT_FLAKE.get());}; }
-        @Override protected void onContentsChanged(int slot) { setChanged();updateComparator(); }
+    public static final int CELL_SLOT = 2;
+    public final ItemStackHandler inventory = new ItemStackHandler(3) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            if (slot == CELL_SLOT) return stack.is(ModItems.RESONANCE_CELL.get());
+            if (slot != 0 || dynamo() && ExpeditionsConfig.simpleGenerators()) return false;
+            return switch (kind()) {
+                case DORMANT -> false;
+                case LIVING -> stack.is(ModItems.ASSIMILATION_ESSENCE.get());
+                case SEVERED -> stack.is(ModItems.SEVERANCE_CORE.get());
+                case CONDENSER -> stack.is(ModItems.DORMANT_FLAKE.get());
+            };
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return slot == CELL_SLOT ? 1 : super.getSlotLimit(slot);
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+            updateComparator();
+        }
     };
     private int fuelTicks,progress,generationRate,fieldCount=1;
     private long nextWorkSound;
@@ -124,6 +143,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
         return false;
     }
     public static void tick(ServerLevel level,BlockPos pos,BlockState state,ResonanceMachineBlockEntity be){
+        if (!be.dynamo()) be.transferCell();
         be.actualGeneration=0;boolean working=false,quiet=true,proven=false;
         boolean paused=level.hasNeighborSignal(pos);
         boolean simple=ExpeditionsConfig.simpleGenerators();
@@ -190,6 +210,7 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                 if(moved>0)be.bank.spend(moved);budget-=moved;
             }
         }
+        if (be.dynamo()) be.transferCell();
         var output=be.inventory.getStackInSlot(1);
         boolean outputRoom=output.isEmpty()||output.is(ModItems.ASSIMILATION_ESSENCE.get())&&output.getCount()<output.getMaxStackSize();
         be.status=be.dynamo()?ResonanceStatus.source(be.kind(),be.energy(),paused,quiet,be.fuelTicks>0||be.actualGeneration>0,
@@ -212,11 +233,28 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
             level.setBlock(pos,state.setValue(com.expeditions.block.ResonanceMachineBlock.ACTIVE,lit).setValue(com.expeditions.block.ResonanceMachineBlock.HAS_CORE,core),3);
         be.updateComparator();
     }
+    /** Cell transfers use the same bounded banks as external energy connections. */
+    private void transferCell() {
+        var stack = inventory.getStackInSlot(CELL_SLOT);
+        if (!stack.is(ModItems.RESONANCE_CELL.get())) return;
+        var cell = com.expeditions.item.ResonanceCellItem.storage(stack);
+        int moved;
+        if (dynamo()) {
+            int accepted = cell.receiveEnergy(bank.extractEnergy(256, true), true);
+            moved = cell.receiveEnergy(bank.extractEnergy(accepted, false), false);
+        } else {
+            int accepted = bank.receiveEnergy(cell.extractEnergy(80, true), true);
+            moved = bank.receiveEnergy(cell.extractEnergy(accepted, false), false);
+        }
+        if (moved > 0) setChanged();
+    }
+
     public void dropContents(){
         if(level==null || level.isClientSide)return;
-        for(int slot=0;slot<2;slot++)net.minecraft.world.level.block.Block.popResource(level,worldPosition,inventory.getStackInSlot(slot));
+        for(int slot=0;slot<inventory.getSlots();slot++)net.minecraft.world.level.block.Block.popResource(level,worldPosition,inventory.getStackInSlot(slot));
         if(reserved)net.minecraft.world.level.block.Block.popResource(level,worldPosition,new ItemStack(ModItems.DORMANT_FLAKE.get()));
-        inventory.setStackInSlot(0,ItemStack.EMPTY);inventory.setStackInSlot(1,ItemStack.EMPTY);reserved=false;
+        for (int slot = 0; slot < inventory.getSlots(); slot++) inventory.setStackInSlot(slot, ItemStack.EMPTY);
+        reserved=false;
         ExpeditionManager.get(level.getServer()).savedData().setStillnessBreach(worldPosition,false);
     }
     @Override protected void saveAdditional(CompoundTag tag,HolderLookup.Provider registries){
@@ -224,7 +262,12 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
         tag.putInt("Fuel",fuelTicks);tag.putInt("Progress",progress);tag.putBoolean("Reserved",reserved);tag.putBoolean("Breach",breach);
     }
     @Override protected void loadAdditional(CompoundTag tag,HolderLookup.Provider registries){
-        super.loadAdditional(tag,registries);inventory.deserializeNBT(registries,tag.getCompound("Inventory"));bank.restore(tag.getInt("Energy"));
+        super.loadAdditional(tag,registries);
+        var storedInventory = tag.getCompound("Inventory").copy();
+        // Older machines saved two slots. Reserve the new cell slot without moving their input or output.
+        storedInventory.putInt("Size", 3);
+        inventory.deserializeNBT(registries, storedInventory);
+        bank.restore(tag.getInt("Energy"));
         fuelTicks=kind()==Kind.LIVING?Math.clamp(tag.getInt("Fuel"),0,ResonancePower.LIVING_FUEL_TICKS):0;reserved=!dynamo()&&tag.getBoolean("Reserved");
         progress=ResonanceProcessing.restoredProgress(tag.getInt("Progress"),reserved);breach=!dynamo()&&tag.getBoolean("Breach");
     }

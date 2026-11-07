@@ -1004,3 +1004,29 @@ dormant flakes as the input.
 Implemented the selected review directions M1B, M2C, M3A, M4C, T1A, T2B,
 T3B, T4A, W1A, W2A and W3C. The selected concepts, native sprite sheet and
 validation notes are in docs/art-direction/approved-2026-11-07.
+
+
+### Machine cell docks and carved screens — dev
+
+All four resonance machine screens now share the approved W3C salvage bark
+frame and wood panels. The dock has its own charge bar and status, separate
+from machine storage, operating state and processing progress. Generators
+charge an inserted Resonance Cell; condensers draw from one. Holding a cell
+while opening a machine, including sneak-use, no longer transfers charge.
+Shift-click routes cells into the dock. Neighbor energy consumers retain
+priority over generator cell charging. Existing FE connections still work.
+
+Inventory slot 2 is the saved cell dock; legacy input/output slots 0/1 retain
+their positions. Item automation retains its two-slot interface. A broken
+machine drops its cell once with remaining charge. The guide and item hint
+now explain this interaction.
+
+Verified: build, 203 unit tests and 196 required GameTests. Focused equipment
+coverage also passed all seven tests. The initial full run exposed missing
+NeoForge menu-payload negotiation in the mock player, corrected using the
+loader's configureMockConnection test API. Evidence is kept separately in
+build/machine-cell-validation-1.log, build/machine-cell-focused-2.log and
+build/machine-cell-validation-3.log. The final client with installed mods
+was checked in the disposable supaflat test world: condenser and Bloom
+Engine screens, charging/depletion readouts, and unchanged held-cell charge.
+Next concrete roadmap item remains cleared-Nether dormant survey deposits.

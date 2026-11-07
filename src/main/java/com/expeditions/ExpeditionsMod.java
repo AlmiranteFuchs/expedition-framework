@@ -56,6 +56,7 @@ public class ExpeditionsMod {
 
         IEventBus gameBus = NeoForge.EVENT_BUS;
         gameBus.addListener(com.expeditions.block.SapVesselBlock::allowRecyclingInteraction);
+        gameBus.addListener(com.expeditions.block.ResonanceMachineBlock::allowCellInteraction);
         gameBus.addListener(ExpeditionEventHandler::onLivingDeath);
         gameBus.addListener(ExpeditionEventHandler::onItemPickup);
         gameBus.addListener(ExpeditionEventHandler::onVillageMarketOpened);

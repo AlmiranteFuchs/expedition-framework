@@ -223,7 +223,7 @@
       },
       {
         "heading": "Carry a reserve",
-        "body": "A Resonance Cell holds 16000 Resonance and starts empty. Sneak-use a generator to charge it; use a receiver normally to supply it. Compatible FE chargers also work.\n\nCarry a charged cell rather than assuming there will be a working workshop at the far end."
+        "body": "A Resonance Cell holds 16000 Resonance and starts empty. Open a generator and place the cell in its Cell slot to charge it. Place a charged cell in a condenser\u0027s Cell slot to supply power. Compatible FE chargers also work.\n\nCarry a charged cell rather than assuming there will be a working workshop at the far end."
       },
       {
         "heading": "A quiet camp",

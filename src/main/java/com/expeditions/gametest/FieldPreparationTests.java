@@ -30,6 +30,7 @@ public final class FieldPreparationTests {
     @GameTest(template="arena",batch="preparation_transfer")
     public static void portableChargeTransfersThroughRealBlockInteractionAndPersists(GameTestHelper h){
         var level=h.getLevel();var p=h.makeMockServerPlayerInLevel();var pos=h.absolutePos(new BlockPos(5,1,5));
+        net.neoforged.neoforge.network.registration.NetworkRegistry.configureMockConnection(p.connection.getConnection());
         level.setBlockAndUpdate(pos,ModBlocks.ESSENCE_CONDENSER.get().defaultBlockState());
         var machine=(ResonanceMachineBlockEntity)level.getBlockEntity(pos);var s=cell(4000);p.setItemInHand(InteractionHand.MAIN_HAND,s);
         var storage=s.getCapability(Capabilities.EnergyStorage.ITEM);
@@ -37,16 +38,56 @@ public final class FieldPreparationTests {
         p.teleportTo(pos.getX()+.5,pos.getY(),pos.getZ()+2.5);
         var hit=new BlockHitResult(Vec3.atCenterOf(pos),Direction.SOUTH,pos,false);
         p.gameMode.useItemOn(p,level,s,InteractionHand.MAIN_HAND,hit);
-        h.assertTrue(machine.energy()==80&&ResonanceCellItem.energy(s)==3920,"block interaction must transfer only the receiver's actual accepted energy");
-        h.assertTrue(p.containerMenu==p.inventoryMenu,"cell use must not open the machine menu instead");
-        var restored=ItemStack.parseOptional(level.registryAccess(),(CompoundTag)s.save(level.registryAccess()));
-        h.assertTrue(ResonanceCellItem.energy(restored)==3920,"carried energy must survive stack save/load");
+        h.assertTrue(p.containerMenu instanceof ResonanceMenu&&machine.energy()==0&&ResonanceCellItem.energy(s)==4000,"holding a cell opens the machine without transferring carried charge");
+        var menu=(ResonanceMenu)p.containerMenu;
+        int playerSlot=-1;
+        for(int i=0;i<menu.slots.size();i++)if(menu.getSlot(i).container==p.getInventory()&&menu.getSlot(i).getItem()==s)playerSlot=i;
+        h.assertTrue(playerSlot>=0,"held cell must be visible in the inventory");
+        menu.quickMoveStack(p,playerSlot);
+        h.assertTrue(machine.inventory.getStackInSlot(2).is(ModItems.RESONANCE_CELL.get())&&machine.inventory.getStackInSlot(0).isEmpty(),"shift-click routes cells into the dock, never the sample slot");
+        ResonanceMachineBlockEntity.tick(level,pos,level.getBlockState(pos),machine);
+        var docked=machine.inventory.getStackInSlot(2);
+        h.assertTrue(machine.energy()==80&&ResonanceCellItem.energy(docked)==3920,"docked cells transfer only the receiver's actual accepted energy");
+        var restored=new ResonanceMachineBlockEntity(pos,level.getBlockState(pos));restored.setLevel(level);
+        restored.loadWithComponents(machine.saveWithoutMetadata(level.registryAccess()),level.registryAccess());
+        h.assertTrue(restored.inventory.getSlots()==3&&restored.energy()==80&&ResonanceCellItem.energy(restored.inventory.getStackInSlot(2))==3920,"machine save/load preserves docked charge and the receiver bank together");
+        menu.quickMoveStack(p,menu.cellSlot());
+        h.assertTrue(machine.inventory.getStackInSlot(2).isEmpty()&&p.getInventory().items.stream().anyMatch(item->item.is(ModItems.RESONANCE_CELL.get())&&ResonanceCellItem.energy(item)==3920),"removing a cell retains its remaining charge");
+        p.closeContainer();
         var source=pos.offset(3,0,0);level.setBlockAndUpdate(source,ModBlocks.STILLNESS_DYNAMO.get().defaultBlockState());
+        level.setBlockAndUpdate(source.above(),Blocks.REDSTONE_BLOCK.defaultBlockState());
         var bank=(ResonanceMachineBlockEntity)level.getBlockEntity(source);var tag=bank.saveWithoutMetadata(level.registryAccess());tag.putInt("Energy",1000);bank.loadWithComponents(tag,level.registryAccess());
-        p.setShiftKeyDown(true);var context=new net.minecraft.world.item.context.UseOnContext(p,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(source),Direction.SOUTH,source,false));
-        ModItems.RESONANCE_CELL.get().useOn(context);
-        h.assertTrue(bank.energy()==744&&ResonanceCellItem.energy(s)==4176,"sneak-use must withdraw conserved generator charge");
-        level.removeBlock(source,false);level.removeBlock(pos,false);h.succeed();
+        p.teleportTo(source.getX()+.5,source.getY(),source.getZ()+2.5);p.setShiftKeyDown(true);p.setItemInHand(InteractionHand.MAIN_HAND,cell(0));
+        p.gameMode.useItemOn(p,level,p.getMainHandItem(),InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(source),Direction.SOUTH,source,false));
+        h.assertTrue(p.containerMenu instanceof ResonanceMenu&&bank.energy()==1000,"sneak-use also opens the dock instead of draining the generator");
+        bank.inventory.setStackInSlot(2,cell(0));
+        ResonanceMachineBlockEntity.tick(level,source,level.getBlockState(source),bank);
+        h.assertTrue(bank.energy()==744&&ResonanceCellItem.energy(bank.inventory.getStackInSlot(2))==256,"generator dock conserves stored charge even while generation is redstone-paused");
+        bank.inventory.setStackInSlot(2,cell(16000));
+        ResonanceMachineBlockEntity.tick(level,source,level.getBlockState(source),bank);
+        h.assertTrue(bank.energy()==744&&ResonanceCellItem.energy(bank.inventory.getStackInSlot(2))==16000,"a full cell never wastes generator charge");
+        p.closeContainer();level.removeBlock(source.above(),false);level.removeBlock(source,false);level.removeBlock(pos,false);h.succeed();
+    }
+    @GameTest(template="arena",batch="preparation_cell_save")
+    public static void legacyMachineInventoryAndBrokenDockPreserveContents(GameTestHelper h){
+        var level=h.getLevel();var pos=h.absolutePos(new BlockPos(5,1,5));
+        level.setBlockAndUpdate(pos,ModBlocks.ESSENCE_CONDENSER.get().defaultBlockState());
+        var machine=(ResonanceMachineBlockEntity)level.getBlockEntity(pos);
+        var old=new net.neoforged.neoforge.items.ItemStackHandler(2);
+        old.setStackInSlot(0,new ItemStack(ModItems.DORMANT_FLAKE.get(),3));old.setStackInSlot(1,new ItemStack(ModItems.ASSIMILATION_ESSENCE.get(),2));
+        var tag=new CompoundTag();tag.put("Inventory",old.serializeNBT(level.registryAccess()));tag.putInt("Energy",16000);
+        machine.loadWithComponents(tag,level.registryAccess());
+        h.assertTrue(machine.inventory.getSlots()==3&&machine.inventory.getStackInSlot(0).getCount()==3&&machine.inventory.getStackInSlot(1).getCount()==2&&machine.inventory.getStackInSlot(2).isEmpty(),"old two-slot saves preserve input/output and acquire an empty dock");
+        machine.inventory.setStackInSlot(2,cell(4000));
+        // Full bank and blocked output make this a pure conservation check.
+        machine.inventory.setStackInSlot(1,new ItemStack(ModItems.ASSIMILATION_ESSENCE.get(),64));
+        ResonanceMachineBlockEntity.tick(level,pos,level.getBlockState(pos),machine);
+        h.assertTrue(machine.energy()==16000&&ResonanceCellItem.energy(machine.inventory.getStackInSlot(2))==4000,"a full receiver never drains a docked cell");
+        h.assertTrue(machine.inventory.getSlotLimit(2)==1&&!machine.inventory.isItemValid(2,new ItemStack(Items.STICK)),"dock accepts exactly one cell");
+        level.removeBlock(pos,false);machine.dropContents();
+        var drops=level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new AABB(pos).inflate(2),entity->entity.getItem().is(ModItems.RESONANCE_CELL.get()));
+        h.assertTrue(drops.stream().mapToInt(entity->entity.getItem().getCount()).sum()==1&&ResonanceCellItem.energy(drops.getFirst().getItem())==4000,"breaking the machine drops its charged cell exactly once");
+        for(var drop:drops)drop.discard();h.succeed();
     }
     @GameTest(template="arena",batch="preparation_ward")
     public static void paidWardHoldsAttentionWithoutCoolingOrInfectionImmunity(GameTestHelper h){

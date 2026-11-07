@@ -36,7 +36,7 @@ campaign state or add a tutorial gate to native dimension portals.
 
 | Equipment | Investment | Benefit | Limit |
 | --- | --- | --- | --- |
-| Resonance Cell | Dormant knot, two essence, copper and iron | Carry 16000 R from home | Starts empty; manual transfers capped at 1000, also bounded by the other device |
+| Resonance Cell | Dormant knot, two essence, copper and iron | Carry 16000 R from home | Starts empty; generator dock charges up to 256 R/t, condenser dock draws up to 80 R/t |
 | Field Ward | Captured heart, two essence, iron and copper | Hold attention and pause personal dwell pressure in an eight-block sphere | 4000 R buys two minutes; existing enemies and contact infection remain |
 | Heartglass Lens | Captured heart, essence, copper and amethyst | Complete a compass reading for horizontal distance and signed elevation | 200 R per reading from one carried cell |
 
@@ -45,10 +45,14 @@ Living-heart Engine. This is a choice of portable preparation or workshop power;
 the crafted equipment is reusable. The issued compass retains its free bearing
 and elevation ember without upgrades.
 
-Sneak-use a generator with a cell to withdraw power. Use a receiver normally to
-supply it. Hold use for repeated interactions; a machine's own transfer limits
-still apply. Standard NeoForge FE item capabilities let compatible chargers fill
-the cell. Its charge persists on the physical stack, including drops and saves.
+Open a generator and insert the cell in its dedicated Cell slot to charge it.
+A condenser draws power from an inserted charged cell. Shift-click routes cells
+into the dock and returns them to inventory with their remaining charge.
+Transfers stop at either storage limit; power supplied to adjacent machines
+keeps priority over generator cell charging. The original input/output slots
+remain in place in older saves. Breaking a machine drops its inserted cell.
+Standard NeoForge FE item capabilities also let compatible chargers fill the
+cell. Its charge persists on the physical stack, including drops and saves.
 It is not recalled with the expedition compass.
 
 Place a ward and use a cell with at least 4000 R. Active wards reject additional

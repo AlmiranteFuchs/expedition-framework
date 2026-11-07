@@ -221,11 +221,22 @@ def salvage_ui():
         'gui':{'scaling':{'type':'nine_slice','width':224,'height':32,'border':3}}})
 
 
+def machine_ui():
+    slot=Image.new('RGBA',(18,18),'#6c573f')
+    d=ImageDraw.Draw(slot)
+    d.rectangle((1,1,16,16),fill='#c4b092')
+    d.rectangle((2,2,15,15),fill='#a38c6a')
+    d.line((2,2,15,2),fill='#7a6246')
+    d.line((2,3,2,15),fill='#826b4c')
+    d.line((3,15,15,15),fill='#dfceb0')
+    save('gui/sprites/machine_slot.png',slot)
+
 def generate():
     materials()
     machines()
     wayroot()
     salvage_ui()
+    machine_ui()
 
 
 if __name__=='__main__':
