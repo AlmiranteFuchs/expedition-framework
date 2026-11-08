@@ -541,6 +541,32 @@ public final class ExpeditionManager {
         }
     }
 
+    /** A settled first witness can repeat its detour bearing without advancing the route. */
+    public boolean revealFieldCache(ServerPlayer player, BlockPos witness) {
+        var run = ledger.activeRun(player.getUUID()).orElse(null);
+        if (run == null || run.completedCheckpoints() == 0 || run.fieldCacheOpened()
+                || !run.definition().dimension().equals(player.level().dimension().location().toString())
+                || !toWaypoint(witness).equals(run.checkpoints().getFirst()) || run.fieldCache().isEmpty()) return false;
+        var cache = run.fieldCache().orElseThrow();
+        int dx = cache.x() - witness.getX(), dz = cache.z() - witness.getZ();
+        var bearing = Math.abs(dx) > Math.abs(dz)
+                ? (dx > 0 ? net.minecraft.core.Direction.EAST : net.minecraft.core.Direction.WEST)
+                : (dz > 0 ? net.minecraft.core.Direction.SOUTH : net.minecraft.core.Direction.NORTH);
+        player.displayClientMessage(Component.translatable("message.expeditions.cache_bearing",
+                Component.translatable("direction.expeditions." + bearing.getName()),
+                Math.round(Math.sqrt((double) dx * dx + (double) dz * dz))), true);
+        double distance = Math.sqrt((double) dx * dx + (double) dz * dz);
+        double span = Math.min(8, distance);
+        if (distance > 0) for (int step = 1; step <= 12; step++) {
+            double fraction = span * step / (12 * distance);
+            player.serverLevel().sendParticles(com.expeditions.block.RouteMarkerBlock.AMBER,
+                    witness.getX() + .5 + dx * fraction,
+                    witness.getY() + .65 + (cache.y() - witness.getY()) * fraction,
+                    witness.getZ() + .5 + dz * fraction, 1, .025, .025, .025, 0);
+        }
+        return true;
+    }
+
     public void claimFieldCache(ServerPlayer player, BlockPos pos) {
         var run = ledger.activeRun(player.getUUID()).orElse(null);
         if (run == null || !run.definition().dimension().equals(player.level().dimension().location().toString())
@@ -807,21 +833,12 @@ public final class ExpeditionManager {
         if (run.definition().defenseObjectiveAt(run.completedCheckpoints()).isEmpty()
                 && run.definition().artifactObjectiveAt(run.completedCheckpoints()).isEmpty()) {
             player.displayClientMessage(Component.translatable(run.allCheckpointsDone()
-                    ? "message.expeditions.hollow_answers" : "message.expeditions.witness_answers",
+                    ? "message.expeditions.hollow_answers" : run.completedCheckpoints() == 1
+                            ? "message.expeditions.first_witness_answers" : "message.expeditions.witness_answers",
                     run.completedCheckpoints(), run.totalCheckpoints()), true);
         }
         triggerCheckpointChallenge(run, player);
-        if (run.completedCheckpoints() == 1) {
-            run.fieldCache().ifPresent(cache -> {
-                int dx = cache.x() - pos.getX();
-                int dz = cache.z() - pos.getZ();
-                var bearing = Math.abs(dx) > Math.abs(dz)
-                        ? (dx > 0 ? net.minecraft.core.Direction.EAST : net.minecraft.core.Direction.WEST)
-                        : (dz > 0 ? net.minecraft.core.Direction.SOUTH : net.minecraft.core.Direction.NORTH);
-                player.displayClientMessage(Component.translatable("message.expeditions.cache_bearing",
-                        Component.translatable("direction." + bearing.getName())), true);
-            });
-        }
+        if (run.completedCheckpoints() == 1) revealFieldCache(player, pos);
         // The witness answers the compass: wood first, then a restrained chime.
         player.serverLevel().playSound(null, pos,
                 ModSounds.CHECKPOINT_ACTIVATE.get(), SoundSource.BLOCKS, 0.8f, 1.0f);

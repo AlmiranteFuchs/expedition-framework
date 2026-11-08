@@ -1030,3 +1030,37 @@ build/machine-cell-validation-3.log. The final client with installed mods
 was checked in the disposable supaflat test world: condenser and Bloom
 Engine screens, charging/depletion readouts, and unchanged held-cell charge.
 Next concrete roadmap item remains cleared-Nether dormant survey deposits.
+
+
+### Wayroot recovery and cache guidance — alpha.50
+
+The Wayroot now has a self-drop loot table and belongs to both axe and
+pickaxe mining tags. The existing correct-tool requirement previously had
+no matching tool tags; the loot table was also missing. A survival regression
+breaks it with each wooden tool and checks exactly one returned desk.
+
+The framed-portal regression now moves the owner and then a guest through
+the physical doorway. Both join and teleport before the first witness;
+activating that witness still seals admission. The party menu names this
+limit explicitly and the first-witness cue explains the sealed way.
+
+Field caches remain optional Aftergrowth detours on liberated ground. A
+regular Field Survey does not place one. Cache bearings used nonexistent
+vanilla direction translations; they now use mod-owned keys and include
+distance. Clicking the settled first witness repeats the hint and a short
+amber trail without advancing, claiming or retargeting the route compass.
+The Aftergrowth test checks repeat readings, one-time claim and save/reload.
+
+Validation logs: build/wayroot-fix-focused-1.log records the initial test
+compilation error (corrected item registry reference); focused rerun in
+build/wayroot-fix-focused-2.log passed 14 tests. The first full candidate
+passed 197 required tests in build/wayroot-cache-validation-3.log. The
+versioned alpha.50 candidate uses build/alpha50-final-validation.log.
+
+The first versioned run ended without a final result; its log is retained.
+The exact alpha.50 rerun passed build/alphaBundle and all 197 required
+GameTests (203 unit tests remain green). Evidence:
+build/alpha50-final-rerun.log. The installed-mod visual review was not
+completed; see docs/release-alpha50.md. The bundle includes the approved
+artwork and ResonanceScreen, checked against current source bytes.
+Next concrete roadmap item remains cleared-Nether dormant survey deposits.

@@ -18,6 +18,7 @@
     "expeditions:pale_door",
     "expeditions:pale_trapdoor",
     "expeditions:pale_button",
-    "expeditions:pale_pressure_plate"
+    "expeditions:pale_pressure_plate",
+    "expeditions:expedition_terminal"
   ]
 }

@@ -4,6 +4,7 @@
     "expeditions:stillness_dynamo",
     "expeditions:essence_condenser",
     "expeditions:living_heart_engine",
-    "expeditions:severance_generator"
+    "expeditions:severance_generator",
+    "expeditions:expedition_terminal"
   ]
 }

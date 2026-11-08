@@ -43,7 +43,7 @@
   "message.expeditions.party_bearing": "Shared party bearing · %1$s, %2$s, %3$s",
   "message.expeditions.party_bearing_unavailable": "Hold your expedition compass in the field to share a bearing.",
   "message.expeditions.recovery_witness": "Last witness · %1$s, %2$s, %3$s",
-  "message.expeditions.cache_bearing": "The witness remembers a pale cache to the %s.",
+  "message.expeditions.cache_bearing": "A pale cache lies %1$s, about %2$s blocks away.",
   "message.expeditions.cache_sealed": "The cache stays sealed.",
   "message.expeditions.cache_opened": "A sealed find. Carry it through the Hollow to bring it home.",
   "item.expeditions.cache_find": "Sealed Field Find",
@@ -304,7 +304,7 @@
   "gui.expeditions.party": "Party access",
   "gui.expeditions.party_guided": "Private practice",
   "gui.expeditions.party_solo": "Solo Expedition",
-  "gui.expeditions.party_open": "Open party",
+  "gui.expeditions.party_open": "Open until first witness",
   "gui.expeditions.party_private_hint": "Only the charter owner may enter.",
   "gui.expeditions.party_open_hint": "Guests may join until the first witness stump seals the route.",
   "gui.expeditions.training_done": "First Bearing is recorded. Choose Field Survey for another journey.",
@@ -406,5 +406,10 @@
   "jei.expeditions.info.return_knot": "Earned at extraction, bound to the dimension it was cut in. Steep it in a water-filled Sap Jar, then settle the steep with Assimilation Essence — the sap can only reclaim that dimension's trace.",
   "jei.expeditions.info.field_ward": "Feed a charged Resonance Cell to light the ward; it suppresses the Bloom's spread around your camp.",
   "machine.expeditions.state.choked": "Choked",
-  "machine.expeditions.state.choked.hint": "Membrane grips the casing — nothing runs until the coating is broken off. Stored charge still drains out."
+  "machine.expeditions.state.choked.hint": "Membrane grips the casing — nothing runs until the coating is broken off. Stored charge still drains out.",
+  "message.expeditions.first_witness_answers": "The first witness seals the way behind you. %1$s/%2$s marks.",
+  "direction.expeditions.north": "north",
+  "direction.expeditions.south": "south",
+  "direction.expeditions.east": "east",
+  "direction.expeditions.west": "west"
 }

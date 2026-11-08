@@ -20,6 +20,32 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class WayrootFrameTests {
     private WayrootFrameTests() { }
 
+    private static void crossDoorway(net.minecraft.server.level.ServerPlayer player, BlockPos opening) {
+        player.teleportTo(opening.getX() + .5, opening.getY(), opening.getZ() + 1.1);
+        player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(0, 0, -.7));
+    }
+
+    @GameTest(template = "arena", batch = "wayroot_drop")
+    public static void survivalToolsRecoverWayrootExactlyOnce(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.SURVIVAL);
+        var pos = helper.absolutePos(new BlockPos(2, 1, 2));
+        player.teleportTo(pos.getX() + .5, pos.getY(), pos.getZ() + 2);
+        for (var tool : java.util.List.of(net.minecraft.world.item.Items.WOODEN_AXE, net.minecraft.world.item.Items.WOODEN_PICKAXE)) {
+            level.setBlockAndUpdate(pos, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.item.ItemStack(tool));
+            helper.assertTrue(player.hasCorrectToolForDrops(level.getBlockState(pos)), "axes and pickaxes can recover the Wayroot");
+            helper.assertTrue(player.gameMode.destroyBlock(pos), "survival harvesting destroys the desk");
+            var drops = level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    new net.minecraft.world.phys.AABB(pos).inflate(2), e -> e.getItem().is(ModBlocks.EXPEDITION_TERMINAL.get().asItem()));
+            helper.assertTrue(drops.stream().mapToInt(e -> e.getItem().getCount()).sum() == 1,
+                    "the missing desk loot table must never lose or duplicate its item");
+            drops.forEach(net.minecraft.world.entity.Entity::discard);
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "arena", batch = "wayroot_frame", timeoutTicks = 300)
     public static void framedPortalUsesDoorwayAndSealsWithoutRemovingFrame(GameTestHelper helper) {
         var level = helper.getLevel();
@@ -70,7 +96,16 @@ public final class WayrootFrameTests {
                     && portal.is(ModBlocks.EXPEDITION_PORTAL.get())
                     && portal.getValue(ExpeditionPortalBlock.FRAMED)
                     && level.getBlockState(opening.above()).isAir(), "one tracked marker fills the two-high doorway visually");
-            manager.enterPortal(player, opening);
+            var guest = helper.makeMockServerPlayerInLevel();
+            guest.setGameMode(GameType.CREATIVE);
+            crossDoorway(player, opening);
+            helper.assertTrue(player.blockPosition().distSqr(ExpeditionManager.toPos(run.entry())) < 4
+                            && run.portalOpen(), "the owner physically crosses without sealing the open party");
+            crossDoorway(guest, opening);
+            helper.assertTrue(run.isMember(guest.getUUID()) && manager.activeRun(guest.getUUID()).orElseThrow() == run
+                            && guest.blockPosition().distSqr(ExpeditionManager.toPos(run.entry())) < 4,
+                    "a second player physically crossing the arch joins and teleports after the owner");
+            manager.failRun(guest);
             manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().getFirst()));
             helper.assertTrue(!run.portalOpen() && level.getBlockState(opening).isAir()
                             && level.getBlockState(opening.above(2)).is(ModBlocks.GRAFT_COLLAR.get())

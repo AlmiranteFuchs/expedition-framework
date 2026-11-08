@@ -25,6 +25,7 @@ public class ExpeditionCheckpointBlock extends RouteMarkerBlock {
             BlockHitResult hitResult) {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             ExpeditionManager manager = ExpeditionManager.get(level.getServer());
+            if (manager.revealFieldCache(serverPlayer, pos)) return InteractionResult.SUCCESS;
             try {
                 manager.activateCheckpoint(serverPlayer, pos);
             } catch (IllegalStateException e) {

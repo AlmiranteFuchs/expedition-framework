@@ -74,6 +74,14 @@ public final class AftergrowthTests {
                 manager.activateCheckpoint(owner, ExpeditionManager.toPos(checkpoint));
                 helper.assertTrue(run.challengeEntities().isEmpty(), "aftergrowth has no checkpoint horde");
             }
+            int settled = run.completedCheckpoints();
+            var firstWitness = ExpeditionManager.toPos(run.checkpoints().getFirst());
+            helper.assertTrue(manager.revealFieldCache(owner, firstWitness)
+                            && !manager.revealFieldCache(owner, firstWitness.above()),
+                    "only the settled first witness can repeat the cache detour bearing");
+            ExpeditionGameTests.useBlockAt(helper, owner, firstWitness);
+            helper.assertTrue(run.completedCheckpoints() == settled && !run.fieldCacheOpened(),
+                    "rereading a cache bearing never advances or claims the run");
             ExpeditionGameTests.useBlockAt(helper, owner, cache);
             ExpeditionGameTests.useBlockAt(helper, guest, cache);
             helper.assertTrue(run.fieldCacheOpened() && owner.getInventory().countItem(ModItems.EXPEDITION_ARTIFACT.get()) == 1
