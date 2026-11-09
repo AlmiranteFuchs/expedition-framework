@@ -3,6 +3,8 @@ package com.expeditions.registry;
 import com.expeditions.ExpeditionsMod;
 import com.expeditions.server.HiveFocus;
 import com.mojang.serialization.Codec;
+import java.util.Optional;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.network.payload.SyncAttachmentsPayload;
@@ -20,6 +22,10 @@ public final class ModAttachments {
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, ExpeditionsMod.MOD_ID);
     public static final DeferredHolder<AttachmentType<?>,AttachmentType<HiveFocus>> HIVE_FOCUS =
             ATTACHMENTS.register("hive_focus",()->AttachmentType.builder(()->HiveFocus.EMPTY).build());
+
+    /** Contact recorded during movement and consumed after the packet handler returns. */
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Optional<GlobalPos>>> PORTAL_CONTACT =
+            ATTACHMENTS.register("portal_contact", () -> AttachmentType.<Optional<GlobalPos>>builder(Optional::empty).build());
 
     public static final int ARRIVAL_GLOW_TICKS = 32;
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Long>> ARRIVAL_GLOW_UNTIL =

@@ -1,12 +1,17 @@
 package com.expeditions.block;
 
+import com.expeditions.registry.ModAttachments;
+import com.expeditions.registry.ModBlocks;
 import com.expeditions.server.ExpeditionManager;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
@@ -16,7 +21,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * then the server removes it — the party seals.
  *
  * <p>All behavior is delegated to the manager: the block itself is a
- * non-solid marker with no logic beyond forwarding entity collisions.
+ * non-solid marker that records contacts for the end of the server tick.
  */
 public class ExpeditionPortalBlock extends Block {
     public static final net.minecraft.world.level.block.state.properties.EnumProperty<net.minecraft.core.Direction.Axis> AXIS =
@@ -117,6 +122,20 @@ public class ExpeditionPortalBlock extends Block {
     @Override
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (!level.isClientSide && entity instanceof ServerPlayer player) {
+            // Teleporting inside Entity.move lets the walking packet overwrite the destination.
+            player.setData(ModAttachments.PORTAL_CONTACT, Optional.of(GlobalPos.of(level.dimension(), pos.immutable())));
+        }
+    }
+
+    public static void finishEntry(ServerPlayer player) {
+        if (!player.hasData(ModAttachments.PORTAL_CONTACT)) return;
+        var contact = player.removeData(ModAttachments.PORTAL_CONTACT).orElseThrow();
+        var level = player.serverLevel();
+        var pos = contact.pos();
+        // Movement may have been rejected, or the party may have sealed since contact.
+        if (player.isAlive() && contact.dimension().equals(level.dimension())
+                && player.getBoundingBox().intersects(new AABB(pos))
+                && level.getBlockState(pos).is(ModBlocks.EXPEDITION_PORTAL.get())) {
             ExpeditionManager.get(level.getServer()).enterPortal(player, pos);
         }
     }

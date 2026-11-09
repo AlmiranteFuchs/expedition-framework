@@ -3,15 +3,21 @@ package com.expeditions.gametest;
 import com.expeditions.block.ExpeditionPortalBlock;
 import com.expeditions.block.ExpeditionTerminalBlock;
 import com.expeditions.registry.ModBlocks;
+import com.expeditions.registry.ModItems;
+import com.expeditions.server.ExpeditionEventHandler;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.WayrootFrame;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -20,9 +26,22 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class WayrootFrameTests {
     private WayrootFrameTests() { }
 
-    private static void crossDoorway(net.minecraft.server.level.ServerPlayer player, BlockPos opening) {
-        player.teleportTo(opening.getX() + .5, opening.getY(), opening.getZ() + 1.1);
-        player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(0, 0, -.7));
+    private static void crossDoorway(GameTestHelper helper, ServerPlayer player, BlockPos opening) {
+        // Mock login sends teleport #1, but there is no client to acknowledge it.
+        player.connection.handleAcceptTeleportPacket(new ServerboundAcceptTeleportationPacket(1));
+        double x = opening.getX() + .5;
+        double y = opening.getY();
+        double z = opening.getZ() + 1.15;
+        player.absMoveTo(x, y, z + .2, 0, 0);
+        player.connection.resetPosition();
+        player.setOnGround(true);
+        player.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(x, y, z, true));
+        helper.assertTrue(Math.abs(player.getZ() - z) < .001 && Math.abs(player.getX() - x) < .001,
+                "a normal walking packet must finish at the portal without a movement correction");
+        helper.assertTrue(player.getInventory().countItem(ModItems.EXPEDITION_COMPASS.get()) == 0,
+                "portal entry must wait until the walking packet has completed");
+        player.connection.tick();
+        ExpeditionEventHandler.onServerTick(new ServerTickEvent.Post(() -> true, player.server));
     }
 
     @GameTest(template = "arena", batch = "wayroot_drop")
@@ -51,7 +70,7 @@ public final class WayrootFrameTests {
         var level = helper.getLevel();
         var manager = ExpeditionManager.get(level.getServer());
         var player = helper.makeMockServerPlayerInLevel();
-        player.setGameMode(GameType.CREATIVE);
+        player.setGameMode(GameType.SURVIVAL);
         var desk = helper.absolutePos(new BlockPos(2, 1, 2));
         var opening = desk.relative(Direction.SOUTH.getClockWise(), 2);
         level.setBlockAndUpdate(desk, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState()
@@ -97,11 +116,11 @@ public final class WayrootFrameTests {
                     && portal.getValue(ExpeditionPortalBlock.FRAMED)
                     && level.getBlockState(opening.above()).isAir(), "one tracked marker fills the two-high doorway visually");
             var guest = helper.makeMockServerPlayerInLevel();
-            guest.setGameMode(GameType.CREATIVE);
-            crossDoorway(player, opening);
+            guest.setGameMode(GameType.SURVIVAL);
+            crossDoorway(helper, player, opening);
             helper.assertTrue(player.blockPosition().distSqr(ExpeditionManager.toPos(run.entry())) < 4
                             && run.portalOpen(), "the owner physically crosses without sealing the open party");
-            crossDoorway(guest, opening);
+            crossDoorway(helper, guest, opening);
             helper.assertTrue(run.isMember(guest.getUUID()) && manager.activeRun(guest.getUUID()).orElseThrow() == run
                             && guest.blockPosition().distSqr(ExpeditionManager.toPos(run.entry())) < 4,
                     "a second player physically crossing the arch joins and teleports after the owner");

@@ -1,5 +1,6 @@
 package com.expeditions.server;
 
+import com.expeditions.block.ExpeditionPortalBlock;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionOptions;
@@ -151,6 +152,10 @@ public final class ExpeditionEventHandler {
      * expedition unnoticed.
      */
     public static void onServerTick(ServerTickEvent.Post event) {
+        // The connection tick also restores its movement baseline after Player.tick.
+        for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+            ExpeditionPortalBlock.finishEntry(player);
+        }
         if (event.getServer().getTickCount() % 20 == 0) {
             ExpeditionManager manager = ExpeditionManager.get(event.getServer());
             manager.frontier().tick(event.getServer(),manager.savedData());
