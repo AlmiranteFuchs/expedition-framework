@@ -1907,8 +1907,8 @@ public final class ExpeditionManager {
                 >= ExpeditionTuning.integer(run.definition().dimension(),
                         "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
         // Keep the ward out of melee reach at spawn, even on a tight defense site.
-        int minDistance = 7;
-        int radius = Math.max(8, ExpeditionsConfig.challengeHordeSpawnRadius());
+        int minDistance = 12;
+        int radius = Math.max(minDistance + 1, ExpeditionsConfig.defenseHordeSpawnRadius());
         Mob first = MobSpawns.trySpawnFromPool(level, devicePos, run.definition().dimension(),
                 type -> MobSpawns.trySpawn(type, level, devicePos, minDistance, radius));
         if (first == null) return;
