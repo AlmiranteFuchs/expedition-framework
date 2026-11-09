@@ -110,6 +110,11 @@ public final class ExpeditionsConfig {
             .comment("Entity type horde mobs spawn as (entity registry id).")
             .define("expeditions.challenges.hordeMob", "minecraft:zombie");
 
+    private static final ModConfigSpec.IntValue DEFENSE_HORDE_SPAWN_RADIUS = BUILDER
+            .comment("Maximum distance from the defense device siege mobs",
+                    "may spawn at (they always path to the device).")
+            .defineInRange("expeditions.challenges.defenseSpawnRadius", 16, 13, 42);
+
     private static final ModConfigSpec.IntValue DEFENSE_DEVICE_HP = BUILDER
             .comment("Health of the defense device a defend_device objective",
                     "deploys (points of siege damage it survives).")
@@ -591,6 +596,11 @@ public final class ExpeditionsConfig {
     /** Entity registry id horde mobs spawn as. */
     public static String challengeHordeMob() {
         return HORDE_MOB.get();
+    }
+
+    /** Maximum spawn distance of siege mobs from the defense device. */
+    public static int defenseHordeSpawnRadius() {
+        return DEFENSE_HORDE_SPAWN_RADIUS.get();
     }
 
     /** Health of a deployed defense device. */

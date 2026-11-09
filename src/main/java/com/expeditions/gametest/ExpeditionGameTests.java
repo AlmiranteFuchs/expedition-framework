@@ -2948,7 +2948,7 @@ public final class ExpeditionGameTests {
                 manager.activateCheckpoint(player, witness);
                 var device = ExpeditionManager.toPos(run.defense().orElseThrow().device());
                 var openingWave = List.copyOf(run.challengeEntities());
-                int radius = ExpeditionsConfig.challengeHordeSpawnRadius() + 2;
+                int radius = ExpeditionsConfig.defenseHordeSpawnRadius() + 2;
                 helper.assertTrue(!openingWave.isEmpty(), "the siege must have an opening wave");
                 player.setPos(device.getX() + 64.5, device.getY(), device.getZ() + 0.5);
                 var beforePause = run.defense().orElseThrow();
@@ -3055,7 +3055,7 @@ public final class ExpeditionGameTests {
                         "the first siege wave must spawn");
                 for (UUID id : run.challengeEntities()) {
                     helper.assertTrue(!previousWave.contains(id), "the previous checkpoint horde must stand down");
-                    var attacker = findEntity(level, devicePos, ExpeditionsConfig.challengeHordeSpawnRadius() + 2, id);
+                    var attacker = findEntity(level, devicePos, ExpeditionsConfig.defenseHordeSpawnRadius() + 2, id);
                     helper.assertTrue(attacker instanceof Mob mob && mob.goalSelector.getAvailableGoals().stream()
                                     .anyMatch(goal -> goal.getGoal() instanceof com.expeditions.entity.AttackDeviceGoal),
                             "the opening wave must survive cleanup and every attacker must target the device");
