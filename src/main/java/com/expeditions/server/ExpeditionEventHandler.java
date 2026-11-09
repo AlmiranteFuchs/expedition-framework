@@ -487,7 +487,8 @@ public final class ExpeditionEventHandler {
         player.sendSystemMessage(keys.isEmpty()
                 ? Component.translatable("message.expeditions.unlocks_none")
                 : Component.translatable("message.expeditions.unlocks",
-                        String.join(", ", keys)));
+                        keys.stream().sorted().map(ExpeditionText::proof)
+                                .reduce((first, next) -> Component.empty().append(first).append(", ").append(next)).orElseThrow()));
         return 1;
     }
 
@@ -507,7 +508,7 @@ public final class ExpeditionEventHandler {
                 : Component.translatable("message.expeditions.trophies",
                         trophyIds.stream().sorted()
                                 .map(id -> id.equals(ExpeditionOptions.FIRST_BEARING)
-                                        ? Component.translatable("trophy.expeditions.expedition_novice") : Component.literal(id))
+                                        ? Component.translatable("trophy.expeditions.expedition_novice") : Component.literal(ExpeditionText.label(id)))
                                 .reduce((first, next) -> Component.empty().append(first).append(", ").append(next)).orElseThrow()));
         return 1;
     }
@@ -524,8 +525,8 @@ public final class ExpeditionEventHandler {
         String dimension = player.serverLevel().dimension().location().toString();
         ExpeditionSavedData data = ExpeditionManager.get(player.server).savedData();
         player.sendSystemMessage(Component.translatable(
-                "message.expeditions.campaign", dimension,
-                data.campaignState(dimension).id(),
+                "message.expeditions.campaign", ExpeditionText.dimension(dimension),
+                ExpeditionText.label(data.campaignState(dimension).id()),
                 data.campaignCompletions(dimension)));
         campaignProgress(player, data, dimension);
         return 1;
@@ -542,8 +543,8 @@ public final class ExpeditionEventHandler {
                     : Component.translatable("message.expeditions.history_duration", entry.elapsedTicks() / 1200,
                             String.format(java.util.Locale.ROOT, "%02d", entry.elapsedTicks() / 20 % 60));
             var outcome = Component.translatable("message.expeditions.history_" + entry.outcome().name().toLowerCase(java.util.Locale.ROOT));
-            var row = Component.translatable("message.expeditions.history_row", entry.name(), outcome,
-                    entry.checkpoints(), entry.totalCheckpoints(), entry.tokensKept(), duration, entry.dimension());
+            var row = Component.translatable("message.expeditions.history_row", ExpeditionText.title(entry.name()), outcome,
+                    entry.checkpoints(), entry.totalCheckpoints(), entry.tokensKept(), duration, ExpeditionText.dimension(entry.dimension()));
             if (entry.outcome() == com.expeditions.core.ExpeditionStatus.FAILED)
                 row.append(Component.translatable("message.expeditions.history_reason",
                         Component.translatable("message.expeditions.fail_reason." + entry.reason())));
@@ -588,8 +589,8 @@ public final class ExpeditionEventHandler {
             var available = definitions.stream().filter(d -> d.dimension().equals(dimension)
                     && !(ExpeditionOptions.FIRST_BEARING.equals(d.id()) && manager.trainingComplete(player.getUUID()))
                     && manager.missingRequirements(player.getUUID(), d).isSatisfied()).toList();
-            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_dimension", dimension,
-                    data.campaignState(dimension).id(), data.campaignCompletions(dimension), available.size()));
+            player.sendSystemMessage(Component.translatable("message.expeditions.campaign_dimension", ExpeditionText.dimension(dimension),
+                    ExpeditionText.label(data.campaignState(dimension).id()), data.campaignCompletions(dimension), available.size()));
             campaignProgress(player, data, dimension);
             if (available.stream().anyMatch(com.expeditions.core.ExpeditionDefinition::bigBad)
                     && data.campaignState(dimension) != com.expeditions.core.CampaignState.CLEARED)

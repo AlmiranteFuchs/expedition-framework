@@ -10,7 +10,6 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
@@ -133,7 +132,7 @@ public final class ReclaimingMenu extends ChestMenu {
         String dimension = dimensions.get(index);
         var account = new ItemStack(ModItems.RETURN_SAP_BUCKET.get());
         com.expeditions.item.ReturnSapBucketItem.bind(account, dimension);
-        display.setItem(22, label(account, "gui.expeditions.basin_account", traceName(dimension)));
+        display.setItem(22, label(account, "gui.expeditions.basin_account", ExpeditionText.dimension(dimension)));
         display.setItem(23, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_page", index + 1, dimensions.size()));
         display.setItem(26, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_next"));
         if (!traces.contains(dimension)) {
@@ -161,19 +160,6 @@ public final class ReclaimingMenu extends ChestMenu {
             quote.set(DataComponents.LORE, new ItemLore(notes));
             display.setItem(slot, quote);
         }
-    }
-
-    private static Component traceName(String dimension) {
-        var id = ResourceLocation.tryParse(dimension);
-        if (id == null) return Component.literal(dimension);
-        var words = id.getPath().split("[/_-]+");
-        var name = new java.util.StringJoiner(" ");
-        for (String word : words) {
-            if (!word.isEmpty()) name.add(Character.toUpperCase(word.charAt(0)) + word.substring(1));
-        }
-        String fallback = name.length() == 0 ? dimension : name.toString();
-        return Component.translatableWithFallback("dimension." + id.getNamespace() + "."
-                + id.getPath().replace('/', '.'), fallback);
     }
 
     private static ItemStack label(ItemStack stack, String key, Object... args) {

@@ -1,16 +1,22 @@
 package com.expeditions.server;
 
+import com.expeditions.ExpeditionsConfig;
+import com.expeditions.core.CampaignState;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.ExpeditionDefinition;
+import com.expeditions.core.ExpeditionObjective;
 import com.expeditions.core.ExpeditionOptions;
 import com.expeditions.core.ExpeditionRun;
+import com.expeditions.core.ObjectiveKind;
 import com.expeditions.core.RequirementCheck;
 import com.expeditions.core.Waypoint;
 import com.expeditions.registry.ModSounds;
+import com.expeditions.server.data.ExpeditionTuning;
 import com.mojang.logging.LogUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -38,7 +44,7 @@ import org.slf4j.Logger;
 public class ExpeditionMenu extends ChestMenu {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int ROWS = 4;
-    public static final int SLOT_BRIEFING = 0, SLOT_READINESS = 1;
+    public static final int SLOT_BRIEFING = 0, SLOT_READINESS = 1, SLOT_EXTRAS = 2;
     public static final int SLOT_PREVIOUS = 9, SLOT_EXPEDITION = 10, SLOT_NEXT = 11;
     public static final int SLOT_DIFFICULTY = 12, SLOT_CHECKPOINTS = 14, SLOT_TIME = 16, SLOT_START = 31;
     public static final int SLOT_PARTY = 18;
@@ -249,97 +255,17 @@ public class ExpeditionMenu extends ChestMenu {
             boolean trainingDone = guided() && manager.trainingComplete(playerId);
             var frame = WayrootFrame.inspect(terminalLevel, terminalPos);
             ready = check.isSatisfied() && !trainingDone && frame.canOpen();
-            List<Component> lore = new ArrayList<>();
-            lore.add(Component.literal(selected.displayName()));
-            lore.add(Component.literal(selected.dimension()));
-            lore.add(Component.literal("Mission " + (expeditionIndex + 1) + " / " + startable.size()));
-            if (ready) {
-                lore.add(Component.translatable("gui.expeditions.click_cycle"));
-                container.setItem(SLOT_EXPEDITION, button(Items.COMPASS,
-                        "gui.expeditions.expedition", lore));
-            } else {
-                // Locked expeditions stay listed — the lore says what opens
-                // them, and clicking start repeats the refusal in chat.
-                lore.add(Component.translatable("gui.expeditions.locked"));
-                if (trainingDone) lore.add(Component.translatable("gui.expeditions.training_done"));
-                for (String key : check.missingKeys()) {
-                    lore.add(Component.translatable(
-                            "gui.expeditions.locked_key", key));
-                }
-                if (check.missingTokens() > 0) {
-                    lore.add(Component.translatable(
-                            "gui.expeditions.locked_cost",
-                            check.missingTokens()));
-                }
-                if (!check.currentState().atLeast(check.requiredState())) {
-                    lore.add(Component.translatable(
-                            "gui.expeditions.locked_campaign",
-                            check.requiredState().id(),
-                            check.currentState().id()));
-                }
-                lore.add(Component.translatable("gui.expeditions.click_cycle"));
-                container.setItem(SLOT_EXPEDITION, button(Items.TRIAL_KEY,
-                        "gui.expeditions.expedition", lore));
-            }
-            List<Component> brief = new ArrayList<>();
-            int checkpoints = fixedRoute() ? fixedCheckpointCount()
-                    : CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]
-                    : selected.route() instanceof com.expeditions.core.RouteGeneration generated
-                            ? generated.checkpoints() : ((com.expeditions.core.ExpeditionRoute) selected.route()).checkpoints().size();
-            brief.add(Component.literal("Route: " + checkpoints + " checkpoints, then extraction"));
-            if (aftergrowth()) brief.add(Component.translatable("gui.expeditions.aftergrowth_brief"));
-            if (mastery()) brief.add(Component.translatable("gui.expeditions.mastery_brief"));
-            int bonuses = selected.bonusTokens() + selected.objectives().stream().mapToInt(o -> o.bonusTokens()).sum();
-            bonuses += selected.commissionPool().stream().mapToInt(o -> o.bonusTokens()).max().orElse(0);
-            if (guided()) {
-                brief.add(Component.translatable("gui.expeditions.training_brief"));
-                brief.add(Component.translatable("gui.expeditions.training_rewards", selected.tokenReward() + bonuses));
-            } else {
-                brief.add(Component.literal("Guaranteed base reward: " + selected.tokenReward() + " tokens"));
-                brief.add(Component.literal("Possible base bonuses: " + bonuses + " tokens"));
-                brief.add(Component.literal("Rewards scale with difficulty and party."));
-            }
-            brief.add(Component.literal("Deployment fee: " + selected.costTokens() + " tokens"));
-            brief.add(Component.literal(""));
-            if (selected.bigBad()) brief.add(Component.literal("! Defeat the Rootbound Guardian before extraction."));
-            for (var objective : selected.objectives()) {
-                if (guided() && objective.id().equals("practice_complete") && !objective.required()) continue;
-                brief.add(Component.literal((objective.required() ? "! " : "+ ") + objective.description()));
-            }
-            if (!selected.commissionPool().isEmpty()) {
-                brief.add(Component.translatable("gui.expeditions.commission_pool"));
-                for (var commission : selected.commissionPool()) {
-                    brief.add(Component.literal("  " + commission.description()));
-                }
-            }
-            if (!guided()) {
-                if (selected.objectives().isEmpty()) brief.add(Component.literal("! Activate every checkpoint and use extraction."));
-                brief.add(Component.literal(""));
-                brief.add(Component.literal("Checkpoint tokens are secured. Unfinished bonuses remain at risk."));
-            }
-            container.setItem(SLOT_BRIEFING, button(Items.WRITABLE_BOOK, "gui.expeditions.briefing", brief));
-            List<Component> requirements = new ArrayList<>();
-            requirements.add(Component.literal(ready ? "READY TO DEPLOY" : "REQUIREMENTS MISSING"));
-            requirements.add(Component.literal("Your balance: " + manager.tokenBalance(playerId) + " tokens"));
-            requirements.add(Component.literal(""));
-            requirements.add(Component.translatable(frame.messageKey()));
-            if (trainingDone) requirements.add(Component.translatable("gui.expeditions.training_done"));
-            for (String key : check.missingKeys()) requirements.add(Component.literal(proofHint(key)));
-            if (check.missingTokens() > 0) requirements.add(Component.literal("Earn " + check.missingTokens() + " more tokens."));
-            if (!check.currentState().atLeast(check.requiredState())) {
-                requirements.add(Component.literal("Campaign: " + check.currentState().id() + "; needs " + check.requiredState().id() + "."));
-                if (check.requiredState() == com.expeditions.core.CampaignState.CLEARED
-                        && com.expeditions.server.data.ExpeditionTuning.bool(selected.dimension(), "campaign.require_guardian", true)) {
-                    requirements.add(Component.translatable("message.expeditions.campaign_guardian_gate"));
-                } else {
-                    requirements.add(Component.literal("Complete expeditions in " + selected.dimension() + " to advance its campaign."));
-                }
-            }
-            if (ready) requirements.add(Component.literal("No missing requirements. Choose your equipment, then open the portal."));
-            requirements.add(Component.literal(""));
-            requirements.add(Component.translatable(solo || guided() ? "gui.expeditions.party_private_hint" : "gui.expeditions.party_open_hint"));
+            container.setItem(SLOT_EXPEDITION, button(ready ? Items.COMPASS : Items.TRIAL_KEY,
+                    "gui.expeditions.expedition", List.of(
+                            Component.literal(ExpeditionText.title(selected.displayName())),
+                            ExpeditionText.dimension(selected.dimension()),
+                            Component.literal("Charter " + (expeditionIndex + 1) + " / " + startable.size()))));
+            container.setItem(SLOT_BRIEFING, button(Items.WRITABLE_BOOK,
+                    "gui.expeditions.briefing", missionBrief(selected)));
             container.setItem(SLOT_READINESS, button(ready ? Items.LIME_DYE : Items.RED_DYE,
-                    "gui.expeditions.requirements", requirements));
+                    "gui.expeditions.requirements", readiness(selected, check, frame, trainingDone)));
+            container.setItem(SLOT_EXTRAS, button(Items.PAPER,
+                    "gui.expeditions.extras", extras(selected)));
         }
         Difficulty difficulty = mastery() ? Difficulty.HARD
                 : fixedRoute() ? Difficulty.STANDARD : Difficulty.values()[difficultyIndex];
@@ -367,27 +293,147 @@ public class ExpeditionMenu extends ChestMenu {
         broadcastChanges();
     }
 
-    private static String proofHint(String key) {
-        if (key.startsWith(com.expeditions.core.FrontierProgression.EXTRACTION_TRACE_PREFIX)) {
-            return "Extract from this dimension to bring back a personal trace.";
+    private List<Component> missionBrief(ExpeditionDefinition definition) {
+        var brief = new ArrayList<Component>();
+        var required = definition.objectives().stream().filter(ExpeditionObjective::required).toList();
+        boolean cargo = required.stream().anyMatch(objective -> objective.kind() == ObjectiveKind.RECOVER_ARTIFACT);
+        brief.add(Component.literal(cargo ? "Bring a sealed sample home."
+                : definition.bigBad() ? "Break the Bloom's hold on this land."
+                : "Follow the witness trail and return."));
+        brief.add(Component.literal("Required in the field").withStyle(ChatFormatting.BOLD));
+        brief.add(Component.literal("1. Activate all " + routeCheckpointCount() + " witness stumps in order."));
+        int step = 2;
+        for (var objective : required) {
+            // Every witness is required by the route itself.
+            if (objective.kind() == ObjectiveKind.VISIT_CHECKPOINT) continue;
+            brief.add(Component.literal(step++ + ". " + objectiveInstruction(objective)));
         }
-        return switch (key) {
-            case "expeditions:field_clear" -> "Complete Field Survey or First Bearing to earn its proof.";
-            case "expeditions:salvage_clear" -> "Complete Deep Salvage to earn its proof.";
-            case "expeditions:attuned" -> "Use an attunement sigil against the terminal.";
-            case "expeditions:guardian_clear" -> "Defeat the Rootbound Guardian and extract.";
-            default -> "Requires proof: " + key;
+        if (definition.bigBad()) {
+            brief.add(Component.literal(step++ + ". Defeat the Rootbound Guardian."));
+        }
+        brief.add(Component.literal(step + (cargo ? ". Extract at the Recall Hollow with the cargo."
+                : ". Extract at the Recall Hollow.")));
+        var earnedProofs = manager.unlocks(playerId);
+        var followups = startable.stream()
+                .filter(next -> !next.id().equals(definition.id()) && next.dimension().equals(definition.dimension()))
+                .filter(next -> next.requires().stream().anyMatch(key ->
+                        definition.grants().contains(key) && !earnedProofs.contains(key)))
+                .filter(next -> next.requires().stream().allMatch(key ->
+                        definition.grants().contains(key) || earnedProofs.contains(key)))
+                .map(next -> ExpeditionText.title(next.displayName())).distinct().toList();
+        if (!followups.isEmpty()) {
+            brief.add(Component.literal("Earns proof for").withStyle(ChatFormatting.BOLD));
+            for (String name : followups) brief.add(Component.literal(name));
+        }
+        return brief;
+    }
+
+    private static String objectiveInstruction(ExpeditionObjective objective) {
+        return switch (objective.kind()) {
+            case RECOVER_ARTIFACT -> "Pick up the cargo at stump " + objective.checkpoint() + ".";
+            case DEFEND_DEVICE -> "At stump " + objective.checkpoint() + ", defend the extractor for "
+                    + Math.ceilDiv(objective.timeLimitTicks(), 20) + " seconds.";
+            default -> objective.description().equals(objective.id())
+                    ? ExpeditionText.label(objective.id()) : ExpeditionText.title(objective.description());
         };
     }
 
-    private String routeSummary() {
-        if (startable.isEmpty()) return "Unavailable";
-        if (fixedRoute()) return fixedCheckpointCount() + " checkpoints";
+    private List<Component> readiness(ExpeditionDefinition definition, RequirementCheck check,
+            WayrootFrame.Condition frame, boolean trainingDone) {
+        var requirements = new ArrayList<Component>();
+        boolean campaignReady = check.currentState().atLeast(check.requiredState());
+        boolean guardianGate = check.requiredState() == CampaignState.CLEARED
+                && ExpeditionTuning.bool(definition.dimension(), "campaign.require_guardian", true);
+        Component campaignStep = guardianGate ? Component.literal("Complete a Guardian charter and extract.")
+                : Component.literal("Complete more expeditions in ").append(ExpeditionText.dimension(definition.dimension())).append(".");
+        var missing = check.missingKeys().stream().sorted().toList();
+        Component nextStep;
+        if (trainingDone) nextStep = Component.literal("Choose Field Survey for your next charter.");
+        else if (!frame.canOpen()) nextStep = Component.literal("Check the Wayroot arch.");
+        else if (!missing.isEmpty()) nextStep = unlockAction(missing.getFirst());
+        else if (!campaignReady) nextStep = campaignStep;
+        else if (check.missingTokens() > 0) nextStep = Component.literal("Earn " + check.missingTokens() + " more tokens.");
+        else nextStep = Component.literal("Ready to deploy.");
+        // The board also shows this first line alongside the Deploy button.
+        requirements.add(nextStep);
+        if (trainingDone) requirements.add(Component.translatable("gui.expeditions.training_done"));
+        for (String key : definition.requires().stream().sorted().toList()) {
+            boolean earned = !check.missingKeys().contains(key);
+            requirements.add(requirementLine(earned, earned ? ExpeditionText.proof(key) : unlockAction(key)));
+        }
+        if (check.requiredState() != CampaignState.FRONTIER) {
+            Component progress;
+            if (guardianGate) {
+                progress = Component.literal("Liberate ").append(ExpeditionText.dimension(definition.dimension()));
+            } else {
+                int goal = check.requiredState() == CampaignState.CLEARED
+                        ? ExpeditionsConfig.campaignClearedAtCompletions() : ExpeditionsConfig.campaignEstablishedAtCompletions();
+                int completed = Math.min(goal, manager.savedData().campaignCompletions(definition.dimension()));
+                progress = ExpeditionText.dimension(definition.dimension()).copy()
+                        .append(" · " + completed + " / " + goal + " expeditions complete");
+            }
+            requirements.add(requirementLine(campaignReady, progress));
+            if (!campaignReady && guardianGate) requirements.add(campaignStep);
+        }
+        if (definition.costTokens() > 0) {
+            requirements.add(requirementLine(check.missingTokens() == 0,
+                    Component.literal("Entry fee · " + manager.tokenBalance(playerId) + " / " + definition.costTokens() + " tokens")));
+        }
+        if (!frame.canOpen()) requirements.add(Component.translatable(frame.messageKey()));
+        if (requirements.size() == 1) requirements.add(Component.literal("No entry fee or campaign requirements."));
+        return requirements;
+    }
+
+    private Component unlockAction(String key) {
+        return startable.stream().filter(candidate -> candidate.grants().contains(key))
+                .filter(candidate -> !(isTraining(candidate) && manager.trainingComplete(playerId)))
+                .filter(candidate -> manager.missingRequirements(playerId, candidate).isSatisfied())
+                .findFirst().<Component>map(candidate -> Component.literal("Complete "
+                        + ExpeditionText.title(candidate.displayName()) + "."))
+                .orElseGet(() -> ExpeditionText.proofAction(key));
+    }
+
+    private static Component requirementLine(boolean met, Component text) {
+        return Component.literal(met ? "✓ " : "○ ")
+                .withStyle(met ? ChatFormatting.DARK_GREEN : ChatFormatting.DARK_RED)
+                .append(text.copy().withStyle(ChatFormatting.RESET));
+    }
+
+    private List<Component> extras(ExpeditionDefinition definition) {
+        var details = new ArrayList<Component>();
+        int bonuses = definition.bonusTokens() + definition.objectives().stream().mapToInt(ExpeditionObjective::bonusTokens).sum();
+        bonuses += definition.commissionPool().stream().mapToInt(ExpeditionObjective::bonusTokens).max().orElse(0);
+        if (guided()) {
+            details.add(Component.translatable("gui.expeditions.training_brief"));
+            details.add(Component.translatable("gui.expeditions.training_rewards", definition.tokenReward() + bonuses));
+        } else {
+            details.add(Component.literal("Base reward · " + definition.tokenReward() + " tokens"));
+            if (bonuses > 0) details.add(Component.literal("Possible bonuses · up to " + bonuses + " base tokens"));
+            details.add(Component.literal("Rewards scale with difficulty and party size."));
+            if (aftergrowth()) details.add(Component.translatable("gui.expeditions.aftergrowth_brief"));
+            if (mastery()) details.add(Component.translatable("gui.expeditions.mastery_brief"));
+            var optional = definition.objectives().stream().filter(objective -> !objective.required()).toList();
+            if (!optional.isEmpty()) details.add(Component.literal("Optional objectives").withStyle(ChatFormatting.BOLD));
+            for (var objective : optional) details.add(Component.literal(objectiveInstruction(objective)));
+            if (!definition.commissionPool().isEmpty()) {
+                details.add(Component.translatable("gui.expeditions.commission_pool").withStyle(ChatFormatting.BOLD));
+                for (var commission : definition.commissionPool()) details.add(Component.literal(objectiveInstruction(commission)));
+            }
+        }
+        details.add(Component.translatable(solo || guided() ? "gui.expeditions.party_private_hint" : "gui.expeditions.party_open_hint"));
+        return details;
+    }
+
+    private int routeCheckpointCount() {
+        if (fixedRoute()) return fixedCheckpointCount();
         var route = startable.get(expeditionIndex).route();
-        if (route instanceof com.expeditions.core.ExpeditionRoute authored) return authored.checkpoints().size() + " (authored)";
-        int count = CHECKPOINT_CHOICES[checkpointsIndex] > 0 ? CHECKPOINT_CHOICES[checkpointsIndex]
-                : ((com.expeditions.core.RouteGeneration) route).checkpoints();
-        return count + " checkpoints";
+        if (route instanceof com.expeditions.core.ExpeditionRoute authored) return authored.checkpoints().size();
+        int chosen = CHECKPOINT_CHOICES[checkpointsIndex];
+        return chosen > 0 ? chosen : ((com.expeditions.core.RouteGeneration) route).checkpoints();
+    }
+
+    private String routeSummary() {
+        return startable.isEmpty() ? "Unavailable" : routeCheckpointCount() + " checkpoints";
     }
 
     private String bonusWindowSummary() {

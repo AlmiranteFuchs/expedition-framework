@@ -333,11 +333,11 @@ public final class ExpeditionGameTests {
                 "opening the terminal must not start a run");
         helper.assertTrue(player.containerMenu instanceof ExpeditionMenu,
                 "the End terminal must open its expedition menu");
-        helper.assertTrue(player.containerMenu.getSlot(10).getItem()
-                        .getOrDefault(DataComponents.LORE,
-                                net.minecraft.world.item.component.ItemLore.EMPTY)
-                        .lines().stream().anyMatch(line -> line.getString().contains("minecraft:the_end")),
-                "the End's automatic expedition must be preselected");
+        var charter = player.containerMenu.getSlot(ExpeditionMenu.SLOT_EXPEDITION).getItem()
+                .getOrDefault(DataComponents.LORE, net.minecraft.world.item.component.ItemLore.EMPTY).lines();
+        helper.assertTrue(charter.size() > 1 && charter.getFirst().getString().equals("Explore The End")
+                        && charter.get(1).getString().equals("The End"),
+                "the End's automatic charter is preselected and displays a readable title and destination");
         helper.succeed();
     }
 
@@ -3872,8 +3872,8 @@ public final class ExpeditionGameTests {
                         new ExpeditionOptions("test:gated", Difficulty.STANDARD, 0, 0));
                 helper.fail("a locked expedition must refuse to start");
             } catch (IllegalStateException refused) {
-                helper.assertTrue(refused.getMessage().contains("test:key"),
-                        "the refusal must name the missing key, was: "
+                helper.assertTrue(refused.getMessage().contains("Earn Key.") && !refused.getMessage().contains("test:key"),
+                        "the refusal must explain the missing proof in plain language, was: "
                                 + refused.getMessage());
             }
             helper.assertTrue(manager.activeRun(player.getUUID()).isEmpty(),
@@ -4136,8 +4136,8 @@ public final class ExpeditionGameTests {
                 helper.fail("a frontier dimension must refuse an "
                         + "established-gated expedition");
             } catch (IllegalStateException refused) {
-                helper.assertTrue(refused.getMessage().contains("established"),
-                        "the refusal must name the missing state, was: "
+                helper.assertTrue(refused.getMessage().contains("Complete more expeditions"),
+                        "the refusal must explain how to advance the campaign, was: "
                                 + refused.getMessage());
             }
             for (int i = 0; i < ExpeditionsConfig.campaignEstablishedAtCompletions(); i++) {

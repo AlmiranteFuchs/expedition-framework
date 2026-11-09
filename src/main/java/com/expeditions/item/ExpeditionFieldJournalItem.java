@@ -3,6 +3,7 @@ package com.expeditions.item;
 import com.expeditions.ExpeditionsConfig;
 import com.expeditions.core.ExpeditionRun;
 import com.expeditions.server.ExpeditionManager;
+import com.expeditions.server.ExpeditionText;
 import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.FieldOrders;
 import com.expeditions.server.data.ExpeditionTuning;
@@ -80,8 +81,8 @@ public class ExpeditionFieldJournalItem extends Item {
         }
         ExpeditionRun active = run.get();
         long elapsed = active.elapsedTicks(player.serverLevel().getGameTime());
-        page.append(active.definition().displayName()).append('\n');
-        page.append(active.definition().dimension()).append("\n\n");
+        page.append(ExpeditionText.title(active.definition().displayName())).append('\n');
+        page.append(ExpeditionText.dimension(active.definition().dimension()).getString()).append("\n\n");
         page.append("Checkpoints: ").append(active.completedCheckpoints())
                 .append('/').append(active.totalCheckpoints()).append('\n');
         if (elapsed >= 0) {
@@ -110,9 +111,9 @@ public class ExpeditionFieldJournalItem extends Item {
         int buffAt = ExpeditionTuning.integer(dimension,
                 "pressure.buff_threshold", ExpeditionsConfig.pressureBuffThreshold());
         StringBuilder page = new StringBuilder("§1§lFIELD SURVEY§r\n\n");
-        page.append(dimension).append('\n');
+        page.append(ExpeditionText.dimension(dimension).getString()).append('\n');
         page.append("Charter: ").append(data.campaignCompletions(dimension))
-                .append(" filed — ").append(data.campaignState(dimension).id())
+                .append(" filed — ").append(ExpeditionText.label(data.campaignState(dimension).id()))
                 .append("\n\n");
         if (data.isDimensionCleared(dimension)) {
             page.append("The Bloom is dead here.\nIt reads nothing of you.");

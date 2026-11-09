@@ -1,6 +1,7 @@
 package com.expeditions.item;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
+import com.expeditions.server.ExpeditionText;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -23,6 +24,6 @@ public final class SeveranceCoreItem extends Item {
     }
     @Override public Component getName(ItemStack stack){return Component.translatable(source(stack).isBlank()?"item.expeditions.severance_core":"item.expeditions.severance_core.bound");}
     @Override public void appendHoverText(ItemStack stack,TooltipContext context,List<Component> lines,TooltipFlag flag){
-        String source=source(stack);lines.add(Component.translatable(source.isBlank()?"tooltip.expeditions.core_unbound":"tooltip.expeditions.core_bound",source));
+        String source=source(stack);lines.add(Component.translatable(source.isBlank()?"tooltip.expeditions.core_unbound":"tooltip.expeditions.core_bound",ExpeditionText.dimension(source)));
     }
 }

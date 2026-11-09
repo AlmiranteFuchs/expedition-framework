@@ -1,6 +1,7 @@
 package com.expeditions.item;
 
 import com.expeditions.registry.ModDataComponents;
+import com.expeditions.server.ExpeditionText;
 import com.expeditions.registry.ModFluids;
 import com.expeditions.registry.ModItems;
 import java.util.List;
@@ -40,7 +41,7 @@ public final class ReturnSapBucketItem extends BucketItem {
         String source = source(stack);
         lines.add(Component.translatable(
                 source.isBlank() ? "tooltip.expeditions.sap_unbound" : "tooltip.expeditions.sap_bound",
-                source).withStyle(ChatFormatting.GRAY));
+                ExpeditionText.dimension(source)).withStyle(ChatFormatting.GRAY));
     }
 
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {

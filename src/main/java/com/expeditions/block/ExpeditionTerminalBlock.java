@@ -6,6 +6,7 @@ import com.expeditions.registry.ModDataComponents;
 import com.expeditions.registry.ModItems;
 import com.expeditions.server.ExpeditionManager;
 import com.expeditions.server.ExpeditionMenu;
+import com.expeditions.server.ExpeditionText;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -91,12 +92,12 @@ public class ExpeditionTerminalBlock extends Block {
             } else if (ExpeditionManager.get(level.getServer())
                     .grantUnlock(serverPlayer.getUUID(), key)) {
                 serverPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.attuned", key));
+                        "message.expeditions.attuned", ExpeditionText.proof(key)));
             } else {
                 serverPlayer.playNotifySound(com.expeditions.registry.ModSounds.TERMINAL_REFUSE.get(),
                         net.minecraft.sounds.SoundSource.BLOCKS,.6f,1.0f);
                 serverPlayer.sendSystemMessage(Component.translatable(
-                        "message.expeditions.already_attuned", key));
+                        "message.expeditions.already_attuned", ExpeditionText.proof(key)));
             }
         }
         return ItemInteractionResult.sidedSuccess(level.isClientSide);

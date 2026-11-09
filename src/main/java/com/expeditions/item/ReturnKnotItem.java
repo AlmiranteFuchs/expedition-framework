@@ -1,6 +1,7 @@
 package com.expeditions.item;
 
 import com.expeditions.registry.ModDataComponents;
+import com.expeditions.server.ExpeditionText;
 import com.expeditions.registry.ModItems;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -33,6 +34,6 @@ public final class ReturnKnotItem extends Item {
         String source = source(stack);
         lines.add(Component.translatable(
                 source.isBlank() ? "tooltip.expeditions.knot_unbound" : "tooltip.expeditions.knot_bound",
-                source).withStyle(ChatFormatting.GRAY));
+                ExpeditionText.dimension(source)).withStyle(ChatFormatting.GRAY));
     }
 }

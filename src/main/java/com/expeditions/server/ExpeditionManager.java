@@ -1,6 +1,7 @@
 package com.expeditions.server;
 
 import com.expeditions.ExpeditionsConfig;
+import com.expeditions.core.CampaignState;
 import com.expeditions.core.CheckpointChallenge;
 import com.expeditions.core.Difficulty;
 import com.expeditions.core.FrontierProgression;
@@ -270,7 +271,7 @@ public final class ExpeditionManager {
                 data.campaignState(definition.dimension()));
         if (!requirements.isSatisfied()) {
             throw new IllegalStateException(
-                    "Expedition locked: " + describeMissing(requirements));
+                    "Expedition locked. " + describeMissing(requirements));
         }
         ServerLevel level = levelFor(definition.dimension());
         if (level == null) {
@@ -596,17 +597,18 @@ public final class ExpeditionManager {
     private static String describeMissing(RequirementCheck check) {
         List<String> parts = new ArrayList<>();
         if (!check.missingKeys().isEmpty()) {
-            parts.add("requires " + String.join(", ", check.missingKeys()));
+            check.missingKeys().stream().sorted()
+                    .map(key -> ExpeditionText.proofAction(key).getString())
+                    .forEach(parts::add);
         }
         if (check.missingTokens() > 0) {
-            parts.add("costs " + check.missingTokens() + " more tokens");
+            parts.add("Earn " + check.missingTokens() + " more tokens.");
         }
         if (!check.currentState().atLeast(check.requiredState())) {
-            parts.add("requires the dimension to reach \""
-                    + check.requiredState().id() + "\" (currently \""
-                    + check.currentState().id() + "\")");
+            parts.add(check.requiredState() == CampaignState.CLEARED
+                    ? "Liberate this dimension first." : "Complete more expeditions in this dimension.");
         }
-        return String.join(" and ", parts);
+        return String.join(" ", parts);
     }
 
     /**
@@ -749,10 +751,10 @@ public final class ExpeditionManager {
         player.connection.send(new ClientboundSetTitlesAnimationPacket(
                 10, 50, 15));
         player.connection.send(new ClientboundSetTitleTextPacket(
-                Component.literal(run.definition().displayName())
+                Component.literal(ExpeditionText.title(run.definition().displayName()))
                         .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
         player.connection.send(new ClientboundSetSubtitleTextPacket(
-                Component.literal(run.definition().dimension())
+                ExpeditionText.dimension(run.definition().dimension()).copy()
                         .withStyle(ChatFormatting.GRAY)));
     }
 
@@ -1435,7 +1437,7 @@ public final class ExpeditionManager {
                 String key = run.options().guided() ? "summary_home_novice"
                         : run.definition().bigBad() ? "summary_home_liberated" : "summary_home";
                 player.sendSystemMessage(Component.translatable("message.expeditions." + key,
-                        run.definition().displayName(), Math.max(secured, run.tokensAwarded())));
+                        ExpeditionText.title(run.definition().displayName()), Math.max(secured, run.tokensAwarded())));
             } else {
                 reportWithdrawal(run, player, run.failReason().orElse("ended"));
             }
@@ -1444,7 +1446,7 @@ public final class ExpeditionManager {
 
     private static void reportWithdrawal(ExpeditionRun run, ServerPlayer player, String reason) {
         player.sendSystemMessage(Component.translatable("message.expeditions.summary_withdrawn",
-                run.definition().displayName(),
+                ExpeditionText.title(run.definition().displayName()),
                 Component.translatable("message.expeditions.fail_reason." + reason),
                 run.securedTokens(player.getUUID())));
     }
