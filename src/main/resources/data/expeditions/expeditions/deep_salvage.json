@@ -7,10 +7,7 @@
     "min_spacing": 56,
     "max_spacing": 112
   },
-  "tokens": 60,
-  "bonus_tokens": 30,
   "bonus_time_seconds": 720,
-  "cost_tokens": 15,
   "requires": [
     "expeditions:field_clear",
     "expeditions:recovery_clear"
@@ -47,8 +44,7 @@
       "description": "Recover the cargo",
       "type": "recover_artifact",
       "checkpoint": 2,
-      "required": true,
-      "bonus_tokens": 10
+      "required": true
     },
     {
       "id": "siege",
@@ -56,22 +52,19 @@
       "type": "defend_device",
       "checkpoint": 3,
       "seconds": 90,
-      "required": true,
-      "bonus_tokens": 15
+      "required": true
     }
   ],
   "commission_pool": [
     {
       "id": "graft_relay",
       "description": "Plant a listening graft off the witness trail",
-      "type": "relay",
-      "bonus_tokens": 12
+      "type": "relay"
     },
     {
       "id": "graft_endurance",
       "description": "Hold a listening graft for twenty seconds",
-      "type": "endurance",
-      "bonus_tokens": 16
+      "type": "endurance"
     },
     {
       "id": "scrap",
@@ -79,23 +72,20 @@
       "type": "harvest",
       "tag": "minecraft:logs",
       "count": 4,
-      "required": false,
-      "bonus_tokens": 12
+      "required": false
     },
     {
       "id": "pace",
       "description": "Finish under 10 minutes",
       "type": "time_limit",
       "seconds": 600,
-      "required": false,
-      "bonus_tokens": 10
+      "required": false
     },
     {
       "id": "canopy",
       "description": "Take a bearing beneath a forest canopy",
       "type": "scout",
-      "tag": "minecraft:is_forest",
-      "bonus_tokens": 10
+      "tag": "minecraft:is_forest"
     }
   ]
 }

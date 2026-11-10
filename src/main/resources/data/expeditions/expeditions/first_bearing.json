@@ -12,15 +12,13 @@
     "entry_max": 96,
     "max_attempts": 8
   },
-  "tokens": 0,
   "grants": ["expeditions:field_clear"],
   "objectives": [
     {
       "id": "practice_complete",
       "description": "Use both witness stumps",
       "type": "visit_checkpoint",
-      "checkpoint": 2,
-      "bonus_tokens": 8
+      "checkpoint": 2
     }
   ]
 }

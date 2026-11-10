@@ -46,6 +46,8 @@ public final class ResonanceCellItem extends Item {
     public static boolean transferToBlock(UseOnContext context) {
         var level=context.getLevel();var player=context.getPlayer();if(player==null)return false;
         if (level.getBlockState(context.getClickedPos()).getBlock() instanceof com.expeditions.block.ResonanceMachineBlock) return false;
+        if (level.getBlockEntity(context.getClickedPos()) instanceof com.expeditions.block.entity.SapVesselBlockEntity vessel
+                && vessel.kind() == com.expeditions.block.SapVesselBlock.Kind.JAR) return false;
         var other=level.getCapability(Capabilities.EnergyStorage.BLOCK,context.getClickedPos(),context.getClickedFace());
         if(other==null)return false;
         if(!level.isClientSide) {

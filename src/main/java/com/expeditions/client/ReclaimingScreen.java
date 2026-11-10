@@ -91,11 +91,13 @@ public final class ReclaimingScreen extends AbstractContainerScreen<ReclaimingMe
         gui.fill(x - 1, y - 1, x + 9, y + length + 1, 0xff9a8060);
         gui.fill(x, y, x + 8, y + length, 0xff493a2c);
         gui.fill(x + 1, y + 1, x + 2, y + length - 1, 0xffc0ab8b);
+        var account = menu.getContainer().getItem(22);
+        int tint = com.expeditions.server.SapTrace.of(com.expeditions.item.ReturnSapBucketItem.source(account)).color();
         if (filled > 0) {
             int surface = y + length - 2 - filled;
             gui.fill(x + 2, surface, x + 7, y + length - 2, 0xff9b5728);
-            gui.fill(x + 3, surface, x + 5, y + length - 2, 0xffc88a3d);
-            gui.hLine(x + 2, x + 6, surface, 0xffe1b56e);
+            gui.fill(x + 3, surface, x + 5, y + length - 2, 0xff000000 | tint);
+            gui.hLine(x + 2, x + 6, surface, 0xff000000 | tint);
         }
         for (int mark = 1; mark < 4; mark++) {
             int at = y + mark * length / 4;

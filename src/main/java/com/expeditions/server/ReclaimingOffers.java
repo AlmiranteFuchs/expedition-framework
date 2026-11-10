@@ -28,14 +28,27 @@ public final class ReclaimingOffers {
         }
 
         ItemStack draw(RandomSource random) {
-            int roll = random.nextInt(finds.stream().mapToInt(Find::weight).sum());
-            for (Find find : finds) {
+            return drawExcept(random, List.of());
+        }
+
+        ItemStack drawExcept(RandomSource random, List<ItemStack> excluded) {
+            var eligible = finds.stream().filter(find -> excluded.stream()
+                    .noneMatch(stack -> stack.is(find.stack().getItem()))).toList();
+            int weight = eligible.stream().mapToInt(Find::weight).sum();
+            if (weight == 0) return ItemStack.EMPTY;
+            int roll = random.nextInt(weight);
+            for (Find find : eligible) {
                 roll -= find.weight();
                 if (roll < 0) return find.stack().copy();
             }
             throw new IllegalStateException("Invalid trace weights");
         }
     }
+
+    private static final List<List<Item>> OVERWORLD = List.of(
+            List.of(Items.IRON_INGOT, Items.COPPER_INGOT, Items.COAL, Items.REDSTONE, Items.LAPIS_LAZULI),
+            List.of(Items.NAME_TAG, Items.SADDLE, Items.AMETHYST_SHARD, Items.GOLDEN_APPLE),
+            List.of(Items.IRON_SWORD, Items.SHIELD, Items.CROSSBOW, Items.IRON_CHESTPLATE));
 
     private static final Set<String> RESTRICTED = Set.of("key", "keys", "quest", "trophy", "boss",
             "creative", "debug", "admin", "spawn", "spawner", "command", "structure",
@@ -45,12 +58,14 @@ public final class ReclaimingOffers {
     public static List<Offer> forDimension(String dimension, Level level) {
         var id = ResourceLocation.tryParse(dimension);
         List<List<Find>> categories = List.of(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        var tiers = id != null && (id.equals(Level.NETHER.location()) || id.equals(Level.END.location()))
+        var tiers = id != null
                 ? List.of(salvageTag(id, "materials"), salvageTag(id, "curiosities"), salvageTag(id, "gear"))
                 : List.<TagKey<Item>>of();
+        var authored = tiers.stream().map(tag -> BuiltInRegistries.ITEM.getTag(tag)
+                .filter(entries -> entries.size() > 0).isPresent()).toList();
         if (id != null) for (var item : BuiltInRegistries.ITEM) {
             var key = BuiltInRegistries.ITEM.getKey(item);
-            if (!key.getNamespace().equals(id.getNamespace()) || item instanceof BlockItem
+            if (item instanceof BlockItem
                     || !item.isEnabled(level.enabledFeatures())) continue;
             if (item == Items.ENCHANTED_BOOK || item == Items.FILLED_MAP || item == Items.POTION
                     || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.TIPPED_ARROW) continue;
@@ -59,28 +74,56 @@ public final class ReclaimingOffers {
             var stack = new ItemStack(item);
             if (stack.isEmpty() || stack.has(DataComponents.CONTAINER)
                     || stack.has(DataComponents.BUNDLE_CONTENTS) || stack.has(DataComponents.BLOCK_ENTITY_DATA)) continue;
-            int score = ItemValuator.score(stack);
             boolean gear = stack.has(DataComponents.MAX_DAMAGE)
                     || !stack.getOrDefault(DataComponents.ATTRIBUTE_MODIFIERS,
                             net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY).modifiers().isEmpty();
             boolean material = stack.is(Tags.Items.GEMS) || stack.is(Tags.Items.INGOTS)
                     || stack.is(Tags.Items.RAW_MATERIALS) || stack.is(Tags.Items.DUSTS) || stack.is(Tags.Items.NUGGETS);
-            int category = gear ? 2 : material || (stack.getRarity() == Rarity.COMMON && stack.getMaxStackSize() > 1) ? 0 : 1;
-            if (!tiers.isEmpty()) {
-                category = -1;
-                for (int tier = 0; tier < tiers.size(); tier++) {
-                    if (stack.is(tiers.get(tier))) {
-                        category = tier;
-                        break;
-                    }
+            int category = -1;
+            for (int tier = 0; tier < tiers.size(); tier++) {
+                if (authored.get(tier) && stack.is(tiers.get(tier))) {
+                    category = tier;
+                    break;
                 }
-                if (category < 0) continue;
             }
-            if (category == 0) stack.setCount(Math.min(stack.getMaxStackSize(), score <= 4 ? 8 : score <= 8 ? 4 : 2));
+            if (category < 0 && id.equals(Level.OVERWORLD.location())) {
+                for (int tier = 0; tier < OVERWORLD.size(); tier++) {
+                    if (!authored.get(tier) && OVERWORLD.get(tier).contains(item)) category = tier;
+                }
+            } else if (category < 0 && !id.getNamespace().equals("minecraft")
+                    && key.getNamespace().equals(id.getNamespace())) {
+                int discovered = material ? 0 : gear && stack.isDamageableItem() ? 2
+                        : stack.getRarity() == Rarity.UNCOMMON && stack.isStackable() ? 1 : -1;
+                if (discovered >= 0 && !authored.get(discovered)) category = discovered;
+            }
+            if (category < 0) continue;
+            int score = ItemValuator.score(stack);
+            if (category == 0) stack.setCount(Math.min(stack.getMaxStackSize(), score <= 5 ? 4 : 2));
             categories.get(category).add(new Find(stack, Math.clamp(160 / Math.max(1, score), 1, 40)));
         }
-        return List.of(new Offer(250, List.copyOf(categories.get(0))), new Offer(500, List.copyOf(categories.get(1))),
-                new Offer(1000, List.copyOf(categories.get(2))));
+        var materials = categories.getFirst();
+        var curiosities = categories.get(1);
+        var gear = categories.get(2);
+        backfill(materials, 2, List.of(new ItemStack(com.expeditions.registry.ModItems.DORMANT_FLAKE.get(), 4),
+                new ItemStack(Items.COPPER_INGOT, 4)));
+        if (id != null && !id.getNamespace().equals("minecraft")) {
+            backfill(curiosities, 2, List.of(new ItemStack(Items.NAME_TAG), new ItemStack(Items.AMETHYST_SHARD, 2)));
+            backfill(gear, 1, List.of(new ItemStack(Items.IRON_PICKAXE)));
+        }
+        return List.of(offer(250, materials), offer(500, curiosities), offer(1000, gear));
+    }
+
+    private static void backfill(List<Find> finds, int minimum, List<ItemStack> supplies) {
+        for (var supply : supplies) {
+            if (finds.size() >= minimum) return;
+            if (finds.stream().noneMatch(find -> find.stack().is(supply.getItem()))) {
+                finds.add(new Find(supply, 20));
+            }
+        }
+    }
+
+    private static Offer offer(int sap, List<Find> finds) {
+        return new Offer(sap, finds.stream().limit(12).toList());
     }
 
     private static TagKey<Item> salvageTag(ResourceLocation dimension, String tier) {
@@ -93,9 +136,7 @@ public final class ReclaimingOffers {
         if (!curiosities.finds().isEmpty()) {
             return curiosities.draw(level.random);
         }
-        var knot = new ItemStack(com.expeditions.registry.ModItems.RETURN_KNOT.get());
-        com.expeditions.item.ReturnKnotItem.bind(knot, dimension);
-        return knot;
+        return new ItemStack(Items.NAME_TAG);
     }
 
     private ReclaimingOffers() { }

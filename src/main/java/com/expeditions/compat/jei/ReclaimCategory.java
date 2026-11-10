@@ -18,7 +18,7 @@ import net.minecraft.world.item.ItemStack;
  * output slot cycles the full pool so every find is reachable on hover.
  */
 final class ReclaimCategory extends AbstractRecipeCategory<ReclaimCategory.Offer> {
-    record Offer(String dimension, int sap, List<ItemStack> finds) { }
+    record Offer(String dimension, int sap, List<ItemStack> finds, List<ItemStack> materials) { }
 
     ReclaimCategory(IGuiHelper gui) {
         super(ExpeditionsJeiPlugin.RECLAIMING,
@@ -31,8 +31,8 @@ final class ReclaimCategory extends AbstractRecipeCategory<ReclaimCategory.Offer
     public void setRecipe(IRecipeLayoutBuilder builder, Offer recipe, IFocusGroup focuses) {
         builder.addInputSlot(4, 12).addFluidStack(ModFluids.SAP.get(), recipe.sap())
                 .setStandardSlotBackground();
-        builder.addOutputSlot(44, 12).addItemStacks(recipe.finds())
-                .setStandardSlotBackground();
+        builder.addOutputSlot(44, 12).addItemStacks(recipe.finds()).setStandardSlotBackground();
+        builder.addOutputSlot(64, 12).addItemStacks(recipe.materials()).setStandardSlotBackground();
     }
 
     @Override
@@ -40,7 +40,7 @@ final class ReclaimCategory extends AbstractRecipeCategory<ReclaimCategory.Offer
             double mouseX, double mouseY) {
         var font = Minecraft.getInstance().font;
         graphics.drawString(font, Component.translatable("jei.expeditions.reclaiming.tier",
-                recipe.sap()), 66, 16, 0xFF808080, false);
-        graphics.drawString(font, Component.literal(recipe.dimension()), 4, 1, 0xFF606060, false);
+                recipe.sap()), 86, 16, 0xFF808080, false);
+        graphics.drawString(font, com.expeditions.server.SapTrace.label(recipe.dimension()), 4, 1, 0xFF606060, false);
     }
 }

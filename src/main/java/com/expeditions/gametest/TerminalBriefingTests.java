@@ -70,7 +70,7 @@ public final class TerminalBriefingTests {
                     .get(DataComponents.LORE).lines().stream().map(Component::getString).toList();
             helper.assertTrue(readiness.getFirst().equals("Complete Ready work.")
                             && readiness.stream().anyMatch(line -> line.contains("Complete Trace Recovery"))
-                            && readiness.stream().anyMatch(line -> line.contains("0 / 15 tokens"))
+                            && readiness.stream().noneMatch(line -> line.contains("tokens"))
                             && readiness.stream().noneMatch(line -> line.contains("expeditions:")),
                     "the locked charter shows its next action, missing proof and current fee progress in plain language");
             var mission = menu.getContainer().getItem(ExpeditionMenu.SLOT_BRIEFING)

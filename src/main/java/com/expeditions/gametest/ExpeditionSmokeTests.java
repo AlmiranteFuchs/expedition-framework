@@ -64,11 +64,8 @@ public final class ExpeditionSmokeTests {
         helper.assertTrue(run.status() == ExpeditionStatus.COMPLETED,
                 "run must be COMPLETED, was " + run.status());
         helper.assertTrue(run.isRewarded(), "run must be rewarded");
-        int expected = run.definition().tokenReward()
-                + run.definition().bonusTokens();
-        helper.assertTrue(manager.tokenBalance(playerId) == expected,
-                "token balance must be " + expected + ", was "
-                        + manager.tokenBalance(playerId));
+        helper.assertTrue(manager.savedData().returnCaches(playerId).size() == 1,
+                "the return cache must be filed exactly once");
         for (Waypoint checkpoint : run.checkpoints()) {
             helper.assertTrue(
                     helper.getLevel()

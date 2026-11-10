@@ -23,7 +23,7 @@ import net.minecraft.world.phys.shapes.*;
 /**
  * Expedition exit marker. Placed by the server at the configured exit position.
  * Right-clicking completes the run only when every checkpoint was activated, and
- * grants the guaranteed token reward exactly once.
+ * records a Return Cache for each eligible party member.
  */
 public class ExpeditionExitBlock extends RouteMarkerBlock {
     public static final BooleanProperty GROWN = BooleanProperty.create("grown");

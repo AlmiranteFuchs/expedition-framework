@@ -31,7 +31,6 @@ import com.expeditions.server.ExpeditionMenu;
 import com.expeditions.server.ExpeditionEventHandler;
 import com.expeditions.server.ExpeditionSavedData;
 import com.expeditions.server.HordePools;
-import com.expeditions.server.ItemRewards;
 import com.expeditions.server.ItemValuator;
 import com.expeditions.server.Assimilation;
 import com.expeditions.server.Microbiome;
@@ -164,13 +163,9 @@ public final class ExpeditionGameTests {
         helper.assertTrue(run.status() == ExpeditionStatus.COMPLETED,
                 "run must be COMPLETED, was " + run.status());
         helper.assertTrue(run.isRewarded(), "run must be rewarded");
-        // The test completes well inside the bonus window, so the award is
-        // the guaranteed reward plus the time bonus.
-        int expectedTokens = run.definition().tokenReward() + run.definition().bonusTokens();
-        helper.assertTrue(run.tokensAwarded() == expectedTokens,
-                "awarded tokens must be " + expectedTokens + ", was " + run.tokensAwarded());
-        helper.assertTrue(manager.tokenBalance(playerId) == expectedTokens,
-                "token balance must be " + expectedTokens + ", was " + manager.tokenBalance(playerId));
+        helper.assertTrue(manager.tokenBalance(playerId) == 0
+                        && manager.savedData().returnCaches(playerId).size() == 1,
+                "extraction files one personal cache and awards no tokens");
 
         // Marker blocks are removed once the run ends.
         for (Waypoint checkpoint : run.checkpoints()) {
@@ -181,10 +176,9 @@ public final class ExpeditionGameTests {
         helper.assertTrue(helper.getLevel().getBlockState(exitPos).isAir(),
                 "exit marker must be removed");
 
-        // A second exit-style completion is impossible: the run is terminal and
-        // the token balance cannot grow.
-        int balance = manager.tokenBalance(playerId);
-        helper.assertTrue(manager.tokenBalance(playerId) == balance, "balance must be stable");
+        useBlockAt(helper, player, exitPos);
+        helper.assertTrue(manager.savedData().returnCaches(playerId).size() == 1,
+                "reusing the extraction site cannot duplicate the cache");
 
         helper.succeed();
     }
@@ -630,6 +624,7 @@ public final class ExpeditionGameTests {
         }
         manager.completeRun(player);
         int balance = manager.tokenBalance(playerId);
+        int caches = manager.savedData().returnCaches(playerId).size();
 
         // Repeat completion attempt: no active run exists, so nothing happens.
         boolean repeatRejected = false;
@@ -639,7 +634,8 @@ public final class ExpeditionGameTests {
             repeatRejected = true;
         }
         helper.assertTrue(repeatRejected, "a terminal run must not complete again");
-        helper.assertTrue(manager.tokenBalance(playerId) == balance,
+        helper.assertTrue(manager.tokenBalance(playerId) == balance && caches == 1
+                        && manager.savedData().returnCaches(playerId).size() == caches,
                 "repeat completion must not pay out again");
 
         // Reload: the restored run is terminal and already rewarded.
@@ -654,8 +650,8 @@ public final class ExpeditionGameTests {
         }
         helper.assertTrue(secondRewardRejected,
                 "a restored rewarded run must reject another reward");
-        helper.assertTrue(loaded.ledger().tokenBalance(playerId) == balance,
-                "balance must be unchanged after reload");
+        helper.assertTrue(loaded.ledger().tokenBalance(playerId) == balance && loaded.returnCaches(playerId).size() == 1,
+                "exactly one pending cache survives reload");
         helper.succeed();
     }
 
@@ -993,14 +989,9 @@ public final class ExpeditionGameTests {
         }
         manager.completeRun(owner);
 
-        // Reward pool scales with party size (base incl. time bonus, scaled up
-        // per extra member) then splits evenly: both members get the same share.
-        int share = run.tokensAwarded();
-        helper.assertTrue(manager.tokenBalance(owner.getUUID()) == share,
-                "owner must receive the member share");
-        helper.assertTrue(manager.tokenBalance(member.getUUID()) == share,
-                "member must receive the member share");
-        helper.assertTrue(share > 0, "reward must be positive");
+        helper.assertTrue(manager.savedData().returnCaches(owner.getUUID()).size() == 1
+                        && manager.savedData().returnCaches(member.getUUID()).size() == 1,
+                "each party member receives a personal cache");
 
         Waypoint terminal = run.terminal();
         for (ServerPlayer p : new ServerPlayer[]{owner, member}) {
@@ -1529,11 +1520,8 @@ public final class ExpeditionGameTests {
             ExpeditionRun done = manager.completeRun(player);
             helper.assertTrue(done.objectiveState("speedy").orElseThrow().completed(),
                     "a fast finish must satisfy the time limit");
-            helper.assertTrue(done.tokensAwarded() == 37,
-                    "expected 20 base + 3 visit + 5 item + 2 tag + 7 timed, was "
-                            + done.tokensAwarded());
-            helper.assertTrue(manager.tokenBalance(player.getUUID()) == 37,
-                    "balance must equal the paid reward");
+            helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).getFirst().haul().size() == 5,
+                    "several completed optional goals add only one extra supply bundle");
         } finally {
             ExpeditionDefinitions.reload(Map.of());
         }
@@ -1623,7 +1611,8 @@ public final class ExpeditionGameTests {
                 helper.assertTrue(manager.tokenBalance(player.getUUID()) == 0, "relay credits wait for extraction");
                 for (var witness : run.checkpoints()) manager.activateCheckpoint(player, ExpeditionManager.toPos(witness));
                 manager.completeRun(player);
-                helper.assertTrue(manager.tokenBalance(player.getUUID()) == 20, "one relay bonus pays at extraction");
+                helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).getFirst().haul().getFirst().getCount() == 2,
+                        "the completed relay adds one Return Knot");
                 helper.assertTrue(!level.getBlockState(pos).is(ModBlocks.COMMISSION_MARKER.get()),
                         "the graft despawns on extraction");
 
@@ -1688,8 +1677,8 @@ public final class ExpeditionGameTests {
             ExpeditionRun done = manager.completeRun(player);
             helper.assertTrue(done.status() == ExpeditionStatus.COMPLETED,
                     "optional objectives must never block completion");
-            helper.assertTrue(done.tokensAwarded() == 12,
-                    "only the base reward may be paid, was " + done.tokensAwarded());
+            helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).getFirst().haul().size() == 3,
+                    "unfinished optional objectives add no supplies");
             helper.assertTrue(done.completedObjectiveIds().isEmpty(),
                     "an untouched collect objective must not complete");
         } finally {
@@ -1750,9 +1739,8 @@ public final class ExpeditionGameTests {
 
             manager.onItemPickup(player, new ItemStack(Items.DIAMOND, 2));
             ExpeditionRun done = manager.completeRun(player);
-            helper.assertTrue(done.tokensAwarded() == 16,
-                    "required objective bonus must pay on completion, was "
-                            + done.tokensAwarded());
+            helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).size() == 1,
+                    "the required objective allows the extraction haul");
         } finally {
             ExpeditionDefinitions.reload(Map.of());
             failRunIfActive(manager, player);
@@ -1874,23 +1862,11 @@ public final class ExpeditionGameTests {
             manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
         }
         ExpeditionRun done = manager.completeRun(player);
-        List<Item> pool = ItemRewards.pool(run.definition().dimension());
-        helper.assertTrue(!pool.isEmpty(), "overworld reward pool must be configured");
-        int drops = 0;
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())
-                    || stack.is(ModItems.RETURN_KNOT.get())) {
-                continue;
-            }
-            helper.assertTrue(pool.contains(stack.getItem()),
-                    "drop " + stack.getItem() + " must come from the overworld reward pool");
-            drops++;
-        }
-        helper.assertTrue(drops > 0,
-                "completion must grant at least one bonus drop, found " + drops);
-        helper.assertTrue(manager.tokenBalance(player.getUUID()) == done.tokensAwarded(),
-                "token reward must still be paid in full alongside drops");
+        var cache = manager.savedData().returnCaches(player.getUUID()).getFirst();
+        helper.assertTrue(cache.dimension().equals("minecraft:overworld") && cache.choices().size() == 3
+                        && cache.choices().stream().map(ItemStack::getItem).distinct().count() == 3
+                        && cache.haul().stream().anyMatch(stack -> stack.is(Items.IRON_INGOT)),
+                "the Overworld haul includes supplies and three distinct visible finds");
         helper.succeed();
     }
 
@@ -1922,21 +1898,11 @@ public final class ExpeditionGameTests {
             manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
         }
         ExpeditionRun done = manager.completeRun(player);
-        List<Item> pool = ItemRewards.pool("minecraft:the_nether");
-        helper.assertTrue(!pool.isEmpty(), "nether reward pool must be configured");
-        int drops = 0;
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.isEmpty() || stack.is(ModItems.EXPEDITION_COMPASS.get())
-                    || stack.is(ModItems.RETURN_KNOT.get())) {
-                continue;
-            }
-            helper.assertTrue(pool.contains(stack.getItem()),
-                    "drop " + stack.getItem() + " must come from the nether reward pool");
-            drops++;
-        }
-        helper.assertTrue(drops > 0, "nether completion must grant bonus drops");
-        helper.assertTrue(done.isRewarded(), "token reward must still be recorded");
+        var cache = manager.savedData().returnCaches(player.getUUID()).getFirst();
+        helper.assertTrue(cache.haul().stream().anyMatch(stack -> stack.is(Items.QUARTZ))
+                        && com.expeditions.item.ReturnKnotItem.source(cache.haul().getFirst()).equals("minecraft:the_nether")
+                        && done.isRewarded(),
+                "the Nether haul carries its own supplies and trace");
         helper.succeed();
     }
 
@@ -1950,9 +1916,9 @@ public final class ExpeditionGameTests {
         player.moveTo(position.getX() + 0.5, position.getY(), position.getZ() + 1.5);
         var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(position);
         var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
-        // Unmarked sap assumes the basin's local trace — overworld here.
-        vessel.fluidHandler().fill(new net.neoforged.neoforge.fluids.FluidStack(
-                com.expeditions.registry.ModFluids.SAP.get(), 2000), execute);
+        helper.assertTrue(vessel.fluidHandler().fill(com.expeditions.core.ReturnSap.of("", 2000), execute) == 0,
+                "untyped external sap cannot pay for loot");
+        vessel.fluidHandler().fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 2000), execute);
         var ledger = savedData(level.getServer()).ledger();
         ledger.addTokens(player.getUUID(), 20);
         var locked = new com.expeditions.server.ReclaimingMenu(1, player.getInventory(), level, position);
@@ -1964,7 +1930,9 @@ public final class ExpeditionGameTests {
         menu.clicked(2, 0, pickup, player);
         helper.assertTrue(vessel.sapFor("minecraft:overworld") == 2000, "gear requires the hard charter trace");
         menu.clicked(0, 0, pickup, player);
-        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 1750, "materials spend 250 mB");
+        helper.assertTrue(vessel.sapFor("minecraft:overworld") == 1750
+                        && player.getInventory().items.stream().filter(stack -> !stack.isEmpty()).count() == 2,
+                "materials spend 250 mB and return two distinct stacks");
         var material = player.getInventory().items.stream().filter(stack -> !stack.isEmpty()).findFirst().orElseThrow();
         helper.assertTrue(!(material.getItem() instanceof net.minecraft.world.item.BlockItem)
                         && net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(material.getItem()).getNamespace().equals("minecraft"),
@@ -1981,6 +1949,10 @@ public final class ExpeditionGameTests {
         }
         menu.clicked(1, 0, pickup, player);
         helper.assertTrue(vessel.sapFor("minecraft:overworld") == 750, "a full inventory must leave sap intact");
+        var fallback = com.expeditions.server.ReclaimingOffers.forDimension("unknown_mod:remote_realm", level);
+        helper.assertTrue(fallback.get(0).finds().size() >= 2 && fallback.get(1).finds().size() >= 2
+                        && !fallback.get(2).finds().isEmpty(),
+                "unpopulated modded pools fall back to usable workshop finds in every tier");
         helper.succeed();
     }
 
@@ -2007,21 +1979,22 @@ public final class ExpeditionGameTests {
         helper.assertTrue(from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET)
                         && level.getBlockState(jar).getValue(com.expeditions.block.SapVesselBlock.WATER),
                 "a water bucket fills the jar for steeping");
-        player.setItemInHand(hand, new ItemStack(ModItems.RETURN_KNOT.get()));
-        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
-        helper.assertTrue(vessel.steeping() && player.getItemInHand(hand).isEmpty(),
-                "a knot dissolves into the jar's water");
-        vessel.steepTicks = 0;
-        player.setItemInHand(hand, new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
-        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
-        helper.assertTrue(from.getFluidInTank(0).is(com.expeditions.registry.ModFluids.SAP.get())
-                        && from.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).isEmpty(),
-                "essence settles the steep into one bucket of sap");
+        loadJarInputs(vessel, "minecraft:the_nether");
+        var energy = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.EnergyStorage.BLOCK, jar, Direction.UP);
+        helper.assertTrue(energy != null, "the Jar accepts standard FE");
+        for (int i = 0; i < 50; i++) energy.receiveEnergy(80, false);
+        for (int i = 0; i < 199; i++) vessel.jarTick(level);
+        helper.assertTrue(from.getFluidInTank(1).isEmpty() && vessel.energy() == 20,
+                "the batch spends 20 Resonance each tick and waits for the final tick");
+        vessel.jarTick(level);
+        helper.assertTrue(com.expeditions.core.ReturnSap.dimension(from.getFluidInTank(1)).equals("minecraft:the_nether")
+                        && from.getFluidInTank(1).getAmount() == 1000 && vessel.energy() == 0,
+                "200 powered ticks make one bucket of sap from the knot's trace");
         helper.assertTrue(!level.getBlockState(jar).getValue(com.expeditions.block.SapVesselBlock.WATER),
                 "finished sap uses the amber model");
         player.setItemInHand(hand, new ItemStack(Items.BUCKET, 3));
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand, jarHit);
-        helper.assertTrue(player.getItemInHand(hand).getCount() == 2 && from.getFluidInTank(0).isEmpty(),
+        helper.assertTrue(player.getItemInHand(hand).getCount() == 2 && from.getFluidInTank(1).isEmpty(),
                 "drawing sap exchanges exactly one bucket from a stack");
         var filled = player.getInventory().items.stream()
                 .filter(stack -> stack.is(ModItems.RETURN_SAP_BUCKET.get())).findFirst().orElseThrow();
@@ -2037,7 +2010,8 @@ public final class ExpeditionGameTests {
                 "the bucket can pour a Return Sap source into the world");
         var pickup = (net.minecraft.world.level.block.BucketPickup) level.getBlockState(poured).getBlock();
         var recovered = pickup.pickupBlock(player, level, poured, level.getBlockState(poured));
-        helper.assertTrue(recovered.is(ModItems.RETURN_SAP_BUCKET.get()) && level.getFluidState(poured).isEmpty(),
+        helper.assertTrue(com.expeditions.item.ReturnSapBucketItem.source(recovered).equals("minecraft:the_nether")
+                        && level.getFluidState(poured).isEmpty(),
                 "the source can be picked up into a sap bucket");
         player.setItemInHand(hand, recovered);
         player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand,
@@ -2045,13 +2019,13 @@ public final class ExpeditionGameTests {
         helper.assertTrue(to.getFluidInTank(0).getAmount() == 1000 && player.getItemInHand(hand).is(Items.BUCKET),
                 "a sap bucket fills the basin");
         var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
-        from.fill(to.drain(1000, execute), execute);
+        vessel.tank().fill(to.drain(1000, execute), execute);
         level.setBlockAndUpdate(wick, ModBlocks.ROOTWICK.get().defaultBlockState()
                 .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING, Direction.EAST));
         helper.succeedWhen(() -> {
             int moved = to.getFluidInTank(0).getAmount();
             helper.assertTrue(moved >= 25, "rootwick must deliver sap to the basin");
-            helper.assertTrue(moved <= 50 && moved + from.getFluidInTank(0).getAmount() == 1000,
+            helper.assertTrue(moved <= 50 && moved + from.getFluidInTank(1).getAmount() == 1000,
                     "rootwick must transfer at its slow rate without creating sap");
         });
     }
@@ -2118,41 +2092,49 @@ public final class ExpeditionGameTests {
     }
 
     @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_opts", batch = "sap_wells")
-    public static void steepSettlesTheKnotsOwnDimension(GameTestHelper helper) {
+    public static void legacySteepMigratesAndPoweredBatchResumes(GameTestHelper helper) {
         var level = helper.getLevel();
         var jar = helper.absolutePos(new BlockPos(1, 1, 2));
-        level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
+        var state = ModBlocks.SAP_JAR.get().defaultBlockState();
+        level.setBlockAndUpdate(jar, state);
         var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(jar);
-        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
-        vessel.tank().fill(new net.neoforged.neoforge.fluids.FluidStack(
-                net.minecraft.world.level.material.Fluids.WATER, 1000), execute);
-        var water = new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 1000);
-        helper.assertTrue(vessel.tank().fill(water, execute) == 0 && vessel.tank().getFluidAmount() == 1000,
-                "the jar only accepts one bucket of water");
-        vessel.tank().setFluid(water.copyWithAmount(2000));
-        helper.assertTrue(!vessel.startSteep("minecraft:the_nether") && vessel.tank().getFluidAmount() == 2000,
-                "an old overfilled jar refuses the knot without consuming water");
-        vessel.tank().drain(1000, execute);
-        var knot = new ItemStack(ModItems.RETURN_KNOT.get());
-        com.expeditions.item.ReturnKnotItem.bind(knot, "minecraft:the_nether");
-        helper.assertTrue(vessel.startSteep(com.expeditions.item.ReturnKnotItem.source(knot)),
-                "a bound knot steeps in water");
-        vessel.steepTicks = 0;
-        helper.assertTrue(vessel.tank().fill(water, execute) == 0
-                        && vessel.tank().drain(1000, execute).isEmpty()
-                        && vessel.tank().drain(water, execute).isEmpty() && vessel.steeping(),
-                "pipes cannot dilute or drain the reserved steep");
-        vessel.tank().setFluid(water.copyWithAmount(2000));
-        helper.assertTrue(!vessel.catalyze() && vessel.tank().drain(2000, execute).getAmount() == 1000
-                        && vessel.tank().getFluidAmount() == 1000 && vessel.steeping(),
-                "older overfilled steeps can lose only surplus water");
-        helper.assertTrue(vessel.catalyze() && com.expeditions.core.ReturnSap
-                        .dimension(vessel.tank().getFluid()).equals("minecraft:the_nether"),
-                "the steep settles into the knot's own dimension, not the jar's");
-        helper.assertTrue(vessel.tank().fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 100),
-                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE) == 0,
-                "a foreign trace cannot mix into the jar");
+        var registries = level.registryAccess();
+        var legacy = new CompoundTag();
+        var tank = new net.neoforged.neoforge.fluids.capability.templates.FluidTank(4000);
+        tank.setFluid(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 2000));
+        legacy.put("Sap", tank.writeToNBT(registries, new CompoundTag()));
+        legacy.putString("SteepDimension", "minecraft:the_nether");
+        legacy.putInt("SteepTicks", 30);
+        vessel.loadWithComponents(legacy, registries);
+        vessel.onLoad();
+        vessel.onLoad();
+        helper.assertTrue(vessel.waterAmount() == 2000 && vessel.ingredients().getStackInSlot(0).getCount() == 1
+                        && vessel.brewingTrace().equals("minecraft:the_nether"),
+                "the old steep returns exactly one bound knot and preserves all of its water");
+        vessel.ingredients().setStackInSlot(1, new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
+        var cell = new ItemStack(ModItems.RESONANCE_CELL.get());
+        cell.set(com.expeditions.registry.ModDataComponents.RESONANCE.get(), 4000);
+        vessel.ingredients().setStackInSlot(2, cell);
+        for (int tick = 0; tick < 75; tick++) vessel.jarTick(level);
+        var restored = new com.expeditions.block.entity.SapVesselBlockEntity(jar, state);
+        restored.loadWithComponents(vessel.saveWithoutMetadata(registries), registries);
+        restored.setLevel(level);
+        restored.onLoad();
+        helper.assertTrue(restored.batchTicks() == 75 && restored.waterAmount() == 1000
+                        && restored.ingredients().getStackInSlot(0).isEmpty(),
+                "reload resumes the reserved batch instead of consuming a second input");
+        for (int tick = 75; tick < 200; tick++) restored.jarTick(level);
+        helper.assertTrue(restored.tank().getFluidAmount() == 1000 && restored.outputTrace().equals("minecraft:the_nether")
+                        && restored.energy() == 0,
+                "the dock supplies exactly 4000 Resonance and the migrated knot keeps its trace");
         helper.succeed();
+    }
+
+    private static void loadJarInputs(com.expeditions.block.entity.SapVesselBlockEntity vessel, String dimension) {
+        var knot = new ItemStack(ModItems.RETURN_KNOT.get());
+        com.expeditions.item.ReturnKnotItem.bind(knot, dimension);
+        vessel.ingredients().setStackInSlot(0, knot);
+        vessel.ingredients().setStackInSlot(1, new ItemStack(ModItems.ASSIMILATION_ESSENCE.get()));
     }
 
     @GameTest(template = "arena", templateNamespace = "expeditions_opts", batch = "sap_wells")
@@ -2209,46 +2191,47 @@ public final class ExpeditionGameTests {
         var level = helper.getLevel();
         var pos = helper.absolutePos(new BlockPos(2, 1, 2));
         level.setBlockAndUpdate(pos, tank.orElseThrow().defaultBlockState());
+        var jar = pos.west();
+        var basin = pos.east();
+        level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
+        level.setBlockAndUpdate(basin, ModBlocks.RECLAIMING_BASIN.get().defaultBlockState());
+        var source = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(jar);
+        source.tank().setFluid(com.expeditions.core.ReturnSap.of("minecraft:the_nether", 1000));
         helper.succeedWhen(() -> {
-            var handler = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK,
-                    pos, Direction.UP);
-            var sap = new net.neoforged.neoforge.fluids.FluidStack(com.expeditions.registry.ModFluids.SAP.get(), 1000);
+            var cap = net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK;
+            var handler = level.getCapability(cap, pos, Direction.UP);
+            var destination = level.getCapability(cap, basin, Direction.WEST);
             var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
-            helper.assertTrue(handler != null && handler.fill(sap, execute) == 1000,
-                    "Create's tank accepts one bucket of Return Sap");
-            helper.assertTrue(handler.drain(sap, execute).getAmount() == 1000,
-                    "Create's tank returns the same fluid and volume");
+            helper.assertTrue(handler != null && destination != null, "Create and Basin fluid connections are available");
+            var intoCreate = net.neoforged.neoforge.fluids.FluidUtil.tryFluidTransfer(handler, source.fluidHandler(), 1000, true);
+            helper.assertTrue(intoCreate.getAmount() == 1000
+                            && com.expeditions.core.ReturnSap.dimension(intoCreate).equals("minecraft:the_nether"),
+                    "the installed Create tank receives typed sap from the Jar");
+            helper.assertTrue(handler.fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 100), execute) == 0,
+                    "a Create tank cannot merge two distinct traces");
+            var intoBasin = net.neoforged.neoforge.fluids.FluidUtil.tryFluidTransfer(destination, handler, 1000, true);
+            helper.assertTrue(intoBasin.getAmount() == 1000
+                            && com.expeditions.core.ReturnSap.dimension(intoBasin).equals("minecraft:the_nether"),
+                    "the installed Create tank delivers the original trace to the Basin");
         });
     }
 
     @GameTest(template = "arena", timeoutTicks = 100, templateNamespace = "expeditions_opts", batch = "sap_recycling")
-    public static void sapJarRecyclesHeldItemsAndHopperInputs(GameTestHelper helper) {
+    public static void sapJarAutomationRejectsJunk(GameTestHelper helper) {
         var level = helper.getLevel();
-        var player = helper.makeMockServerPlayerInLevel();
-        player.setGameMode(GameType.SURVIVAL);
         var jar = helper.absolutePos(new BlockPos(1, 1, 2));
         level.setBlockAndUpdate(jar, ModBlocks.SAP_JAR.get().defaultBlockState());
-        player.moveTo(jar.getX() + 0.5, jar.getY(), jar.getZ() + 1.5);
         var vessel = (com.expeditions.block.entity.SapVesselBlockEntity) level.getBlockEntity(jar);
-        var hand = InteractionHand.MAIN_HAND;
-        player.setItemInHand(hand, new ItemStack(Items.DIRT, 16));
-        player.setShiftKeyDown(true);
-        player.gameMode.useItemOn(player, level, player.getItemInHand(hand), hand,
-                new BlockHitResult(Vec3.atCenterOf(jar), Direction.UP, jar, false));
-        player.setShiftKeyDown(false);
-        helper.assertTrue(player.getItemInHand(hand).isEmpty() && vessel.tank().getFluidAmount() == 16,
-                "sneaking with a held block recycles it instead of placing it");
         var chute = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK, jar, Direction.UP);
         var sticks = new ItemStack(Items.STICK, 8);
-        helper.assertTrue(chute != null && chute.insertItem(0, sticks, true).isEmpty()
-                        && vessel.tank().getFluidAmount() == 16, "automation simulation must not brew sap");
-        helper.assertTrue(chute.insertItem(0, sticks, false).isEmpty() && vessel.tank().getFluidAmount() == 24,
-                "top-fed automation consumes the accepted items");
-        var execute = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
-        vessel.tank().fill(com.expeditions.core.ReturnSap.of("minecraft:overworld", 3975), execute);
-        helper.assertTrue(chute.insertItem(0, sticks, false).getCount() == 7
-                        && vessel.tank().getFluidAmount() == 4000 && sticks.getCount() == 8,
-                "a nearly full jar accepts only whole items that fit and returns the remainder");
+        helper.assertTrue(chute != null && chute.getSlots() == 2
+                        && chute.insertItem(0, sticks, false).getCount() == 8 && vessel.tank().isEmpty(),
+                "junk and automation cannot manufacture Return Sap");
+        var knot = new ItemStack(ModItems.RETURN_KNOT.get());
+        com.expeditions.item.ReturnKnotItem.bind(knot, "minecraft:the_end");
+        helper.assertTrue(chute.insertItem(0, knot, true).isEmpty() && chute.getStackInSlot(0).isEmpty()
+                        && chute.insertItem(0, knot, false).isEmpty(),
+                "valid hopper inputs are simulated without mutation then stocked for brewing");
         helper.succeed();
     }
 
@@ -2393,8 +2376,8 @@ public final class ExpeditionGameTests {
             manager.activateCheckpoint(player, ExpeditionManager.toPos(w));
         }
         ExpeditionRun done = manager.completeRun(player);
-        helper.assertTrue(done.tokensAwarded() == 24,
-                "brutal must double the 12-token pool, awarded " + done.tokensAwarded());
+        helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).getFirst().haul().getFirst().getCount() == 2,
+                "a brutal expedition guarantees two knots");
         helper.succeed();
     }
 
@@ -2776,8 +2759,8 @@ public final class ExpeditionGameTests {
                         "carrying the artifact through the exit must complete the run");
                 helper.assertTrue(done.completedObjectiveIds().contains("cargo"),
                         "the artifact objective must be delivered");
-                helper.assertTrue(done.tokensAwarded() == 16,
-                        "the artifact bonus must pay, was " + done.tokensAwarded());
+                helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).size() == 1,
+                        "a successful required objective permits one extraction haul");
                 helper.assertTrue(findArtifactSlot(player, run.runId()) < 0,
                         "delivery must consume the physical artifact");
             } finally {
@@ -3163,8 +3146,8 @@ public final class ExpeditionGameTests {
                         "a survived device must be removed");
 
                 ExpeditionRun done = manager.completeRun(player);
-                helper.assertTrue(done.tokensAwarded() == 17,
-                        "the defense bonus must pay, was " + done.tokensAwarded());
+                helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).size() == 1,
+                        "a successful required objective permits one extraction haul");
                 helper.succeed();
             }, 200, () -> "status=" + run.status() + " defense=" + run.defense()
                     + " gameTime=" + level.getGameTime(),
@@ -3281,9 +3264,8 @@ public final class ExpeditionGameTests {
                 ExpeditionRun done = manager.completeRun(player);
                 helper.assertTrue(done.status() == ExpeditionStatus.COMPLETED,
                         "the run must complete without the device");
-                helper.assertTrue(done.tokensAwarded() == 10,
-                        "a failed optional objective pays no bonus, was "
-                                + done.tokensAwarded());
+                helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).getFirst().haul().size() == 3,
+                        "a failed optional objective adds no bonus haul");
             } finally {
                 failRunIfActive(manager, player);
             }
@@ -3663,131 +3645,68 @@ public final class ExpeditionGameTests {
      * survives the run failing — only the at-risk remainder is lost.
      */
     @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "expedition_eco")
-    public static void checkpointCreditsBankAtActivation(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
-        ExpeditionRun run = null;
+    public static void checkpointsDoNotPayAndFailedRunsHaveNoCache(GameTestHelper helper) {
+        var player = helper.makeMockServerPlayerInLevel();
+        var manager = ExpeditionManager.get(helper.getLevel().getServer());
+        manager.savedData().ledger().addTokens(player.getUUID(), 17);
         try {
-            run = startExpedition(helper, manager, player);
-            int before = savedData(helper.getLevel().getServer()).ledger()
-                    .tokenBalance(player.getUUID());
-
-            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
-            int first = creditShare(run, run.checkpointTokenPortion(1));
-            helper.assertTrue(
-                    savedData(helper.getLevel().getServer()).ledger()
-                            .tokenBalance(player.getUUID()) == before + first,
-                    "the first checkpoint must bank its share immediately");
-            helper.assertTrue(run.securedTokens(player.getUUID()) == first,
-                    "the run must record the secured credit, got "
-                            + run.securedTokens(player.getUUID()));
-
-            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(1)));
-            int second = creditShare(run, run.checkpointTokenPortion(2));
-            helper.assertTrue(
-                    savedData(helper.getLevel().getServer()).ledger()
-                            .tokenBalance(player.getUUID()) == before + first + second,
-                    "each activation must bank its own share");
-            helper.assertTrue(run.isRewarded() == false,
-                    "banking credits must not mark the run rewarded");
-
-            // Run fails: the banked credits survive — at-risk means the
-            // completion remainder, not what was already banked.
+            var run = startExpedition(helper, manager, player);
+            manager.activateCheckpoint(player, ExpeditionManager.toPos(run.checkpoints().getFirst()));
             manager.failRun(player);
-            helper.assertTrue(
-                    savedData(helper.getLevel().getServer()).ledger()
-                            .tokenBalance(player.getUUID()) == before + first + second,
-                    "banked credits must survive the run failing");
-        } finally {
-            failRunIfActive(manager, player);
-        }
+            helper.assertTrue(manager.tokenBalance(player.getUUID()) == 17
+                            && manager.savedData().returnCaches(player.getUUID()).isEmpty(),
+                    "failed runs and checkpoint visits leave archived tokens alone and pay no cache");
+        } finally { failRunIfActive(manager, player); }
         helper.succeed();
     }
 
-    /**
-     * Completion tops each member up to their full share: banked credits
-     * count toward it, so total received == the share exactly once.
-     */
-    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "expedition_eco")
-    public static void completionTopsUpToFullShare(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
-        ExpeditionRun run = null;
-        int credited = 0;
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "return_claim")
+    public static void returnCachePersistsAndClaimsExactlyOnce(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        var manager = ExpeditionManager.get(level.getServer());
         try {
-            run = startExpedition(helper, manager, player);
-            int before = savedData(helper.getLevel().getServer()).ledger()
-                    .tokenBalance(player.getUUID());
-            for (Waypoint checkpoint : run.checkpoints()) {
-                useBlockAt(helper, player, ExpeditionManager.toPos(checkpoint));
-                credited += creditShare(run,
-                        run.checkpointTokenPortion(run.completedCheckpoints()));
-            }
-            failLeakedForeignRuns(player);
-            useBlockAt(helper, player, ExpeditionManager.toPos(run.exit()));
-
-            long elapsed = run.elapsedTicks(helper.getLevel().getGameTime());
-            int total = run.definition().totalReward(elapsed,
-                    run.completedObjectiveIds(), run.options().bonusTimePercent());
-            int expected = com.expeditions.core.PartyScaling.memberShare(
-                    com.expeditions.core.PartyScaling.scaledTotal(total, 1,
-                            ExpeditionsConfig.partyRewardBonusPerExtraMember())
-                            * run.options().difficulty().rewardPercent() / 100,
-                    1, ExpeditionsConfig.partySplitRewards());
-            helper.assertTrue(
-                    savedData(helper.getLevel().getServer()).ledger()
-                            .tokenBalance(player.getUUID()) == before + expected,
-                    "member must end with exactly the full share, was "
-                            + (savedData(helper.getLevel().getServer()).ledger()
-                                    .tokenBalance(player.getUUID()) - before)
-                            + " (credits " + credited + ", share " + expected + ")");
-            helper.assertTrue(run.tokensAwarded() == expected,
-                    "tokensAwarded records the full share value");
-        } finally {
-            failRunIfActive(manager, player);
-        }
+            var run = startExpedition(helper, manager, player);
+            for (var checkpoint : run.checkpoints()) manager.activateCheckpoint(player, ExpeditionManager.toPos(checkpoint));
+            manager.completeRun(player);
+            var cache = roundTrip(helper, level.getServer()).returnCaches(player.getUUID()).getFirst();
+            helper.assertTrue(cache.run().equals(run.runId()) && cache.choices().size() == 3,
+                    "the exact unclaimed cache survives save and reload");
+            var desk = ExpeditionManager.toPos(run.terminal());
+            level.setBlockAndUpdate(desk, ModBlocks.EXPEDITION_TERMINAL.get().defaultBlockState());
+            player.moveTo(desk.getX() + .5, desk.getY() + 1, desk.getZ() + 1.5);
+            var menu = new ExpeditionMenu(1, player.getInventory(), manager, desk, "minecraft:overworld");
+            var click = net.minecraft.world.inventory.ClickType.PICKUP;
+            for (int i = 0; i < player.getInventory().items.size(); i++) player.getInventory().setItem(i, new ItemStack(Items.DIRT, 64));
+            menu.clicked(ExpeditionMenu.SLOT_CACHE_FIRST_CHOICE, 0, click, player);
+            helper.assertTrue(manager.savedData().returnCaches(player.getUUID()).size() == 1, "a full inventory leaves the cache intact");
+            player.getInventory().clearContent();
+            menu.clicked(ExpeditionMenu.SLOT_CACHE_FIRST_CHOICE, 0, click, player);
+            int count = player.getInventory().countItem(ModItems.RETURN_KNOT.get());
+            menu.clicked(ExpeditionMenu.SLOT_CACHE_FIRST_CHOICE, 0, click, player);
+            helper.assertTrue(count == 1 && player.getInventory().countItem(ModItems.RETURN_KNOT.get()) == 1
+                            && roundTrip(helper, level.getServer()).returnCaches(player.getUUID()).isEmpty(),
+                    "one claim grants one haul and reload cannot claim it again");
+        } finally { failRunIfActive(manager, player); }
         helper.succeed();
     }
 
-    /**
-     * A member who drops out mid-run keeps only their banked credits: the
-     * survivor is topped up to the solo share, the ex-member forfeits the
-     * at-risk remainder but never the secured part.
-     */
-    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "expedition_eco")
-    public static void droppedMemberKeepsOnlySecuredCredits(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
-        ServerPlayer member = helper.makeMockServerPlayerInLevel();
-        ExpeditionManager manager = ExpeditionManager.get(helper.getLevel().getServer());
-        ExpeditionRun run = null;
+    @GameTest(template = "arena", timeoutTicks = 400, templateNamespace = "expeditions_eco", batch = "offline_return")
+    public static void offlineMemberKeepsTheirReturnCache(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var player = helper.makeMockServerPlayerInLevel();
+        var member = helper.makeMockServerPlayerInLevel();
+        var manager = ExpeditionManager.get(level.getServer());
         try {
-            run = startExpedition(helper, manager, player);
+            var run = startExpedition(helper, manager, player);
             manager.enterPortal(member, ExpeditionManager.toPos(run.portal()));
-            helper.assertTrue(run.isMember(member.getUUID()),
-                    "the member must join through the open portal");
-            int memberBefore = savedData(helper.getLevel().getServer()).ledger()
-                    .tokenBalance(member.getUUID());
-
-            useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
-            int secured = creditShare(run, run.checkpointTokenPortion(1));
-            helper.assertTrue(run.securedTokens(member.getUUID()) == secured,
-                    "members bank the same credit");
-
-            run.leaveParty(member.getUUID());
-            for (int i = 1; i < run.checkpoints().size(); i++) {
-                useBlockAt(helper, player,
-                        ExpeditionManager.toPos(run.checkpoints().get(i)));
-            }
-            failLeakedForeignRuns(player);
-            useBlockAt(helper, player, ExpeditionManager.toPos(run.exit()));
-
-            helper.assertTrue(
-                    savedData(helper.getLevel().getServer()).ledger()
-                            .tokenBalance(member.getUUID()) == memberBefore + secured,
-                    "the ex-member keeps exactly their banked credit");
-        } finally {
-            failRunIfActive(manager, player);
-        }
+            level.getServer().getPlayerList().remove(member);
+            for (var checkpoint : run.checkpoints()) manager.activateCheckpoint(player, ExpeditionManager.toPos(checkpoint));
+            manager.completeRun(player);
+            helper.assertTrue(run.isMember(member.getUUID()) && level.getServer().getPlayerList().getPlayer(member.getUUID()) == null
+                            && roundTrip(helper, level.getServer()).returnCaches(member.getUUID()).size() == 1,
+                    "a disconnected member's personal cache survives extraction and reload");
+        } finally { failRunIfActive(manager, player); }
         helper.succeed();
     }
 
@@ -3828,8 +3747,9 @@ public final class ExpeditionGameTests {
         try {
             run = startExpedition(helper, manager, player);
             useBlockAt(helper, player, ExpeditionManager.toPos(run.checkpoints().get(0)));
+            run.secureTokens(player.getUUID(), 3); // archived credit from an older active run
             int secured = run.securedTokens(player.getUUID());
-            helper.assertTrue(secured > 0, "the credit must be banked first");
+            helper.assertTrue(secured == 3, "a legacy credit remains recorded");
 
             ExpeditionRun restored = roundTrip(helper, helper.getLevel().getServer())
                     .ledger().activeRun(player.getUUID()).orElseThrow(
@@ -3959,22 +3879,11 @@ public final class ExpeditionGameTests {
             ExpeditionDefinitions.reload(Map.of(
                     ResourceLocation.fromNamespaceAndPath("test", "costly"),
                     JsonParser.parseString(json)));
-            try {
-                manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
-                        new ExpeditionOptions("test:costly", Difficulty.STANDARD, 0, 0));
-                helper.fail("an unaffordable expedition must refuse to start");
-            } catch (IllegalStateException refused) {
-                helper.assertTrue(refused.getMessage().contains("30"),
-                        "the refusal must name the shortfall, was: "
-                                + refused.getMessage());
-            }
-
-            savedData(server).ledger().addTokens(player.getUUID(), 35);
+            savedData(server).ledger().addTokens(player.getUUID(), 4);
             run = manager.startRun(player, helper.absolutePos(new BlockPos(1, 1, 1)),
                     new ExpeditionOptions("test:costly", Difficulty.STANDARD, 0, 0));
-            helper.assertTrue(manager.tokenBalance(player.getUUID()) == 5,
-                    "the cost must be charged once, balance was "
-                            + manager.tokenBalance(player.getUUID()));
+            helper.assertTrue(run.isActive() && manager.tokenBalance(player.getUUID()) == 4,
+                    "legacy entry fees neither block entry nor spend archived balances");
         } finally {
             failRunIfActive(manager, player);
             ExpeditionDefinitions.reload(Map.of());
@@ -4223,8 +4132,8 @@ public final class ExpeditionGameTests {
                     "deep_salvage must chain on field_survey's grant");
             helper.assertTrue(salvage.minCampaignState() == CampaignState.ESTABLISHED,
                     "deep_salvage must gate on the established campaign state");
-            helper.assertTrue(salvage.costTokens() == 15,
-                    "deep_salvage must charge tokens");
+            helper.assertTrue(salvage.costTokens() == 0,
+                    "Deep Salvage opens through proof and campaign progress without a fee");
             helper.assertTrue(salvage.modifiers().weather() == WeatherModifier.RAIN,
                     "deep_salvage must declare its weather modifier");
             var kinds = salvage.objectives().stream()

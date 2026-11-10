@@ -47,10 +47,12 @@ public final class ExpeditionsJeiPlugin implements IModPlugin {
             for (var key : level.registryAccess()
                     .registryOrThrow(Registries.DIMENSION).registryKeySet()) {
                 String dimension = key.location().toString();
-                for (var offer : ReclaimingOffers.forDimension(dimension, level)) {
+                var pools = ReclaimingOffers.forDimension(dimension, level);
+                var materials = pools.getFirst().finds().stream().map(ReclaimingOffers.Find::stack).toList();
+                for (var offer : pools) {
                     if (!offer.finds().isEmpty()) {
                         offers.add(new ReclaimCategory.Offer(dimension, offer.sap(),
-                                offer.finds().stream().map(ReclaimingOffers.Find::stack).toList()));
+                                offer.finds().stream().map(ReclaimingOffers.Find::stack).toList(), materials));
                     }
                 }
             }

@@ -13,12 +13,12 @@
     {
       "type": "patchouli:text",
       "title": "Settle the mark",
-      "text": "Use them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward, even if the expedition later fails. Make room before touching one. Its answer can draw company."
+      "text": "Use them in compass order. The first seals the party. Make room before touching one. Its answer can draw company."
     },
     {
       "type": "patchouli:text",
       "title": "An unfinished route",
-      "text": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours."
+      "text": "Death removes a member; losing the last member ends the expedition."
     },
     {
       "type": "patchouli:text",
@@ -28,7 +28,7 @@
     {
       "type": "patchouli:text",
       "title": "An unfinished route",
-      "text": "The terminal keeps a short record. Use /expeditions history to review the last ten outcomes and the tokens each journey secured."
+      "text": "The terminal keeps a short record. Use /expeditions history to review the last ten outcomes."
     }
   ],
   "advancement": "expeditions:journal/checkpoints"

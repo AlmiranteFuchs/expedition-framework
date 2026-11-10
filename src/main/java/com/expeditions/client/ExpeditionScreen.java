@@ -36,21 +36,39 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         control(leftPos + 8, topPos + 55 + spacing, 92, spacing - 3, "Route length", ExpeditionMenu.SLOT_CHECKPOINTS, null);
         control(leftPos + 8, topPos + 55 + spacing * 2, 92, spacing - 3, "Bonus window", ExpeditionMenu.SLOT_TIME, null);
         control(leftPos + 8, topPos + 55 + spacing * 3, 92, spacing - 3, "Party access", ExpeditionMenu.SLOT_PARTY, null);
-        int tabWidth = (detailWidth - 8) / 3;
+        int tabWidth = (detailWidth - 12) / 4;
         control(column, topPos + 35, tabWidth, 15, "Mission", -1, () -> { tab = 0; page = 0; });
         control(column + tabWidth + 4, topPos + 35, tabWidth, 15,
                 "Unlock", -1, () -> { tab = 1; page = 0; });
         control(column + 2 * (tabWidth + 4), topPos + 35, tabWidth, 15,
                 "Extras", -1, () -> { tab = 2; page = 0; });
-        control(column, topPos + imageHeight - 49, 25, 14, "<", -1, () -> page = Math.max(0, page - 1));
+        control(column + 3 * (tabWidth + 4), topPos + 35, tabWidth, 15,
+                "Cache", -1, () -> { tab = 3; page = 0; });
+        control(column, topPos + imageHeight - 49, 25, 14, "<", -1, () -> navigate(-1));
         control(column + detailWidth - 25, topPos + imageHeight - 49, 25, 14, ">", -1,
-                () -> page = Math.min(pageCount() - 1, page + 1));
+                () -> navigate(1));
         control(column, topPos + imageHeight - 22, detailWidth, 18, "Deploy", ExpeditionMenu.SLOT_START, null);
+        int choiceWidth = detailWidth / 3;
+        for (int i = 0; i < 3; i++) {
+            control(column + i * choiceWidth, topPos + imageHeight - 31, choiceWidth, 26,
+                    "Claim", ExpeditionMenu.SLOT_CACHE_FIRST_CHOICE + i, null);
+        }
     }
 
     private void control(int x, int y, int w, int h, String label, int slot, Runnable action) {
         var control = new BoardButton(x, y, w, h, label, slot, action);
         controls.add(addRenderableWidget(control));
+    }
+
+    private void navigate(int step) {
+        if (tab == 3) {
+            clickSlot(step < 0 ? ExpeditionMenu.SLOT_CACHE_PREVIOUS : ExpeditionMenu.SLOT_CACHE_NEXT, 0);
+            page = 0;
+        } else page = Math.clamp(page + step, 0, pageCount() - 1);
+    }
+
+    private boolean cacheChoice(int slot) {
+        return slot >= ExpeditionMenu.SLOT_CACHE_FIRST_CHOICE && slot < ExpeditionMenu.SLOT_CACHE_FIRST_CHOICE + 3;
     }
 
     private List<Component> lore(int slot) {
@@ -68,11 +86,13 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         int slot = switch (tab) {
             case 1 -> ExpeditionMenu.SLOT_READINESS;
             case 2 -> ExpeditionMenu.SLOT_EXTRAS;
+            case 3 -> ExpeditionMenu.SLOT_CACHE;
             default -> ExpeditionMenu.SLOT_BRIEFING;
         };
         var content = lore(slot);
         // The first unlock line already appears above Deploy while locked.
-        for (int i = tab == 1 && !ready() ? 1 : 0; i < content.size(); i++) {
+        int first = tab == 1 && !ready() || tab == 3 && content.size() > 1 ? 1 : 0;
+        for (int i = first; i < content.size(); i++) {
             result.addAll(font.split(content.get(i), detailWidth - 6));
         }
         return result;
@@ -96,8 +116,8 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         pin(gui, leftPos + 112, topPos + 6);
         rootImpression(gui, leftPos + imageWidth - 35, topPos + 7);
         gui.drawString(font, Component.translatable("gui.expeditions.terminal"), leftPos + 13, topPos + 16, INK, false);
-        gui.drawString(font, font.plainSubstrByWidth(selected, detailWidth - 22), column, topPos + 11, INK, false);
-        gui.drawString(font, font.plainSubstrByWidth(dimension, detailWidth),
+        gui.drawString(font, font.plainSubstrByWidth(tab == 3 ? "Return Cache" : selected, detailWidth - 22), column, topPos + 11, INK, false);
+        gui.drawString(font, font.plainSubstrByWidth(tab == 3 ? "Personal haul" : dimension, detailWidth),
                 column, topPos + 25, 0xff705539, false);
         gui.drawString(font, line(ExpeditionMenu.SLOT_EXPEDITION, 2, ""), leftPos + 13, topPos + 44, 0xff705539, false);
         gui.hLine(column, column + detailWidth - 1, topPos + 50, 0xffb09468);
@@ -107,17 +127,23 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
         for (int n = page * rows(); n < Math.min(text.size(), (page + 1) * rows()); n++) {
             gui.drawString(font, text.get(n), column + 2, y, INK, false); y += 10;
         }
-        String count = (page + 1) + " / " + pageCount();
+        String count = tab == 3 ? lore(ExpeditionMenu.SLOT_CACHE).size() > 1 ? line(ExpeditionMenu.SLOT_CACHE, 0, "") : "" : (page + 1) + " / " + pageCount();
         gui.drawString(font, count, column + (detailWidth - font.width(count)) / 2,
                 topPos + imageHeight - 45, 0xff786b4e, false);
-        if (!ready()) {
+        if (tab != 3 && !ready()) {
             String nextStep = line(ExpeditionMenu.SLOT_READINESS, 0, "");
             gui.drawString(font, font.plainSubstrByWidth(nextStep, detailWidth - 4),
                     column + 2, topPos + imageHeight - 32, 0xff934524, false);
         }
-        for (var control : controls) control.render(gui, mouseX, mouseY, partialTick);
         for (var control : controls) {
-            if (control.isHoveredOrFocused() && (isOption(control.slot)
+            control.visible = control.slot == ExpeditionMenu.SLOT_START ? tab != 3
+                    : !cacheChoice(control.slot) || tab == 3 && !menu.getContainer().getItem(control.slot).isEmpty();
+            control.render(gui, mouseX, mouseY, partialTick);
+        }
+        for (var control : controls) {
+            if (control.visible && cacheChoice(control.slot) && control.isHoveredOrFocused()) {
+                gui.renderTooltip(font, menu.getContainer().getItem(control.slot), mouseX, mouseY);
+            } else if (control.visible && control.isHoveredOrFocused() && (isOption(control.slot)
                     || control.slot == ExpeditionMenu.SLOT_START && !ready())) {
                 gui.renderComponentTooltip(font, lore(control.slot == ExpeditionMenu.SLOT_START
                         ? ExpeditionMenu.SLOT_READINESS : control.slot), mouseX, mouseY);
@@ -190,6 +216,15 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
             return super.mouseClicked(x, y, button);
         }
         @Override public void renderWidget(GuiGraphics gui, int mouseX, int mouseY, float tick) {
+            if (cacheChoice(slot)) {
+                var stack = menu.getContainer().getItem(slot);
+                gui.fill(getX() + 2, getY(), getX() + getWidth() - 2, getY() + getHeight(),
+                        isHoveredOrFocused() ? 0xffc6a576 : 0xffd7bb92);
+                gui.renderItem(stack, getX() + 5, getY() + 5);
+                gui.renderItemDecorations(font, stack, getX() + 5, getY() + 5);
+                gui.drawString(font, "Claim", getX() + 23, getY() + 9, INK, false);
+                return;
+            }
             boolean option = isOption(slot);
             boolean twoLines = option && getHeight() >= 22;
             boolean deploy = slot == ExpeditionMenu.SLOT_START;
@@ -218,7 +253,7 @@ public final class ExpeditionScreen extends AbstractContainerScreen<ExpeditionMe
                 textY = getY() + 14;
                 gui.drawString(font, text, textX, textY, ink, false);
             }
-            if (hovered || option || (slot == -1 && label.equals(tab == 0 ? "Mission" : tab == 1 ? "Unlock" : "Extras"))) {
+            if (hovered || option || (slot == -1 && label.equals(tab == 0 ? "Mission" : tab == 1 ? "Unlock" : tab == 2 ? "Extras" : "Cache"))) {
                 if (!text.isEmpty()) gui.hLine(textX, textX + font.width(text) - 1, textY + 9,
                         hovered ? 0xff934524 : 0xffa88b62);
             }

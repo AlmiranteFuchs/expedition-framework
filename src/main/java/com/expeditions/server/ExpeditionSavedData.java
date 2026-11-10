@@ -182,12 +182,46 @@ public class ExpeditionSavedData extends SavedData {
         boolean changed=active?stillnessBreaches.add(pos.immutable()):stillnessBreaches.remove(pos);
         if(changed)setDirty();return true;
     }
+    private final Map<UUID, List<ReturnCache>> returnCaches = new HashMap<>();
+
+    public List<ReturnCache> returnCaches(UUID player) {
+        return List.copyOf(returnCaches.getOrDefault(player, List.of()));
+    }
+
+    void addReturnCache(UUID player, ReturnCache cache) {
+        var pending = returnCaches.computeIfAbsent(player, ignored -> new java.util.ArrayList<>());
+        if (pending.stream().noneMatch(existing -> existing.run().equals(cache.run()))) {
+            pending.add(cache);
+            setDirty();
+        }
+    }
+
+    boolean claimReturnCache(net.minecraft.server.level.ServerPlayer player, UUID run, int choice) {
+        var pending = returnCaches.get(player.getUUID());
+        if (pending == null || choice < 0 || choice >= 3) return false;
+        var cache = pending.stream().filter(entry -> entry.run().equals(run)).findFirst().orElse(null);
+        if (cache == null || !InventoryBundles.fits(player.getInventory(), cache.bundle(choice))) return false;
+        pending.remove(cache);
+        if (pending.isEmpty()) returnCaches.remove(player.getUUID());
+        setDirty();
+        InventoryBundles.deliver(player.getInventory(), cache.bundle(choice));
+        return true;
+    }
+
     public static ExpeditionSavedData create() {
         return new ExpeditionSavedData();
     }
 
     public static ExpeditionSavedData load(CompoundTag tag, HolderLookup.Provider lookup) {
         ExpeditionSavedData data = create();
+        for (Tag value : tag.getList("ReturnCaches", Tag.TAG_COMPOUND)) {
+            try {
+                var row = (CompoundTag) value;
+                data.addReturnCache(row.getUUID("Player"), ReturnCache.load(row, lookup));
+            } catch (RuntimeException malformed) {
+                LOGGER.warn("Skipping invalid return cache: {}", malformed.getMessage());
+            }
+        }
         for (Tag value : tag.getList("History", Tag.TAG_COMPOUND)) {
             try {
                 var row = (CompoundTag) value;
@@ -414,6 +448,7 @@ public class ExpeditionSavedData extends SavedData {
             restored.restoreGuardian(new com.expeditions.core.GuardianEncounter(
                     encounter.getUUID("EntityId"), encounter.getBoolean("Defeated")));
         }
+        if (runTag.contains("CommissionId", Tag.TAG_STRING)) restored.recordCommission(runTag.getString("CommissionId"));
         if (runTag.contains("CommissionSite", Tag.TAG_COMPOUND)) {
             restored.restoreCommissionSite(readWaypoint(runTag.getCompound("CommissionSite")));
         }
@@ -535,6 +570,13 @@ public class ExpeditionSavedData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider lookup) {
+        var caches = new ListTag();
+        returnCaches.forEach((player, entries) -> entries.forEach(entry -> {
+            var row = entry.save(lookup);
+            row.putUUID("Player", player);
+            caches.add(row);
+        }));
+        tag.put("ReturnCaches", caches);
         var reports = new ListTag();
         history.reports().forEach((player, entries) -> entries.forEach(entry -> {
             var row = new CompoundTag();
@@ -598,6 +640,7 @@ public class ExpeditionSavedData extends SavedData {
                 bearingTag.putLong("Expires", bearing.expiresAt());
                 runTag.put("PartyBearing", bearingTag);
             });
+            run.commissionId().ifPresent(id -> runTag.putString("CommissionId", id));
             run.commissionSite().ifPresent(position -> runTag.put("CommissionSite", writeWaypoint(position)));
             run.fieldCache().ifPresent(position -> {
                 var cache = writeWaypoint(position);

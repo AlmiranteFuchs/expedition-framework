@@ -41,6 +41,7 @@ public final class ExpeditionHistoryTests {
             route(h,3340);
             var first=ExpeditionGameTests.startExpedition(h,manager,player);
             manager.activateCheckpoint(player,ExpeditionManager.toPos(first.checkpoints().getFirst()));
+            first.secureTokens(player.getUUID(), 7); // a checkpoint credit archived by an older build
             int kept=first.securedTokens(player.getUUID());manager.failRun(player,"abandoned");
             var failed=manager.savedData().history().entries(player.getUUID()).getFirst();
             h.assertTrue(failed.outcome()==ExpeditionStatus.FAILED && failed.tokensKept()==kept && kept>0,
@@ -52,7 +53,7 @@ public final class ExpeditionHistoryTests {
             h.assertTrue(entries.size()==2,"a new run must not erase the previous personal report");
             var complete=entries.stream().filter(e->e.runId().equals(second.runId())).findFirst().orElseThrow();
             h.assertTrue(complete.outcome()==ExpeditionStatus.COMPLETED && complete.tokensKept()==second.tokensAwarded(),
-                    "completion report records the full credited share, not just the extraction top-up");
+                    "new extraction reports do not record a token payout");
             var saved=manager.savedData().save(new CompoundTag(),h.getLevel().registryAccess());
             var corrupt=new CompoundTag();corrupt.putString("Outcome","ACTIVE");
             saved.getList("History",Tag.TAG_COMPOUND).add(corrupt);

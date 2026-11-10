@@ -132,7 +132,7 @@ public final class ReclaimingMenu extends ChestMenu {
         String dimension = dimensions.get(index);
         var account = new ItemStack(ModItems.RETURN_SAP_BUCKET.get());
         com.expeditions.item.ReturnSapBucketItem.bind(account, dimension);
-        display.setItem(22, label(account, "gui.expeditions.basin_account", ExpeditionText.dimension(dimension)));
+        display.setItem(22, label(account, "gui.expeditions.basin_account", SapTrace.label(dimension)));
         display.setItem(23, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_page", index + 1, dimensions.size()));
         display.setItem(26, label(new ItemStack(Items.PAPER), "gui.expeditions.basin_next"));
         if (!traces.contains(dimension)) {
@@ -150,6 +150,12 @@ public final class ReclaimingMenu extends ChestMenu {
             notes.add(Component.translatable(sealed ? "gui.expeditions.basin_field_sealed"
                     : offer.finds().isEmpty() ? "message.expeditions.basin_empty_trace" : "gui.expeditions.basin_weighted_" + slot));
             notes.add(Component.translatable("gui.expeditions.basin_price", offer.sap()));
+            notes.add(Component.literal(slot == 0 ? "Two different material stacks" : "One find and one material stack"));
+            if (slot > 0) {
+                var materials = offers.getFirst().finds().stream().limit(5)
+                        .map(find -> find.stack().getHoverName().getString()).toList();
+                notes.add(Component.literal("Included materials · " + String.join(", ", materials)));
+            }
             int totalWeight = offer.finds().stream().mapToInt(ReclaimingOffers.Find::weight).sum();
             for (var find : offer.finds().stream().sorted(java.util.Comparator.comparingInt(ReclaimingOffers.Find::weight)).limit(5).toList()) {
                 notes.add(Component.translatable("gui.expeditions.basin_find", find.stack().getCount(),

@@ -16,8 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * Water into the jar, a knot steeps in it, essence settles the steep into
- * sap — the brew is hardcoded in {@code SapVesselBlock.useItemOn}, so the
+ * Water, essence and a bound knot run through a powered Sap Jar. The
  * recipe card is a fixed singleton laid out in click order.
  */
 final class SapBrewCategory extends AbstractRecipeCategory<SapBrewCategory.Brew> {

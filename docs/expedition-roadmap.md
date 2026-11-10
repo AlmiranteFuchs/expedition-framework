@@ -1064,3 +1064,48 @@ build/alpha50-final-rerun.log. The installed-mod visual review was not
 completed; see docs/release-alpha50.md. The bundle includes the approved
 artwork and ResonanceScreen, checked against current source bytes.
 Next concrete roadmap item remains cleared-Nether dormant survey deposits.
+
+### Return Caches and powered dimension sap — alpha.51
+
+Tokens are retired from runtime charter gates, checkpoint payments, extraction
+payments and Basin spending. Existing save balances, historical awards and
+legacy definition fields remain readable. Successful extraction records a
+personal Return Cache in the existing expedition save for every eligible
+member, including offline members. The cache keeps its guaranteed bound knots
+and destination supplies plus three distinct revealed choices until claimed.
+The Basin now spends the matching source well on material, curiosity or gear
+bundles, with personal extraction proof and a Hard/Brutal gear gate.
+
+The Sap Jar is a powered station with knot, essence and cell slots, independent
+water and sap tanks, and item/fluid/energy capabilities. A batch consumes one
+bound knot, one essence, 1,000 mB water and 4,000 Resonance across 200 powered
+ticks. Legacy unfinished steeps reserve their knot and preserve water. Native
+untyped stock migrates once, external untyped sap cannot purchase rewards,
+and poured sources retain provenance through persisted chunk attachments.
+The generic recycler and static Create mixing recipe are retired.
+
+The final build and alphaBundle passed 203 unit tests and all 197 required
+GameTests. The installed Create/dimension-mod run passed all four required
+tests, including typed transfer through a real Create tank. Logs are retained
+separately in build/economy-alpha51-release.log and
+build/economy-create-release.log. Earlier diagnostic attempts remain in the
+build/economy-* logs. The installed-mod test bridge could not bind port 25599
+because the disposable client already held it; the GameTests completed.
+
+Live checks in the disposable supaflat test world completed First Bearing,
+Trace Recovery, Deep Salvage and a Hard Twilight Forest charter. These used
+creative teleport-assisted traversal. The first Deep Salvage defense attempt
+failed when the device was destroyed. The successful attempt used Peaceful
+and accelerated ticks, so survival encounter balance remains unverified.
+The client brewed 1,000 mB Nether sap and displayed the source name and mark.
+The charter and Jar screens were visually inspected. A clipped Jar stall
+message was shortened in the final build.
+
+Remaining verification is the live Return Cache choice screen and Basin
+purchase screens, a survival defense playthrough, and a physical Create pump
+setup. The cache claim, inventory, offline and reload paths are covered by
+GameTests. Windows capture failed twice (FrameArrived/window capture timeout),
+and Minecraft UI control was disabled, preventing the live cache-tab review.
+The final shortened Jar readout also still needs a fresh client inspection.
+No public alpha.51 release has been published. The verified local JAR and
+checksum are staged in build/alpha. Resume from these checks before publishing.

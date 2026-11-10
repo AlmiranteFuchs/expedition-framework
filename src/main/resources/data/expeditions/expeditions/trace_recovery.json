@@ -7,8 +7,6 @@
     "min_spacing": 40,
     "max_spacing": 72
   },
-  "tokens": 30,
-  "bonus_tokens": 10,
   "bonus_time_seconds": 420,
   "requires": [
     "expeditions:field_clear"
@@ -29,8 +27,7 @@
       "description": "Extract within six minutes",
       "type": "time_limit",
       "seconds": 360,
-      "required": false,
-      "bonus_tokens": 8
+      "required": false
     }
   ]
 }

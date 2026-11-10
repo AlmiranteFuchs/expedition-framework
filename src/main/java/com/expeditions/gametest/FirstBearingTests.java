@@ -74,7 +74,8 @@ public final class FirstBearingTests {
             h.assertTrue(manager.reclaimingDimensions(owner.getUUID()).contains("minecraft:overworld"),
                     "extraction records a permanent basin trace");
             h.assertTrue(manager.trainingComplete(owner.getUUID()) && manager.unlocks(owner.getUUID()).contains("expeditions:field_clear")
-                    && run.tokensAwarded() == 8, "the novice trophy and field proof are awarded through ordinary extraction");
+                    && manager.savedData().returnCaches(owner.getUUID()).size() == 1,
+                    "the novice trophy, field proof and one return cache are filed on extraction");
             var saved = ExpeditionSavedData.load(manager.savedData().save(new CompoundTag(), level.registryAccess()), level.registryAccess());
             h.assertTrue(saved.ledger().trophies(owner.getUUID()).contains(id.toString()), "novice trophy survives save/load");
             try {

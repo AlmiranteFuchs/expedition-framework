@@ -55,7 +55,6 @@ public class ExpeditionsMod {
         modContainer.registerConfig(ModConfig.Type.SERVER, ExpeditionsConfig.SPEC);
 
         IEventBus gameBus = NeoForge.EVENT_BUS;
-        gameBus.addListener(com.expeditions.block.SapVesselBlock::allowRecyclingInteraction);
         gameBus.addListener(com.expeditions.block.ResonanceMachineBlock::allowCellInteraction);
         gameBus.addListener(ExpeditionEventHandler::onLivingDeath);
         gameBus.addListener(ExpeditionEventHandler::onItemPickup);
@@ -67,6 +66,7 @@ public class ExpeditionsMod {
         gameBus.addListener(ExpeditionEventHandler::onServerStarted);
         gameBus.addListener(ExpeditionEventHandler::onServerTick);
         gameBus.addListener(ExpeditionEventHandler::onPlayerTick);
+        gameBus.addListener(com.expeditions.server.PlacedSap::onChunkLoad);
         gameBus.addListener(ExpeditionEventHandler::onEntityTick);
         gameBus.addListener(com.expeditions.server.ChallengeOwnership::onJoin);
         gameBus.addListener(com.expeditions.server.ChallengeOwnership::onLeave);

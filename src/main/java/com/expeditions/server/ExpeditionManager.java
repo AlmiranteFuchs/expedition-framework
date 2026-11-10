@@ -266,9 +266,7 @@ public final class ExpeditionManager {
                 : mastery ? new ExpeditionOptions(definition.id(), Difficulty.HARD,
                         FrontierProgression.MASTERY_CHECKPOINTS, 0, requested.solo())
                 : requested;
-        RequirementCheck requirements = ledger.checkRequirements(
-                player.getUUID(), definition,
-                data.campaignState(definition.dimension()));
+        RequirementCheck requirements = missingRequirements(player.getUUID(), definition);
         if (!requirements.isSatisfied()) {
             throw new IllegalStateException(
                     "Expedition locked. " + describeMissing(requirements));
@@ -410,16 +408,8 @@ public final class ExpeditionManager {
                 checkpointPositions.stream().map(ExpeditionManager::toWaypoint).toList(),
                 toWaypoint(exitPos), toWaypoint(terminalPos), toWaypoint(portalPos),
                 toWaypoint(entryPos), level.getGameTime(), options, portalDimension);
+        if (commissionIndex >= 0) run.recordCommission(definition.commissionPool().get(commissionIndex).id());
         if (commissionSite != null) run.restoreCommissionSite(toWaypoint(commissionSite));
-        // Charged last — after every validation and world change, when the
-        // requirements check above guarantees the balance suffices. A spend
-        // that still fails leaves orphan markers for start-up pruning.
-        if (definition.costTokens() > 0
-                && !ledger.spendTokens(player.getUUID(), definition.costTokens())) {
-            throw new IllegalStateException(
-                    "Not enough tokens — this expedition costs "
-                            + definition.costTokens());
-        }
         ledger.startRun(run);
         player.playNotifySound(ModSounds.EXPEDITION_START.get(),
                 SoundSource.PLAYERS, 0.8f, 1.0f);
@@ -590,8 +580,8 @@ public final class ExpeditionManager {
      */
     public RequirementCheck missingRequirements(UUID playerId,
             ExpeditionDefinition definition) {
-        return ledger.checkRequirements(playerId, definition,
-                data.campaignState(definition.dimension()));
+        var legacy = ledger.checkRequirements(playerId, definition, data.campaignState(definition.dimension()));
+        return new RequirementCheck(legacy.missingKeys(), 0, legacy.requiredState(), legacy.currentState());
     }
 
     private static String describeMissing(RequirementCheck check) {
@@ -600,9 +590,6 @@ public final class ExpeditionManager {
             check.missingKeys().stream().sorted()
                     .map(key -> ExpeditionText.proofAction(key).getString())
                     .forEach(parts::add);
-        }
-        if (check.missingTokens() > 0) {
-            parts.add("Earn " + check.missingTokens() + " more tokens.");
         }
         if (!check.currentState().atLeast(check.requiredState())) {
             parts.add(check.requiredState() == CampaignState.CLEARED
@@ -814,23 +801,6 @@ public final class ExpeditionManager {
         if (devicePos != null) {
             startSiege(player, run, defenseObjective.orElseThrow(), devicePos);
         }
-        // Guaranteed tokens are banked per checkpoint — they are paid into
-        // member balances immediately and survive failure, death and
-        // restarts. Completion only tops members up to their full share.
-        int portion = run.checkpointTokenPortion(run.completedCheckpoints());
-        if (portion > 0) {
-            int scaled = PartyScaling.scaledTotal(portion, run.party().size(),
-                    ExpeditionsConfig.partyRewardBonusPerExtraMember())
-                    * run.options().difficulty().rewardPercent() / 100;
-            int share = PartyScaling.memberShare(scaled, run.party().size(),
-                    ExpeditionsConfig.partySplitRewards());
-            if (share > 0) {
-                for (UUID member : run.party()) {
-                    ledger.addTokens(member, share);
-                    run.secureTokens(member, share);
-                }
-            }
-        }
         retargetPartyCompasses(run, player);
         if (run.definition().defenseObjectiveAt(run.completedCheckpoints()).isEmpty()
                 && run.definition().artifactObjectiveAt(run.completedCheckpoints()).isEmpty()) {
@@ -852,19 +822,9 @@ public final class ExpeditionManager {
     }
 
     /**
-     * Completes the interacting player's run and settles the scaled award to
-     * every member present — base tokens plus each completed objective's
-     * bonus, times the configured party bonus, then split evenly or paid in
-     * full per config — exactly once. Members keep whatever checkpoint
-     * credits they already banked; the run only pays the difference between
-     * their secured total and their full share (late joiners equalize; the
-     * at-risk remainder is what extraction actually pays). Timed objectives
-     * are evaluated first; unfinished required objectives refuse the
-     * completion entirely. Members are teleported back to the run's
-     * terminal.
-     *
-     * @throws IllegalStateException if the run is missing, finished, has
-     *         checkpoints left or unfinished required objectives
+     * Completes the run, records one cache and proof per party member, then
+     * returns the party to its Wayroot. Timed objectives are evaluated before
+     * checking that the route and all required objectives are complete.
      */
     public ExpeditionRun completeRun(ServerPlayer player) {
         ExpeditionRun run = requireActive(player.getUUID());
@@ -875,7 +835,8 @@ public final class ExpeditionManager {
         // objectives: the item must be in a member's hands at this moment.
         // It is consumed only AFTER complete() succeeds — a refused click
         // (other required objectives missing) must not destroy the cargo.
-        HeldArtifact held = findHeldArtifact(run);
+        HeldArtifact held = findHeldArtifact(run, false);
+        HeldArtifact field = run.fieldCacheOpened() ? findHeldArtifact(run, true) : null;
         for (ExpeditionObjective objective : run.definition().objectives()) {
             if (objective.kind() == ObjectiveKind.RECOVER_ARTIFACT) {
                 run.deliverArtifact(objective.id(), held != null);
@@ -890,27 +851,13 @@ public final class ExpeditionManager {
         if (held != null) {
             held.consume();
         }
-        ItemStack cacheReward = held != null && run.fieldCacheOpened()
-                ? ReclaimingOffers.cacheReward(run.definition().dimension(), player.serverLevel()) : ItemStack.EMPTY;
-        boolean awardReturnKnots = !run.isRewarded();
-        if (awardReturnKnots) {
-            int base = run.definition().totalReward(elapsed,
-                    run.completedObjectiveIds(), run.options().bonusTimePercent());
-            int scaled = PartyScaling.scaledTotal(base, run.party().size(),
-                    ExpeditionsConfig.partyRewardBonusPerExtraMember())
-                    * run.options().difficulty().rewardPercent() / 100;
-            int share = PartyScaling.memberShare(scaled, run.party().size(),
-                    ExpeditionsConfig.partySplitRewards());
+        if (field != null) field.consume();
+        if (!run.isRewarded()) {
             for (UUID member : run.party()) {
-                // Top up to the full share — checkpoint credits already paid
-                // count toward it, so no member is paid twice. A member whose
-                // secured total exceeds the final share (party shrank after
-                // crediting) keeps the overage; it was earned.
-                int topUp = Math.max(0, share - run.securedTokens(member));
-                ledger.addTokens(member, topUp);
+                data.addReturnCache(member, ReturnCache.from(run, player.serverLevel(), elapsed,
+                        field != null && field.holder().getUUID().equals(member)));
             }
-            run.markRewarded(share);
-            grantBonusDrops(run);
+            run.markRewarded(0);
         }
         // Unlock keys are party-wide progression — every member earns proof
         // of the completion, online or not, in the same atomic save. The
@@ -961,19 +908,6 @@ public final class ExpeditionManager {
                 player.getX(), player.getY() + 0.6, player.getZ(),
                 18, 0.3, 0.5, 0.3, 0.01);
         endRun(run);
-        if (!cacheReward.isEmpty() && !player.getInventory().add(cacheReward)) player.drop(cacheReward, false);
-        if (awardReturnKnots) {
-            int count = FrontierProgression.isAftergrowth(run.definition()) || run.options().difficulty() == Difficulty.HARD
-                    || run.options().difficulty() == Difficulty.BRUTAL ? 2 : 1;
-            for (UUID member : run.party()) {
-                var online = member.equals(player.getUUID()) ? player : server.getPlayerList().getPlayer(member);
-                if (online != null) {
-                    var knot = new ItemStack(ModItems.RETURN_KNOT.get(), count);
-                    com.expeditions.item.ReturnKnotItem.bind(knot, run.definition().dimension());
-                    if (!online.getInventory().add(knot)) online.drop(knot, false);
-                }
-            }
-        }
         return run;
     }
 
@@ -1013,64 +947,34 @@ public final class ExpeditionManager {
         // Reclaim spends from that dimension's own well — a trace only buys what it remembers.
         if (vessel.sapFor(dimension) < offer.sap()) return reclaimRefused(player, "sap");
         if (offer.finds().isEmpty()) return reclaimRefused(player, "empty_trace");
-        var inventory = player.getInventory();
-        long empty = inventory.items.stream().filter(ItemStack::isEmpty).count();
-        if (offer.finds().stream().anyMatch(find -> empty < emptySlotsNeeded(inventory, find.stack()))) {
-            return reclaimRefused(player, "room");
+        var materials = offers.getFirst();
+        if (materials.finds().isEmpty() || slot == 0 && materials.finds().size() < 2) {
+            return reclaimRefused(player, "empty_trace");
         }
-        var cargo = offer.draw(player.getRandom());
+        var inventory = player.getInventory();
+        // Check both parts of every possible bundle before drawing, so a refused purchase
+        // cannot consume sap or turn inventory management into a reroll.
+        for (var first : offer.finds()) {
+            for (var second : materials.finds()) {
+                if (slot == 0 && first.stack().is(second.stack().getItem())) continue;
+                if (!InventoryBundles.fits(inventory, List.of(first.stack(), second.stack()))) {
+                    return reclaimRefused(player, "room");
+                }
+            }
+        }
+        var first = offer.draw(player.getRandom());
+        var second = materials.drawExcept(player.getRandom(), slot == 0 ? List.of(first) : List.of());
         vessel.drainSap(dimension, offer.sap());
-        inventory.add(cargo);
-        inventory.setChanged();
+        InventoryBundles.deliver(inventory, List.of(first, second));
         player.displayClientMessage(Component.translatable("message.expeditions.basin_reclaimed"), true);
         player.playNotifySound(ModSounds.BASIN_RECLAIM.get(), SoundSource.PLAYERS, 0.55f, 0.8f);
         ExpeditionEventHandler.bloomWork(player.serverLevel(), vessel.getBlockPos());
         return true;
     }
 
-    private static int emptySlotsNeeded(net.minecraft.world.entity.player.Inventory inventory, ItemStack cargo) {
-        int remaining = cargo.getCount();
-        for (var stack : inventory.items) {
-            if (ItemStack.isSameItemSameComponents(stack, cargo)) {
-                remaining -= Math.max(0, stack.getMaxStackSize() - stack.getCount());
-            }
-        }
-        return Math.ceilDiv(Math.max(0, remaining), cargo.getMaxStackSize());
-    }
-
     private static boolean reclaimRefused(ServerPlayer player, String reason) {
         player.displayClientMessage(Component.translatable("message.expeditions.basin_" + reason), true);
         return false;
-    }
-
-    /**
-     * Grants bonus item drops to every online member: each member's token
-     * share converts to an item-value budget drawn from the run's own
-     * dimension's reward pool, so Nether completions pay Nether supplies.
-     * Stacks merge into the inventory; leftovers drop at the member's feet.
-     * Offline members keep their tokens — item drops don't persist.
-     */
-    private void grantBonusDrops(ExpeditionRun run) {
-        if (!ExpeditionsConfig.bonusDropsEnabled()) {
-            return;
-        }
-        int budget = (int) (run.tokensAwarded() * ExpeditionsConfig.bonusDropValuePerToken());
-        if (budget <= 0) {
-            return;
-        }
-        List<Item> pool = ItemRewards.pool(run.definition().dimension());
-        for (UUID member : run.party()) {
-            ServerPlayer memberPlayer = this.server.getPlayerList().getPlayer(member);
-            if (memberPlayer == null) {
-                continue;
-            }
-            for (ItemStack drop : ItemRewards.draw(pool, budget,
-                    memberPlayer.getRandom(), ExpeditionsConfig.maxBonusDrops())) {
-                if (!memberPlayer.getInventory().add(drop)) {
-                    memberPlayer.drop(drop, false);
-                }
-            }
-        }
     }
 
     /**
@@ -1432,12 +1336,9 @@ public final class ExpeditionManager {
         for (UUID member : run.party()) {
             ServerPlayer player = server.getPlayerList().getPlayer(member);
             if (player == null) continue;
-            int secured = run.securedTokens(member);
             if (completed) {
-                String key = run.options().guided() ? "summary_home_novice"
-                        : run.definition().bigBad() ? "summary_home_liberated" : "summary_home";
-                player.sendSystemMessage(Component.translatable("message.expeditions." + key,
-                        ExpeditionText.title(run.definition().displayName()), Math.max(secured, run.tokensAwarded())));
+                player.sendSystemMessage(Component.literal(ExpeditionText.title(run.definition().displayName())
+                        + " complete. Claim your Return Cache at the Wayroot."));
             } else {
                 reportWithdrawal(run, player, run.failReason().orElse("ended"));
             }
@@ -1447,8 +1348,7 @@ public final class ExpeditionManager {
     private static void reportWithdrawal(ExpeditionRun run, ServerPlayer player, String reason) {
         player.sendSystemMessage(Component.translatable("message.expeditions.summary_withdrawn",
                 ExpeditionText.title(run.definition().displayName()),
-                Component.translatable("message.expeditions.fail_reason." + reason),
-                run.securedTokens(player.getUUID())));
+                Component.translatable("message.expeditions.fail_reason." + reason)));
     }
 
     /** Applies the run's declared member effects (last while the run is active). */
@@ -2219,7 +2119,12 @@ public final class ExpeditionManager {
      * member's inventory (cursor-held counts; slot -1). Offline members
      * cannot hand over items — documented extraction rule.
      */
-    private HeldArtifact findHeldArtifact(ExpeditionRun run) {
+    private static boolean matchesArtifact(ItemStack stack, ExpeditionRun run, boolean field) {
+        return ExpeditionArtifactItem.isBoundTo(stack, run.runId()) && field == Component.translatable(
+                "item.expeditions.cache_find").equals(stack.get(DataComponents.ITEM_NAME));
+    }
+
+    private HeldArtifact findHeldArtifact(ExpeditionRun run, boolean field) {
         for (UUID member : run.party()) {
             ServerPlayer memberPlayer = server.getPlayerList().getPlayer(member);
             if (memberPlayer == null) {
@@ -2227,12 +2132,11 @@ public final class ExpeditionManager {
             }
             var inventory = memberPlayer.getInventory();
             for (int i = 0; i < inventory.getContainerSize(); i++) {
-                if (ExpeditionArtifactItem.isBoundTo(inventory.getItem(i), run.runId())) {
+                if (matchesArtifact(inventory.getItem(i), run, field)) {
                     return new HeldArtifact(memberPlayer, i);
                 }
             }
-            if (ExpeditionArtifactItem.isBoundTo(
-                    memberPlayer.containerMenu.getCarried(), run.runId())) {
+            if (matchesArtifact(memberPlayer.containerMenu.getCarried(), run, field)) {
                 return new HeldArtifact(memberPlayer, -1);
             }
         }

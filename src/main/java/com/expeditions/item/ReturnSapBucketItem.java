@@ -1,7 +1,7 @@
 package com.expeditions.item;
 
 import com.expeditions.registry.ModDataComponents;
-import com.expeditions.server.ExpeditionText;
+import com.expeditions.server.SapTrace;
 import com.expeditions.registry.ModFluids;
 import com.expeditions.registry.ModItems;
 import java.util.List;
@@ -36,12 +36,30 @@ public final class ReturnSapBucketItem extends BucketItem {
                 ? "item.expeditions.return_sap_bucket" : "item.expeditions.return_sap_bucket.bound");
     }
 
+    @Override public boolean isBarVisible(ItemStack stack) { return !source(stack).isBlank(); }
+    @Override public int getBarWidth(ItemStack stack) { return 13; }
+    @Override public int getBarColor(ItemStack stack) { return SapTrace.of(source(stack)).color(); }
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> lines, TooltipFlag flag) {
         String source = source(stack);
         lines.add(Component.translatable(
                 source.isBlank() ? "tooltip.expeditions.sap_unbound" : "tooltip.expeditions.sap_bound",
-                ExpeditionText.dimension(source)).withStyle(ChatFormatting.GRAY));
+                SapTrace.label(source)).withStyle(ChatFormatting.GRAY));
+    }
+
+    @Override
+    public boolean emptyContents(@org.jetbrains.annotations.Nullable net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos,
+            @org.jetbrains.annotations.Nullable net.minecraft.world.phys.BlockHitResult hit,
+            @org.jetbrains.annotations.Nullable ItemStack container) {
+        boolean wasSource = com.expeditions.server.PlacedSap.isSource(level.getBlockState(pos));
+        boolean placed = super.emptyContents(player, level, pos, hit, container);
+        if (placed && !wasSource && level instanceof net.minecraft.server.level.ServerLevel server
+                && com.expeditions.server.PlacedSap.isSource(level.getBlockState(pos))) {
+            com.expeditions.server.PlacedSap.remember(server, pos, container == null ? "" : source(container));
+        }
+        return placed;
     }
 
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {

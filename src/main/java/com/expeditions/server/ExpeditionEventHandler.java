@@ -372,7 +372,6 @@ public final class ExpeditionEventHandler {
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("expeditions")
-                .then(Commands.literal("balance").executes(ExpeditionEventHandler::balance))
                 .then(Commands.literal("status").executes(ExpeditionEventHandler::status))
                 .then(Commands.literal("bearing").executes(context -> {
                     ServerPlayer player = player(context);
@@ -382,7 +381,6 @@ public final class ExpeditionEventHandler {
                     return 0;
                 }))
                 .then(Commands.literal("abandon").executes(ExpeditionEventHandler::abandon))
-                .then(Commands.literal("redeem").executes(ExpeditionEventHandler::redeem))
                 .then(Commands.literal("unlocks").executes(ExpeditionEventHandler::unlocks))
                 .then(Commands.literal("trophies").executes(ExpeditionEventHandler::trophies))
                 .then(Commands.literal("history").executes(ExpeditionEventHandler::history))
@@ -463,15 +461,7 @@ public final class ExpeditionEventHandler {
         return 1;
     }
 
-    private static int balance(CommandContext<CommandSourceStack> ctx) {
-        ServerPlayer player = player(ctx);
-        if (player == null) {
-            return 0;
-        }
-        int balance = ExpeditionManager.get(player.server).tokenBalance(player.getUUID());
-        player.sendSystemMessage(Component.translatable("message.expeditions.balance", balance));
-        return 1;
-    }
+
 
     /**
      * `/expeditions unlocks` — lists the progression keys the player holds;
@@ -544,7 +534,7 @@ public final class ExpeditionEventHandler {
                             String.format(java.util.Locale.ROOT, "%02d", entry.elapsedTicks() / 20 % 60));
             var outcome = Component.translatable("message.expeditions.history_" + entry.outcome().name().toLowerCase(java.util.Locale.ROOT));
             var row = Component.translatable("message.expeditions.history_row", ExpeditionText.title(entry.name()), outcome,
-                    entry.checkpoints(), entry.totalCheckpoints(), entry.tokensKept(), duration, ExpeditionText.dimension(entry.dimension()));
+                    entry.checkpoints(), entry.totalCheckpoints(), duration, ExpeditionText.dimension(entry.dimension()));
             if (entry.outcome() == com.expeditions.core.ExpeditionStatus.FAILED)
                 row.append(Component.translatable("message.expeditions.history_reason",
                         Component.translatable("message.expeditions.fail_reason." + entry.reason())));
@@ -625,17 +615,7 @@ public final class ExpeditionEventHandler {
         return 1;
     }
 
-    /**
-     * `/expeditions redeem` points players to the basin that settles supply claims.
-     */
-    private static int redeem(CommandContext<CommandSourceStack> ctx) {
-        ServerPlayer player = player(ctx);
-        if (player == null) {
-            return 0;
-        }
-        player.sendSystemMessage(Component.translatable("message.expeditions.basin_redeem_hint"));
-        return 1;
-    }
+
 
     /**
      * `/expeditions start <expedition> [difficulty] [checkpoints] [time]` —

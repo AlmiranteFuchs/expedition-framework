@@ -89,11 +89,11 @@
     "pages": [
       {
         "heading": "Settle the mark",
-        "body": "Split pale stumps hold a narrow amber seam. Roots spread from the wood, but the cut does not close. The compass answers these witness stumps: the checkpoints named in a charter.\n\nUse them in compass order. The first seals the party. Each settled mark banks part of the guaranteed reward, even if the expedition later fails. Make room before touching one. Its answer can draw company."
+        "body": "Split pale stumps hold a narrow amber seam. Roots spread from the wood, but the cut does not close. The compass answers these witness stumps: the checkpoints named in a charter.\n\nUse them in compass order. The first seals the party. Make room before touching one. Its answer can draw company."
       },
       {
         "heading": "An unfinished route",
-        "body": "Death removes a member; losing the last member ends the expedition. Banked tokens remain yours.\n\nDisconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree.\n\nThe terminal keeps a short record. Use /expeditions history to review the last ten outcomes and the tokens each journey secured."
+        "body": "Death removes a member; losing the last member ends the expedition.\n\nDisconnecting leaves the route for recovery if its landmarks still exist. The last stump is not a way home. Follow the new compass bearing to the hollow tree.\n\nThe terminal keeps a short record. Use /expeditions history to review the last ten outcomes."
       }
     ],
     "unlock_hint": "Use a split witness stump rather than merely passing its light."
@@ -159,11 +159,11 @@
     "pages": [
       {
         "heading": "The Stillwood Hollow",
-        "body": "Pale roots rise around a person-wide hollow. Amber threads hang where the trunk should be. The opening resembles the terminal aperture, though no frame has been fitted to it. These notes call it a Stillwood Hollow: the charter’s exit.\n\nAfter every checkpoint and required objective, step through the hollow or use its wood. Bring any required cargo. The party returns to its terminal and the remaining reward is settled."
+        "body": "Pale roots rise around a person-wide hollow. Amber threads hang where the trunk should be. The opening resembles the terminal aperture, though no frame has been fitted to it. These notes call it a Stillwood Hollow: the charter’s exit.\n\nAfter every checkpoint and required objective, step through the hollow or use its wood. Bring any required cargo. The party returns to its terminal and your personal Return Cache is filed at the Wayroot."
       },
       {
         "heading": "What can be used again",
-        "body": "Samples become equipment, and a completed charter becomes a record the terminal can recognise. Check its offerings after a return. Some work needs several forms of preparation.\n\nThe hollow leaves a return knot. Use one water bucket on a Sap Jar, then offer a Return Knot to the jar. Once it settles, offer one Assimilation Essence. Check the jar with an empty hand to see what it needs. Carry the finished sap by bucket, or feed it through a Rootwick pointing toward the basin. The basin knows the traces you brought home. The ledger sorts finds into materials, curiosities and gear. Harder charters open gear traces.\n\nCrouch and offer unwanted items to a Sap Jar. The roots break them down into sap. A hopper can feed the jar from above."
+        "body": "Samples become equipment, and a completed charter becomes a record the terminal can recognise. Check its offerings after a return. Some work needs several forms of preparation.\n\nOpen Return Cache at a Wayroot after extraction. Collect your supplies and bound knot, then choose one of the three finds. The Wayroot keeps unclaimed hauls for you.\n\nLoad a bound Return Knot and an Assimilation Essence into the Sap Jar. Supply a bucket of water and Resonance, or dock a charged Cell. The brew begins when there is space for its output. The finished sap remembers the knot's home.\n\nCarry sap by bucket or send it through a Rootwick. The basin spends only sap from the selected well. Each purchase draws a small bundle from its pool. Hard and Brutal extractions unlock gear."
       }
     ],
     "unlock_hint": "Use extraction after the charter's required work is complete."

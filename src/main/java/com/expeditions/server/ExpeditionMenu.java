@@ -48,6 +48,8 @@ public class ExpeditionMenu extends ChestMenu {
     public static final int SLOT_PREVIOUS = 9, SLOT_EXPEDITION = 10, SLOT_NEXT = 11;
     public static final int SLOT_DIFFICULTY = 12, SLOT_CHECKPOINTS = 14, SLOT_TIME = 16, SLOT_START = 31;
     public static final int SLOT_PARTY = 18;
+    public static final int SLOT_CACHE = 3, SLOT_CACHE_FIRST_CHOICE = 20;
+    public static final int SLOT_CACHE_PREVIOUS = 23, SLOT_CACHE_NEXT = 24;
 
     private static final int[] CHECKPOINT_CHOICES = {0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16};
     private static final int[] TIME_CHOICES = {0, 50, 100, 150, 200};
@@ -63,6 +65,8 @@ public class ExpeditionMenu extends ChestMenu {
     private int checkpointsIndex;
     private int timeIndex;
     private boolean solo;
+    private int cacheIndex;
+    private UUID visibleCache;
 
     /** Client factory. Items/lore arrive through ordinary server slot sync. */
     public ExpeditionMenu(int containerId, Inventory playerInventory) {
@@ -150,6 +154,8 @@ public class ExpeditionMenu extends ChestMenu {
     @Override
     public void clicked(int slotId, int button, ClickType clickType, Player player) {
         if (slotId >= 0 && slotId < container.getContainerSize()) {
+            if (slotId >= SLOT_CACHE_FIRST_CHOICE && slotId <= SLOT_CACHE_NEXT
+                    && (clickType != ClickType.PICKUP || button != 0 || !getCarried().isEmpty())) return;
             if (player instanceof ServerPlayer serverPlayer) {
                 onButton(slotId, button, serverPlayer);
             }
@@ -190,6 +196,18 @@ public class ExpeditionMenu extends ChestMenu {
             }
             case SLOT_TIME -> { if (!fixedRoute()) timeIndex = Math.floorMod(timeIndex + step, TIME_CHOICES.length); }
             case SLOT_PARTY -> { if (!guided()) solo = !solo; }
+            case SLOT_CACHE_PREVIOUS, SLOT_CACHE_NEXT, SLOT_CACHE_FIRST_CHOICE,
+                    SLOT_CACHE_FIRST_CHOICE + 1, SLOT_CACHE_FIRST_CHOICE + 2 -> {
+                if (buttonIsCacheClick(player)) {
+                    var caches = manager.savedData().returnCaches(playerId);
+                    if (!caches.isEmpty() && slotId >= SLOT_CACHE_PREVIOUS) {
+                        cacheIndex = Math.floorMod(cacheIndex + (slotId == SLOT_CACHE_PREVIOUS ? -1 : 1), caches.size());
+                    } else if (visibleCache != null && !manager.savedData().claimReturnCache(player,
+                            visibleCache, slotId - SLOT_CACHE_FIRST_CHOICE)) {
+                        player.displayClientMessage(Component.literal("Make room for the haul, then try again."), true);
+                    }
+                }
+            }
             case SLOT_START -> {
                 start(player);
                 return;
@@ -198,6 +216,33 @@ public class ExpeditionMenu extends ChestMenu {
             }
         }
         refresh();
+    }
+
+    private boolean buttonIsCacheClick(ServerPlayer player) {
+        return player.getUUID().equals(playerId) && player.level() == terminalLevel
+                && player.canInteractWithBlock(terminalPos, 4)
+                && terminalLevel.getBlockState(terminalPos).is(com.expeditions.registry.ModBlocks.EXPEDITION_TERMINAL.get());
+    }
+
+    private void refreshCache() {
+        var caches = manager.savedData().returnCaches(playerId);
+        visibleCache = null;
+        if (caches.isEmpty()) {
+            container.setItem(SLOT_CACHE, button(Items.CHEST, "gui.expeditions.return_cache",
+                    List.of(Component.literal("Extract from a charter to bring a haul home."))));
+            return;
+        }
+        cacheIndex = Math.clamp(cacheIndex, 0, caches.size() - 1);
+        var cache = caches.get(cacheIndex);
+        visibleCache = cache.run();
+        var lines = new ArrayList<Component>();
+        lines.add(Component.literal((cacheIndex + 1) + " / " + caches.size() + " caches"));
+        lines.add(Component.literal(ExpeditionText.title(cache.name())).append(" · ").append(ExpeditionText.dimension(cache.dimension())));
+        lines.add(Component.literal("Guaranteed haul").withStyle(ChatFormatting.BOLD));
+        for (var stack : cache.haul()) lines.add(Component.literal(stack.getCount() + " × ").append(stack.getHoverName()));
+        lines.add(Component.literal("Choose one find below."));
+        container.setItem(SLOT_CACHE, button(Items.CHEST, "gui.expeditions.return_cache", lines));
+        for (int i = 0; i < 3; i++) container.setItem(SLOT_CACHE_FIRST_CHOICE + i, cache.choices().get(i).copy());
     }
 
     private void start(ServerPlayer player) {
@@ -245,6 +290,7 @@ public class ExpeditionMenu extends ChestMenu {
 
     private void refresh() {
         container.clearContent();
+        refreshCache();
         boolean ready = false;
         if (startable.isEmpty()) {
             container.setItem(SLOT_EXPEDITION, button(Items.BARRIER,
@@ -352,7 +398,6 @@ public class ExpeditionMenu extends ChestMenu {
         else if (!frame.canOpen()) nextStep = Component.literal("Check the Wayroot arch.");
         else if (!missing.isEmpty()) nextStep = unlockAction(missing.getFirst());
         else if (!campaignReady) nextStep = campaignStep;
-        else if (check.missingTokens() > 0) nextStep = Component.literal("Earn " + check.missingTokens() + " more tokens.");
         else nextStep = Component.literal("Ready to deploy.");
         // The board also shows this first line alongside the Deploy button.
         requirements.add(nextStep);
@@ -374,10 +419,6 @@ public class ExpeditionMenu extends ChestMenu {
             }
             requirements.add(requirementLine(campaignReady, progress));
             if (!campaignReady && guardianGate) requirements.add(campaignStep);
-        }
-        if (definition.costTokens() > 0) {
-            requirements.add(requirementLine(check.missingTokens() == 0,
-                    Component.literal("Entry fee · " + manager.tokenBalance(playerId) + " / " + definition.costTokens() + " tokens")));
         }
         if (!frame.canOpen()) requirements.add(Component.translatable(frame.messageKey()));
         if (requirements.size() == 1) requirements.add(Component.literal("No entry fee or campaign requirements."));
@@ -401,15 +442,17 @@ public class ExpeditionMenu extends ChestMenu {
 
     private List<Component> extras(ExpeditionDefinition definition) {
         var details = new ArrayList<Component>();
-        int bonuses = definition.bonusTokens() + definition.objectives().stream().mapToInt(ExpeditionObjective::bonusTokens).sum();
-        bonuses += definition.commissionPool().stream().mapToInt(ExpeditionObjective::bonusTokens).max().orElse(0);
-        if (guided()) {
-            details.add(Component.translatable("gui.expeditions.training_brief"));
-            details.add(Component.translatable("gui.expeditions.training_rewards", definition.tokenReward() + bonuses));
-        } else {
-            details.add(Component.literal("Base reward · " + definition.tokenReward() + " tokens"));
-            if (bonuses > 0) details.add(Component.literal("Possible bonuses · up to " + bonuses + " base tokens"));
-            details.add(Component.literal("Rewards scale with difficulty and party size."));
+        details.add(Component.literal("Extraction haul").withStyle(ChatFormatting.BOLD));
+        var difficulty = mastery() ? Difficulty.HARD : fixedRoute() ? Difficulty.STANDARD : Difficulty.values()[difficultyIndex];
+        boolean hard = difficulty == Difficulty.HARD || difficulty == Difficulty.BRUTAL;
+        details.add(Component.literal((hard ? "Two Return Knots" : "One Return Knot") + ", supplies, and a choice of one find."));
+        if (hard) details.add(Component.literal("A find can be gear. This clear opens the gear pool."));
+        if (guided()) details.add(Component.translatable("gui.expeditions.training_brief"));
+        else {
+            if (definition.bonusTimeTicks() > 0 || definition.objectives().stream().anyMatch(o -> !o.required())) {
+                details.add(Component.literal("Finish the time bonus or an optional objective for extra supplies."));
+            }
+            if (!definition.commissionPool().isEmpty()) details.add(Component.literal("A completed commission adds a Return Knot."));
             if (aftergrowth()) details.add(Component.translatable("gui.expeditions.aftergrowth_brief"));
             if (mastery()) details.add(Component.translatable("gui.expeditions.mastery_brief"));
             var optional = definition.objectives().stream().filter(objective -> !objective.required()).toList();
@@ -439,7 +482,7 @@ public class ExpeditionMenu extends ChestMenu {
     private String bonusWindowSummary() {
         if (startable.isEmpty()) return "Unavailable";
         var definition = startable.get(expeditionIndex);
-        if (definition.bonusTokens() == 0 || definition.bonusTimeTicks() == 0) return "No timed bonus";
+        if (definition.bonusTimeTicks() == 0) return "No timed bonus";
         long ticks = definition.bonusTimeTicks() * (long) (TIME_CHOICES[timeIndex] == 0 ? 100 : TIME_CHOICES[timeIndex]) / 100;
         return ticks / 1200 + "m " + ticks / 20 % 60 + "s" + (timeIndex == 0 ? " (default)" : "");
     }

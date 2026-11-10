@@ -100,8 +100,10 @@ public final class AftergrowthTests {
             helper.assertTrue(!level.getBlockState(cache).is(ModBlocks.FIELD_CACHE.get())
                             && owner.getInventory().countItem(ModItems.EXPEDITION_ARTIFACT.get()) == 0,
                     "extraction removes the cache and settles the carried find");
-            helper.assertTrue(owner.getInventory().countItem(ModItems.RETURN_KNOT.get()) == 2,
-                    "two return knots settle at the hollow");
+            var returned = data.returnCaches(owner.getUUID()).getFirst();
+            helper.assertTrue(returned.haul().getFirst().is(ModItems.RETURN_KNOT.get())
+                            && returned.haul().getFirst().getCount() == 1 && returned.haul().size() == 4,
+                    "the quiet survey files one knot, supplies and the carrier's sealed curiosity");
             helper.assertTrue(data.campaignCompletions(dimension) == 0 && !manager.unlocks(owner.getUUID()).contains("expeditions:field_clear"),
                     "a repeat survey does not farm campaign completions or field proof");
             helper.assertTrue(!data.ledger().hasUnlock(owner.getUUID(), "expeditions:reclaiming_gear/" + dimension),

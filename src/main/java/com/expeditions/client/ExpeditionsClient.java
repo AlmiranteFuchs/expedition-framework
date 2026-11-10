@@ -53,6 +53,7 @@ public class ExpeditionsClient {
                 event.register(com.expeditions.registry.ModMenus.EXPEDITION.get(), ExpeditionScreen::new);
                 event.register(com.expeditions.registry.ModMenus.RECLAIMING.get(), ReclaimingScreen::new);
                 event.register(com.expeditions.registry.ModMenus.RESONANCE.get(),ResonanceScreen::new);
+                event.register(com.expeditions.registry.ModMenus.SAP_BREW.get(), SapBrewScreen::new);
         });
         modEventBus.addListener((EntityRenderersEvent.RegisterLayerDefinitions event) ->
                 event.registerLayerDefinition(GuardianModel.LAYER, GuardianModel::createBodyLayer));

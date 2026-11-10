@@ -27,6 +27,11 @@ public final class ModAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Optional<GlobalPos>>> PORTAL_CONTACT =
             ATTACHMENTS.register("portal_contact", () -> AttachmentType.<Optional<GlobalPos>>builder(Optional::empty).build());
 
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<java.util.Map<String, String>>> PLACED_SAP =
+            ATTACHMENTS.register("placed_sap", () -> AttachmentType
+                    .<java.util.Map<String, String>>builder(java.util.Map::of)
+                    .serialize(Codec.unboundedMap(Codec.STRING, Codec.STRING)).build());
+
     public static final int ARRIVAL_GLOW_TICKS = 32;
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Long>> ARRIVAL_GLOW_UNTIL =
             ATTACHMENTS.register("arrival_glow_until", () -> AttachmentType.builder(() -> 0L)

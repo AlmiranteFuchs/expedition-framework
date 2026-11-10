@@ -12,7 +12,6 @@
     "exit_max": 24,
     "max_attempts": 8
   },
-  "tokens": 20,
   "requires": [
     "expeditions:field_clear"
   ]

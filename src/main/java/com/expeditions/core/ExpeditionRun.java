@@ -46,6 +46,18 @@ public final class ExpeditionRun {
     private final long startedGameTime;
     private Waypoint fieldCache;
     private Waypoint commissionSite;
+    private String commissionId;
+
+    public Optional<String> commissionId() {
+        return Optional.ofNullable(commissionId).or(() -> detourCommission().map(ExpeditionObjective::id));
+    }
+
+    public void recordCommission(String id) {
+        if (definition.objectives().stream().noneMatch(o -> o.id().equals(id) && !o.required())) {
+            throw new IllegalArgumentException("Invalid commission");
+        }
+        commissionId = id;
+    }
     private UUID enduranceHolder;
     private int enduranceTicks;
     private long enduranceLastTick;
