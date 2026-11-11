@@ -72,5 +72,7 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> AMBIENT_PALE_DRIFT = ev("ambient.shatterwake.pale_drift");
     public static final DeferredHolder<SoundEvent, SoundEvent> AMBIENT_SHATTERWAKE_MOOD = ev("ambient.shatterwake.mood");
 
+    public static final DeferredHolder<SoundEvent, SoundEvent> LISTENER_WARNING = ev("entity.bloom_listener.warning");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LISTENER_CALL = ev("entity.bloom_listener.call");
     private ModSounds() { }
 }

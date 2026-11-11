@@ -165,6 +165,9 @@ public class AssimilationHeartBlockEntity extends BlockEntity {
         }
         heart.pulse(level);
         heart.tryTake(level);
+        if (heart.coverage(level) >= ExpeditionTuning.integer(level.dimension(),
+                "microbiome.take_min_faces", ExpeditionsConfig.microbiomeTakeMinFaces()))
+            com.expeditions.entity.BloomListener.trySpawnNearColony(level, pos);
     }
 
     private long lastTake;

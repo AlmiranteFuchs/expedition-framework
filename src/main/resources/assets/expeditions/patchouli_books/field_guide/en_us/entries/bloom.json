@@ -24,6 +24,16 @@
       "type": "patchouli:text",
       "title": "Work from the edge",
       "text": "Living tissue and infected creatures transmit infection through contact. Standing nearby is not enough. Leave yourself a clear place to step before cutting a sample."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The listening bark",
+      "text": "Some colonies keep a small, hunched shape among their roots. Its face is shut until something disturbs the ground. Then the pale plates draw apart."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The listening bark",
+      "text": "Creep past it, or put wool between it and your work. A strike can close the plates before its call carries. Nearby infected bodies follow what it hears. A thrown snowball can leave them searching the wrong patch of ground."
     }
   ],
   "advancement": "expeditions:journal/bloom"

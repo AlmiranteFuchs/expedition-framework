@@ -413,5 +413,9 @@
   "direction.expeditions.north": "north",
   "direction.expeditions.south": "south",
   "direction.expeditions.east": "east",
-  "direction.expeditions.west": "west"
+  "direction.expeditions.west": "west",
+  "entity.expeditions.bloom_listener": "Bloom Listener",
+  "item.expeditions.bloom_listener_spawn_egg": "Bloom Listener Spawn Egg",
+  "subtitles.expeditions.entity.bloom_listener.warning": "Bark plates draw apart",
+  "subtitles.expeditions.entity.bloom_listener.call": "A Listener calls the Bloom"
 }

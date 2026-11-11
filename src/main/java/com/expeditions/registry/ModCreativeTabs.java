@@ -43,6 +43,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.STILLWOOD_ROOT.get());
                         output.accept(ModItems.STILLWOOD_LEAVES.get());
                         output.accept(ModItems.ROOTBOUND_GUARDIAN_SPAWN_EGG.get());
+                        output.accept(ModItems.BLOOM_LISTENER_SPAWN_EGG.get());
                         output.accept(ModItems.RETURN_SAP_BUCKET.get());
                         output.accept(ModItems.EXPEDITION_CHECKPOINT_ITEM.get());
                         output.accept(ModItems.EXPEDITION_EXIT_ITEM.get());

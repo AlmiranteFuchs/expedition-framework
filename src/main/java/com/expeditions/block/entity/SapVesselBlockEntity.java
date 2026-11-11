@@ -272,6 +272,8 @@ public final class SapVesselBlockEntity extends BlockEntity {
         if (charge > 0 && ResonanceCellItem.spend(dock, charge)) energy.receiveEnergy(charge, false);
         if (brewStatus() != BrewStatus.BREWING) return;
         if (batchDimension.isEmpty()) {
+            level.gameEvent(net.minecraft.world.level.gameevent.GameEvent.BLOCK_ACTIVATE, worldPosition,
+                    net.minecraft.world.level.gameevent.GameEvent.Context.of(getBlockState()));
             batchDimension = brewingTrace();
             ingredients.extractItem(0, 1, false);
             ingredients.extractItem(1, 1, false);

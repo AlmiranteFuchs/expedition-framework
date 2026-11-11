@@ -199,6 +199,18 @@
     ],
     "subtitle": "subtitles.expeditions.block.wayroot.graft"
   },
+  "entity.bloom_listener.call": {
+    "sounds": [
+      "expeditions:listener/call"
+    ],
+    "subtitle": "subtitles.expeditions.entity.bloom_listener.call"
+  },
+  "entity.bloom_listener.warning": {
+    "sounds": [
+      "expeditions:listener/warning"
+    ],
+    "subtitle": "subtitles.expeditions.entity.bloom_listener.warning"
+  },
   "entity.rootbound_guardian.death": {
     "attenuation_distance": 32,
     "sounds": [

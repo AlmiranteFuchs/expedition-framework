@@ -23,7 +23,7 @@ public final class HiveMind {
             AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
     private HiveMind() { }
     public static boolean infected(LivingEntity entity) {
-        return entity.getData(ModAttachments.ASSIMILATED)>0;
+        return entity instanceof com.expeditions.entity.BloomListener || entity.getData(ModAttachments.ASSIMILATED)>0;
     }
     public static boolean active(Mob mob) {
         return infected(mob) && mob.isAlive() && !AssimilationProtection.protectedFromInfection(mob)
@@ -36,6 +36,7 @@ public final class HiveMind {
                 && !(candidate instanceof Mob && infected(candidate)) && !mob.isAlliedTo(candidate);
     }
     public static void tick(Mob mob) {
+        if (mob instanceof com.expeditions.entity.BloomListener) return;
         boolean infected = active(mob);
         applyLanguor(mob.getAttribute(Attributes.MOVEMENT_SPEED), infected);
         applyLanguor(mob.getAttribute(Attributes.FLYING_SPEED), infected);

@@ -45,6 +45,9 @@ public class ExpeditionsMod {
         modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
                 event.put(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(),
                         com.expeditions.entity.RootboundGuardian.attributes().build()));
+        modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
+                event.put(com.expeditions.registry.ModEntities.BLOOM_LISTENER.get(),
+                        com.expeditions.entity.BloomListener.attributes().build()));
         ModItems.ITEMS.register(modEventBus);
         com.expeditions.registry.ModEffects.EFFECTS.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);

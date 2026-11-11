@@ -57,6 +57,8 @@ public class ExpeditionsClient {
         });
         modEventBus.addListener((EntityRenderersEvent.RegisterLayerDefinitions event) ->
                 event.registerLayerDefinition(GuardianModel.LAYER, GuardianModel::createBodyLayer));
+        modEventBus.addListener((EntityRenderersEvent.RegisterLayerDefinitions event) ->
+                event.registerLayerDefinition(ListenerModel.LAYER, ListenerModel::createBodyLayer));
         modEventBus.addListener(ExpeditionsClient::onAddLayers);
         modEventBus.addListener((net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent event) ->
                 event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener)
@@ -119,6 +121,7 @@ public class ExpeditionsClient {
     private static void onRegisterRenderers(
             EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(com.expeditions.registry.ModEntities.ROOTBOUND_GUARDIAN.get(), GuardianRenderer::new);
+        event.registerEntityRenderer(com.expeditions.registry.ModEntities.BLOOM_LISTENER.get(), ListenerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.RESONANCE_MACHINE.get(),ResonanceRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.PALE_CHEST.get(), PaleChestRenderer::new);
         event.registerBlockEntityRenderer(

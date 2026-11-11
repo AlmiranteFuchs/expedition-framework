@@ -16,5 +16,9 @@ public final class ModEntities {
                     .of(RootboundGuardian::new, MobCategory.MONSTER).sized(1.1f, 3.95f)
                     .clientTrackingRange(12).updateInterval(2).fireImmune()
                     .build("expeditions:rootbound_guardian"));
+    public static final DeferredHolder<EntityType<?>, EntityType<com.expeditions.entity.BloomListener>> BLOOM_LISTENER =
+            ENTITIES.register("bloom_listener", () -> EntityType.Builder
+                    .of(com.expeditions.entity.BloomListener::new, MobCategory.MONSTER).sized(.8f, 1.05f)
+                    .clientTrackingRange(8).updateInterval(2).build("expeditions:bloom_listener"));
     private ModEntities() { }
 }

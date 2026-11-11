@@ -35,6 +35,9 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> PALE_PRESSURE_PLATE = ITEMS.registerSimpleBlockItem("pale_pressure_plate", ModBlocks.PALE_PRESSURE_PLATE);
     public static final DeferredItem<BlockItem> STILLWOOD_LEAVES = ITEMS.registerSimpleBlockItem("stillwood_leaves", ModBlocks.STILLWOOD_LEAVES);
     public static final DeferredItem<BlockItem> STILLWOOD_ROOT = ITEMS.registerSimpleBlockItem("stillwood_root", ModBlocks.STILLWOOD_ROOT);
+    public static final DeferredItem<Item> BLOOM_LISTENER_SPAWN_EGG = ITEMS.register("bloom_listener_spawn_egg",
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(ModEntities.BLOOM_LISTENER,
+                    0xb8b09a, 0x956537, new Item.Properties()));
     public static final DeferredItem<Item> ROOTBOUND_GUARDIAN_SPAWN_EGG = ITEMS.register("rootbound_guardian_spawn_egg",
             () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(ModEntities.ROOTBOUND_GUARDIAN,
                     0xb8ad94, 0xd48936, new Item.Properties()));

@@ -26,6 +26,10 @@
       {
         "heading": "Work from the edge",
         "body": "The surface growth spreads from a nearby bloom. Removing that source stops its colony and leaves supported tissue dormant. Break the tissue itself for flakes; tearing away its support leaves no useful harvest.\n\nLiving tissue and infected creatures transmit infection through contact. Standing nearby is not enough. Leave yourself a clear place to step before cutting a sample."
+      },
+      {
+        "heading": "The listening bark",
+        "body": "Some colonies keep a small, hunched shape among their roots. Its face is shut until something disturbs the ground. Then the pale plates draw apart.\n\nCreep past it, or put wool between it and your work. A strike can close the plates before its call carries. Nearby infected bodies follow what it hears. A thrown snowball can leave them searching the wrong patch of ground."
       }
     ],
     "unlock_hint": "Approach a living growth with pale shutters and an amber lining."
@@ -223,7 +227,7 @@
       },
       {
         "heading": "Carry a reserve",
-        "body": "A Resonance Cell holds 16000 Resonance and starts empty. Open a generator and place the cell in its Cell slot to charge it. Place a charged cell in a condenser\u0027s Cell slot to supply power. Compatible FE chargers also work.\n\nCarry a charged cell rather than assuming there will be a working workshop at the far end."
+        "body": "A Resonance Cell holds 16000 Resonance and starts empty. Open a generator and place the cell in its Cell slot to charge it. Place a charged cell in a condenser's Cell slot to supply power. Compatible FE chargers also work.\n\nCarry a charged cell rather than assuming there will be a working workshop at the far end."
       },
       {
         "heading": "A quiet camp",

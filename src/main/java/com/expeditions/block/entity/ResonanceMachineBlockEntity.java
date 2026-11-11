@@ -191,6 +191,8 @@ public final class ResonanceMachineBlockEntity extends BlockEntity {
                 case SEVERED -> ModSounds.RESONANCE_WORK_SEVERED.get();
                 case CONDENSER -> ModSounds.RESONANCE_WORK_CONDENSER.get();
             };
+            level.gameEvent(net.minecraft.world.level.gameevent.GameEvent.BLOCK_ACTIVATE, pos,
+                    net.minecraft.world.level.gameevent.GameEvent.Context.of(state));
             level.playSound(null, pos, sound, SoundSource.BLOCKS, be.kind() == Kind.SEVERED ? 0.65f : 0.32f,
                     be.dynamo() ? 0.75f : 0.9f);
             be.nextWorkSound = level.getGameTime() + 34 + level.random.nextInt(13);

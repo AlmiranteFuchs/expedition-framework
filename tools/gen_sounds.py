@@ -1058,7 +1058,32 @@ def b_ambient_shatterwake_mood():
     return finalize(reverb(out, wet=0.45))
 
 
+
+def b_listener_warning():
+    """Three dry plate catches against a rising wooden breath."""
+    out = buf(2.6)
+    for i, at in enumerate((0.0, 0.75, 1.65, 2.25)):
+        wood_knock(out, at, gain=0.24 + i * 0.06, freq=210 - i * 14, seed=621 + i)
+    friction = apply_env(bp_sweep(noise(2.4, 627), 240, 510, 2.0), attack=0.5, release=0.3)
+    mix(out, friction, 0.28, 0.1)
+    return finalize(out, peak=0.42)
+
+
+def b_listener_call():
+    """Low hollow bark with a frayed moth flutter, kept positional and brief."""
+    out = buf(1.5)
+    breath = apply_env(bp_sweep(noise(1.15, 631), 510, 190, 3.0), attack=0.08, release=0.4)
+    for i in range(len(breath)):
+        breath[i] *= 0.65 + 0.35 * math.sin(2 * math.pi * 17 * i / SR)
+    mix(out, breath, 0.55)
+    mix(out, apply_env(sine(lambda t: 91 - 19 * t, 1.2), attack=0.1, release=0.5), 0.12)
+    wood_knock(out, 0.08, gain=0.25, freq=175, seed=633)
+    return finalize(out, peak=0.50)
+
+
 REGISTRY = [
+    ("entity.bloom_listener.warning", ["listener/warning"], [b_listener_warning]),
+    ("entity.bloom_listener.call", ["listener/call"], [b_listener_call]),
     ("block.expedition_terminal.activate",
      ["terminal/activate"], [b_terminal_activate]),
     ("block.expedition_terminal.refuse",

@@ -117,7 +117,7 @@ public final class MobSpawns {
         return trySpawn(type, level, center, 2, radius);
     }
 
-    static Mob trySpawn(EntityType<?> type, ServerLevel level,
+    public static Mob trySpawn(EntityType<?> type, ServerLevel level,
             BlockPos center, int minDistance, int radius) {
         for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
             Mob mob = tryColumn(type, level, center,

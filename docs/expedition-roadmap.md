@@ -1006,7 +1006,7 @@ T3B, T4A, W1A, W2A and W3C. The selected concepts, native sprite sheet and
 validation notes are in docs/art-direction/approved-2026-11-07.
 
 
-### Machine cell docks and carved screens — dev
+### Machine cell docks and carved screens ï¿½ dev
 
 All four resonance machine screens now share the approved W3C salvage bark
 frame and wood panels. The dock has its own charge bar and status, separate
@@ -1032,7 +1032,7 @@ Engine screens, charging/depletion readouts, and unchanged held-cell charge.
 Next concrete roadmap item remains cleared-Nether dormant survey deposits.
 
 
-### Wayroot recovery and cache guidance — alpha.50
+### Wayroot recovery and cache guidance ï¿½ alpha.50
 
 The Wayroot now has a self-drop loot table and belongs to both axe and
 pickaxe mining tags. The existing correct-tool requirement previously had
@@ -1109,3 +1109,40 @@ and Minecraft UI control was disabled, preventing the live cache-tab review.
 The final shortened Jar readout also still needs a fresh client inspection.
 No public alpha.51 release has been published. The verified local JAR and
 checksum are staged in build/alpha. Resume from these checks before publishing.
+
+### Bloom Listener â€” alpha.52
+
+The Bloom Listener is a small stationary colony scout with a hunched bark
+carapace, paired moth-like mask plates, idle tremors and a dim amber throat.
+Minecraft game events carry footsteps, mining, placement, projectile impacts
+and machine work to it. Careful footsteps, wool and powered wards provide
+counterplay. Its face opens over a three-second warning. Damage interrupts the
+call and grants eight seconds of recovery. Calls have a fifteen-second cooldown.
+Reload cancels a pending warning and preserves its recovery interval.
+
+A completed call recruits existing infected mobs within 24 blocks. Living
+sources become the hive's shared focus. Unclaimed projectile or machine noise
+causes a ten-second investigation of the heard location. Combat and higher
+priority siege orders take precedence. Navigation uses deadlines so reduced
+AI goal ticking cannot skip every path update. Healthy colonies can establish
+one nearby scout, respecting Stillness, wards, the spawning gamerule, player
+distance and local population. Player kills drop one essence. Encountering a
+Listener discovers the existing Bloom journal chapter, which includes its notes.
+
+Final headless validation passed build/alphaBundle, 203 unit tests and all 202
+required GameTests in build/listener-alpha52-verified.log. Coverage includes the
+actual event dispatcher, warning timing, interruption, reload, stealth, wool,
+wards, recruitment and physical movement toward projectile impacts. The isolated
+optional-mod profile is recorded separately in build/listener-alpha52-installed.log.
+The profile that loads installed mods passed all four checks, including Create tank transfers and Aether, Bumblezone and Twilight Forest biome pools. Its log is build/listener-alpha52-real-mods.log.
+Diagnostic failures remain in the listener-focused-* and listener-lure-* logs.
+Early dispatcher tests used untracked Nether entities. The lure fixture initially
+placed the Listener inside stone, causing suffocation to interrupt its call;
+the final fixture explicitly clears headroom. Audio checks verified mono 44.1 kHz
+clips with peaks below 0.5 and both entity sheets are valid 64x64 RGBA textures.
+
+The initial model was inspected in the disposable client. Subsequent mask and
+carapace refinements still need a visual check after a client restart. The owner
+is playing, so further verification uses headless worlds. Next concrete step is
+a visual and audio review of the final Listener when the client is available.
+The tested alpha.52 JAR and SHA-256 are staged in build/alpha.
