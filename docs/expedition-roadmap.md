@@ -1146,3 +1146,13 @@ carapace refinements still need a visual check after a client restart. The owner
 is playing, so further verification uses headless worlds. Next concrete step is
 a visual and audio review of the final Listener when the client is available.
 The tested alpha.52 JAR and SHA-256 are staged in build/alpha.
+
+### Published candidate — alpha.53
+
+Alpha.53 assigns a fresh version to the verified Listener and Return Sap work.
+Alpha.52 was reused during development and remained a local build. The exact
+alpha.53 JAR declares version 0.6.0-alpha.53 in its mod metadata and includes the
+Listener and Return Cache. Build and alphaBundle passed with 203 unit tests,
+202 required GameTests and all four installed-mod checks. Evidence is preserved
+in build/alpha53-release-validation.log and build/alpha53-installed-validation.log.
+The final visual-review limits from alpha.52 remain recorded above.
