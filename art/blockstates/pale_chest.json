@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "expeditions:block/pale_chest"
+    },
+    "facing=east": {
+      "model": "expeditions:block/pale_chest",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "expeditions:block/pale_chest",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "expeditions:block/pale_chest",
+      "y": 270
+    }
+  }
+}

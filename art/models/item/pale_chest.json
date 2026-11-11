@@ -1,0 +1,4 @@
+{
+  "parent": "expeditions:block/pale_chest",
+  "gui_light": "front"
+}

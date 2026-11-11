@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "expeditions:block/pale_slab"
+    },
+    "type=top": {
+      "model": "expeditions:block/pale_slab_top"
+    },
+    "type=double": {
+      "model": "expeditions:block/pale_planks"
+    }
+  }
+}

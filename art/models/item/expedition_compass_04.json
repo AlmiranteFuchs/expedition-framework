@@ -1,0 +1,6 @@
+{
+  "parent": "expeditions:item/expedition_compass_housing",
+  "textures": {
+    "layer0": "expeditions:item/expedition_compass_04"
+  }
+}

@@ -63,6 +63,14 @@ NeoForge mod for **Minecraft 1.21.1** (NeoForge `21.1.x`), Java 21, Gradle wrapp
   (16×16, bone/ember ramps, top-left light, ordered dither — no noise)
   and the heartwood block face models via `tools/heartwood_art.py`.
   `python3 tools/preview_heartwood.py` builds a before/after board in `build/`.
+- Artist workspace: `art/` mirrors the editable assets (textures, models,
+  blockstates, lang, sounds) plus `entity/rootbound_guardian.bbmodel` and
+  `palettes/`. `python3 tools/art_sync.py pull|push` refreshes the mirror /
+  copies artist edits into `src/main/resources` for `runClient` testing.
+  `tools/export_guardian_bbmodel.py` regenerates the .bbmodel from the
+  cube list in `GuardianModel` (keep CUBES in sync with the Java model —
+  the .bbmodel is a one-way export, not the game's source of truth).
+  `tools/gen_palette.py` regenerates the .gpl/swatch palette files.
 - Sounds: `python3 tools/gen_sounds.py` regenerates all `.ogg` SFX and
   `sounds.json` (needs `pip3 install soundfile`; horror voicing — dying
   Charter machinery vs wet sub-squelch whispering Bloom). Events are

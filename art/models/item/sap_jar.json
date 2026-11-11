@@ -1,0 +1,4 @@
+{
+  "parent": "expeditions:block/sap_jar",
+  "gui_light": "front"
+}

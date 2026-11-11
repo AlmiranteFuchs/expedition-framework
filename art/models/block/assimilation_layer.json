@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "expeditions:block/assimilation_layer"
+  }
+}

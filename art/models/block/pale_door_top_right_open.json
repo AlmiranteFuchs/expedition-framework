@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_top_right_open",
+  "textures": {
+    "bottom": "expeditions:block/pale_door_bottom",
+    "top": "expeditions:block/pale_door_top"
+  }
+}

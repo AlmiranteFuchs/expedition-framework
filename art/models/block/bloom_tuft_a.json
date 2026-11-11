@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "expeditions:block/bloom_tuft_a"
+  }
+}

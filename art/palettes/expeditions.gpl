@@ -1,0 +1,35 @@
+GIMP Palette
+Name: Expeditions
+Columns: 6
+# bone=flesh=ember=leather=metal ramps, dark outline
+ 58  48  38	Bone 0
+110  94  74	Bone 1
+160 140 110	Bone 2
+206 186 150	Bone 3
+236 220 184	Bone 4
+250 242 216	Bone 5
+ 72  62  58	Flesh 0
+118 104  98	Flesh 1
+162 148 138	Flesh 2
+202 190 176	Flesh 3
+230 222 206	Flesh 4
+246 240 226	Flesh 5
+ 34  18  10	Ember 0
+122  36  14	Ember 1
+217  72  15	Ember 2
+240 138  32	Ember 3
+255 196  61	Ember 4
+255 233 122	Ember 5
+ 42  26  16	Leather 0
+ 80  50  30	Leather 1
+122  80  48	Leather 2
+158 110  66	Leather 3
+196 146  92	Leather 4
+222 176 118	Leather 5
+ 38  34  30	Metal 0
+ 74  68  60	Metal 1
+110 102  90	Metal 2
+148 140 126	Metal 3
+186 178 162	Metal 4
+220 214 198	Metal 5
+ 38  30  24	Outline 0

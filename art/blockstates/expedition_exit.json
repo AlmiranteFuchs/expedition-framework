@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "grown=false": {
+      "model": "expeditions:block/expedition_exit"
+    },
+    "grown=true,full_tree=false": {
+      "model": "expeditions:block/recall_tree_root"
+    },
+    "grown=true,full_tree=true": {
+      "model": "expeditions:block/stillwood_entrance"
+    }
+  }
+}

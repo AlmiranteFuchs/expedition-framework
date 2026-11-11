@@ -1,0 +1,44 @@
+{
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        9,
+        15
+      ],
+      "faces": {
+        "north": {
+          "texture": "#boards"
+        },
+        "south": {
+          "texture": "#boards"
+        },
+        "east": {
+          "texture": "#boards"
+        },
+        "west": {
+          "texture": "#boards"
+        },
+        "up": {
+          "texture": "#boards"
+        },
+        "down": {
+          "texture": "#boards"
+        }
+      }
+    }
+  ],
+  "textures": {
+    "particle": "expeditions:block/pale_planks",
+    "boards": "expeditions:block/pale_planks",
+    "bark": "expeditions:block/stillwood_bark",
+    "seam": "expeditions:block/graft_copper",
+    "amber": "expeditions:block/route_amber"
+  },
+  "parent": "minecraft:block/block"
+}

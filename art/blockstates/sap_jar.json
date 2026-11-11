@@ -1,0 +1,41 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "expeditions:block/sap_jar"
+      }
+    },
+    {
+      "when": {
+        "sap_level": "1"
+      },
+      "apply": {
+        "model": "expeditions:block/sap_jar_sap_1"
+      }
+    },
+    {
+      "when": {
+        "sap_level": "2"
+      },
+      "apply": {
+        "model": "expeditions:block/sap_jar_sap_2"
+      }
+    },
+    {
+      "when": {
+        "sap_level": "3"
+      },
+      "apply": {
+        "model": "expeditions:block/sap_jar_sap_3"
+      }
+    },
+    {
+      "when": {
+        "sap_level": "4"
+      },
+      "apply": {
+        "model": "expeditions:block/sap_jar_sap_4"
+      }
+    }
+  ]
+}

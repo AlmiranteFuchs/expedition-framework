@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "expeditions:block/stillwood_root_x"
+    },
+    "axis=y": {
+      "model": "expeditions:block/stillwood_root_y"
+    },
+    "axis=z": {
+      "model": "expeditions:block/stillwood_root_z"
+    }
+  }
+}

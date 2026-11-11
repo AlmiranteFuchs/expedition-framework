@@ -1,0 +1,10 @@
+{
+  "textures": {"particle": "#bark", "bark": "expeditions:block/stillwood_bark", "grain": "expeditions:block/stillwood_end", "resin": "expeditions:block/expedition_device_top"},
+  "elements": [
+    {"from": [3, 0, 3], "to": [13, 3, 13], "faces": {"up": {"texture": "#grain"}, "down": {"texture": "#grain"}, "north": {"texture": "#bark"}, "south": {"texture": "#bark"}, "east": {"texture": "#bark"}, "west": {"texture": "#bark"}}},
+    {"from": [5, 3, 5], "to": [11, 7, 11], "faces": {"up": {"texture": "#grain"}, "down": {"texture": "#grain"}, "north": {"texture": "#bark"}, "south": {"texture": "#bark"}, "east": {"texture": "#bark"}, "west": {"texture": "#bark"}}},
+    {"from": [6, 7, 6], "to": [10, 8, 10], "faces": {"up": {"texture": "#resin"}, "down": {"texture": "#resin"}, "north": {"texture": "#resin"}, "south": {"texture": "#resin"}, "east": {"texture": "#resin"}, "west": {"texture": "#resin"}}},
+    {"from": [7, 8, 7], "to": [9, 14, 9], "faces": {"up": {"texture": "#bark"}, "down": {"texture": "#bark"}, "north": {"texture": "#bark"}, "south": {"texture": "#bark"}, "east": {"texture": "#bark"}, "west": {"texture": "#bark"}}},
+    {"from": [6, 13, 6], "to": [10, 16, 10], "faces": {"up": {"texture": "#resin"}, "down": {"texture": "#resin"}, "north": {"texture": "#resin"}, "south": {"texture": "#resin"}, "east": {"texture": "#resin"}, "west": {"texture": "#resin"}}}
+  ]
+}
