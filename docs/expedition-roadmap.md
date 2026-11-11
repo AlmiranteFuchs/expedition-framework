@@ -1156,3 +1156,10 @@ Listener and Return Cache. Build and alphaBundle passed with 203 unit tests,
 202 required GameTests and all four installed-mod checks. Evidence is preserved
 in build/alpha53-release-validation.log and build/alpha53-installed-validation.log.
 The final visual-review limits from alpha.52 remain recorded above.
+
+Published v0.6.0-alpha.53 from 93e4855c5477150c2b593eff79c75e107d3feb9e.
+Release https://github.com/AlmiranteFuchs/expedition-framework/releases/tag/v0.6.0-alpha.53
+The public mod JAR, checksum file and required Patchouli JAR were each downloaded
+without authentication and matched their local SHA-256. The mod JAR checksum is
+1315b33420c995501a30fa4b5d809dd54d1ba19d7f1e8b34458cc3bba99e9679.
+Verification downloads are kept in build/release-verification/alpha53.
